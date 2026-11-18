@@ -3,7 +3,7 @@ import type * as I18n from "./i18n";
 import { hltbStore } from "./hltb/store";
 import type { HltbEntry } from "./backend";
 
-const ui = vi.hoisted(() => ({ showModal: vi.fn(), showContextMenu: vi.fn() }));
+const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
 const textarea = vi.hoisted(() => ({ component: null as any }));
 const i18nLanguage = vi.hoisted(() => ({
@@ -37,7 +37,7 @@ const steam = vi.hoisted(() => ({
   compatibilityDefaultScopeSnapshot: vi.fn(() => "all"),
   currentRoutePath: vi.fn(() => `/decky-metadata/${route.appid}`),
   classifyShortcutNameState: vi.fn((_current: string | null, _state: any) => "unmanaged"),
-  getOverview: vi.fn(() => ({ app_type: 1073741824, BIsShortcut: () => true })),
+  getOverview: vi.fn((): { app_type: number; BIsShortcut: () => boolean } => ({ app_type: 1073741824, BIsShortcut: () => true })),
   hasShortcutNameApi: vi.fn(() => true),
   isNonSteamApp: vi.fn(() => true),
   ensureCompatibilityDefault: vi.fn(() => Promise.resolve(null)),
@@ -78,7 +78,8 @@ const toast = vi.hoisted(() => ({
 const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null }));
 const state = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const refs = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
-const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as Array<() => unknown> }));
+type MockEffect = (() => unknown) & { deps: readonly unknown[] | undefined };
+const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as MockEffect[] }));
 
 vi.mock("@decky/ui", () => ({
   ConfirmModal: "ConfirmModal",
@@ -87,23 +88,33 @@ vi.mock("@decky/ui", () => ({
   DropdownItem: "DropdownItem",
   Field: "Field",
   Focusable: "Focusable",
-  Menu: "Menu",
-  MenuItem: "MenuItem",
   Navigation: { NavigateBack: vi.fn() },
-  PanelSection: "PanelSection",
-  PanelSectionRow: "PanelSectionRow",
-  ScrollPanel: "ScrollPanel",
   TextField: "TextField",
   ToggleField: "ToggleField",
   useParams: () => ({ appid: route.appid }),
   showModal: ui.showModal,
-  showContextMenu: ui.showContextMenu,
 }));
 
 vi.mock("./backend", () => backend);
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
+vi.mock("./editorLayout", () => ({
+  EditorLayout: ({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }: LayoutProps) => (
+    <>
+      <h1>{title}</h1>
+      <nav>
+        {pages.filter(({ visible }) => visible).map(({ id, label }) => (
+          <button key={id} type="button" aria-current={page === id ? "page" : undefined} onClick={() => onPageRequested(id)}>
+            {label}
+          </button>
+        ))}
+      </nav>
+      <main>{pages.find(({ id, visible }) => visible && id === page)?.content}</main>
+      <footer><button type="button" disabled={saveDisabled} onClick={onSave}>{saveLabel}</button></footer>
+    </>
+  ),
+}));
 // Pages are rendered by hand here with a partial React mock, so use the
 // module-level translator instead of react-i18next's hook.
 vi.mock("./i18n", async (importOriginal) => {
@@ -121,8 +132,8 @@ vi.mock("./hltb/gameView", () => ({
 vi.mock("react", () => ({
   createContext: () => ({}),
   useCallback: (callback: any) => callback,
-  useEffect: (callback: () => unknown) => {
-    if (effects.enabled) effects.callbacks.push(callback);
+  useEffect: (callback: () => unknown, deps?: readonly unknown[]) => {
+    if (effects.enabled) effects.callbacks.push(Object.assign(callback, { deps }));
   },
   useMemo: (factory: any) => factory(),
   useRef: (initial: any) => {
@@ -145,87 +156,130 @@ vi.mock("react", () => ({
 
 import { Navigation } from "@decky/ui";
 import { MetadataPage } from "./MetadataPage";
+import { EditorLayout } from "./editorLayout";
+import { EDITOR_PAGE_ORDER, type EditorPageId } from "./editorPages";
 import { metadataTemplate } from "./metadataForm";
 import type { MetadataData } from "./types";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
+
+type LayoutProps = Parameters<typeof EditorLayout>[0];
 
 const makeMetadata = (overrides: Record<string, unknown> = {}) => ({
   ...metadataTemplate("Shortcut"),
   ...overrides,
 });
 
+const hydrateMetadata = (metadata: MetadataData) => {
+  state.values[0] = metadata;
+  state.values[8] = metadata.steam_appid ? String(metadata.steam_appid) : "";
+  // The stored snapshot and hydration flag belong to this fixture's first entry.
+  state.values[14] = 0;
+  refs.values[14] = { current: metadata };
+  refs.values[15] = { current: null };
+};
+
+// This harness walks JSX by hand, so only expand the fake layout component.
+const renderedChildren = (node: { type?: unknown; props?: Record<string, unknown> }) =>
+  node.type === EditorLayout ? EditorLayout(node.props as unknown as LayoutProps) : node.props?.children;
+
 const walk = (node: any, predicate: (candidate: any) => boolean): any[] => {
+  if (Array.isArray(node)) return node.flatMap((child) => walk(child, predicate));
   if (node == null || typeof node !== "object") return [];
   const matched = predicate(node) ? [node] : [];
-  const children = node.props?.children;
-  const childNodes = Array.isArray(children) ? children : [children];
-  return matched.concat(...childNodes.flatMap((child) => walk(child, predicate)));
+  return matched.concat(walk(renderedChildren(node), predicate));
 };
 
 const renderPage = () => {
   state.cursor = 0;
   refs.cursor = 0;
-  return MetadataPage() as any;
+  return MetadataPage();
 };
 
 const dropdown = (page: any) =>
   walk(page, (node) => node.type === "DropdownItem")[0];
 
-const saveButton = (page: any) =>
-  walk(
-    page,
-    (node) =>
-      typeof node.props?.className === "string" &&
-      node.props.className.includes("decky-metadata-editor__action--save")
-  )[0];
+const saveButton = (page: unknown) =>
+  walk(page, (node) => node.type === "footer")[0].props.children;
 
-const sectionTitles = (page: any) =>
-  walk(page, (node) => node.type === "PanelSection")
-    .map((node) => node.props?.title)
-    .filter(Boolean);
+const layoutProps = (page: unknown): LayoutProps =>
+  walk(page, (node) => node.type === EditorLayout)[0].props;
+
+const dirtyPageIds = (page: unknown) =>
+  layoutProps(page).pages.filter(({ dirty }) => dirty).map(({ id }) => id);
 
 const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return text(node.props?.children);
+  return text(renderedChildren(node));
 };
 
 const action = (page: any, label: string) =>
   walk(page, (node) => typeof node.props?.onClick === "function" && text(node) === label)[0];
 
-const moreButton = (page: any) =>
-  walk(page, (node) => node.props?.["aria-label"] === "More options")[0];
+const navButton = (page: unknown, label: string) =>
+  action(walk(page, (node) => node.type === "nav")[0], label);
+
+const openPage = (label: string) => {
+  const page = renderPage();
+  const button = navButton(page, label);
+  if (button.props["aria-current"] === "page") return page;
+  button.props.onClick();
+  return renderPage();
+};
 
 const lastCall = (mock: any) => mock.mock.calls[mock.mock.calls.length - 1][0];
 
-const openMoreMenu = (page: any) => {
-  moreButton(page).props.onClick({ currentTarget: "more-button" });
-  const children = lastCall(ui.showContextMenu).props.children;
-  return Array.isArray(children) ? children : [children];
+const openRemoveConfirmation = () => {
+  action(openPage("Advanced"), "Remove Metadata").props.onClick();
+  return lastCall(ui.showModal);
 };
 
-/** The remove confirmation is the only modal this flow opens. */
-const removeViaMenu = (page: any) => {
-  openMoreMenu(page)[1].props.onSelected();
-  return lastCall(ui.showModal).props.onOK();
+const textField = (page: unknown, label: string) =>
+  walk(page, (node) => node.type === "TextField" && node.props["aria-label"] === label)[0];
+
+const editTitle = (page: unknown, value: string) =>
+  textField(page, "Title").props.onChange({ target: { value } });
+
+const applySteamAppId = () =>
+  action(openPage("Steam Match"), "Apply Steam App ID").props.onClick();
+
+const hltbField = () => {
+  const findField = (node: unknown): { props: { value: string; onChange: (event: { target: { value: string } }) => void } } | undefined => {
+    if (Array.isArray(node)) {
+      for (const child of node) {
+        const field = findField(child);
+        if (field) return field;
+      }
+    } else if (node && typeof node === "object") {
+      const candidate = node as { type?: unknown; props?: Record<string, unknown> };
+      const children = renderedChildren(candidate);
+      if (candidate.type === "div" && Array.isArray(children)) {
+        const field = children.find((child) => child && typeof child === "object" && "type" in child && child.type === "TextField");
+        const apply = children.find((child) => {
+          if (!child || typeof child !== "object" || !("props" in child)) return false;
+          const props = child.props;
+          return !!props && typeof props === "object" && "onClick" in props &&
+            typeof props.onClick === "function" && "children" in props && props.children === "Apply HLTB game";
+        });
+        if (field && apply) return field as { props: { value: string; onChange: (event: { target: { value: string } }) => void } };
+      }
+      return findField(children);
+    }
+    return undefined;
+  };
+  return findField(openPage("HowLongToBeat"));
 };
-
-const labeledInput = (page: any, label: string) => {
-  const container = walk(page, (node) => {
-    const children = node.props?.children;
-    const nodes = Array.isArray(children) ? children : [children];
-    return nodes.some((child) => child?.type === "label" && text(child).startsWith(label));
-  })[0];
-  return walk(container, (node) => node.type === "TextField")[0];
-};
-
-const rootElement = (page: any) =>
-  walk(page, (node) => node.props?.className === "decky-metadata-editor")[0];
-
 const flushAsyncWork = async () => {
   for (let index = 0; index < 8; index += 1) await Promise.resolve();
+};
+
+const clickSave = async (page = renderPage()) => {
+  const button = saveButton(page);
+  expect(button.props.disabled).toBe(false);
+  button.props.onClick();
+  await flushAsyncWork();
 };
 
 const deferred = <T,>() => {
@@ -238,14 +292,7 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-const ignSearchSection = (page: any) =>
-  walk(page, (node) => node.type === "PanelSection" && node.props?.title === "Search IGN metadata")[0];
-
-const ignSearchInput = (page: any) =>
-  walk(ignSearchSection(page), (node) => node.type === "TextField")[0];
-
-const ignSearchButton = (page: any) =>
-  walk(ignSearchSection(page), (node) => typeof node.props?.onClick === "function")[0];
+const ignSearchInput = (page: unknown) => textField(page, "Game name");
 
 const shortcutState = (overrides: Record<string, unknown> = {}) => ({
   eligible: true,
@@ -267,19 +314,11 @@ const configureShortcutPanel = (overrides: {
     steam_store_name: "Steam Name",
     ...overrides.metadata,
   });
-  state.values[0] = metadata;
+  hydrateMetadata(metadata);
   state.values[7] = overrides.busy ?? false;
-  state.values[8] = metadata.steam_appid ? String(metadata.steam_appid) : "";
   state.values[9] = shortcutState(overrides.management);
   state.values[10] = overrides.managementError ?? false;
   state.values[11] = overrides.current ?? "Original";
-  // These direct-render tests model metadata that has already been hydrated
-  // for the initial editor entry. Real editor loads set this after the RPC.
-  state.values[14] = 0;
-  // Ref slot 14 is the saved-record snapshot that gates store writes; slot 15
-  // is the pending Steam preview. Both are only set by backend responses.
-  refs.values[14] = { current: metadata };
-  refs.values[15] = { current: null };
   steam.classifyShortcutNameState.mockReturnValue(overrides.status ?? "unmanaged");
 };
 
@@ -308,9 +347,9 @@ describe("MetadataPage compatibility status", () => {
   it("shows the native dropdown in the required order with global inheritance", () => {
     state.values[0] = makeMetadata({ deck_compat_category: 3 });
 
-    const control = dropdown(renderPage());
+    const control = dropdown(openPage("Compatibility"));
 
-    expect(control.props.label).toBe("Compatibility status");
+    expect(control.props.label).toBe("Status");
     expect(control.props.rgOptions).toEqual([
       { data: null, label: "Use global default" },
       { data: "valve", label: "Follow Valve" },
@@ -326,24 +365,23 @@ describe("MetadataPage compatibility status", () => {
   it("keeps explicit Unknown selected instead of treating zero as Automatic", () => {
     state.values[0] = makeMetadata({ deck_compat_override: 0 });
 
-    const control = dropdown(renderPage());
+    const control = dropdown(openPage("Compatibility"));
 
     expect(control.props.selectedOption).toBe(0);
     expect(control.props.renderButtonValue()).toBe("Unknown");
   });
 
   it("shows Follow Valve as a separate persisted per-game choice", async () => {
-    state.values[0] = makeMetadata({ deck_compat_category: 2 });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ deck_compat_category: 2 }));
     const saved = makeMetadata({ deck_compat_category: 2, deck_compat_override: "valve" });
     backend.saveMetadata.mockResolvedValue(saved);
 
-    dropdown(renderPage()).props.onChange({ data: "valve" });
+    dropdown(openPage("Compatibility")).props.onChange({ data: "valve" });
     const page = renderPage();
     expect(dropdown(page).props.selectedOption).toBe("valve");
     expect(dropdown(page).props.renderButtonValue()).toBe("Follow Valve (Playable)");
 
-    await saveButton(page).props.onClick();
+    await clickSave(page);
     expect(backend.saveMetadata).toHaveBeenCalledWith(
       100,
       expect.objectContaining({ deck_compat_override: "valve" }),
@@ -356,7 +394,7 @@ describe("MetadataPage compatibility status", () => {
     // state slots, preserving the legacy state-index fixture above.
     state.values[15] = 3;
 
-    expect(dropdown(renderPage()).props.renderButtonValue()).toBe("Use global default (Verified)");
+    expect(dropdown(openPage("Compatibility")).props.renderButtonValue()).toBe("Use global default (Verified)");
   });
 
   it("updates an inheriting editor preview when the selected scope excludes its record", () => {
@@ -365,7 +403,7 @@ describe("MetadataPage compatibility status", () => {
     state.values[16] = "steam";
     steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
 
-    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+    expect(dropdown(openPage("Compatibility")).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — Playable from Valve)",
     );
   });
@@ -376,7 +414,7 @@ describe("MetadataPage compatibility status", () => {
     state.values[16] = "no-steam";
     steam.compatibilityDefaultScopeSnapshot.mockReturnValue("no-steam");
 
-    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+    expect(dropdown(openPage("Compatibility")).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — Verified from Valve)",
     );
   });
@@ -398,7 +436,7 @@ describe("MetadataPage compatibility status", () => {
     renderPage();
     effects.callbacks[4]();
     await flushAsyncWork();
-    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+    expect(dropdown(openPage("Compatibility")).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — Playable from Valve)",
     );
 
@@ -409,16 +447,15 @@ describe("MetadataPage compatibility status", () => {
   });
 
   it("saves a dropdown change atomically and refreshes after success", async () => {
-    state.values[0] = makeMetadata({ deck_compat_category: 3 });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ deck_compat_category: 3 }));
     const saved = makeMetadata({ deck_compat_category: 3, deck_compat_override: 0 });
     backend.saveMetadata.mockResolvedValue(saved);
 
-    dropdown(renderPage()).props.onChange({ data: 0 });
+    dropdown(openPage("Compatibility")).props.onChange({ data: 0 });
     const page = renderPage();
 
     expect(dropdown(page).props.selectedOption).toBe(0);
-    await saveButton(page).props.onClick();
+    await clickSave(page);
 
     expect(backend.saveMetadata).toHaveBeenCalledWith(
       100,
@@ -427,19 +464,18 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.metadataCache["100"]).toBe(saved);
     expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
-    expect(toast.toastSuccess).toHaveBeenCalledWith("Saved", "Metadata saved");
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Metadata saved", "Shortcut");
     expect(dropdown(renderPage()).props.selectedOption).toBe(0);
   });
 
   it("does not change cache or runtime compatibility when save fails", async () => {
     const persisted = makeMetadata({ deck_compat_override: 3 });
-    state.values[0] = persisted;
-    state.values[14] = 0;
+    hydrateMetadata(persisted);
     steam.metadataCache["100"] = persisted;
     backend.saveMetadata.mockRejectedValue(new Error("backend unavailable"));
 
-    dropdown(renderPage()).props.onChange({ data: 0 });
-    await saveButton(renderPage()).props.onClick();
+    dropdown(openPage("Compatibility")).props.onChange({ data: 0 });
+    await clickSave();
 
     expect(steam.metadataCache["100"]).toBe(persisted);
     expect(steam.applyMetadata).not.toHaveBeenCalled();
@@ -453,19 +489,40 @@ describe("MetadataPage compatibility status", () => {
   it("does not expose the dropdown for an official Steam game", () => {
     steam.isNonSteamApp.mockReturnValue(false);
 
-    expect(dropdown(renderPage())).toBeUndefined();
+    const page = renderPage();
+    expect(navButton(page, "Compatibility")).toBeUndefined();
+    expect(layoutProps(page).pages.find(({ id }) => id === "compatibility")?.content).toBeNull();
   });
 
-  it("places the per-game shortcut-name panel immediately after Steam App ID", () => {
-    const titles = sectionTitles(renderPage());
-    const steamAppId = titles.indexOf("Steam App ID");
-    expect(steamAppId).toBeGreaterThanOrEqual(0);
-    expect(titles[steamAppId + 1]).toBe("Shortcut name");
+  it.each([true, false])("passes ordered pages with shortcut-only visibility (non-Steam: %s)", (nonSteam) => {
+    steam.isNonSteamApp.mockReturnValue(nonSteam);
+    const layout = layoutProps(renderPage());
+    const shortcutOnly: EditorPageId[] = ["hltb", "compatibility", "shortcut-name"];
+
+    expect(layout.title).toBe("Shortcut");
+    expect(layout.page).toBe("details");
+    expect(layout.pages.map(({ id }) => id)).toEqual(EDITOR_PAGE_ORDER);
+    expect(layout.pages.map(({ visible }) => visible)).toEqual(
+      EDITOR_PAGE_ORDER.map((id) => nonSteam || !shortcutOnly.includes(id)),
+    );
+    expect(layout.pages.filter(({ separatorBefore }) => separatorBefore === true).map(({ id }) => id)).toEqual(["advanced"]);
+  });
+
+  it("puts Steam App ID and shortcut-name actions on their own pages", () => {
+    configureShortcutPanel();
+    const steamMatch = openPage("Steam Match");
+    expect(textField(steamMatch, "Steam App ID")).toBeDefined();
+    expect(action(steamMatch, "Use Steam name")).toBeUndefined();
+
+    const shortcut = openPage("Shortcut Name");
+    expect(textField(shortcut, "Steam App ID")).toBeUndefined();
+    expect(action(shortcut, "Use Steam name")).toBeDefined();
+    expect(text(shortcut)).toContain("These actions apply now. They do not use Save.");
   });
 
   it("shows the proposal only for an eligible native shortcut and makes equal names a no-op", () => {
     configureShortcutPanel({ current: "Steam Name" });
-    const page = renderPage();
+    const page = openPage("Shortcut Name");
     expect(text(page)).toContain("Shortcut name already matches Steam");
     expect(action(page, "Use Steam name")).toBeUndefined();
 
@@ -480,7 +537,7 @@ describe("MetadataPage compatibility status", () => {
     backend.saveShortcutNameState.mockResolvedValue(saved);
     steam.setShortcutNameAndWait.mockResolvedValue("Steam Name");
 
-    action(renderPage(), "Use Steam name").props.onClick();
+    action(openPage("Shortcut Name"), "Use Steam name").props.onClick();
     const modal = ui.showModal.mock.calls[0][0];
     expect(modal.props.strTitle).toBe("Use Steam name?");
     expect(modal.props.strOKButtonText).toBe("Use Steam name");
@@ -502,7 +559,7 @@ describe("MetadataPage compatibility status", () => {
     steam.setShortcutNameAndWait.mockRejectedValue(new Error("timeout"));
     backend.getShortcutNameManagement.mockResolvedValue(shortcutState());
 
-    action(renderPage(), "Use Steam name").props.onClick();
+    action(openPage("Shortcut Name"), "Use Steam name").props.onClick();
     ui.showModal.mock.calls[0][0].props.onOK();
     await flushAsyncWork();
 
@@ -518,7 +575,7 @@ describe("MetadataPage compatibility status", () => {
     steam.setShortcutNameAndWait.mockResolvedValue("Original");
     backend.clearShortcutNameState.mockResolvedValue({ ok: true });
 
-    action(renderPage(), "Restore original name").props.onClick();
+    action(openPage("Shortcut Name"), "Restore original name").props.onClick();
     const modal = ui.showModal.mock.calls[0][0];
     expect(modal.props.strTitle).toBe("Restore original shortcut name?");
     modal.props.onOK();
@@ -545,7 +602,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel({ management: { state: diverged }, current: "Changed outside", status: "diverged" });
     steam.classifyShortcutNameState.mockImplementation(actualClassifyShortcutNameState);
     backend.clearShortcutNameState.mockResolvedValue({ ok: true });
-    const page = renderPage();
+    const page = openPage("Shortcut Name");
     expect(action(page, "Use Steam name")).toBeUndefined();
     expect(action(page, "Restore original name")).toBeUndefined();
     action(page, "Forget saved name history").props.onClick();
@@ -588,10 +645,10 @@ describe("MetadataPage compatibility status", () => {
       steam_store_state: "unknown",
     }));
 
-    const page = renderPage();
-    walk(page, (node) => node.type === "TextField" && node.props.value === "15100")[0]
-      .props.onChange({ target: { value: "15200" } });
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    const input = textField(openPage("Steam Match"), "Steam App ID");
+    expect(input.props.value).toBe("15100");
+    input.props.onChange({ target: { value: "15200" } });
+    await applySteamAppId();
 
     const sentDraft = backend.previewSteamMetadata.mock.calls[0][0];
     expect(sentDraft).toEqual(expect.objectContaining({
@@ -628,7 +685,7 @@ describe("MetadataPage compatibility status", () => {
     expect(toast.toastSuccess).toHaveBeenCalledWith("Details loaded", expect.stringContaining("Save"));
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
 
     const stored = backend.savePreviewedMetadata.mock.calls[0][1];
     expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.any(Object), 15200);
@@ -647,11 +704,12 @@ describe("MetadataPage compatibility status", () => {
   it("keeps normal metadata controls available when management is unavailable and excludes busy actions", async () => {
     configureShortcutPanel({ managementError: true });
     backend.saveMetadata.mockResolvedValue(makeMetadata());
-    await saveButton(renderPage()).props.onClick();
+    editTitle(renderPage(), "Edited title");
+    await clickSave();
     expect(backend.saveMetadata).toHaveBeenCalled();
 
     configureShortcutPanel({ busy: true });
-    const restore = action(renderPage(), "Use Steam name");
+    const restore = action(openPage("Shortcut Name"), "Use Steam name");
     expect(restore).toBeUndefined();
   });
 
@@ -665,10 +723,11 @@ describe("MetadataPage compatibility status", () => {
     await effects.callbacks[0]();
     await flushAsyncWork();
 
-    const page = renderPage();
+    const page = openPage("Shortcut Name");
     expect(text(page)).toContain("Shortcut-name management is unavailable");
     expect(action(page, "Use Steam name")).toBeUndefined();
-    await saveButton(page).props.onClick();
+    editTitle(openPage("Details"), "Edited title");
+    await clickSave(openPage("Shortcut Name"));
     expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.any(Object));
     expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
   });
@@ -677,7 +736,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel();
     steam.hasShortcutNameApi.mockReturnValue(false);
 
-    const page = renderPage();
+    const page = openPage("Shortcut Name");
     expect(text(page)).toContain("Steam's native shortcut-name API is unavailable");
     expect(action(page, "Use Steam name")).toBeUndefined();
     expect(backend.saveShortcutNameState).not.toHaveBeenCalled();
@@ -691,16 +750,16 @@ describe("MetadataPage compatibility status", () => {
     }));
     state.values[8] = "15200";
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
-    expect(action(renderPage(), "Use Steam name")).toBeUndefined();
+    await applySteamAppId();
+    expect(action(openPage("Shortcut Name"), "Use Steam name")).toBeUndefined();
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
 
     expect(action(renderPage(), "Use Steam name")).toBeDefined();
   });
 
-  it("reports whether Save committed and applied the record", async () => {
+  it("reports a successful Save and keeps the draft when Save fails", async () => {
     configureShortcutPanel();
     backend.saveMetadata.mockResolvedValue(makeMetadata({
       title: "Saved",
@@ -708,10 +767,19 @@ describe("MetadataPage compatibility status", () => {
       steam_store_name: "Steam Name",
     }));
 
-    expect(await saveButton(renderPage()).props.onClick()).toBe(true);
+    editTitle(renderPage(), "Saved");
+    await clickSave();
+    expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ title: "Saved" }));
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Metadata saved", "Shortcut");
+    expect(saveButton(renderPage()).props.disabled).toBe(true);
 
     backend.saveMetadata.mockRejectedValue(new Error("disk full"));
-    expect(await saveButton(renderPage()).props.onClick()).toBe(false);
+    editTitle(renderPage(), "Not saved");
+    await clickSave();
+    expect(toast.toastSuccess).toHaveBeenCalledTimes(1);
+    expect(steam.applyMetadata).toHaveBeenCalledTimes(1);
+    expect(saveButton(renderPage()).props.disabled).toBe(false);
     expect(toast.toastError).toHaveBeenCalledWith("Save failed", expect.stringContaining("disk full"));
   });
 
@@ -719,7 +787,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel();
     state.values[8] = "15200";
 
-    expect(await saveButton(renderPage()).props.onClick()).toBe(false);
+    await clickSave();
 
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -732,19 +800,32 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel({ management: { state: managed }, current: "Steam Name", status: "managed" });
     backend.removeMetadata.mockResolvedValue({});
 
-    removeViaMenu(renderPage());
+    openRemoveConfirmation().props.onOK();
     await flushAsyncWork();
 
-    expect(action(renderPage(), "Restore original name")).toBeDefined();
+    expect(action(openPage("Shortcut Name"), "Restore original name")).toBeDefined();
   });
 
-  it("closes the editor after a successful removal so Save cannot recreate a record", async () => {
+  it("confirms removal on Advanced, then removes metadata and closes the editor", async () => {
     configureShortcutPanel();
     backend.removeMetadata.mockResolvedValue({});
 
-    removeViaMenu(renderPage());
+    const modal = openRemoveConfirmation();
+    expect(modal.type).toBe("ConfirmModal");
+    expect(modal.props).toMatchObject({
+      bDestructiveWarning: true,
+      strTitle: "Remove Metadata?",
+      strDescription: expect.stringContaining("Shortcut"),
+      strOKButtonText: "Remove Metadata",
+    });
+    expect(backend.removeMetadata).not.toHaveBeenCalled();
+    expect(Navigation.NavigateBack).not.toHaveBeenCalled();
+
+    modal.props.onOK();
     await flushAsyncWork();
 
+    expect(backend.removeMetadata).toHaveBeenCalledWith(100);
+    expect(toast.toastSuccess).toHaveBeenCalledWith("Metadata removed", "Shortcut");
     expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
   });
 
@@ -752,7 +833,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel();
     backend.removeMetadata.mockRejectedValue(new Error("disk full"));
 
-    removeViaMenu(renderPage());
+    openRemoveConfirmation().props.onOK();
     await flushAsyncWork();
 
     expect(toast.toastError).toHaveBeenCalledWith("Remove failed", "disk full");
@@ -765,13 +846,15 @@ describe("MetadataPage compatibility status", () => {
     const pendingState = deferred<any>();
     backend.saveShortcutNameState.mockReturnValue(pendingState.promise);
 
-    action(renderPage(), "Use Steam name").props.onClick();
+    editTitle(renderPage(), "Edited title");
+    action(openPage("Shortcut Name"), "Use Steam name").props.onClick();
     const modal = ui.showModal.mock.calls[0][0];
     modal.props.onOK();
     await Promise.resolve();
     expect(backend.saveShortcutNameState).toHaveBeenCalledTimes(1);
     expect(state.values[7]).toBe(true);
-    void saveButton(renderPage()).props.onClick();
+    saveButton(renderPage()).props.onClick();
+    await flushAsyncWork();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
 
     modal.props.onOK();
@@ -798,7 +881,7 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(renderPage())).toContain("Steam: Steam Name");
+    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
     // The backfill persists the name, so the stored snapshot now offers it.
     expect(action(renderPage(), "Use Steam name")).toBeDefined();
 
@@ -824,7 +907,7 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks = [];
     renderPage();
     state.values[8] = "15200";
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
 
     effects.callbacks = [];
     renderPage();
@@ -849,7 +932,7 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(renderPage())).toContain("Steam did not return an official name");
+    expect(text(openPage("Shortcut Name"))).toContain("Steam did not return an official name");
 
     effects.callbacks = [];
     renderPage();
@@ -890,7 +973,7 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
 
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(renderPage())).toContain("Steam: Steam Name");
+    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
@@ -902,8 +985,7 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     effects.callbacks[2]();
-    walk(renderPage(), (node) => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "Unsaved edit" } });
+    editTitle(renderPage(), "Unsaved edit");
     walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0]
       .props.onChange({ target: { value: "2024-11-03" } });
     oldResponse.resolve(makeMetadata({
@@ -935,7 +1017,7 @@ describe("MetadataPage compatibility status", () => {
       release_date: "2009-04-28",
     }));
     expect(state.values[3]).toBe("2024-11-03");
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       release_date: "2024-11-03", source: "IGN", description: "Saved long", short_description: "Saved summary", steam_appid: 15100,
     }));
@@ -948,8 +1030,7 @@ describe("MetadataPage compatibility status", () => {
     backend.enrichSteamApp.mockReturnValue(pendingBackfill.promise);
 
     renderPage();
-    walk(renderPage(), (node) => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "Edit before backfill" } });
+    editTitle(renderPage(), "Edit before backfill");
     effects.callbacks = [];
     renderPage();
     effects.callbacks[2]();
@@ -977,10 +1058,8 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     effects.callbacks[2]();
-    const fields = walk(renderPage(), (node) => node.type === "TextField");
-    fields[fields.length - 1]
-      .props.onChange({ target: { value: "15200" } });
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    textField(openPage("Steam Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
+    await applySteamAppId();
     oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
     await flushAsyncWork();
 
@@ -998,7 +1077,7 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     effects.callbacks[2]();
-    removeViaMenu(renderPage());
+    openRemoveConfirmation().props.onOK();
     await flushAsyncWork();
     oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
     await flushAsyncWork();
@@ -1037,7 +1116,7 @@ describe("MetadataPage compatibility status", () => {
     ]);
 
     ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
-    await ignSearchButton(renderPage()).props.onClick();
+    await action(renderPage(), "Search").props.onClick();
     expect(backend.searchMetadata).toHaveBeenCalledWith("Old game query", 8);
     expect(text(renderPage())).toContain("Old game result");
 
@@ -1060,7 +1139,7 @@ describe("MetadataPage compatibility status", () => {
     backend.searchMetadata.mockReturnValue(pendingSearch.promise);
 
     ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
-    const searching = ignSearchButton(renderPage()).props.onClick();
+    const searching = action(renderPage(), "Search").props.onClick();
 
     route.appid = "200";
     effects.callbacks = [];
@@ -1091,8 +1170,7 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     const loading = effects.callbacks[0]();
-    walk(renderPage(), (node) => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "New title" } });
+    editTitle(renderPage(), "New title");
     pendingMetadata.resolve(saved);
     await loading;
     await flushAsyncWork();
@@ -1104,7 +1182,7 @@ describe("MetadataPage compatibility status", () => {
       steam_store_name: "Saved Steam name",
     }));
     backend.saveMetadata.mockResolvedValue(saved);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "New title",
       steam_appid: 15200,
@@ -1120,17 +1198,21 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     const loading = effects.callbacks[0]();
-    await saveButton(renderPage()).props.onClick();
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    const save = saveButton(renderPage());
+    expect(save.props.disabled).toBe(true);
+    save.props.onClick();
+    await applySteamAppId();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
+    expect(toast.toastWarn).toHaveBeenCalledTimes(2);
     expect(toast.toastWarn).toHaveBeenCalledWith("Not loaded", expect.any(String));
 
     pendingMetadata.resolve(makeMetadata({ title: "Saved title", description: "Saved description" }));
     await loading;
     await flushAsyncWork();
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    editTitle(openPage("Details"), "Edited title");
+    await clickSave();
     expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "Saved description" }));
   });
 
@@ -1140,9 +1222,8 @@ describe("MetadataPage compatibility status", () => {
     state.values[8] = "15200";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
 
-    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    walk(renderPage(), (node) => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "New title" } });
+    const applying = applySteamAppId();
+    editTitle(openPage("Details"), "New title");
     pendingPreview.resolve(makeMetadata({ title: "Steam title", steam_appid: 15200, steam_store_name: "New Steam name" }));
     await applying;
     await flushAsyncWork();
@@ -1159,7 +1240,7 @@ describe("MetadataPage compatibility status", () => {
       steam_store_name: "New Steam name",
     }));
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "New title",
       steam_appid: 15200,
@@ -1172,8 +1253,8 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel({ metadata: { description: "Long", short_description: "" } });
     state.values[8] = "15200";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
-    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    const description = () => walk(renderPage(), node => node.type === (component || "textarea"))[0];
+    const applying = applySteamAppId();
+    const description = () => walk(openPage("Details"), node => node.type === (component || "textarea"))[0];
     description().props.onChange({ target: { value: "" } });
     pendingPreview.resolve(makeMetadata({ description: "Provider prose", short_description: "Provider summary", steam_appid: 15200, title: "Enriched title", developers: [{ name: "Developer", url: "" }] }));
     await applying;
@@ -1181,7 +1262,7 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toMatchObject({ description: "", short_description: "", title: "Enriched title" });
     expect(state.values[1]).toBe("Developer");
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "", short_description: "", title: "Enriched title" }), 15200);
     textarea.component = null;
   });
@@ -1192,13 +1273,14 @@ describe("MetadataPage compatibility status", () => {
     state.values[3] = "2009-04-28";
     state.values[8] = "15200";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
-    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0].props.onChange({ target: { value } });
+    const applying = applySteamAppId();
+    walk(openPage("Details"), node => node.type === "TextField" && node.props.value === "2009-04-28")[0]
+      .props.onChange({ target: { value } });
     pendingPreview.resolve(makeMetadata({ description: "Provider long", short_description: "Provider short", release_date: "2023-11-14", steam_appid: 15200 }));
     await applying;
     expect(state.values[3]).toBe(value);
     backend.savePreviewedMetadata.mockImplementation(async (_id, metadata) => metadata);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ release_date: value || null, steam_appid: 15200 }), 15200);
   });
 
@@ -1223,8 +1305,7 @@ describe("MetadataPage compatibility status", () => {
     state.values[8] = "15200";
     backend.previewSteamMetadata.mockResolvedValue(enriched);
 
-    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
-    await applying;
+    await applySteamAppId();
 
     expect(backend.previewSteamMetadata).toHaveBeenCalledWith(expect.objectContaining({ steam_appid: 15200 }), "english");
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -1252,7 +1333,7 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[4]).toBe("92");
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "Steam title",
       description: "Steam description",
@@ -1281,10 +1362,9 @@ describe("MetadataPage compatibility status", () => {
     state.values[8] = "15200";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
 
-    const applying = action(renderPage(), "Apply Steam App ID").props.onClick();
+    const applying = applySteamAppId();
     await flushAsyncWork();
-    walk(renderPage(), (node) => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "My title" } });
+    editTitle(openPage("Details"), "My title");
     pendingPreview.resolve(enriched);
     await applying;
 
@@ -1299,7 +1379,7 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.metadataCache["100"]).toBeUndefined();
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({
       title: "My title",
       description: "Steam description",
@@ -1334,7 +1414,7 @@ describe("MetadataPage compatibility status", () => {
     steam.compatibilityDefaultScopeSnapshot.mockReturnValue("steam");
     state.values[8] = "";
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
 
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -1357,12 +1437,12 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.metadataCache["100"]).toBeUndefined();
     expect(steam.applyMetadata).not.toHaveBeenCalled();
     expect(steam.refreshCompatibilitySurfaces).not.toHaveBeenCalled();
-    expect(dropdown(renderPage()).props.renderButtonValue()).toBe(
+    expect(dropdown(openPage("Compatibility")).props.renderButtonValue()).toBe(
       "Use global default (outside selected scope — original Steam status)",
     );
 
     backend.saveMetadata.mockResolvedValue(makeMetadata({ title: "User title", steam_appid: null }));
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ steam_appid: null }));
     expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
   });
@@ -1371,7 +1451,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
     state.values[8] = "not a steam id";
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
 
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -1386,7 +1466,7 @@ describe("MetadataPage compatibility status", () => {
     configureShortcutPanel({ metadata: { steam_appid: 15100, steam_store_name: "Old Steam name" } });
     state.values[8] = "   ";
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
 
     expect(toast.toastWarn).not.toHaveBeenCalled();
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
@@ -1403,7 +1483,7 @@ describe("MetadataPage compatibility status", () => {
     backend.saveShortcutNameState.mockResolvedValue(firstA);
     steam.setShortcutNameAndWait.mockReturnValue(nativeWrite.promise);
 
-    action(renderPage(), "Use Steam name").props.onClick();
+    action(openPage("Shortcut Name"), "Use Steam name").props.onClick();
     ui.showModal.mock.calls[0][0].props.onOK();
     await flushAsyncWork();
 
@@ -1425,7 +1505,7 @@ describe("MetadataPage compatibility status", () => {
 
   it("ignores a stale name-operation modal callback after navigation", () => {
     configureShortcutPanel({ current: "First A" });
-    action(renderPage(), "Use Steam name").props.onClick();
+    action(openPage("Shortcut Name"), "Use Steam name").props.onClick();
     const oldModal = ui.showModal.mock.calls[0][0];
 
     route.appid = "101";
@@ -1449,7 +1529,7 @@ describe("MetadataPage compatibility status", () => {
       return { ok: true };
     });
 
-    action(renderPage(), "Restore original name").props.onClick();
+    action(openPage("Shortcut Name"), "Restore original name").props.onClick();
     ui.showModal.mock.calls[0][0].props.onOK();
     await flushAsyncWork();
 
@@ -1484,7 +1564,7 @@ describe("MetadataPage compatibility status", () => {
       return { ok: true };
     });
 
-    action(renderPage(), "Restore original name").props.onClick();
+    action(openPage("Shortcut Name"), "Restore original name").props.onClick();
     ui.showModal.mock.calls[0][0].props.onOK();
     await flushAsyncWork();
 
@@ -1524,27 +1604,25 @@ describe("Steam text language", () => {
   });
 
   const show = (metadata: Record<string, unknown>, language: string) => {
-    state.values[0] = makeMetadata(metadata);
-    state.values[8] = metadata.steam_appid ? String(metadata.steam_appid) : "";
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata(metadata));
     state.values[18] = language;
-    return renderPage();
+    return openPage("Steam Match");
   };
 
   it("offers the manual refetch only while the stored language differs", () => {
     const mismatch = show({ steam_appid: 15100, metadata_language: "english" }, "french");
     expect(text(mismatch)).toContain("Steam text language: English");
-    expect(action(mismatch, "Fetch Steam text in French")).toBeDefined();
+    expect(action(mismatch, "Load Steam text in French")).toBeDefined();
 
     const matching = show({ steam_appid: 15100, metadata_language: "french" }, "french");
-    expect(action(matching, "Fetch Steam text in French")).toBeUndefined();
+    expect(action(matching, "Load Steam text in French")).toBeUndefined();
 
     // Records without the field were fetched in English.
     const legacy = show({ steam_appid: 15100 }, "french");
-    expect(action(legacy, "Fetch Steam text in French")).toBeDefined();
+    expect(action(legacy, "Load Steam text in French")).toBeDefined();
 
     const unmatched = show({ steam_appid: null, metadata_language: "english" }, "french");
-    expect(action(unmatched, "Fetch Steam text in French")).toBeUndefined();
+    expect(action(unmatched, "Load Steam text in French")).toBeUndefined();
   });
 
   it("reads the Steam language when the editor opens", async () => {
@@ -1555,7 +1633,7 @@ describe("Steam text language", () => {
     renderPage();
     effects.callbacks[5]();
     await flushAsyncWork();
-    expect(action(renderPage(), "Fetch Steam text in French")).toBeDefined();
+    expect(action(openPage("Steam Match"), "Load Steam text in French")).toBeDefined();
   });
 
   it("previews Steam text in the current language without storing it", async () => {
@@ -1572,7 +1650,7 @@ describe("Steam text language", () => {
       short_description: "Nouveau",
     }));
 
-    await action(page, "Fetch Steam text in French").props.onClick();
+    action(page, "Load Steam text in French").props.onClick();
     await flushAsyncWork();
 
     expect(backend.previewSteamMetadata).toHaveBeenCalledWith(
@@ -1590,10 +1668,10 @@ describe("Steam text language", () => {
       description: "Nouveau",
     }));
     expect(toast.toastSuccess).toHaveBeenCalledWith("Details loaded", expect.stringContaining("Save"));
-    expect(action(renderPage(), "Fetch Steam text in French")).toBeUndefined();
+    expect(action(renderPage(), "Load Steam text in French")).toBeUndefined();
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.objectContaining({
       steam_appid: 15100,
       description: "Nouveau",
@@ -1611,7 +1689,7 @@ describe("Steam text language", () => {
     }));
     state.values[8] = "15200";
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
     expect(backend.previewSteamMetadata.mock.calls[0][0]).toEqual(expect.objectContaining({ steam_appid: 15200 }));
 
     // Still an English draft, so the language button remains for the previewed id.
@@ -1621,7 +1699,8 @@ describe("Steam text language", () => {
       description: "Texte français",
       short_description: "Texte français",
     }));
-    await action(renderPage(), "Fetch Steam text in French").props.onClick();
+    action(renderPage(), "Load Steam text in French").props.onClick();
+    await flushAsyncWork();
 
     expect(backend.previewSteamMetadata).toHaveBeenCalledTimes(2);
     expect(backend.previewSteamMetadata.mock.calls[1][0]).toEqual(expect.objectContaining({ steam_appid: 15200 }));
@@ -1639,7 +1718,7 @@ describe("Steam text language", () => {
     const page = show({ steam_appid: 15100, metadata_language: "english" }, "french");
     backend.previewSteamMetadata.mockRejectedValue(new Error("offline"));
 
-    await action(page, "Fetch Steam text in French").props.onClick();
+    action(page, "Load Steam text in French").props.onClick();
     await flushAsyncWork();
 
     expect(toast.toastError).toHaveBeenCalledWith("Fetch failed", expect.stringContaining("offline"));
@@ -1652,12 +1731,12 @@ describe("Steam text language", () => {
 describe("metadata summary and date persistence", () => {
   beforeEach(() => { state.values = []; refs.values = []; effects.enabled = false; textarea.component = null; vi.clearAllMocks(); backend.saveMetadata.mockImplementation(async (_id, metadata) => metadata); });
   it("displays saved summary but saves the original untouched description and calendar date", async () => {
-    state.values[0] = makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" }));
     state.values[3] = "2009-04-28";
     const page = renderPage();
     expect(walk(page, node => node.type === "textarea")[0].props.value).toBe("Source summary");
-    await saveButton(page).props.onClick();
+    editTitle(page, "Edited title");
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1]).toMatchObject({ description: "Retained long prose", short_description: "Source summary", release_date: "2009-04-28" });
   });
   it("uses a long fallback when the saved summary contains only whitespace", () => {
@@ -1665,41 +1744,36 @@ describe("metadata summary and date persistence", () => {
     expect(walk(renderPage(), node => node.type === "textarea")[0].props.value).toBe("Readable fallback");
   });
   it("keeps a legitimate absent date absent on an unrelated save", async () => {
-    state.values[0] = makeMetadata({ release_date: null });
-    state.values[14] = 0;
-    await saveButton(renderPage()).props.onClick();
+    hydrateMetadata(makeMetadata({ release_date: null }));
+    editTitle(renderPage(), "Edited title");
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1].release_date).toBeNull();
   });
   it("saves a changed calendar date and supports explicitly clearing it", async () => {
-    state.values[0] = makeMetadata({ release_date: "2009-04-28" });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ release_date: "2009-04-28" }));
     state.values[3] = "2009-04-28";
     renderPage();
     const field = walk(renderPage(), node => node.type === "TextField" && node.props.value === "2009-04-28")[0];
     field.props.onChange({ target: { value: "2024-03-10" } });
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1].release_date).toBe("2024-03-10");
     walk(renderPage(), node => node.type === "TextField" && node.props.value === "2024-03-10")[0].props.onChange({ target: { value: "" } });
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[1][1].release_date).toBeNull();
   });
   it("saves an HLTB game typed into its field when Save is pressed, and refuses an invalid one", async () => {
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata());
     backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
-    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
     hltbField().props.onChange({ target: { value: "not a game" } });
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
   });
   it("checks an applied HLTB game and keeps it as the draft until Save", async () => {
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata());
     backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
-    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
 
     hltbField().props.onChange({ target: { value: "https://howlongtobeat.com/game/6064" } });
     await action(renderPage(), "Apply HLTB game").props.onClick();
@@ -1709,16 +1783,14 @@ describe("metadata summary and date persistence", () => {
     expect(hltbField().props.value).toBe("6064");
     expect(toast.toastSuccess).toHaveBeenCalledWith("HLTB game: Minecraft", "Save stores this choice.");
 
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBe(6064);
   });
   it("drops a delayed HLTB check after the editor moves to another game", async () => {
     effects.enabled = true;
     const pending = deferred<{ found: true; game_id: number; game_name: string }>();
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata());
     backend.checkHltbGameId.mockReturnValue(pending.promise);
-    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
 
     hltbField().props.onChange({ target: { value: "6064" } });
     const applying = action(renderPage(), "Apply HLTB game").props.onClick();
@@ -1740,10 +1812,8 @@ describe("metadata summary and date persistence", () => {
 
   it("keeps newer HLTB typing while an earlier check is pending", async () => {
     const pending = deferred<{ found: true; game_id: number; game_name: string }>();
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata());
     backend.checkHltbGameId.mockReturnValue(pending.promise);
-    const hltbField = () => walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
 
     hltbField().props.onChange({ target: { value: "6064" } });
     const applying = action(renderPage(), "Apply HLTB game").props.onClick();
@@ -1757,10 +1827,7 @@ describe("metadata summary and date persistence", () => {
   });
   it("does not carry an unsaved HLTB draft into another game", () => {
     effects.enabled = true;
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
-    const hltbField = () =>
-      walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
+    hydrateMetadata(makeMetadata());
 
     hltbField().props.onChange({ target: { value: "6064" } });
     expect(hltbField().props.value).toBe("6064");
@@ -1777,21 +1844,19 @@ describe("metadata summary and date persistence", () => {
     const pendingSave = deferred<MetadataData>();
     const saved = makeMetadata({ hltb_game_id: 6064, title: "Saved title" });
     route.appid = "100";
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
-    const current = state.values[0];
+    const current = makeMetadata();
+    hydrateMetadata(current);
     backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 6064, game_name: "Minecraft" });
     backend.saveMetadata.mockReturnValueOnce(pendingSave.promise);
-    const hltbField = () =>
-      walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0];
 
     hltbField().props.onChange({ target: { value: "6064" } });
-    const saving = saveButton(renderPage()).props.onClick();
+    const save = saveButton(renderPage());
+    expect(save.props.disabled).toBe(false);
+    save.props.onClick();
     await flushAsyncWork();
     expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.objectContaining({ hltb_game_id: 6064 }));
     hltbField().props.onChange({ target: { value: "9999" } });
     pendingSave.resolve(saved);
-    await saving;
     await flushAsyncWork();
 
     expect(hltbField().props.value).toBe("9999");
@@ -1799,43 +1864,42 @@ describe("metadata summary and date persistence", () => {
   });
   it("aborts a Save whose HLTB check resolves after a newer edit", async () => {
     const pending = deferred<{ found: true; game_id: number; game_name: string }>();
-    state.values[0] = makeMetadata({ title: "Stored title" });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ title: "Stored title" }));
     backend.checkHltbGameId.mockReturnValue(pending.promise);
 
-    walk(walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0], node => node.type === "TextField")[0]
-      .props.onChange({ target: { value: "6064" } });
-    const saving = saveButton(renderPage()).props.onClick();
+    hltbField().props.onChange({ target: { value: "6064" } });
+    const save = saveButton(renderPage());
+    expect(save.props.disabled).toBe(false);
+    save.props.onClick();
     await flushAsyncWork();
-    walk(renderPage(), node => node.type === "TextField")[1]
-      .props.onChange({ target: { value: "Newer title" } });
+    expect(backend.checkHltbGameId).toHaveBeenCalledWith(6064);
+    editTitle(openPage("Details"), "Newer title");
     pending.resolve({ found: true, game_id: 6064, game_name: "Minecraft" });
-    await expect(saving).resolves.toBe(false);
+    await flushAsyncWork();
 
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+    expect(textField(renderPage(), "Title").props.value).toBe("Newer title");
   });
   it("shows the automatically found HLTB game without saving it as a choice", async () => {
-    state.values[0] = makeMetadata();
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata());
+    editTitle(renderPage(), "Edited title");
     hltbMatch.entry = {
       status: "matched", hltb_id: 6064, game_name: "Minecraft", stats: null,
       steam_appid_used: null, title_used: "Minecraft Bedrock", pinned_id_used: null, fetched_at: 1,
     };
-    const section = walk(renderPage(), node => node.props?.title === "HowLongToBeat game")[0];
-    expect(walk(section, node => node.type === "TextField")[0].props.value).toBe("6064");
-    expect(text(section)).toContain("Minecraft");
-    await saveButton(renderPage()).props.onClick();
+    expect(hltbField().props.value).toBe("6064");
+    expect(text(renderPage())).toContain("Minecraft");
+    await clickSave();
     expect(backend.saveMetadata.mock.calls[0][1].hltb_game_id).toBeUndefined();
     hltbMatch.entry = null;
   });
   it.each([null, "NativeTextarea"])("saves manual text and clearing in both fields through %s", async (component) => {
     textarea.component = component;
-    state.values[0] = makeMetadata({ description: "Long", short_description: "Short" });
-    state.values[14] = 0;
+    hydrateMetadata(makeMetadata({ description: "Long", short_description: "Short" }));
     for (const input of ["Fly <pilot>\n\nLand", ""]) {
       walk(renderPage(), node => node.type === (component || "textarea"))[0].props.onChange({ target: { value: input } });
-      await saveButton(renderPage()).props.onClick();
+      await clickSave();
       expect(backend.saveMetadata.mock.calls[backend.saveMetadata.mock.calls.length - 1]?.[1]).toMatchObject({ description: input, short_description: input });
     }
     textarea.component = null;
@@ -1868,7 +1932,7 @@ describe("Steam-match picker application", () => {
       steam_store_name: "New Steam Name",
     }));
 
-    await picker(renderPage()).props.onApply(15200);
+    await picker(openPage("Steam Match")).props.onApply(15200);
 
     // The preview is in the form, but only Save stores it.
     expect(state.values[0].steam_appid).toBe(15200);
@@ -1881,8 +1945,8 @@ describe("Steam-match picker application", () => {
     configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
     state.values[8] = "620";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
-    const applying = picker(renderPage()).props.onApply(400);
-    walk(renderPage(), (node) => node.type === "textarea")[0]
+    const applying = picker(openPage("Steam Match")).props.onApply(400);
+    walk(openPage("Details"), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My edit during the request" } });
     pendingPreview.resolve(makeMetadata({
       title: "Portal", steam_appid: 400, steam_store_name: "Portal",
@@ -1907,7 +1971,7 @@ describe("Steam-match picker application", () => {
     expect(steam.setShortcutNameAndWait).not.toHaveBeenCalled();
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
     expect(backend.savePreviewedMetadata).toHaveBeenCalledWith(100, expect.objectContaining({
       steam_appid: 400,
       description: "My edit during the request",
@@ -1915,7 +1979,7 @@ describe("Steam-match picker application", () => {
   });
 
   it("rejects a retired picker callback after visiting another game and returning", async () => {
-    const retired = picker(renderPage()).props.onApply;
+    const retired = picker(openPage("Steam Match")).props.onApply;
     route.appid = "101";
     renderPage();
     route.appid = "100";
@@ -1945,12 +2009,7 @@ describe("Steam-match picker application", () => {
       steam_appid: 15100,
       steam_store_name: "Steam Name",
     }));
-    // `walk` skips nested arrays such as `results.map(...)`; search them here.
-    const find = (node: any): any => Array.isArray(node) ? node.map(find).find(Boolean)
-      : node && typeof node === "object" ? (String(node.props?.className ?? "").includes("decky-metadata-editor__result")
-        ? node : find(node.props?.children)) : undefined;
-    const result = find(renderPage());
-    await result.props.onClick();
+    action(renderPage(), "Hades").props.onClick();
     await flushAsyncWork();
 
     expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(
@@ -1979,7 +2038,7 @@ describe("Steam information toggles", () => {
 
   it("labels each toggle, in StoreCategory order", () => {
     // JS orders numeric keys ascending, so this is the display order too.
-    const labels = walk(renderPage(), (node) => node.type === "ToggleField")
+    const labels = walk(openPage("Store Categories"), (node) => node.type === "ToggleField")
       .map((node) => node.props.label);
     expect(labels).toEqual([
       "Multiplayer",
@@ -2019,26 +2078,31 @@ describe("Draft field markers and editor actions", () => {
     route.appid = "100";
   });
 
-  it("labels Save with the changed-field count and disables it when nothing changed", () => {
+  it("marks only Details dirty and counts the edited Title in Save", () => {
     configureShortcutPanel();
 
-    expect(text(saveButton(renderPage()))).toBe("Save");
-    expect(saveButton(renderPage()).props.disabled).toBe(true);
+    const clean = renderPage();
+    expect(dirtyPageIds(clean)).toEqual([]);
+    expect(text(saveButton(clean))).toBe("Save");
+    expect(saveButton(clean).props.disabled).toBe(true);
 
-    labeledInput(renderPage(), "Title").props.onChange({ target: { value: "Edited title" } });
+    editTitle(clean, "Edited title");
     const edited = renderPage();
+    expect(dirtyPageIds(edited)).toEqual(["details"]);
     expect(text(saveButton(edited))).toBe("Save (1)");
     expect(saveButton(edited).props.disabled).toBe(false);
 
-    labeledInput(edited, "Title").props.onChange({ target: { value: "Shortcut" } });
-    expect(text(saveButton(renderPage()))).toBe("Save");
-    expect(saveButton(renderPage()).props.disabled).toBe(true);
+    editTitle(edited, "Shortcut");
+    const restored = renderPage();
+    expect(dirtyPageIds(restored)).toEqual([]);
+    expect(text(saveButton(restored))).toBe("Save");
+    expect(saveButton(restored).props.disabled).toBe(true);
   });
 
   it("marks a user-edited field as Edited", () => {
     configureShortcutPanel();
 
-    labeledInput(renderPage(), "Title").props.onChange({ target: { value: "Edited title" } });
+    editTitle(renderPage(), "Edited title");
 
     const label = walk(renderPage(), (node) => node.type === "label" && text(node).startsWith("Title"))[0];
     expect(text(label)).toContain("Edited");
@@ -2055,9 +2119,9 @@ describe("Draft field markers and editor actions", () => {
       short_description: "Steam description",
     }));
 
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
+    await applySteamAppId();
 
-    const previewed = walk(renderPage(), (node) => node.type === "label" && text(node).startsWith("Description"))[0];
+    const previewed = walk(openPage("Details"), (node) => node.type === "label" && text(node).startsWith("Description"))[0];
     expect(text(previewed)).toContain("From Steam, not saved");
     expect(previewed.props.style).toMatchObject({ color: "#f59e0b" });
 
@@ -2068,18 +2132,41 @@ describe("Draft field markers and editor actions", () => {
     expect(text(edited)).not.toContain("From Steam");
   });
 
-  it("shows the Steam-data warning and Save (1) when only hidden Steam data changed", async () => {
+  it("loads a matched shortcut from Steam and marks only Steam Match dirty without saving", async () => {
     configureShortcutPanel();
-    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
+    const pending = deferred<MetadataData>();
+    backend.previewSteamMetadata.mockReturnValue(pending.promise);
+
+    const steamMatch = openPage("Steam Match");
+    const load = action(steamMatch, "Load from Steam");
+    expect(load.props.disabled).toBe(false);
+    expect(dirtyPageIds(steamMatch)).toEqual([]);
+    load.props.onClick();
+
+    const busy = action(renderPage(), "Load from Steam (Updating)");
+    expect(busy.props.disabled).toBe(true);
+    busy.props.onClick();
+    pending.resolve(makeMetadata({
       steam_appid: 15100,
       steam_store_name: "Steam Name",
       steam_news: [{ id: "1", title: "News", url: "https://example.com/news", date: 1, contents: "" }],
     }));
 
-    openMoreMenu(renderPage())[0].props.onSelected();
+    // Load updates the draft, not the stored record or the live metadata cache.
     await flushAsyncWork();
+    expect(backend.previewSteamMetadata).toHaveBeenCalledTimes(1);
+    expect(backend.previewSteamMetadata).toHaveBeenCalledWith(
+      expect.objectContaining({ steam_appid: 15100 }),
+      "english",
+    );
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+    expect(backend.enrichSteamApp).not.toHaveBeenCalled();
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
 
     const page = renderPage();
+    expect(dirtyPageIds(page)).toEqual(["steam-match"]);
+    expect(action(page, "Load from Steam").props.disabled).toBe(false);
     expect(text(page)).toContain("Steam data not shown in the form");
     expect(text(saveButton(page))).toBe("Save (1)");
   });
@@ -2092,11 +2179,11 @@ describe("Draft field markers and editor actions", () => {
       description: "Steam description",
       short_description: "Steam description",
     }));
-    await action(renderPage(), "Apply Steam App ID").props.onClick();
-    expect(text(renderPage())).toContain("From Steam, not saved");
+    await applySteamAppId();
+    expect(text(openPage("Details"))).toContain("From Steam, not saved");
 
     backend.savePreviewedMetadata.mockImplementation(async (_id, value) => value);
-    await saveButton(renderPage()).props.onClick();
+    await clickSave();
 
     const page = renderPage();
     expect(text(page)).not.toContain("From Steam, not saved");
@@ -2105,46 +2192,68 @@ describe("Draft field markers and editor actions", () => {
     expect(saveButton(page).props.disabled).toBe(true);
   });
 
-  it("opens the more menu for refresh and confirms removal destructively", async () => {
-    configureShortcutPanel();
+  it.each([
+    { nonSteam: true, match: null, label: "Load from Steam (No Steam match)" },
+    { nonSteam: false, match: 15100, label: "Load from Steam (Not available for Steam games)" },
+  ])("disables $label", async ({ nonSteam, match, label }) => {
+    steam.isNonSteamApp.mockReturnValue(nonSteam);
+    configureShortcutPanel({ metadata: { steam_appid: match } });
 
-    const items = openMoreMenu(renderPage());
-    expect(ui.showContextMenu).toHaveBeenCalledTimes(1);
-    expect(ui.showContextMenu.mock.calls[0][1]).toBe("more-button");
-    expect(items).toHaveLength(2);
-
-    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({
-      steam_appid: 15100,
-      steam_store_name: "Steam Name",
-    }));
-    items[0].props.onSelected();
+    const load = action(openPage("Steam Match"), label);
+    expect(load.props.disabled).toBe(true);
+    load.props.onClick();
     await flushAsyncWork();
-    expect(backend.previewSteamMetadata).toHaveBeenCalled();
+    expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+  });
 
-    items[1].props.onSelected();
-    const modal = lastCall(ui.showModal);
-    expect(modal.type).toBe("ConfirmModal");
-    expect(modal.props.bDestructiveWarning).toBe(true);
-    expect(backend.removeMetadata).not.toHaveBeenCalled();
+  it("resets the selected page to Details when the app ID changes", () => {
+    effects.enabled = true;
+    steam.appName.mockImplementation((id) => id === 200 ? "Second Game" : "Shortcut");
+    expect(layoutProps(openPage("Advanced")).page).toBe("advanced");
+    expect(effects.callbacks[1].deps).toContain(100);
 
-    modal.props.onOK();
-    await flushAsyncWork();
-    expect(backend.removeMetadata).toHaveBeenCalledWith(100);
+    route.appid = "200";
+    effects.callbacks = [];
+    renderPage();
+    const resetEntry = effects.callbacks[1];
+    expect(resetEntry.deps).toContain(200);
+    resetEntry();
+
+    const switched = renderPage();
+    expect(layoutProps(switched)).toMatchObject({ title: "Second Game", page: "details" });
+    expect(textField(switched, "Title")).toBeDefined();
   });
 
   it("saves from the controller X shortcut only when the draft changed", async () => {
     configureShortcutPanel();
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
-    expect(rootElement(renderPage()).props.onSecondaryActionDescription).toBe("Save");
+    expect(renderPage().props.onSecondaryActionDescription).toBe("Save");
 
-    rootElement(renderPage()).props.onSecondaryButton();
+    renderPage().props.onSecondaryButton();
     await flushAsyncWork();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
 
-    labeledInput(renderPage(), "Title").props.onChange({ target: { value: "Edited title" } });
-    rootElement(renderPage()).props.onSecondaryButton();
+    editTitle(renderPage(), "Edited title");
+    const edited = renderPage();
+    expect(edited.props.onSecondaryActionDescription).toBe("Save (1)");
+    edited.props.onSecondaryButton();
     await flushAsyncWork();
     expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.any(Object));
+  });
+  it("keeps Steam games unsavable after editing Title, including the controller X shortcut", async () => {
+    steam.isNonSteamApp.mockReturnValue(false);
+    steam.getOverview.mockReturnValue({ app_type: 1, BIsShortcut: () => false });
+    configureShortcutPanel();
+
+    editTitle(renderPage(), "Edited title");
+    const edited = renderPage();
+    expect(layoutProps(edited).saveDisabled).toBe(true);
+
+    edited.props.onSecondaryButton();
+    await flushAsyncWork();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
   });
 });
 
@@ -2170,26 +2279,33 @@ describe("Leaving the editor with a draft", () => {
     route.appid = "100";
   });
 
-  const done = (page: unknown) => action(page, "Done");
+  const pressB = () => renderPage().props.onCancelButton();
   const leavePrompt = () => lastCall(ui.showModal);
-  const editTitle = (page: unknown, title: string) =>
-    labeledInput(page, "Title").props.onChange({ target: { value: title } });
 
-  it("leaves a clean form at once", () => {
-    done(renderPage()).props.onClick();
+  it("leaves a clean form at once on B", () => {
+    pressB();
 
     expect(ui.showModal).not.toHaveBeenCalled();
     expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
   });
 
-  it("asks before dropping a draft and leaves Cancel inert", () => {
+  it("groups draft fields by page when B opens the prompt and leaves Cancel inert", () => {
     configureShortcutPanel();
-    editTitle(renderPage(), "Edited title");
+    const details = renderPage();
+    editTitle(details, "Edited title");
+    walk(details, (node) => node.type === "textarea")[0]
+      .props.onChange({ target: { value: "Edited description" } });
+    textField(openPage("Steam Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
 
-    done(renderPage()).props.onClick();
+    pressB();
 
     const modal = leavePrompt();
     expect(modal.type).toBe("ConfirmModal");
+    expect(modal.props.strTitle).toBe("Save changes?");
+    expect(walk(modal, (node) => node.type === "li").map(text)).toEqual([
+      "Details: Title, Description",
+      "Steam Match: Steam App ID",
+    ]);
     expect(modal.props.strOKButtonText).toBe("Save");
     expect(modal.props.strMiddleButtonText).toBe("Discard");
     expect(modal.props.strCancelButtonText).toBe("Cancel");
@@ -2203,7 +2319,7 @@ describe("Leaving the editor with a draft", () => {
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
     editTitle(renderPage(), "Edited title");
 
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onOK();
     await flushAsyncWork();
 
@@ -2219,7 +2335,7 @@ describe("Leaving the editor with a draft", () => {
     backend.saveMetadata.mockRejectedValue(new Error("disk full"));
     editTitle(renderPage(), "Edited title");
 
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onOK();
     await flushAsyncWork();
 
@@ -2243,7 +2359,7 @@ describe("Leaving the editor with a draft", () => {
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
 
     editTitle(renderPage(), "Edited title");
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onOK();
     await flushAsyncWork();
 
@@ -2256,7 +2372,7 @@ describe("Leaving the editor with a draft", () => {
     configureShortcutPanel();
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
     editTitle(renderPage(), "Edited title");
-    done(renderPage()).props.onClick();
+    pressB();
     // A preview that resolves while the prompt is open changes the draft after it opened.
     editTitle(renderPage(), "Newer title");
     renderPage();
@@ -2274,7 +2390,7 @@ describe("Leaving the editor with a draft", () => {
     configureShortcutPanel();
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
     editTitle(renderPage(), "Edited title");
-    done(renderPage()).props.onClick();
+    pressB();
     const prompt = leavePrompt();
 
     route.appid = "200";
@@ -2294,7 +2410,7 @@ describe("Leaving the editor with a draft", () => {
     configureShortcutPanel();
     backend.saveMetadata.mockImplementation(async (_id, value) => value);
     editTitle(renderPage(), "Edited title");
-    done(renderPage()).props.onClick();
+    pressB();
     const prompt = leavePrompt();
 
     (effects.callbacks[effects.callbacks.length - 1]() as unknown as () => void)();
@@ -2311,7 +2427,7 @@ describe("Leaving the editor with a draft", () => {
     backend.saveMetadata.mockReturnValue(pending.promise);
     editTitle(renderPage(), "Edited title");
 
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onOK();
     steam.currentRoutePath.mockImplementation(() => "/routes/library/home");
     pending.resolve(makeMetadata({
@@ -2332,7 +2448,7 @@ describe("Leaving the editor with a draft", () => {
     backend.saveMetadata.mockReturnValue(pending.promise);
     editTitle(renderPage(), "Edited title");
 
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onOK();
     // The last recorded effect is this editor's unmount cleanup.
     (effects.callbacks[effects.callbacks.length - 1]() as unknown as () => void)();
@@ -2350,22 +2466,10 @@ describe("Leaving the editor with a draft", () => {
     configureShortcutPanel();
     editTitle(renderPage(), "Edited title");
 
-    done(renderPage()).props.onClick();
+    pressB();
     leavePrompt().props.onMiddleButton();
 
     expect(backend.saveMetadata).not.toHaveBeenCalled();
-    expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
-  });
-
-  it("treats the controller B button like Done", () => {
-    configureShortcutPanel();
-    rootElement(renderPage()).props.onCancelButton();
-    expect(ui.showModal).not.toHaveBeenCalled();
-    expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
-
-    editTitle(renderPage(), "Edited title");
-    rootElement(renderPage()).props.onCancelButton();
-    expect(leavePrompt().type).toBe("ConfirmModal");
     expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
   });
 
@@ -2378,7 +2482,7 @@ describe("Leaving the editor with a draft", () => {
     effects.callbacks[0]();
 
     editTitle(renderPage(), "Typed before load");
-    done(renderPage()).props.onClick();
+    pressB();
 
     expect(leavePrompt().type).toBe("ConfirmModal");
     expect(Navigation.NavigateBack).not.toHaveBeenCalled();
@@ -2391,7 +2495,7 @@ describe("Leaving the editor with a draft", () => {
 
     renderPage();
     effects.callbacks[0]();
-    done(renderPage()).props.onClick();
+    pressB();
 
     expect(ui.showModal).not.toHaveBeenCalled();
     expect(Navigation.NavigateBack).toHaveBeenCalledTimes(1);
@@ -2399,10 +2503,11 @@ describe("Leaving the editor with a draft", () => {
 
   it("marks the compatibility status Edited until its saved value returns", () => {
     configureShortcutPanel();
-    expect(text(saveButton(renderPage()))).toBe("Save");
-    expect(text(renderPage())).not.toContain("Edited");
+    const initial = openPage("Compatibility");
+    expect(text(saveButton(initial))).toBe("Save");
+    expect(text(initial)).not.toContain("Edited");
 
-    dropdown(renderPage()).props.onChange({ data: 2 });
+    dropdown(initial).props.onChange({ data: 2 });
     const edited = renderPage();
     expect(text(edited)).toContain("Edited");
     expect(text(saveButton(edited))).toBe("Save (1)");

@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} h",
-    "unknown": "Okänt",
     "hours_one": "{{value}} timme",
-    "hours_other": "{{value}} timmar"
+    "hours_other": "{{value}} timmar",
+    "hoursShort": "{{value}} h",
+    "unknown": "Okänt"
   },
   "backend": {
     "progress": {
@@ -81,7 +81,7 @@
     },
     "details": "Detaljer",
     "search": {
-      "searching": "Söker…",
+      "searching": "Söker...",
       "action": "Sök på HLTB",
       "noGames": "HowLongToBeat hittade inga spel.",
       "mainStory": "Huvudhistoria {{hours}}",
@@ -143,8 +143,8 @@
       "allStylesStatLabel": "Växla statistiken ”alla spelstilar”",
       "allStylesStatDescription": "Visar/döljer bara statistiken för alla spelstilar",
       "clearCacheButton": "Rensa HLTB-cachen",
-      "clearingButton": "Rensar…",
-      "cacheClearing": "Rensar HLTB-cachen…",
+      "clearingButton": "Rensar...",
+      "cacheClearing": "Rensar HLTB-cachen...",
       "cacheCleared": "HLTB-cachen har rensats. Tiderna läses in igen när du öppnar ett spel.",
       "cacheFailed": "HLTB-cachen kunde inte rensas.",
       "customizeLabel": "Anpassa utseende",
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Nedre kantlinje",
       "bottomBorderDescription": "Visar en avdelare under HLTB-raden",
       "resetAppearance": "Återställ utseendet",
-      "loadingPreferences": "Läser in HLTB-inställningar…"
+      "loadingPreferences": "Läser in HLTB-inställningar..."
     },
     "trailers": {
       "title": "Speltrailers",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Nedre vänster",
       "positionTopLeft": "Övre vänster",
       "positionTopRight": "Övre höger",
-      "loadingPreferences": "Läser in ProtonDB-märkesinställningar…",
+      "loadingPreferences": "Läser in ProtonDB-märkesinställningar...",
       "footnote": "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Kompatibilitetsstatus",
       "defaultStatus": "Standardkompatibilitetsstatus",
       "applyDefaultTo": "Använd standard för",
-      "categoryAutomatic": "Automatisk – använd matchad Steam-status",
+      "categoryAutomatic": "Automatisk",
       "categoryVerified": "Verifierad",
       "categoryPlayable": "Spelbar",
       "categoryUnsupported": "Stöds inte",
@@ -243,12 +243,12 @@
       "saved": "Sparad metadata:",
       "missing": "Saknad metadata:",
       "refresh": "Uppdatera metadata",
-      "refreshing": "Uppdaterar…",
-      "refreshingStatus": "Uppdaterar metadata…",
+      "refreshing": "Uppdaterar...",
+      "refreshingStatus": "Uppdaterar metadata...",
       "refreshDescription": "Hittar och sparar metadata för upptäckta icke-Steam-spel som ännu inte har en matchning.",
       "cacheHeading": "Metadatacache",
       "clearCache": "Rensa cachen",
-      "clearing": "Rensar…",
+      "clearing": "Rensar...",
       "clearCacheDescription": "Rensar sparade matchningar och metadata så att spel kan matchas igen.",
       "delistedHeading": "Borttagna Steam-spel",
       "refreshDelisted": "Uppdatera borttagna spel"
@@ -263,7 +263,7 @@
       "autoCheckDescription": "Söker i bakgrunden medan plugin-programmet är inläst.",
       "status": "Status",
       "lastChecked": "Senast kontrollerad: {{date}}",
-      "checking": "Kontrollerar…",
+      "checking": "Kontrollerar...",
       "checkInterrupted": "Kontrollen avbröts efter {{seconds}} sekunder",
       "checkFailed": "Det gick inte att kontrollera",
       "upToDate": "Uppdaterad",
@@ -280,8 +280,8 @@
       "actionRevertToStable": "Återgå till stabil v{{version}}",
       "actionInstallDevelopment": "Installera utvecklingsbuild v{{version}}",
       "actionUpdate": "Uppdatera till v{{version}}",
-      "waitingForDecky": "Väntar på Decky…",
-      "preparing": "Förbereder…",
+      "waitingForDecky": "Väntar på Decky...",
+      "preparing": "Förbereder...",
       "localBuildOnlyStable": "Lokala builds kan bara självuppdatera till en stabil utgåva. Installera den här utvecklingsutgåvan manuellt från GitHub Releases.",
       "manualInstallUnavailable": "Automatisk installation är inte tillgänglig i den här Decky-miljön. Installera den här utgåvan manuellt från GitHub Releases.",
       "viewReleaseNotes": "Visa versionsinformation",
@@ -299,7 +299,7 @@
     },
     "logs": {
       "title": "Loggar",
-      "loading": "Läser in…",
+      "loading": "Läser in...",
       "view": "Visa loggar",
       "debugLogging": "Felsökningsloggning",
       "debugLoggingDescription": "Aktiverar utförlig loggning för felsökning.",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Ändra metadata…"
+    "editMetadata": "Redigera metadata..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} är aktiverat i Decky Loader. Inaktivera det plugin-programmet för att använda {{feature}} här.",
@@ -427,16 +427,27 @@
     "save": "Spara",
     "saveCount": "Spara ({{count}})",
     "removeMetadata": "Ta bort metadata",
-    "done": "Klar",
-    "moreOptions": "Fler alternativ",
-    "moreMenuTitle": "Metadata",
-    "refreshFromSteam": "Uppdatera från Steam",
+    "page": {
+      "details": "Detaljer",
+      "steamMatch": "Steam-matchning",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Kompatibilitet",
+      "storeCategories": "Butikskategorier",
+      "shortcutName": "Genvägens namn",
+      "advanced": "Avancerat"
+    },
+    "currentMatch": "Aktuell matchning",
+    "loadFromSteam": "Läs in från Steam",
+    "loadFromSteamSteamGame": "Läs in från Steam (inte tillgängligt för Steam-spel)",
+    "loadFromSteamNoMatch": "Läs in från Steam (ingen Steam-matchning)",
+    "loadFromSteamBusy": "Läs in från Steam (uppdatering pågår)",
     "fieldEdited": "Ändrad",
     "fieldFromSteam": "Från Steam, inte sparat",
     "steamDataChanged": "Steam-data som inte visas i formuläret (skärmbilder, nyheter, kompatibilitet) har ändrats och är inte sparad.",
     "unsaved": {
       "title": "Spara ändringar?",
       "body": "Du har osparade ändringar i spelets metadata.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Släng",
       "cancel": "Avbryt"
     },
@@ -447,10 +458,12 @@
     },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
     "searchIgn": "Sök IGN-metadata",
+    "ign": {
+      "gameName": "Spelets namn"
+    },
     "search": "Sök",
-    "searching": "Söker…",
+    "searching": "Söker...",
     "noResults": "Inga resultat än.",
-    "source": "Källa",
     "field": {
       "title": "Titel",
       "description": "Beskrivning",
@@ -462,6 +475,7 @@
       "steamData": "Steam-data som inte visas i formuläret"
     },
     "compat": {
+      "statusLabel": "Status",
       "useGlobalDefault": "Använd global standard",
       "followValve": "Följ Valve",
       "verified": "Verifierad",
@@ -477,9 +491,8 @@
       "useGlobalDefaultFromValve": "Använd global standard ({{category}} – från Valve)"
     },
     "compatibilityStatus": "Kompatibilitetsstatus",
-    "compatibilityHelp": "Använd global standard ärver inställningen från snabbmenyn. Följ Valve ignorerar den och behåller den ursprungliga Steam-statusen när Valve-data inte är tillgängliga.",
+    "compatibilityHelp": "Automatisk använder statusen för varje spels matchning i Steam. Använd global standard ärver den inställningen för det här spelet. Följ Valve använder alltid Valves status. Om data från Valve saknas behåller Följ Valve den ursprungliga Steam-statusen.",
     "compatibilityChoices": "Manuella kategorier och standardkategorier är dina val, inte Valves certifiering eller ett resultat för emulatorprestanda.",
-    "steamInfoFields": "Steam-informationsfält",
     "hltbGame": "HowLongToBeat-spel",
     "hltbHelp": "Sök på HowLongToBeat eller klistra in ett spelnummer eller en länk till spelsidan för att välja tiderna som visas för det här spelet. Lämna tomt för att matcha automatiskt.",
     "hltbCurrentChosen": "Aktuellt spel: {{name}} (valt)",
@@ -488,12 +501,12 @@
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Klistra in ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL. Lämna tomt för att rensa den fästa Steam-matchningen.",
     "steamAppIdApply": "Tillämpa Steam-app-ID",
-    "shortcutName": "Genvägens namn",
     "shortcut": {
+      "immediateNotice": "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
       "current": "Aktuellt: {{name}}",
       "missingName": "Steam angav inget inbyggt genvägsnamn",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Läser in Steam-namnet…",
+      "loadingSteamName": "Läser in Steam-namnet...",
       "noOfficialName": "Steam returnerade inget officiellt namn",
       "managementUnavailable": "Hantering av genvägsnamn är inte tillgänglig",
       "apiUnavailable": "Steams inbyggda API för genvägsnamn är inte tillgängligt",
@@ -517,24 +530,22 @@
       "hltbInvalidBody": "Ange ett HowLongToBeat-spelnummer eller en länk till spelsidan.",
       "steamAppIdInvalidTitle": "Ogiltigt Steam-app-ID",
       "steamAppIdInvalidBody": "Ange ett Steam-app-ID, butiks-URL, community-URL eller SteamDB-URL. Lämna fältet tomt för att ta bort matchningen.",
+      "hltbNotFoundTitle": "Hittades inte",
+      "hltbNotFoundBody": "HowLongToBeat har inget spel med det numret.",
+      "notApplicableTitle": "Ej tillämpligt",
+      "notLoadedTitle": "Inte inläst",
+      "notLoadedBody": "Sparad metadata har inte lästs in än.",
+      "metadataSaved": "Metadata har sparats",
+      "saveFailedTitle": "Det gick inte att spara",
+      "hltbCleared": "HLTB-spelet har rensats",
+      "hltbGame": "HLTB-spel: {{name}}",
       "hltbDraftBody": "Spara sparar det här valet.",
       "detailsLoadedTitle": "Detaljer inlästa",
       "steamPreviewBody": "Steam-detaljer är inlästa i det här formuläret. Spara sparar dem.",
       "ignPreviewBody": "IGN-detaljer är inlästa i det här formuläret. Spara sparar dem.",
       "steamAppIdNotAppliedTitle": "Steam-app-ID:t tillämpades inte",
       "steamAppIdNotAppliedBody": "Välj ”Tillämpa Steam-app-ID” för att läsa in den nya matchningen innan du sparar.",
-      "hltbNotFoundTitle": "Hittades inte",
-      "hltbNotFoundBody": "HowLongToBeat har inget spel med det numret.",
-      "notApplicableTitle": "Ej tillämpligt",
-      "notLoadedTitle": "Inte inläst",
-      "notLoadedBody": "Sparad metadata har inte lästs in än.",
-      "savedTitle": "Sparat",
-      "metadataSaved": "Metadata har sparats",
-      "saveFailedTitle": "Det gick inte att spara",
-      "hltbCleared": "HLTB-spelet har rensats",
-      "hltbGame": "HLTB-spel: {{name}}",
       "fetchFailedTitle": "Det gick inte att hämta",
-      "removedTitle": "Borttaget",
       "removedBody": "Metadata har tagits bort",
       "removeFailedTitle": "Det gick inte att ta bort",
       "shortcutNameChangedTitle": "Genvägens namn ändrades",
@@ -552,23 +563,21 @@
       "nameHistoryNotClearedTitle": "Sparad namnhistorik rensades inte"
     },
     "steamTextLanguage": "Språk för Steam-text: {{language}}",
-    "fetchSteamText": "Hämta Steam-text på {{language}}",
+    "fetchSteamText": "Läs in Steam-text på {{language}}",
     "steamTextUnavailable": "Steam returnerade ingen text för det här spelet."
   },
   "matchPicker": {
-    "title": "Hitta en Steam-matchning",
     "help": "Sök på Steam, välj ett resultat för att kontrollera detaljerna och välj sedan Använd den här Steam-matchningen. Bläddring ändrar inte ditt spel.",
-    "currentAppId": "Aktuellt Steam-app-ID: {{appId}}",
     "searchAriaLabel": "Steam-spelsökning",
     "search": "Sök på Steam",
-    "searching": "Söker på Steam…",
+    "searching": "Söker på Steam...",
     "idle": "Ange ett spelnamn för att hitta Steam-matchningar.",
     "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
     "appId": "Steam-app-ID: {{appId}}",
     "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning",
     "appIdSelected": "Steam-app-ID: {{appId}} · Valt",
     "appIdCurrentSelected": "Steam-app-ID: {{appId}} · Aktuell matchning · Valt",
-    "loadingDetails": "Läser in Steam-detaljer…",
+    "loadingDetails": "Läser in Steam-detaljer...",
     "artworkAlt": "Steam-grafik för {{title}}",
     "developer": "Utvecklare: {{names}}",
     "developerUnavailable": "Utvecklare inte tillgänglig",

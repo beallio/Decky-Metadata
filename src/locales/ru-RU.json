@@ -1,11 +1,11 @@
 {
   "common": {
-    "hoursShort": "{{value}} ч",
-    "unknown": "Неизвестно",
     "hours_one": "{{value}} час",
     "hours_few": "{{value}} часа",
     "hours_many": "{{value}} часов",
-    "hours_other": "{{value}} часа"
+    "hours_other": "{{value}} часа",
+    "hoursShort": "{{value}} ч",
+    "unknown": "Неизвестно"
   },
   "backend": {
     "progress": {
@@ -83,7 +83,7 @@
     },
     "details": "Подробнее",
     "search": {
-      "searching": "Поиск…",
+      "searching": "Поиск...",
       "action": "Искать в HLTB",
       "noGames": "HowLongToBeat не нашёл игр.",
       "mainStory": "Основной сюжет {{hours}}",
@@ -145,8 +145,8 @@
       "allStylesStatLabel": "Переключить показатель «все стили»",
       "allStylesStatDescription": "Показывает/скрывает только показатель со всеми стилями",
       "clearCacheButton": "Очистить кэш HLTB",
-      "clearingButton": "Очистка…",
-      "cacheClearing": "Очистка кэша HLTB…",
+      "clearingButton": "Очистка...",
+      "cacheClearing": "Очистка кэша HLTB...",
       "cacheCleared": "Кэш HLTB очищен. Время загрузится снова при открытии игры.",
       "cacheFailed": "Не удалось очистить кэш HLTB.",
       "customizeLabel": "Настроить внешний вид",
@@ -160,7 +160,7 @@
       "bottomBorderLabel": "Нижняя граница",
       "bottomBorderDescription": "Показывает разделительную линию под панелью HLTB",
       "resetAppearance": "Сбросить внешний вид",
-      "loadingPreferences": "Загрузка настроек HLTB…"
+      "loadingPreferences": "Загрузка настроек HLTB..."
     },
     "trailers": {
       "title": "Трейлеры игр",
@@ -208,7 +208,7 @@
       "positionBottomLeft": "Снизу слева",
       "positionTopLeft": "Сверху слева",
       "positionTopRight": "Сверху справа",
-      "loadingPreferences": "Загрузка настроек значков ProtonDB…",
+      "loadingPreferences": "Загрузка настроек значков ProtonDB...",
       "footnote": "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
     },
     "miniAchievements": {
@@ -222,7 +222,7 @@
       "title": "Статус совместимости",
       "defaultStatus": "Статус совместимости по умолчанию",
       "applyDefaultTo": "Применять по умолчанию к",
-      "categoryAutomatic": "Автоматически — использовать статус Steam",
+      "categoryAutomatic": "Автоматически",
       "categoryVerified": "Полностью совместима",
       "categoryPlayable": "Можно играть",
       "categoryUnsupported": "Не поддерживается",
@@ -245,12 +245,12 @@
       "saved": "Метаданные сохранены:",
       "missing": "Нет метаданных:",
       "refresh": "Обновить метаданные",
-      "refreshing": "Обновление…",
-      "refreshingStatus": "Обновление метаданных…",
+      "refreshing": "Обновление...",
+      "refreshingStatus": "Обновление метаданных...",
       "refreshDescription": "Найти и сохранить метаданные для найденных игр вне Steam, у которых ещё нет совпадения.",
       "cacheHeading": "Кэш метаданных",
       "clearCache": "Очистить кэш",
-      "clearing": "Очистка…",
+      "clearing": "Очистка...",
       "clearCacheDescription": "Очистить сохранённые совпадения и метаданные, чтобы игры можно было сопоставить заново.",
       "delistedHeading": "Игры, удалённые из Steam",
       "refreshDelisted": "Обновить удалённые игры"
@@ -265,7 +265,7 @@
       "autoCheckDescription": "Проверяет в фоне, пока плагин загружен.",
       "status": "Состояние",
       "lastChecked": "Последняя проверка: {{date}}",
-      "checking": "Проверка…",
+      "checking": "Проверка...",
       "checkInterrupted": "Проверка прервана через {{seconds}} с",
       "checkFailed": "Не удалось проверить",
       "upToDate": "Актуальная версия",
@@ -282,8 +282,8 @@
       "actionRevertToStable": "Вернуться к стабильной v{{version}}",
       "actionInstallDevelopment": "Установить сборку для разработки v{{version}}",
       "actionUpdate": "Обновить до v{{version}}",
-      "waitingForDecky": "Ожидание Decky…",
-      "preparing": "Подготовка…",
+      "waitingForDecky": "Ожидание Decky...",
+      "preparing": "Подготовка...",
       "localBuildOnlyStable": "Локальные сборки могут самообновляться только до стабильного выпуска. Установите эту сборку для разработки вручную из GitHub Releases.",
       "manualInstallUnavailable": "Автоматическая установка недоступна в этой среде Decky. Установите этот выпуск вручную из GitHub Releases.",
       "viewReleaseNotes": "Открыть примечания к выпуску",
@@ -301,7 +301,7 @@
     },
     "logs": {
       "title": "Журналы",
-      "loading": "Загрузка…",
+      "loading": "Загрузка...",
       "view": "Открыть журналы",
       "debugLogging": "Отладочный журнал",
       "debugLoggingDescription": "Включает подробное журналирование для диагностики.",
@@ -418,7 +418,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Изменить метаданные…"
+    "editMetadata": "Редактировать метаданные..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} включён в Decky Loader. Отключите этот плагин, чтобы использовать {{feature}} здесь.",
@@ -429,16 +429,27 @@
     "save": "Сохранить",
     "saveCount": "Сохранить ({{count}})",
     "removeMetadata": "Удалить метаданные",
-    "done": "Готово",
-    "moreOptions": "Другие параметры",
-    "moreMenuTitle": "Метаданные",
-    "refreshFromSteam": "Обновить из Steam",
+    "page": {
+      "details": "Сведения",
+      "steamMatch": "Совпадение в Steam",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Совместимость",
+      "storeCategories": "Категории магазина",
+      "shortcutName": "Название ярлыка",
+      "advanced": "Дополнительно"
+    },
+    "currentMatch": "Текущее совпадение",
+    "loadFromSteam": "Загрузить из Steam",
+    "loadFromSteamSteamGame": "Загрузить из Steam (недоступно для игр Steam)",
+    "loadFromSteamNoMatch": "Загрузить из Steam (нет совпадения в Steam)",
+    "loadFromSteamBusy": "Загрузить из Steam (идёт обновление)",
     "fieldEdited": "Изменено",
     "fieldFromSteam": "Из Steam, не сохранено",
     "steamDataChanged": "Данные Steam, не показанные в форме (скриншоты, новости, совместимость), изменились и не сохранены.",
     "unsaved": {
       "title": "Сохранить изменения?",
       "body": "У вас есть несохранённые изменения метаданных этой игры.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Отбросить",
       "cancel": "Отмена"
     },
@@ -449,10 +460,12 @@
     },
     "nonSteamOnly": "Этот плагин изменяет только игры вне Steam.",
     "searchIgn": "Искать метаданные в IGN",
+    "ign": {
+      "gameName": "Название игры"
+    },
     "search": "Искать",
-    "searching": "Поиск…",
+    "searching": "Поиск...",
     "noResults": "Результатов пока нет.",
-    "source": "Источник",
     "field": {
       "title": "Название",
       "description": "Описание",
@@ -464,6 +477,7 @@
       "steamData": "Данные Steam, не показанные в форме"
     },
     "compat": {
+      "statusLabel": "Статус",
       "useGlobalDefault": "Использовать глобальное значение по умолчанию",
       "followValve": "Как у Valve",
       "verified": "Полностью совместима",
@@ -479,9 +493,8 @@
       "useGlobalDefaultFromValve": "Использовать глобальное значение по умолчанию ({{category}} — от Valve)"
     },
     "compatibilityStatus": "Статус совместимости",
-    "compatibilityHelp": "«Использовать глобальное значение по умолчанию» наследует настройку быстрого меню. «Как у Valve» игнорирует её и сохраняет исходный статус Steam, когда данные Valve недоступны.",
+    "compatibilityHelp": "В режиме «Автоматически» для каждой игры используется статус соответствующей игры в Steam. Пункт «Использовать глобальное значение по умолчанию» применяет эту настройку к данной игре. Режим «Как у Valve» всегда использует статус Valve. Если данные Valve недоступны, он сохраняет исходный статус Steam.",
     "compatibilityChoices": "Ручные категории и категории по умолчанию — ваш выбор, а не сертификация Valve или результат производительности эмулятора.",
-    "steamInfoFields": "Сведения Steam",
     "hltbGame": "Игра HowLongToBeat",
     "hltbHelp": "Найдите игру в HowLongToBeat или вставьте номер игры либо ссылку на её страницу, чтобы выбрать отображаемое для этой игры время. Оставьте пустым для автоматического сопоставления.",
     "hltbCurrentChosen": "Текущая игра: {{name}} (выбрана)",
@@ -490,12 +503,12 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставьте Steam App ID, URL магазина, URL сообщества или URL SteamDB. Оставьте пустым, чтобы снять привязанное совпадение Steam.",
     "steamAppIdApply": "Применить Steam App ID",
-    "shortcutName": "Название ярлыка",
     "shortcut": {
+      "immediateNotice": "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
       "current": "Текущее: {{name}}",
       "missingName": "Steam не предоставил штатное название ярлыка",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Загрузка названия Steam…",
+      "loadingSteamName": "Загрузка названия Steam...",
       "noOfficialName": "Steam не вернул официальное название",
       "managementUnavailable": "Управление названиями ярлыков недоступно",
       "apiUnavailable": "Штатный API названий ярлыков Steam недоступен",
@@ -519,24 +532,22 @@
       "hltbInvalidBody": "Введите номер игры HowLongToBeat или ссылку на страницу игры.",
       "steamAppIdInvalidTitle": "Неверный Steam App ID",
       "steamAppIdInvalidBody": "Введите Steam App ID, ссылку на магазин, сообщество или SteamDB. Оставьте поле пустым, чтобы снять совпадение.",
+      "hltbNotFoundTitle": "Не найдено",
+      "hltbNotFoundBody": "В HowLongToBeat нет игры с таким номером.",
+      "notApplicableTitle": "Неприменимо",
+      "notLoadedTitle": "Не загружено",
+      "notLoadedBody": "Сохранённые метаданные ещё не загружены.",
+      "metadataSaved": "Метаданные сохранены",
+      "saveFailedTitle": "Не удалось сохранить",
+      "hltbCleared": "Игра HLTB очищена",
+      "hltbGame": "Игра HLTB: {{name}}",
       "hltbDraftBody": "Нажмите «Сохранить», чтобы запомнить этот выбор.",
       "detailsLoadedTitle": "Сведения загружены",
       "steamPreviewBody": "Сведения Steam загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
       "ignPreviewBody": "Сведения IGN загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
       "steamAppIdNotAppliedTitle": "Steam App ID не применён",
       "steamAppIdNotAppliedBody": "Выберите «Применить Steam App ID», чтобы загрузить новое совпадение перед сохранением.",
-      "hltbNotFoundTitle": "Не найдено",
-      "hltbNotFoundBody": "В HowLongToBeat нет игры с таким номером.",
-      "notApplicableTitle": "Неприменимо",
-      "notLoadedTitle": "Не загружено",
-      "notLoadedBody": "Сохранённые метаданные ещё не загружены.",
-      "savedTitle": "Сохранено",
-      "metadataSaved": "Метаданные сохранены",
-      "saveFailedTitle": "Не удалось сохранить",
-      "hltbCleared": "Игра HLTB очищена",
-      "hltbGame": "Игра HLTB: {{name}}",
       "fetchFailedTitle": "Не удалось получить данные",
-      "removedTitle": "Удалено",
       "removedBody": "Метаданные удалены",
       "removeFailedTitle": "Не удалось удалить",
       "shortcutNameChangedTitle": "Название ярлыка изменено",
@@ -554,23 +565,21 @@
       "nameHistoryNotClearedTitle": "Сохранённая история названий не удалена"
     },
     "steamTextLanguage": "Язык текста Steam: {{language}}",
-    "fetchSteamText": "Загрузить текст Steam ({{language}})",
+    "fetchSteamText": "Загрузить текст Steam на языке {{language}}",
     "steamTextUnavailable": "Steam не вернул текст для этой игры."
   },
   "matchPicker": {
-    "title": "Найти совпадение в Steam",
     "help": "Найдите игру в Steam, выберите результат для проверки сведений, затем нажмите «Использовать это совпадение Steam». Просмотр не меняет вашу игру.",
-    "currentAppId": "Текущий Steam App ID: {{appId}}",
     "searchAriaLabel": "Поиск игры в Steam",
     "search": "Искать в Steam",
-    "searching": "Поиск в Steam…",
+    "searching": "Поиск в Steam...",
     "idle": "Введите название игры, чтобы найти совпадения в Steam.",
     "empty": "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · текущее совпадение",
     "appIdSelected": "Steam App ID: {{appId}} · выбрано",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · текущее совпадение · выбрано",
-    "loadingDetails": "Загрузка сведений Steam…",
+    "loadingDetails": "Загрузка сведений Steam...",
     "artworkAlt": "Арт Steam для {{title}}",
     "developer": "Разработчик: {{names}}",
     "developerUnavailable": "Разработчик недоступен",

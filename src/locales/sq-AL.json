@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} orë",
-    "unknown": "E panjohur",
     "hours_one": "{{value}} orë",
-    "hours_other": "{{value}} orë"
+    "hours_other": "{{value}} orë",
+    "hoursShort": "{{value}} orë",
+    "unknown": "E panjohur"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Kufiri i poshtëm",
       "bottomBorderDescription": "Shfaq një vijë ndarëse nën shiritin e HLTB",
       "resetAppearance": "Rivendos pamjen",
-      "loadingPreferences": "Po ngarkohen preferencat e HLTB…"
+      "loadingPreferences": "Po ngarkohen preferencat e HLTB..."
     },
     "trailers": {
       "title": "Trailerat e lojërave",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Poshtë majtas",
       "positionTopLeft": "Lart majtas",
       "positionTopRight": "Lart djathtas",
-      "loadingPreferences": "Po ngarkohen preferencat e distinktivëve ProtonDB…",
+      "loadingPreferences": "Po ngarkohen preferencat e distinktivëve ProtonDB...",
       "footnote": "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Gjendja e përputhshmërisë",
       "defaultStatus": "Gjendja e paracaktuar e përputhshmërisë",
       "applyDefaultTo": "Zbato parazgjedhjen te",
-      "categoryAutomatic": "Automatike — përdor gjendjen nga Steam",
+      "categoryAutomatic": "Automatike",
       "categoryVerified": "E verifikuar",
       "categoryPlayable": "E luajtshme",
       "categoryUnsupported": "E pambështetur",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Ndrysho metadata..."
+    "editMetadata": "Redakto metadatat..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} është aktiv në Decky Loader. Çaktivizo atë shtojcë për të përdorur {{feature}} këtu.",
@@ -426,31 +426,44 @@
   "editor": {
     "save": "Ruaj",
     "saveCount": "Ruaj ({{count}})",
-    "removeMetadata": "Hiq metadata",
-    "done": "U krye",
-    "moreOptions": "Më shumë opsione",
-    "moreMenuTitle": "Metadata",
-    "refreshFromSteam": "Përditëso nga Steam",
+    "removeMetadata": "Hiq metadatat",
+    "page": {
+      "details": "Detajet",
+      "steamMatch": "Përputhja në Steam",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Përputhshmëria",
+      "storeCategories": "Kategoritë e dyqanit",
+      "shortcutName": "Emri i shkurtores",
+      "advanced": "Të avancuara"
+    },
+    "currentMatch": "Përputhja aktuale",
+    "loadFromSteam": "Ngarko nga Steam",
+    "loadFromSteamSteamGame": "Ngarko nga Steam (nuk ofrohet për lojërat e Steam)",
+    "loadFromSteamNoMatch": "Ngarko nga Steam (pa përputhje në Steam)",
+    "loadFromSteamBusy": "Ngarko nga Steam (po përditësohet)",
     "fieldEdited": "Ndryshuar",
     "fieldFromSteam": "Nga Steam, nuk është ruajtur",
     "steamDataChanged": "Të dhënat e Steam që nuk shfaqen në formular (pamje ekrani, lajme, përputhshmëri) ndryshuan dhe nuk janë ruajtur.",
     "unsaved": {
       "title": "Të ruhen ndryshimet?",
       "body": "Ke ndryshime të pa ruajtura në metadatat e kësaj loje.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Hidh poshtë",
       "cancel": "Anulo"
     },
     "removeConfirm": {
-      "title": "Të hiqet metadata?",
+      "title": "Të hiqen metadatat?",
       "body": "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
       "cancel": "Anulo"
     },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
     "searchIgn": "Kërko metadata në IGN",
+    "ign": {
+      "gameName": "Emri i lojës"
+    },
     "search": "Kërko",
     "searching": "Po kërkohet...",
     "noResults": "Nuk ka ende rezultate.",
-    "source": "Burimi",
     "field": {
       "title": "Titulli",
       "description": "Përshkrimi",
@@ -462,6 +475,7 @@
       "steamData": "Të dhënat e Steam që nuk shfaqen në formular"
     },
     "compat": {
+      "statusLabel": "Gjendja",
       "useGlobalDefault": "Përdor parazgjedhjen globale",
       "followValve": "Ndiq Valve",
       "verified": "E verifikuar",
@@ -477,9 +491,8 @@
       "useGlobalDefaultFromValve": "Përdor parazgjedhjen globale ({{category}} — nga Valve)"
     },
     "compatibilityStatus": "Gjendja e përputhshmërisë",
-    "compatibilityHelp": "„Përdor parazgjedhjen globale“ trashëgon cilësimin e QAM. „Ndiq Valve“ e shpërfill dhe mban gjendjen origjinale në Steam kur të dhënat e Valve nuk janë të disponueshme.",
+    "compatibilityHelp": "„Automatike“ përdor për çdo lojë gjendjen e lojës përkatëse në Steam. „Përdor parazgjedhjen globale“ trashëgon atë cilësim për këtë lojë. „Ndiq Valve“ përdor gjithmonë gjendjen e përcaktuar nga Valve. Kur të dhënat e Valve nuk janë të disponueshme, „Ndiq Valve“ ruan gjendjen origjinale në Steam.",
     "compatibilityChoices": "Kategoritë manuale dhe ato të paracaktuara janë zgjedhjet e tua, jo certifikim i Valve ose rezultat i performancës së emulatorit.",
-    "steamInfoFields": "Fushat e informacionit të Steam",
     "hltbGame": "Loja në HowLongToBeat",
     "hltbHelp": "Kërko në HowLongToBeat ose ngjit një numër loje ose lidhje faqeje loje për të zgjedhur kohët që shfaqen për këtë lojë. Lëre bosh për përputhje automatike.",
     "hltbCurrentChosen": "Loja aktuale: {{name}} (e zgjedhur)",
@@ -488,8 +501,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Ngjit një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB. Lëre bosh për të pastruar përputhjen e fiksuar në Steam.",
     "steamAppIdApply": "Zbato Steam App ID",
-    "shortcutName": "Emri i shkurtores",
     "shortcut": {
+      "immediateNotice": "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
       "current": "Aktual: {{name}}",
       "missingName": "Steam nuk ekspozoi një emër shkurtoreje vendase",
       "steamName": "Steam: {{name}}",
@@ -517,24 +530,22 @@
       "hltbInvalidBody": "Shkruaj një numër loje në HowLongToBeat ose një lidhje faqeje loje.",
       "steamAppIdInvalidTitle": "Steam App ID i pavlefshëm",
       "steamAppIdInvalidBody": "Shkruaj një Steam App ID, URL dyqani, URL komuniteti ose URL SteamDB. Lëre fushën bosh për të hequr përputhjen.",
+      "hltbNotFoundTitle": "Nuk u gjet",
+      "hltbNotFoundBody": "HowLongToBeat nuk ka lojë me atë numër.",
+      "notApplicableTitle": "Nuk zbatohet",
+      "notLoadedTitle": "Nuk u ngarkua",
+      "notLoadedBody": "Metadatat e ruajtura nuk janë ngarkuar ende.",
+      "metadataSaved": "Metadata u ruajtën",
+      "saveFailedTitle": "Ruajtja dështoi",
+      "hltbCleared": "Loja e HLTB u pastrua",
+      "hltbGame": "Loja e HLTB: {{name}}",
       "hltbDraftBody": "Ruajtja e ruan këtë zgjedhje.",
       "detailsLoadedTitle": "Detajet u ngarkuan",
       "steamPreviewBody": "Detajet e Steam u ngarkuan në këtë formular. Ruajtja i ruan ato.",
       "ignPreviewBody": "Detajet e IGN u ngarkuan në këtë formular. Ruajtja i ruan ato.",
       "steamAppIdNotAppliedTitle": "Steam App ID nuk u zbatua",
       "steamAppIdNotAppliedBody": "Zgjidh «Zbato Steam App ID» për të ngarkuar përputhjen e re përpara se të ruash.",
-      "hltbNotFoundTitle": "Nuk u gjet",
-      "hltbNotFoundBody": "HowLongToBeat nuk ka lojë me atë numër.",
-      "notApplicableTitle": "Nuk zbatohet",
-      "notLoadedTitle": "Nuk u ngarkua",
-      "notLoadedBody": "Metadatat e ruajtura nuk janë ngarkuar ende.",
-      "savedTitle": "U ruajt",
-      "metadataSaved": "Metadata u ruajtën",
-      "saveFailedTitle": "Ruajtja dështoi",
-      "hltbCleared": "Loja e HLTB u pastrua",
-      "hltbGame": "Loja e HLTB: {{name}}",
       "fetchFailedTitle": "Marrja dështoi",
-      "removedTitle": "U hoq",
       "removedBody": "Metadata u hoqën",
       "removeFailedTitle": "Heqja dështoi",
       "shortcutNameChangedTitle": "Emri i shkurtores ndryshoi",
@@ -552,13 +563,11 @@
       "nameHistoryNotClearedTitle": "Historia e ruajtur e emrave nuk u pastrua"
     },
     "steamTextLanguage": "Gjuha e tekstit të Steam: {{language}}",
-    "fetchSteamText": "Merr tekstin e Steam në {{language}}",
+    "fetchSteamText": "Ngarko tekstin e Steam në {{language}}",
     "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë."
   },
   "matchPicker": {
-    "title": "Gjej një përputhje në Steam",
     "help": "Kërko në Steam, zgjidh një rezultat për të kontrolluar detajet dhe pastaj zgjidh „Përdor këtë përputhje në Steam“. Shfletimi nuk e ndryshon lojën tënde.",
-    "currentAppId": "Steam App ID aktual: {{appId}}",
     "searchAriaLabel": "Kërkimi i lojërave në Steam",
     "search": "Kërko në Steam",
     "searching": "Po kërkohet në Steam...",

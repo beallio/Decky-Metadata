@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} u",
-    "unknown": "Onbekend",
     "hours_one": "{{value}} uur",
-    "hours_other": "{{value}} uur"
+    "hours_other": "{{value}} uur",
+    "hoursShort": "{{value}} u",
+    "unknown": "Onbekend"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Onderrand",
       "bottomBorderDescription": "Toont een scheidingslijn onder de HLTB-balk",
       "resetAppearance": "Weergave resetten",
-      "loadingPreferences": "HLTB-voorkeuren laden…"
+      "loadingPreferences": "HLTB-voorkeuren laden..."
     },
     "trailers": {
       "title": "Gametrailers",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Linksonder",
       "positionTopLeft": "Linksboven",
       "positionTopRight": "Rechtsboven",
-      "loadingPreferences": "ProtonDB-badgevoorkeuren laden…",
+      "loadingPreferences": "ProtonDB-badgevoorkeuren laden...",
       "footnote": "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Compatibiliteitsstatus",
       "defaultStatus": "Standaard compatibiliteitsstatus",
       "applyDefaultTo": "Standaard toepassen op",
-      "categoryAutomatic": "Automatisch — gekoppelde Steam-status gebruiken",
+      "categoryAutomatic": "Automatisch",
       "categoryVerified": "Geverifieerd",
       "categoryPlayable": "Speelbaar",
       "categoryUnsupported": "Niet ondersteund",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Metadata wijzigen..."
+    "editMetadata": "Metadata bewerken..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} is ingeschakeld in Decky Loader. Schakel die plug-in uit om {{feature}} hier te gebruiken.",
@@ -427,16 +427,27 @@
     "save": "Opslaan",
     "saveCount": "Opslaan ({{count}})",
     "removeMetadata": "Metadata verwijderen",
-    "done": "Klaar",
-    "moreOptions": "Meer opties",
-    "moreMenuTitle": "Metadata",
-    "refreshFromSteam": "Vernieuwen vanuit Steam",
+    "page": {
+      "details": "Details",
+      "steamMatch": "Steam-match",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Compatibiliteit",
+      "storeCategories": "Winkelcategorieën",
+      "shortcutName": "Naam van snelkoppeling",
+      "advanced": "Geavanceerd"
+    },
+    "currentMatch": "Huidige match",
+    "loadFromSteam": "Laden vanuit Steam",
+    "loadFromSteamSteamGame": "Laden vanuit Steam (niet beschikbaar voor Steam-games)",
+    "loadFromSteamNoMatch": "Laden vanuit Steam (geen Steam-match)",
+    "loadFromSteamBusy": "Laden vanuit Steam (bezig met bijwerken)",
     "fieldEdited": "Bewerkt",
     "fieldFromSteam": "Van Steam, niet opgeslagen",
     "steamDataChanged": "Steam-gegevens die niet in het formulier worden getoond (screenshots, nieuws, compatibiliteit) zijn gewijzigd en niet opgeslagen.",
     "unsaved": {
       "title": "Wijzigingen opslaan?",
       "body": "Je hebt niet-opgeslagen wijzigingen aan de metadata van deze game.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Verwerpen",
       "cancel": "Annuleren"
     },
@@ -447,10 +458,12 @@
     },
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
     "searchIgn": "IGN-metadata doorzoeken",
+    "ign": {
+      "gameName": "Naam van de game"
+    },
     "search": "Zoeken",
     "searching": "Zoeken...",
     "noResults": "Nog geen resultaten.",
-    "source": "Bron",
     "field": {
       "title": "Titel",
       "description": "Beschrijving",
@@ -462,6 +475,7 @@
       "steamData": "Steam-gegevens niet in het formulier"
     },
     "compat": {
+      "statusLabel": "Status",
       "useGlobalDefault": "Globale standaard gebruiken",
       "followValve": "Valve volgen",
       "verified": "Geverifieerd",
@@ -477,9 +491,8 @@
       "useGlobalDefaultFromValve": "Globale standaard gebruiken ({{category}} — van Valve)"
     },
     "compatibilityStatus": "Compatibiliteitsstatus",
-    "compatibilityHelp": "\"Globale standaard gebruiken\" neemt de instelling uit het snelmenu over. \"Valve volgen\" negeert die en behoudt de oorspronkelijke Steam-status wanneer Valve-gegevens niet beschikbaar zijn.",
+    "compatibilityHelp": "Bij ‘Automatisch’ wordt voor elke game de status van de bijbehorende game op Steam gebruikt. ‘Globale standaard gebruiken’ past de globale instelling toe op deze game. ‘Valve volgen’ gebruikt altijd de status van Valve. Zijn er geen gegevens van Valve beschikbaar, dan behoudt ‘Valve volgen’ de oorspronkelijke Steam-status.",
     "compatibilityChoices": "Handmatige en standaardcategorieën zijn jouw keuzes, geen Valve-certificering of een emulatorprestatieresultaat.",
-    "steamInfoFields": "Steam-infovelden",
     "hltbGame": "HowLongToBeat-game",
     "hltbHelp": "Doorzoek HowLongToBeat of plak een gamenummer of link naar de spelpagina om de tijden te kiezen die voor deze game worden getoond. Laat leeg om automatisch te matchen.",
     "hltbCurrentChosen": "Huidige game: {{name}} (gekozen)",
@@ -488,8 +501,8 @@
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Plak een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL. Laat leeg om de vastgezette Steam-match te wissen.",
     "steamAppIdApply": "Steam-app-ID toepassen",
-    "shortcutName": "Naam van snelkoppeling",
     "shortcut": {
+      "immediateNotice": "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
       "current": "Huidige: {{name}}",
       "missingName": "Steam heeft geen native naam voor de snelkoppeling beschikbaar gesteld",
       "steamName": "Steam: {{name}}",
@@ -517,24 +530,22 @@
       "hltbInvalidBody": "Voer een HowLongToBeat-gamenummer of link naar de spelpagina in.",
       "steamAppIdInvalidTitle": "Ongeldige Steam-app-ID",
       "steamAppIdInvalidBody": "Voer een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL in. Laat het veld leeg om de koppeling te verwijderen.",
+      "hltbNotFoundTitle": "Niet gevonden",
+      "hltbNotFoundBody": "HowLongToBeat heeft geen game met dat nummer.",
+      "notApplicableTitle": "Niet van toepassing",
+      "notLoadedTitle": "Niet geladen",
+      "notLoadedBody": "Opgeslagen metadata is nog niet geladen.",
+      "metadataSaved": "Metadata opgeslagen",
+      "saveFailedTitle": "Opslaan mislukt",
+      "hltbCleared": "HLTB-game gewist",
+      "hltbGame": "HLTB-game: {{name}}",
       "hltbDraftBody": "Opslaan bewaart deze keuze.",
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-details zijn in dit formulier geladen. Opslaan bewaart ze.",
       "ignPreviewBody": "IGN-details zijn in dit formulier geladen. Opslaan bewaart ze.",
       "steamAppIdNotAppliedTitle": "Steam-app-ID niet toegepast",
       "steamAppIdNotAppliedBody": "Selecteer ’Steam-app-ID toepassen’ om de nieuwe match te laden voordat je opslaat.",
-      "hltbNotFoundTitle": "Niet gevonden",
-      "hltbNotFoundBody": "HowLongToBeat heeft geen game met dat nummer.",
-      "notApplicableTitle": "Niet van toepassing",
-      "notLoadedTitle": "Niet geladen",
-      "notLoadedBody": "Opgeslagen metadata is nog niet geladen.",
-      "savedTitle": "Opgeslagen",
-      "metadataSaved": "Metadata opgeslagen",
-      "saveFailedTitle": "Opslaan mislukt",
-      "hltbCleared": "HLTB-game gewist",
-      "hltbGame": "HLTB-game: {{name}}",
       "fetchFailedTitle": "Ophalen mislukt",
-      "removedTitle": "Verwijderd",
       "removedBody": "Metadata verwijderd",
       "removeFailedTitle": "Verwijderen mislukt",
       "shortcutNameChangedTitle": "Naam van snelkoppeling gewijzigd",
@@ -552,13 +563,11 @@
       "nameHistoryNotClearedTitle": "Opgeslagen naamgeschiedenis is niet gewist"
     },
     "steamTextLanguage": "Taal van Steam-tekst: {{language}}",
-    "fetchSteamText": "Steam-tekst ophalen in {{language}}",
+    "fetchSteamText": "Steam-tekst laden in {{language}}",
     "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd."
   },
   "matchPicker": {
-    "title": "Steam-match zoeken",
     "help": "Doorzoek Steam, selecteer een resultaat om de details te bekijken en kies dan Deze Steam-match gebruiken. Door te bladeren wordt je game niet gewijzigd.",
-    "currentAppId": "Huidige Steam-app-ID: {{appId}}",
     "searchAriaLabel": "Steam-games zoeken",
     "search": "Steam doorzoeken",
     "searching": "Steam doorzoeken...",

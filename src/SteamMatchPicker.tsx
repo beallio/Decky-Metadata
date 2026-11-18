@@ -1,8 +1,9 @@
-import { PanelSection, PanelSectionRow, TextField } from "@decky/ui";
+import { TextField } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import { getSteamMatchPreview, searchSteamMatches } from "./backend";
 import {
   editorFocusTargetClassName,
+  editorRowStyle,
   editorSearchButtonStyle,
   editorSearchInputRowSpacingStyle,
   editorSearchResultsSpacingStyle,
@@ -179,89 +180,82 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
   };
 
   return (
-    <PanelSection title={t("matchPicker.title")}>
-      <PanelSectionRow>
-        <div style={compactTextStyle}>
-          {t("matchPicker.help")}
+    <div style={editorRowStyle}>
+      <div style={compactTextStyle}>{t("matchPicker.help")}</div>
+      <div style={{ ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }}>
+        <TextField
+          className={editorFocusTargetClassName}
+          aria-label={t("matchPicker.searchAriaLabel")}
+          value={query}
+          disabled={disabled}
+          onChange={(event) => changeQuery(event.target.value)}
+          style={fieldStyle}
+        />
+        <FocusableButton
+          className={`DialogButton ${editorFocusTargetClassName}`}
+          disabled={disabled || status === "loading" || !query.trim()}
+          onClick={() => void search()}
+          style={editorSearchButtonStyle}
+        >
+          {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
+        </FocusableButton>
+      </div>
+      <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
+        <div aria-live="polite" style={compactTextStyle}>
+          {status === "idle" ? t("matchPicker.idle") : null}
+          {status === "loading" ? t("matchPicker.searching") : null}
+          {status === "empty" ? t("matchPicker.empty") : null}
+          {status === "error" && searchError ? translateBackendError(searchError) : null}
         </div>
-        {matchedSteamAppId ? <div style={compactTextStyle}>{t("matchPicker.currentAppId", { appId: matchedSteamAppId })}</div> : null}
-        <div style={{ ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }}>
-          <TextField
-            className={editorFocusTargetClassName}
-            aria-label={t("matchPicker.searchAriaLabel")}
-            value={query}
-            disabled={disabled}
-            onChange={(event) => changeQuery(event.target.value)}
-            style={fieldStyle}
-          />
-          <FocusableButton
-            className={`DialogButton ${editorFocusTargetClassName}`}
-            disabled={disabled || status === "loading" || !query.trim()}
-            onClick={() => void search()}
-            style={editorSearchButtonStyle}
-          >
-            {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
-          </FocusableButton>
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-          <div aria-live="polite" style={compactTextStyle}>
-            {status === "idle" ? t("matchPicker.idle") : null}
-            {status === "loading" ? t("matchPicker.searching") : null}
-            {status === "empty" ? t("matchPicker.empty") : null}
-            {status === "error" && searchError ? translateBackendError(searchError) : null}
+        {items.map((candidate) => (
+          <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid} style={rowStackStyle}>
+            <FocusableButton
+              className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`}
+              aria-pressed={selected?.steam_appid === candidate.steam_appid}
+              disabled={disabled}
+              onClick={() => void select(candidate)}
+              style={editorSteamMatchCardStyle}
+            >
+              {candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : null}
+              <div style={{ minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }}>
+                <b>{candidate.title}</b>
+                <div style={compactTextStyle}>
+                  {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
+                </div>
+              </div>
+            </FocusableButton>
+            {selected?.steam_appid === candidate.steam_appid ? (
+              <div style={editorSteamMatchPreviewStyle}>
+                {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
+                {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
+                {preview ? (
+                  <>
+                    {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={t("matchPicker.artworkAlt", { title: preview.title })} style={editorSteamMatchImageStyle} /> : null}
+                    <div style={compactTextStyle}>{preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable")}</div>
+                    <div style={compactTextStyle}>{preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable")}</div>
+                    {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{t("matchPicker.steamType", { type: preview.app_type })}</div> : null}
+                  </>
+                ) : null}
+                <div style={compactTextStyle}>{t("matchPicker.applyHelp")}</div>
+                <FocusableButton
+                  className={`DialogButton ${editorFocusTargetClassName}`}
+                  disabled={disabled || previewLoading}
+                  onClick={() => void apply()}
+                >
+                  {t("matchPicker.apply")}
+                </FocusableButton>
+                <FocusableButton
+                  className={`DialogButton ${editorFocusTargetClassName}`}
+                  disabled={disabled}
+                  onClick={cancelSelection}
+                >
+                  {t("matchPicker.cancel")}
+                </FocusableButton>
+              </div>
+            ) : null}
           </div>
-          {items.map((candidate) => (
-            <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid} style={rowStackStyle}>
-              <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`}
-                aria-pressed={selected?.steam_appid === candidate.steam_appid}
-                disabled={disabled}
-                onClick={() => void select(candidate)}
-                style={editorSteamMatchCardStyle}
-              >
-                {candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : null}
-                <div style={{ minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }}>
-                  <b>{candidate.title}</b>
-                  <div style={compactTextStyle}>
-                    {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
-                  </div>
-                </div>
-              </FocusableButton>
-              {selected?.steam_appid === candidate.steam_appid ? (
-                <div style={editorSteamMatchPreviewStyle}>
-                  {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
-                  {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
-                  {preview ? (
-                    <>
-                      {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={t("matchPicker.artworkAlt", { title: preview.title })} style={editorSteamMatchImageStyle} /> : null}
-                      <div style={compactTextStyle}>{preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable")}</div>
-                      <div style={compactTextStyle}>{preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable")}</div>
-                      {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{t("matchPicker.steamType", { type: preview.app_type })}</div> : null}
-                    </>
-                  ) : null}
-                  <div style={compactTextStyle}>{t("matchPicker.applyHelp")}</div>
-                  <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
-                    disabled={disabled || previewLoading}
-                    onClick={() => void apply()}
-                  >
-                    {t("matchPicker.apply")}
-                  </FocusableButton>
-                  <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
-                    disabled={disabled}
-                    onClick={cancelSelection}
-                  >
-                    {t("matchPicker.cancel")}
-                  </FocusableButton>
-                </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </PanelSectionRow>
-    </PanelSection>
+        ))}
+      </div>
+    </div>
   );
 };
