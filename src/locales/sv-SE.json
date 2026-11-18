@@ -426,6 +426,7 @@
   "editor": {
     "save": "Spara",
     "saveCount": "Spara ({{count}})",
+    "unsupportedSteam": "Den här Steam-versionen stöds inte ännu. Uppdatera Decky Metadata för att redigera metadata.",
     "removeMetadata": "Ta bort metadata",
     "page": {
       "details": "Detaljer",

@@ -427,6 +427,7 @@
   "editor": {
     "save": "Enregistrer",
     "saveCount": "Enregistrer ({{count}})",
+    "unsupportedSteam": "Cette version de Steam n'est pas encore prise en charge. Mettez à jour Decky Metadata pour modifier les métadonnées.",
     "removeMetadata": "Supprimer les métadonnées",
     "page": {
       "details": "Détails",

@@ -426,6 +426,7 @@
   "editor": {
     "save": "Opslaan",
     "saveCount": "Opslaan ({{count}})",
+    "unsupportedSteam": "Deze Steam-versie wordt nog niet ondersteund. Werk Decky Metadata bij om metadata te bewerken.",
     "removeMetadata": "Metadata verwijderen",
     "page": {
       "details": "Details",

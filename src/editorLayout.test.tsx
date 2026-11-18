@@ -2,61 +2,55 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 import { EditorLayout, type EditorLayoutPage, type EditorLayoutProps } from "./editorLayout";
 
-const hooks = vi.hoisted(() => ({
-  viewport: { scrollTop: 0, querySelector: vi.fn(() => hooks.focusTarget) },
-  focusTarget: { focus: vi.fn() },
-  layoutEffect: vi.fn<(effect: () => void, dependencies: readonly unknown[]) => void>(),
-  memo: undefined as { dependencies: readonly unknown[]; value: unknown } | undefined,
-  useMemo: vi.fn((factory: () => unknown, dependencies: readonly unknown[]) => {
-    const cached = hooks.memo;
-    if (!cached || dependencies.length !== cached.dependencies.length ||
-      dependencies.some((dependency, index) => dependency !== cached.dependencies[index])) {
-      hooks.memo = { dependencies: [...dependencies], value: factory() };
-    }
-    return hooks.memo.value;
-  }),
-}));
 const mocks = vi.hoisted(() => ({
   findModuleExport: vi.fn(),
   nativeComponent: vi.fn(),
+  memo: undefined as { dependencies: readonly unknown[]; value: unknown } | undefined,
 }));
 vi.mock("@decky/ui", () => ({
   DialogButton: "DialogButton",
-  findModuleExport: mocks.findModuleExport,
   Focusable: "Focusable",
-  ScrollPanel: "ScrollPanel",
-  NavEntryPositionPreferences: { PREFERRED_CHILD: 4 },
+  findModuleExport: mocks.findModuleExport,
 }));
+vi.mock("./i18n", () => ({
+  useT: () => (key: string) => key === "editor.unsupportedSteam"
+    ? "This Steam version is not supported yet. Update Decky Metadata to edit metadata."
+    : key,
+}));
+// Cache like React does so the test can assert that page descriptors stay stable across edits.
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),
-  useId: () => "editor-layout",
-  useRef: () => ({ current: hooks.viewport }),
-  useLayoutEffect: hooks.layoutEffect,
-  useMemo: hooks.useMemo,
+  useMemo: (factory: () => unknown, dependencies: readonly unknown[]) => {
+    const cached = mocks.memo;
+    if (!cached || dependencies.length !== cached.dependencies.length ||
+      dependencies.some((dependency, index) => dependency !== cached.dependencies[index])) {
+      mocks.memo = { dependencies: [...dependencies], value: factory() };
+    }
+    return mocks.memo.value;
+  },
 }));
 const detailsContent = <input defaultValue="Draft title" />;
 const advancedContent = <div>Advanced settings</div>;
+const pageIcon = <span>Page icon</span>;
 const pages: EditorLayoutPage[] = [
-  { id: "details", label: "Details", visible: true, dirty: true, content: detailsContent },
-  { id: "shortcut-name", label: "Shortcut Name", visible: false, dirty: true, separatorBefore: true, content: null },
-  { id: "advanced", label: "Advanced", visible: true, dirty: false, separatorBefore: true, content: advancedContent },
+  { id: "details", label: "Details", icon: pageIcon, visible: true, dirty: true, content: detailsContent },
+  { id: "shortcut-name", label: "Shortcut Name", icon: pageIcon, visible: false, dirty: true, separatorBefore: true, content: null },
+  { id: "advanced", label: "Advanced", icon: pageIcon, visible: true, dirty: false, separatorBefore: true, content: advancedContent },
 ];
 
 type NodeProps = {
   children?: ReactNode;
-  role?: string;
   className?: string;
   disabled?: boolean;
-  onActivate?: () => void;
   onClick?: () => void;
   focusable?: boolean;
-  "aria-selected"?: boolean;
 };
 type NativePageEntry = "separator" | {
   identifier: string;
   title: ReactNode;
-  icon?: ReactNode;
+  icon: ReactNode;
   visible: boolean;
+  hideTitle: boolean;
   content: ReactNode;
 };
 
@@ -104,94 +98,30 @@ const renderWith = (
 const render = (overrides: Partial<EditorLayoutProps> = {}) => renderWith(EditorLayout, overrides);
 
 const dirtyDot = "decky-metadata-editor-layout__dirty-dot";
-const separator = "decky-metadata-editor-layout__separator";
+const tabLabel = "decky-metadata-editor-layout__tab-label";
 
 describe("EditorLayout", () => {
-  it("shows the title and only visible tabs, with a dirty dot and separator in their places", () => {
+  it("shows an unsupported Steam notice without page content when no native component is found", () => {
+    expect(mocks.findModuleExport).toHaveBeenCalledOnce();
     const tree = render();
-    expect(text(tree.find((node) => node.type === "h1"))).toBe("Deadpool");
-
-    const rail = nodes(tree.find((node) => node.props.role === "tablist"));
-    const items = rail.filter((node) => node.props.role === "tab" || node.props.className === separator);
-    expect(items.map((node) => node.props.className === separator ? "separator" : text(node)))
-      .toEqual(["Details", "separator", "Advanced"]);
-    expect(rail.filter((node) => node.props.className === dirtyDot)).toHaveLength(1);
-    expect(nodes(items[0]).some((node) => node.props.className === dirtyDot)).toBe(true);
-  });
-
-  it("mounts only the selected page's content under its label", () => {
-    const tree = render({ page: "advanced" });
-    const pane = nodes(tree.find((node) => node.props.role === "tabpanel"));
-    expect(text(pane.find((node) => node.type === "h2"))).toBe("Advanced");
-    expect(pane).toContain(advancedContent);
+    expect(text(tree)).toBe("This Steam version is not supported yet. Update Decky Metadata to edit metadata.");
     expect(tree).not.toContain(detailsContent);
-    expect(text(tree.find((node) => node.props.role === "tab" && node.props["aria-selected"]))).toBe("Advanced");
+    expect(tree).not.toContain(advancedContent);
+    // B must still reach the editor root, so the notice itself takes gamepad focus.
+    expect(tree[0].type).toBe("Focusable");
   });
 
-  it("requests a page on tab activation without moving focus into the pane", () => {
-    const onPageRequested = vi.fn();
-    hooks.focusTarget.focus.mockClear();
-    hooks.viewport.querySelector.mockClear();
-    const tab = render({ onPageRequested }).find((node) => node.props.role === "tab" && text(node) === "Advanced")!;
-    expect(onPageRequested).not.toHaveBeenCalled();
-    tab.props.onActivate!();
-    expect(onPageRequested).toHaveBeenCalledExactlyOnceWith("advanced");
-    expect(hooks.viewport.querySelector).not.toHaveBeenCalled();
-    expect(hooks.focusTarget.focus).not.toHaveBeenCalled();
-  });
-  it("moves focus into the pane when activating the selected tab", () => {
-    const onPageRequested = vi.fn();
-    hooks.focusTarget.focus.mockClear();
-    hooks.viewport.querySelector.mockClear();
-    const tab = render({ onPageRequested }).find((node) => node.props.role === "tab" && node.props["aria-selected"])!;
-
-    tab.props.onActivate!();
-
-    expect(onPageRequested).not.toHaveBeenCalled();
-    expect(hooks.viewport.querySelector).toHaveBeenCalledOnce();
-    expect(hooks.focusTarget.focus).toHaveBeenCalledOnce();
-  });
-
-
-  it("passes the label and disabled state to the native Save button, and wires Save", () => {
-    const onSave = vi.fn();
-    const saveLabel = "Speichern (1)";
-    const [disabled, enabled] = [true, false].map((saveDisabled) =>
-      render({ onSave, saveDisabled, saveLabel }).find((node) => node.type === "DialogButton")!);
-    expect(text(disabled)).toBe(saveLabel);
-    expect(disabled.props.disabled).toBe(true);
-    expect(enabled.props.disabled).toBe(false);
-    enabled.props.onClick!();
-    expect(onSave).toHaveBeenCalledOnce();
-  });
-
-  it("resets scrolling on a page change, not on other prop changes", () => {
-    render();
-    const [, initialDeps] = hooks.layoutEffect.mock.lastCall!;
-    render({ saveLabel: "Save (2)" });
-    expect(hooks.layoutEffect.mock.lastCall![1]).toEqual(initialDeps);
-
-    hooks.viewport.scrollTop = 120;
-    render({ page: "advanced" });
-    const [resetScroll, nextDeps] = hooks.layoutEffect.mock.lastCall!;
-    expect(nextDeps).not.toEqual(initialDeps);
-    resetScroll();
-    expect(hooks.viewport.scrollTop).toBe(0);
-  });
   it("uses Steam's native paged settings component when its source signature is found", async () => {
     mocks.findModuleExport.mockClear();
     vi.resetModules();
-    hooks.memo = undefined;
     let matcher: ((moduleExport: unknown) => boolean) | undefined;
     mocks.findModuleExport.mockImplementation((predicate: (moduleExport: unknown) => boolean) => {
       matcher = predicate;
       return mocks.nativeComponent;
     });
 
-    // Module resolution runs at import time, so load a fresh copy with a mocked Steam export.
     const { EditorLayout: NativeLayout } = await import("./editorLayout");
     expect(mocks.findModuleExport).toHaveBeenCalledOnce();
-    // Mirrors the live Steam export: `function R(N){const K=(0,S.Zt)("PagedSettings",O);return(0,e.jsx)(K,{...N})}`.
     const matchingExport = function PagedSettingsAdapter(props: Record<string, unknown>) {
       const component = "PagedSettings";
       return [component, { ...props }];
@@ -208,7 +138,7 @@ describe("EditorLayout", () => {
     const native = tree.find((node) => node.type === mocks.nativeComponent)!;
     const received = native.props as unknown as NativePagedSettingsProps;
     expect(received.pages.map((entry) =>
-      typeof entry === "string" ? entry : [entry.identifier, entry.title, entry.visible]))
+      typeof entry === "string" ? entry : [entry.identifier, text(entry.title), entry.visible]))
       .toEqual([
         ["details", "Details", true],
         "separator",
@@ -220,9 +150,15 @@ describe("EditorLayout", () => {
       typeof entry === "string" || typeof entry.visible === "boolean")).toBe(true);
     const detailsPage = received.pages.find((entry): entry is Exclude<NativePageEntry, "separator"> =>
       typeof entry !== "string")!;
-    expect(detailsPage.icon).toBeDefined();
-    expect(nodes(detailsPage.icon).some((node) => node.props.className?.includes(dirtyDot))).toBe(true);
-    expect(detailsPage.title).toBe("Details");
+    expect(detailsPage.icon).toBe(pageIcon);
+    expect(text(detailsPage.title)).toBe("Details");
+    const titleNodes = nodes(detailsPage.title);
+    expect(titleNodes.findIndex((node) => node.props.className === dirtyDot))
+      .toBeGreaterThan(titleNodes.findIndex((node) => node.props.className === tabLabel));
+    expect(detailsPage.hideTitle).toBe(true);
+    const advancedPage = received.pages.find((entry) =>
+      typeof entry !== "string" && entry.identifier === "advanced") as Exclude<NativePageEntry, "separator">;
+    expect(text(nodes(advancedPage.content).find((node) => node.type === "h2"))).toBe("Advanced");
     expect(received.page).toBe("advanced");
     expect(received.title).toBe("Deadpool");
     expect(received.showTitle).toBe(true);

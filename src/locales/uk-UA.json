@@ -428,6 +428,7 @@
   "editor": {
     "save": "Зберегти",
     "saveCount": "Зберегти ({{count}})",
+    "unsupportedSteam": "Ця версія Steam поки не підтримується. Оновіть Decky Metadata, щоб редагувати метадані.",
     "removeMetadata": "Видалити метадані",
     "page": {
       "details": "Відомості",
