@@ -36,9 +36,10 @@ Steam games use their own Steam App IDs. A non-Steam game uses a valid saved Met
 
 To choose the intended game:
 
-1. Open the non-Steam game's menu and select **Change Metadata...**.
-2. Enter the correct Steam App ID or paste the game's Steam Store URL.
-3. Select **Apply Steam App ID**. This loads the match into the editor
+1. Open the non-Steam game's menu and select **Edit Metadata...**.
+2. On **Steam Match**, enter the correct Steam App ID or paste the game's
+   Steam Store URL.
+3. Select **Apply Steam App ID**. This loads the match into the form
    without saving it.
 4. Select **Save** to store the match.
 
@@ -79,7 +80,8 @@ Only badges are paused. Metadata's other features remain available. If plugin de
 - Check **Enable ProtonDB badges** and the switch for the view you are using.
 - With **Covers only on focus or hover** on, select or hover the cover.
 - Read any conflict or settings error in the **ProtonDB badges** section.
-- For a non-Steam game, check the saved Steam match and edition. Correct it with **Apply Steam App ID** if needed.
+- For a non-Steam game, check the saved Steam match and edition. To correct
+  it, use **Apply Steam App ID** on **Steam Match** and select **Save**.
 - For the Store row, check **Allow Remote CEF Debugging** and that **Store** is on in **ProtonDB badges**.
 - Allow time for the first name or rating lookup, and check that the Deck is online.
 - A game can have no tier even when the match is correct. Open ProtonDB to check its reports.

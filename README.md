@@ -41,19 +41,22 @@ heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
 
-To edit one game, open its menu and select **Change Metadata...**. Use **Find a
-Steam match** to search by name. Select a result to check its artwork, developer,
-and release date, then select **Use this Steam match** to fill the form. You can
-still paste a Steam page link or app ID under **Steam App ID**, then select
-**Apply Steam App ID**. Nothing is saved until you select **Save**.
+To edit a non-Steam game, select **Edit Metadata...** from the Library card's
+**Options** menu. You can also open the gear menu on the game page and select
+**Manage**. On **Steam Match**, select **Search Steam** to find the game by
+name. Check the result's artwork, developer, and release date, then select
+**Use this Steam match**. If you know the Steam page link or app ID, enter it
+under **Steam App ID** and select **Apply Steam App ID**. Select **Save** at
+the bottom of the sidebar or press **X** to store the changes.
 
-The editor can preview a cleaner shortcut name. It changes the name only if you
-confirm; you can restore the original name later. See [matching and editing
+On **Shortcut Name**, you can preview a different name for the shortcut.
+The name only changes when you confirm, and you can restore the original
+name later. You do not need to select **Save**. See [matching and editing
 games](docs/help/editing-games.md) for the full steps.
 
 ![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=202610011846)
 
-![Decky Metadata editor for Wobbly Life, a non-Steam game, with the Find a Steam match section](assets/decky-metadata-editor.png?cacheBuster=20261115)
+![Decky Metadata editor for Wobbly Life, a non-Steam game, showing Steam Match](assets/decky-metadata-editor.png?cacheBuster=20261115)
 
 ## What you can see
 
@@ -69,7 +72,7 @@ Descriptions use the source's short summary when available, then its longer
 text. Manual descriptions keep your text and paragraph spacing. Release dates
 are saved as calendar dates, so a timezone change does not change the saved day.
 Older saved timestamps are converted once, keeping their local calendar day.
-Correct an already-wrong date in the editor or import that game's metadata again.
+Correct an already-wrong date on **Details** or import the game's metadata again.
 See [editing games](docs/help/editing-games.md).
 
 ![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=202611151912)
@@ -115,10 +118,10 @@ default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. The same times appear in a
 **How Long To Beat** box on Steam Store game pages. Steam games are matched by
 their Steam App ID; non-Steam games use their saved Steam match or their name.
-You can choose the HowLongToBeat game for a non-Steam game in its editor. The
-styles and appearance options of HLTB for Deck are included. The **"Clean"**
-styles match the Clean Gameview **Transparent**, **Blur**, and **Connected with
-Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
+You can choose the match for a non-Steam game on the editor's **HowLongToBeat**
+page. The styles and appearance options of HLTB for Deck are included. The
+**"Clean"** styles match the Clean Gameview **Transparent**, **Blur**, and
+**Connected with Body** Play bars. When the Play bar is blurred, the **"Clean" Default** times
 and the Play bar form one blurred panel. **Background blur** never changes the
 Play bar's blur. **Use Steam button corners** gives the **"Clean"** styles'
 **Details** button Steam's normal corners instead of the theme's rounded ones.
@@ -219,9 +222,9 @@ a translation, and in English when not. The description and genres follow your
 Steam language when the plugin first gets the game's Steam details. Names,
 developers, publishers, and release dates stay in English. If you change your
 Steam language later, the plugin does not replace a description by itself,
-because you may have edited it. Open the game's metadata editor and select
-**Fetch Steam text in** *your language* to get the description again. Steam
-gives English text when the store page has no text in your language.
+because you may have edited it. On **Steam Match**, select **Load Steam text
+in** *your language*, then select **Save**.
+Steam gives English text if the store page has no text in your language.
 
 ## Updates and help
 
