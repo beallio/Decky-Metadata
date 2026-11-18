@@ -8,7 +8,8 @@ Open the Quick Access Menu, open Decky Metadata, select **Compatibility status**
 
 Choose one of these options:
 
-- **Automatic — use matched Steam status** uses the matched Steam game's status. If Steam has no status for the match, the shortcut keeps its original status.
+- **Automatic** uses each game's Steam-matched status. If Steam has no status
+  for the match, the shortcut keeps its original status.
 - **Verified**, **Playable**, or **Unsupported** applies that status as your default.
 - **Unknown** removes the compatibility badge.
 
@@ -31,10 +32,17 @@ With a manual default, only games in the selected group inherit it; a per-game c
 
 ## Choose a status for one game
 
-Open the game's menu, select **Change Metadata...**, and find **Compatibility status**. Choose one of these options:
+For a non-Steam game, open **Edit Metadata...** and select **Compatibility**.
+Under **Compatibility status**, choose one of these options:
 
-- **Use global default** follows your Quick Access Menu default when the game is included in **Apply default to**. If it is outside that group, it uses Steam's status when available or keeps its original status.
-- **Follow Valve** ignores your default and scope for this game. It uses the matched Steam game's status, or keeps the original status if no Steam status is available.
+- **Use global default** inherits the Quick Access Menu setting for this game.
+  If the default is **Automatic**, it uses the game's Steam-matched status.
+  If a manual default does not include this game, it uses the Steam-matched
+  status when available. If there is no Steam status, it keeps the original
+  status.
+- **Follow Valve** always uses Valve's status for the Steam match. It ignores
+  your default and the group it applies to. If Valve has no status for the
+  match, it keeps the original status.
 - **Verified**, **Playable**, **Unsupported**, or **Unknown** sets a status just for this game. This choice takes priority over your default and scope. **Unknown** removes the badge.
 
 Select **Save** when you finish.

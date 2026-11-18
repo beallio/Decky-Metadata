@@ -4,6 +4,35 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Open Edit Metadata from two menus and use a Steam-style editor
+
+### Changed
+
+- **Edit Metadata...** is in the Library card menu and in the game page's gear
+  menu, for non-Steam games only. It appears below
+  SteamGridDB's **Change Artwork...** if that plugin is installed. Otherwise,
+  it appears above **Properties...**.
+- **Steam-style editor.** The sidebar shows the game's name and seven pages:
+  **Details**, **Steam Match**, **HowLongToBeat**, **Compatibility**, **Store
+  Categories**, **Shortcut Name**, and **Advanced**. A blue dot marks each
+  page with unsaved changes. Select **Save** at the bottom of the sidebar or
+  press **X** to save. The label shows the number of changes, as in **Save (3)**.
+  Press **B** to leave. If you have unsaved changes, Steam lists them by page
+  and asks you to **Save**, **Discard**, or **Cancel**.
+  Shortcut name actions take effect without **Save**.
+- **Load from Steam** is on **Steam Match**. It fills the form and gives a
+  reason when it is unavailable. Select **Load Steam text in** *your language*
+  on the same page to load the description and genres in your Steam language.
+  Steam, IGN, and HowLongToBeat results are not stored until you select
+  **Save**. **Refresh metadata** in the Quick Access Menu still finds and saves
+  details for games without metadata.
+- **Remove Metadata** is on **Advanced**. Confirm in **Remove Metadata?** to
+  delete the saved details for that game. The **Metadata saved** and
+  **Metadata removed** messages show the game's name.
+- **Automatic compatibility.** The Quick Access Menu default now reads
+  **Automatic**. The **Compatibility** page explains the difference between
+  **Automatic**, **Use global default**, and **Follow Valve**.
+
 ## [0.6.4] - 2026-11-17
 
 Add 25 plugin languages, editor Save and Done, and Push Play button down

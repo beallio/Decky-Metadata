@@ -1,12 +1,33 @@
 # Edit a game's metadata
 
-Open the game's menu in your Steam library and select **Change Metadata...**. This opens the editor for that game. The editor changes non-Steam game entries, not games that are already on Steam.
+For a non-Steam game, select **Edit Metadata...** from either of these menus:
+
+- On the Library card, open **Options** or right-click the card.
+- On the game page, select the gear icon, then select **Manage**.
+
+**Edit Metadata...** is just below SteamGridDB's **Change Artwork...** if that
+plugin is installed. Otherwise, it is just above **Properties...**.
+
+The editor looks like Steam's Properties page. The game's name is at the top
+of the sidebar. Select a page in the sidebar:
+
+- **Details**: Edit the title, description, developers, publishers, release
+  date, or rating. You can also search IGN for game details.
+- **Steam Match**: Find a Steam game, load details for the current match, enter
+  a Steam App ID, or load Steam text in your language.
+- **HowLongToBeat**: Choose which game's times to show for a non-Steam game.
+- **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)
+  for a non-Steam game.
+- **Store Categories**: Turn any of the 11 Store categories on or off.
+- **Shortcut Name**: Use the Steam name, restore the original name, or forget
+  the saved name history for a non-Steam game.
+- **Advanced**: Remove saved metadata for this game.
 
 ## Add or correct a Steam match
 
 A Steam match connects your non-Steam game to the right Steam store entry so Decky Metadata can use that game's details and other available information. Check the game title carefully before applying a match, especially when several games have similar names or editions.
 
-1. In **Find a Steam match**, enter the game's name and select **Search Steam**.
+1. On **Steam Match**, enter the game's name and select **Search Steam**.
 2. Select a result to view its developer and release date, when available.
    Artwork helps distinguish similar titles. Some results are demos or DLC;
    check the title and the Steam type shown in the preview.
@@ -22,65 +43,72 @@ internet connection.
 
 ### Enter an app ID or page link instead
 
-If you already know the correct Steam entry, go to **Steam App ID**, enter its
-app ID or paste its Steam Store, Community, or SteamDB URL, and select **Apply
-Steam App ID**. This loads its details into the form without saving them.
-Select **Save** to store the match. This option also works when the game does
-not appear in search results. Text that is not a valid app ID or Steam page
-link shows a warning and changes nothing. If you edit the **Steam App ID** text
-without selecting **Apply Steam App ID**, **Save** asks you to apply it first.
+On **Steam Match**, enter the game's ID or paste its Steam Store, Community,
+or SteamDB URL in **Steam App ID**, then select **Apply Steam App ID**. This
+loads its details into the form without saving them. Select **Save** to store
+the match. Use this option if the game does not appear in search results.
+An invalid app ID or link shows a warning and changes nothing. If you change
+the **Steam App ID** without selecting **Apply Steam App ID**, **Save** asks
+you to apply it first.
 
-**Search IGN metadata** is separate: it searches IGN information, not Steam
-matches. Selecting an IGN result loads that game's details into the form; it
-does not save them or choose a Steam game.
+**Search IGN metadata** on **Details** searches IGN, not Steam. Select an IGN
+result to load the game's details into the form. This step does not save the
+details or choose a Steam match.
 
 To correct a match, choose another Steam result or apply the correct app ID.
-To clear the pinned match, empty **Steam App ID** and select **Apply Steam App
-ID**; the match is cleared in the form, and **Save** stores that. **Remove
-metadata** removes the game's saved metadata, not just its match, and asks you
-to confirm first. It then returns you to the game page. After you remove it,
-Metadata does not match the game again by itself: opening the game, news
-updates, and **Refresh metadata** skip it. To match it again, pick a Steam match
-or an IGN result in the editor, or use **Clear cache**.
+To clear the match, empty **Steam App ID** and select **Apply Steam App ID**.
+Then select **Save**.
+
+To delete all saved metadata for this game, go to **Advanced** and select
+**Remove Metadata**. In **Remove Metadata?**, select **Remove Metadata** to
+confirm. The **Metadata removed** message shows the game's name. The editor
+then returns to the game page.
+
+Decky Metadata does not match the game again by itself. Opening the game,
+news updates, and **Refresh metadata** skip it. To match it again, load a Steam
+match or an IGN result and save it, or use **Clear cache**.
 
 A saved Steam App ID also takes priority when Metadata chooses a ProtonDB
 rating for the shortcut. Correcting or clearing the match updates badges that
 are already on screen. If no valid ID is saved, badge matching can use the
 shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
 
-When a matched game's saved Steam text is not in your Steam language, **Steam
-App ID** shows **Steam text language:** with the language of the saved text.
-Select **Fetch Steam text in** *your language* to load the description and
-genres in your Steam language into the form. Select **Save** to store them with
-the game's other details. Decky Metadata does not replace a description by
-itself, because you may have edited it. Steam gives English text when the store
-page has no text in your language.
+To get current details for a match, go to **Current match** on **Steam Match**
+and select **Load from Steam**. This fills the form. Select **Save** to store
+the details. If you cannot load the data, the button tells you why:
+
+- **Load from Steam (No Steam match)**: Choose a Steam match first.
+- **Load from Steam (Updating)**: Wait for the update to finish.
+- **Load from Steam (Not available for Steam games)**: Use this action only
+  for non-Steam games.
+
+If the saved Steam text is not in your Steam language, **Steam Match** shows
+its language under **Steam text language**. Select **Load Steam text in**
+*your language* to load the description and genres. Select **Save** to store
+them. Decky Metadata does not replace a description by itself because you may
+have edited it. Steam gives English text if the store page has no text in
+your language.
 
 ## Save your changes
 
-Nothing is stored until you select **Save**. Apply-style actions only fill the
-form: **Use this Steam match**, **Apply Steam App ID**, an IGN result, **Apply
-HLTB game**, the Steam text language button, and **Refresh from Steam** all
-change the form without saving. **Apply HLTB game** checks the HowLongToBeat
-number or link you entered and shows the game it found; **Save** stores it.
+Steam, IGN, and HowLongToBeat results only fill the form. Select **Save** to
+store them. **Apply HLTB game** checks the game number or link you enter and
+shows the game it finds. See [Choose the HLTB game for a non-Steam game](hltb.md#choose-the-hltb-game-for-a-non-steam-game).
 
 Fields you change are marked **Edited** in blue. Fields filled from Steam that
 are not saved yet are marked **From Steam, not saved** in amber. Steam data the
 form does not show, such as screenshots, news, and compatibility, also counts
 as a change.
 
-The top of the editor has **Save**, **Done**, and a **⋯** button. **Save** shows
-the number of changes, for example **Save (3)**, and is unavailable when nothing
-has changed. The controller **X** button also saves. The **⋯** menu contains
-**Refresh from Steam**, which loads current Steam details for the Steam App ID
-in the form without saving, and **Remove metadata**.
+A blue dot next to a page name shows that the page has unsaved changes.
+Select **Save** at the bottom of the sidebar or press **X**. The label shows the
+number of changes, for example **Save (3)**. You cannot save if nothing has
+changed. The **Metadata saved** message shows the game's name.
 
-If you leave with unsaved changes using **Done** or the **B** button, the editor
-asks whether to **Save**, **Discard**, or **Cancel**. Leaving with the Steam or
-Home button does not ask; unsaved changes are lost.
-
-Use **Search IGN metadata** to find source information by the game's name, or
-edit the fields yourself. Select **Save** when you finish editing.
+Press **B** to leave. If you have unsaved changes, Steam lists them by page
+and asks you to choose **Save**, **Discard**, or **Cancel**. The Steam or Home
+button does not show this prompt. If you leave that way, you lose unsaved
+changes.
 
 ## Descriptions and release dates
 
@@ -104,9 +132,9 @@ An automatic lookup for the Steam name also keeps your saved game details.
 Release dates are saved as complete calendar dates, not timestamps. Changing
 timezone does not change the saved day. On the first load after this update,
 older saved timestamps are converted once, keeping their local calendar day
-at conversion. This does not repair a date that was already wrong: correct it
-in this game's editor, or import its metadata again. Other saved game details
-and settings are not changed by the conversion.
+at conversion. This does not repair a date that was already wrong. Correct it
+on **Details**, or import the game's metadata again. The conversion does not
+change other saved game details or settings.
 
 Enter a complete date such as `2024-03-10`. Clearing the field saves an empty
 date. Unknown or incomplete source dates can remain empty; a valid announced
@@ -114,12 +142,21 @@ future date can be saved. This does not change which source release is selected.
 
 ## Preview or restore the shortcut name
 
-After a valid Steam match is saved, the **Shortcut name** section may show the current shortcut name and the name Steam uses for the matched game. Decky Metadata never renames a shortcut automatically.
+After you save a valid Steam match, **Shortcut Name** can show the current
+shortcut name and the name Steam uses for the matched game. Decky Metadata
+does not rename a shortcut by itself.
 
-- Select **Use Steam name** to review the proposed change. Confirm **Use Steam name** only if you want to rename the shortcut.
-- If the name was changed through Decky Metadata, select **Restore original name** to review the original name, then confirm to restore that exact name.
+- Select **Use Steam name** to review the new name. Confirm **Use Steam name**
+  to rename the shortcut.
+- If you changed the name through Decky Metadata, select **Restore original
+  name** to review it. Confirm to restore that exact name.
+- **Forget saved name history** removes only the record of the original name.
+  It does not change the shortcut name.
 
-The rename and restore options may be unavailable when Steam does not provide a usable name or shortcut, when the shortcut name has changed outside Decky Metadata, or until you save a new Steam match in the editor. The editor explains when the action is unavailable. **Forget saved name history** only removes Decky Metadata's restore history; it does not change the shortcut name.
+These actions take effect when you confirm them. They do not use **Save**.
+The rename and restore actions can be unavailable if Steam does not give a
+usable name or shortcut, if the name changed outside Decky Metadata, or if
+you have not saved a new match. The editor gives the reason.
 
 Your personal SteamGridDB artwork stays in place when Decky Metadata adds game details. The running game's icon also appears in the Steam Menu. Game Info can show links to the Steam store, DLC, and Points Shop when available; links that do not apply are left out.
 
@@ -127,7 +164,9 @@ Your personal SteamGridDB artwork stays in place when Decky Metadata adds game d
 
 In the Decky Metadata panel, select **Metadata** to open it. **Missing metadata** shows how many of your added games do not have saved details. Select **Refresh metadata** to find and save details for these games.
 
-To remove saved matches and details for all games so they can be matched again, select **Clear cache**. This is different from **Remove metadata** in one game's editor, which removes only that game's saved details.
+To remove saved matches and details for all games so they can be matched
+again, select **Clear cache**. To remove saved details for only one game, use
+**Remove Metadata** on **Advanced** in that game's editor.
 
 To update the list of games Steam no longer sells, find **Delisted Steam games** inside **Metadata** and select **Refresh delisted games**.
 

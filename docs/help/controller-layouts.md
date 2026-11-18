@@ -2,7 +2,11 @@
 
 For a non-Steam game with a saved Steam match, Steam's Controller Settings can include layouts from the matching Steam game. Depending on Steam's available configurations, this can include recommended, official, and community layouts. Decky Metadata supplements Steam's choices; your own layouts and Steam's templates remain available.
 
-Open Controller Settings for the matched game and browse its available layouts as usual. To change the source game, open **Change Metadata...**, enter the correct Steam App ID or store URL, and select **Apply Steam App ID**. That loads the match into the editor without saving it; select **Save** to store the match. See [Edit a game's metadata](editing-games.md#add-or-correct-a-steam-match).
+Open Controller Settings for the matched game to see its available layouts.
+To change the match, open **Edit Metadata...** and go to **Steam Match**.
+Enter the correct Steam App ID or store URL and select **Apply Steam App ID**.
+This loads the match into the form. Select **Save** to store it. See
+[Edit a game's metadata](editing-games.md#add-or-correct-a-steam-match).
 
 ## If matched-game layouts are missing
 

@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} Std.",
-    "unknown": "Unbekannt",
     "hours_one": "{{value}} Stunde",
-    "hours_other": "{{value}} Stunden"
+    "hours_other": "{{value}} Stunden",
+    "hoursShort": "{{value}} Std.",
+    "unknown": "Unbekannt"
   },
   "backend": {
     "progress": {
@@ -81,7 +81,7 @@
     },
     "details": "Details",
     "search": {
-      "searching": "Suche…",
+      "searching": "Suche...",
       "action": "HLTB durchsuchen",
       "noGames": "HowLongToBeat hat keine Spiele gefunden.",
       "mainStory": "Hauptstory {{hours}}",
@@ -143,8 +143,8 @@
       "allStylesStatLabel": "„Alle Spielweisen“-Statistik umschalten",
       "allStylesStatDescription": "Blendet nur die „Alle Spielweisen“-Statistik ein/aus",
       "clearCacheButton": "HLTB-Cache leeren",
-      "clearingButton": "Wird geleert…",
-      "cacheClearing": "HLTB-Cache wird geleert…",
+      "clearingButton": "Wird geleert...",
+      "cacheClearing": "HLTB-Cache wird geleert...",
       "cacheCleared": "HLTB-Cache geleert. Die Zeiten werden beim Öffnen eines Spiels erneut geladen.",
       "cacheFailed": "Der HLTB-Cache konnte nicht geleert werden.",
       "customizeLabel": "Erscheinungsbild anpassen",
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Untere Linie",
       "bottomBorderDescription": "Zeigt eine Trennlinie unter der HLTB-Leiste",
       "resetAppearance": "Erscheinungsbild zurücksetzen",
-      "loadingPreferences": "HLTB-Einstellungen werden geladen…"
+      "loadingPreferences": "HLTB-Einstellungen werden geladen..."
     },
     "trailers": {
       "title": "Spiel-Trailer",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Unten links",
       "positionTopLeft": "Oben links",
       "positionTopRight": "Oben rechts",
-      "loadingPreferences": "ProtonDB-Abzeichen-Einstellungen werden geladen…",
+      "loadingPreferences": "ProtonDB-Abzeichen-Einstellungen werden geladen...",
       "footnote": "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Kompatibilitätsstatus",
       "defaultStatus": "Standard-Kompatibilitätsstatus",
       "applyDefaultTo": "Standard anwenden auf",
-      "categoryAutomatic": "Automatisch – zugeordneten Steam-Status verwenden",
+      "categoryAutomatic": "Automatisch",
       "categoryVerified": "Verifiziert",
       "categoryPlayable": "Spielbar",
       "categoryUnsupported": "Nicht unterstützt",
@@ -243,12 +243,12 @@
       "saved": "Gespeicherte Metadaten:",
       "missing": "Fehlende Metadaten:",
       "refresh": "Metadaten aktualisieren",
-      "refreshing": "Aktualisierung…",
-      "refreshingStatus": "Metadaten werden aktualisiert…",
+      "refreshing": "Aktualisierung...",
+      "refreshingStatus": "Metadaten werden aktualisiert...",
       "refreshDescription": "Findet und speichert Metadaten für erkannte Nicht-Steam-Spiele, die noch keine Zuordnung haben.",
       "cacheHeading": "Metadaten-Cache",
       "clearCache": "Cache leeren",
-      "clearing": "Wird geleert…",
+      "clearing": "Wird geleert...",
       "clearCacheDescription": "Löscht gespeicherte Zuordnungen und Metadaten, damit Spiele erneut zugeordnet werden können.",
       "delistedHeading": "Aus dem Shop entfernte Steam-Spiele",
       "refreshDelisted": "Entfernte Spiele aktualisieren"
@@ -263,7 +263,7 @@
       "autoCheckDescription": "Prüft im Hintergrund, solange das Plugin geladen ist.",
       "status": "Status",
       "lastChecked": "Zuletzt geprüft: {{date}}",
-      "checking": "Prüfung…",
+      "checking": "Prüfung...",
       "checkInterrupted": "Prüfung nach {{seconds}} Sekunden unterbrochen",
       "checkFailed": "Prüfung fehlgeschlagen",
       "upToDate": "Aktuell",
@@ -280,8 +280,8 @@
       "actionRevertToStable": "Zu Stable v{{version}} zurückkehren",
       "actionInstallDevelopment": "Entwicklungs-Build v{{version}} installieren",
       "actionUpdate": "Auf v{{version}} aktualisieren",
-      "waitingForDecky": "Warte auf Decky…",
-      "preparing": "Vorbereitung…",
+      "waitingForDecky": "Warte auf Decky...",
+      "preparing": "Vorbereitung...",
       "localBuildOnlyStable": "Lokale Builds können sich nur auf eine stabile Version selbst aktualisieren. Installiere diese Entwicklungsversion manuell über GitHub Releases.",
       "manualInstallUnavailable": "Die automatische Installation ist in dieser Decky-Umgebung nicht verfügbar. Installiere diese Version manuell über GitHub Releases.",
       "viewReleaseNotes": "Release-Notes anzeigen",
@@ -299,7 +299,7 @@
     },
     "logs": {
       "title": "Protokolle",
-      "loading": "Wird geladen…",
+      "loading": "Wird geladen...",
       "view": "Protokolle anzeigen",
       "debugLogging": "Debug-Protokollierung",
       "debugLoggingDescription": "Aktiviert ausführliche Protokollierung zur Fehlersuche.",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Metadaten ändern…"
+    "editMetadata": "Metadaten bearbeiten..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} ist in Decky Loader aktiviert. Deaktiviere dieses Plugin, um {{feature}} hier zu verwenden.",
@@ -427,16 +427,27 @@
     "save": "Speichern",
     "saveCount": "Speichern ({{count}})",
     "removeMetadata": "Metadaten entfernen",
-    "done": "Fertig",
-    "moreOptions": "Weitere Optionen",
-    "moreMenuTitle": "Metadaten",
-    "refreshFromSteam": "Von Steam aktualisieren",
+    "page": {
+      "details": "Details",
+      "steamMatch": "Steam-Zuordnung",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Kompatibilität",
+      "storeCategories": "Shop-Kategorien",
+      "shortcutName": "Verknüpfungsname",
+      "advanced": "Erweitert"
+    },
+    "currentMatch": "Aktuelle Zuordnung",
+    "loadFromSteam": "Von Steam laden",
+    "loadFromSteamSteamGame": "Von Steam laden (für Steam-Spiele nicht verfügbar)",
+    "loadFromSteamNoMatch": "Von Steam laden (keine Steam-Zuordnung)",
+    "loadFromSteamBusy": "Von Steam laden (wird aktualisiert)",
     "fieldEdited": "Bearbeitet",
     "fieldFromSteam": "Von Steam, nicht gespeichert",
     "steamDataChanged": "Nicht im Formular angezeigte Steam-Daten (Screenshots, News, Kompatibilität) wurden geändert und sind nicht gespeichert.",
     "unsaved": {
       "title": "Änderungen speichern?",
       "body": "Du hast ungespeicherte Änderungen an den Metadaten dieses Spiels.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Verwerfen",
       "cancel": "Abbrechen"
     },
@@ -447,10 +458,12 @@
     },
     "nonSteamOnly": "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
     "searchIgn": "IGN-Metadaten durchsuchen",
+    "ign": {
+      "gameName": "Spielname"
+    },
     "search": "Suchen",
-    "searching": "Suche…",
+    "searching": "Suche...",
     "noResults": "Noch keine Ergebnisse.",
-    "source": "Quelle",
     "field": {
       "title": "Titel",
       "description": "Beschreibung",
@@ -462,6 +475,7 @@
       "steamData": "Nicht im Formular angezeigte Steam-Daten"
     },
     "compat": {
+      "statusLabel": "Status",
       "useGlobalDefault": "Globale Voreinstellung verwenden",
       "followValve": "Valve folgen",
       "verified": "Verifiziert",
@@ -477,9 +491,8 @@
       "useGlobalDefaultFromValve": "Globale Voreinstellung verwenden ({{category}} – von Valve)"
     },
     "compatibilityStatus": "Kompatibilitätsstatus",
-    "compatibilityHelp": "„Globale Voreinstellung verwenden“ übernimmt die Einstellung aus dem Schnellzugriffsmenü. „Valve folgen“ ignoriert sie und behält den ursprünglichen Steam-Status, wenn Valve-Daten nicht verfügbar sind.",
+    "compatibilityHelp": "„Automatisch“ verwendet für jedes Spiel den Status des zugeordneten Steam-Spiels. „Globale Voreinstellung verwenden“ übernimmt diese Einstellung für dieses Spiel. „Valve folgen“ verwendet immer den Status von Valve. Wenn keine Valve-Daten verfügbar sind, behält „Valve folgen“ den ursprünglichen Steam-Status bei.",
     "compatibilityChoices": "Manuelle und Standard-Kategorien sind deine Auswahl, keine Valve-Zertifizierung oder ein Emulator-Leistungsergebnis.",
-    "steamInfoFields": "Steam-Infofelder",
     "hltbGame": "HowLongToBeat-Spiel",
     "hltbHelp": "Durchsuche HowLongToBeat oder füge eine Spielnummer bzw. einen Spielelink ein, um die für dieses Spiel angezeigten Zeiten zu wählen. Leer lassen für automatische Zuordnung.",
     "hltbCurrentChosen": "Aktuelles Spiel: {{name}} (ausgewählt)",
@@ -488,12 +501,12 @@
     "steamAppId": "Steam-App-ID",
     "steamAppIdHelp": "Füge eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL ein. Leer lassen, um die festgelegte Steam-Zuordnung zu entfernen.",
     "steamAppIdApply": "Steam-App-ID anwenden",
-    "shortcutName": "Verknüpfungsname",
     "shortcut": {
+      "immediateNotice": "Diese Aktionen werden sofort ausgeführt. „Speichern“ ist nicht nötig.",
       "current": "Aktuell: {{name}}",
       "missingName": "Steam hat keinen nativen Verknüpfungsnamen bereitgestellt",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Steam-Name wird geladen…",
+      "loadingSteamName": "Steam-Name wird geladen...",
       "noOfficialName": "Steam hat keinen offiziellen Namen zurückgegeben",
       "managementUnavailable": "Verwaltung von Verknüpfungsnamen ist nicht verfügbar",
       "apiUnavailable": "Steams native API für Verknüpfungsnamen ist nicht verfügbar",
@@ -517,24 +530,22 @@
       "hltbInvalidBody": "Gib eine HowLongToBeat-Spielnummer oder einen Spielelink ein.",
       "steamAppIdInvalidTitle": "Ungültige Steam-App-ID",
       "steamAppIdInvalidBody": "Gib eine Steam-App-ID, Store-URL, Community-URL oder SteamDB-URL ein. Lass das Feld leer, um die Zuordnung zu entfernen.",
+      "hltbNotFoundTitle": "Nicht gefunden",
+      "hltbNotFoundBody": "HowLongToBeat hat kein Spiel mit dieser Nummer.",
+      "notApplicableTitle": "Nicht zutreffend",
+      "notLoadedTitle": "Nicht geladen",
+      "notLoadedBody": "Gespeicherte Metadaten wurden noch nicht geladen.",
+      "metadataSaved": "Metadaten gespeichert",
+      "saveFailedTitle": "Speichern fehlgeschlagen",
+      "hltbCleared": "HLTB-Spiel entfernt",
+      "hltbGame": "HLTB-Spiel: {{name}}",
       "hltbDraftBody": "Speichern übernimmt diese Auswahl.",
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
       "ignPreviewBody": "IGN-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
       "steamAppIdNotAppliedTitle": "Steam-App-ID nicht angewendet",
       "steamAppIdNotAppliedBody": "Wähle „Steam-App-ID anwenden“, um die neue Zuordnung vor dem Speichern zu laden.",
-      "hltbNotFoundTitle": "Nicht gefunden",
-      "hltbNotFoundBody": "HowLongToBeat hat kein Spiel mit dieser Nummer.",
-      "notApplicableTitle": "Nicht zutreffend",
-      "notLoadedTitle": "Nicht geladen",
-      "notLoadedBody": "Gespeicherte Metadaten wurden noch nicht geladen.",
-      "savedTitle": "Gespeichert",
-      "metadataSaved": "Metadaten gespeichert",
-      "saveFailedTitle": "Speichern fehlgeschlagen",
-      "hltbCleared": "HLTB-Spiel entfernt",
-      "hltbGame": "HLTB-Spiel: {{name}}",
       "fetchFailedTitle": "Abrufen fehlgeschlagen",
-      "removedTitle": "Entfernt",
       "removedBody": "Metadaten entfernt",
       "removeFailedTitle": "Entfernen fehlgeschlagen",
       "shortcutNameChangedTitle": "Verknüpfungsname geändert",
@@ -552,23 +563,21 @@
       "nameHistoryNotClearedTitle": "Gespeicherter Namensverlauf wurde nicht gelöscht"
     },
     "steamTextLanguage": "Sprache des Steam-Texts: {{language}}",
-    "fetchSteamText": "Steam-Text auf {{language}} abrufen",
+    "fetchSteamText": "Steam-Text auf {{language}} laden",
     "steamTextUnavailable": "Steam hat für dieses Spiel keinen Text zurückgegeben."
   },
   "matchPicker": {
-    "title": "Steam-Zuordnung finden",
     "help": "Durchsuche Steam, wähle ein Ergebnis, um die Details zu prüfen, und wähle dann „Diese Steam-Zuordnung verwenden“. Das Durchsuchen ändert dein Spiel nicht.",
-    "currentAppId": "Aktuelle Steam-App-ID: {{appId}}",
     "searchAriaLabel": "Steam-Spielsuche",
     "search": "Steam durchsuchen",
-    "searching": "Steam wird durchsucht…",
+    "searching": "Steam wird durchsucht...",
     "idle": "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
     "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
     "appId": "Steam-App-ID: {{appId}}",
     "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
     "appIdSelected": "Steam-App-ID: {{appId}} · Ausgewählt",
     "appIdCurrentSelected": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung · Ausgewählt",
-    "loadingDetails": "Steam-Details werden geladen…",
+    "loadingDetails": "Steam-Details werden geladen...",
     "artworkAlt": "Steam-Artwork für {{title}}",
     "developer": "Entwickler: {{names}}",
     "developerUnavailable": "Entwickler nicht verfügbar",

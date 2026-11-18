@@ -1,10 +1,10 @@
 {
   "common": {
-    "hoursShort": "{{value}} h",
-    "unknown": "Desconhecido",
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} de horas",
-    "hours_other": "{{value}} horas"
+    "hours_other": "{{value}} horas",
+    "hoursShort": "{{value}} h",
+    "unknown": "Desconhecido"
   },
   "backend": {
     "progress": {
@@ -159,7 +159,7 @@
       "bottomBorderLabel": "Borda inferior",
       "bottomBorderDescription": "Mostra uma linha divisória sob a barra do HLTB",
       "resetAppearance": "Redefinir aparência",
-      "loadingPreferences": "Carregando preferências do HLTB…"
+      "loadingPreferences": "Carregando preferências do HLTB..."
     },
     "trailers": {
       "title": "Trailers de jogos",
@@ -207,7 +207,7 @@
       "positionBottomLeft": "Inferior esquerda",
       "positionTopLeft": "Superior esquerda",
       "positionTopRight": "Superior direita",
-      "loadingPreferences": "Carregando preferências do selo ProtonDB…",
+      "loadingPreferences": "Carregando preferências do selo ProtonDB...",
       "footnote": "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
     },
     "miniAchievements": {
@@ -221,7 +221,7 @@
       "title": "Status de compatibilidade",
       "defaultStatus": "Status de compatibilidade padrão",
       "applyDefaultTo": "Aplicar padrão a",
-      "categoryAutomatic": "Automático — usar o status da Steam correspondente",
+      "categoryAutomatic": "Automático",
       "categoryVerified": "Verificado",
       "categoryPlayable": "Jogável",
       "categoryUnsupported": "Sem suporte",
@@ -417,7 +417,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Alterar metadados..."
+    "editMetadata": "Editar metadados..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} está ativado no Decky Loader. Desative esse plugin para usar {{feature}} aqui.",
@@ -428,16 +428,27 @@
     "save": "Salvar",
     "saveCount": "Salvar ({{count}})",
     "removeMetadata": "Remover metadados",
-    "done": "Concluído",
-    "moreOptions": "Mais opções",
-    "moreMenuTitle": "Metadados",
-    "refreshFromSteam": "Atualizar da Steam",
+    "page": {
+      "details": "Detalhes",
+      "steamMatch": "Correspondência da Steam",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Compatibilidade",
+      "storeCategories": "Categorias da loja",
+      "shortcutName": "Nome do atalho",
+      "advanced": "Avançado"
+    },
+    "currentMatch": "Correspondência atual",
+    "loadFromSteam": "Carregar da Steam",
+    "loadFromSteamSteamGame": "Carregar da Steam (indisponível para jogos da Steam)",
+    "loadFromSteamNoMatch": "Carregar da Steam (sem correspondência na Steam)",
+    "loadFromSteamBusy": "Carregar da Steam (atualizando)",
     "fieldEdited": "Editado",
     "fieldFromSteam": "Da Steam, não salvo",
     "steamDataChanged": "Os dados da Steam não exibidos no formulário (capturas de tela, notícias, compatibilidade) mudaram e não foram salvos.",
     "unsaved": {
       "title": "Salvar alterações?",
       "body": "Você tem alterações não salvas nos metadados deste jogo.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Descartar",
       "cancel": "Cancelar"
     },
@@ -448,10 +459,12 @@
     },
     "nonSteamOnly": "Este plugin só altera jogos que não são da Steam.",
     "searchIgn": "Pesquisar metadados na IGN",
+    "ign": {
+      "gameName": "Nome do jogo"
+    },
     "search": "Pesquisar",
     "searching": "Pesquisando...",
     "noResults": "Nenhum resultado ainda.",
-    "source": "Fonte",
     "field": {
       "title": "Título",
       "description": "Descrição",
@@ -463,6 +476,7 @@
       "steamData": "Dados da Steam não exibidos no formulário"
     },
     "compat": {
+      "statusLabel": "Status",
       "useGlobalDefault": "Usar padrão global",
       "followValve": "Seguir a Valve",
       "verified": "Verificado",
@@ -478,9 +492,8 @@
       "useGlobalDefaultFromValve": "Usar padrão global ({{category}} — da Valve)"
     },
     "compatibilityStatus": "Status de compatibilidade",
-    "compatibilityHelp": "Usar padrão global herda a configuração do Menu de Acesso Rápido. Seguir a Valve a ignora e mantém o status original da Steam quando os dados da Valve não estão disponíveis.",
+    "compatibilityHelp": "A opção “Automático” usa, para cada jogo, o status do jogo correspondente na Steam. A opção “Usar padrão global” aplica a configuração global a este jogo. A opção “Seguir a Valve” sempre usa o status da Valve. Quando os dados da Valve não estão disponíveis, “Seguir a Valve” mantém o status original da Steam.",
     "compatibilityChoices": "As categorias manuais e padrão são suas escolhas, não uma certificação da Valve nem o resultado de desempenho de um emulador.",
-    "steamInfoFields": "Campos de informações da Steam",
     "hltbGame": "Jogo no HowLongToBeat",
     "hltbHelp": "Pesquise no HowLongToBeat, ou cole o número ou o link da página do jogo, para escolher os tempos exibidos para este jogo. Deixe em branco para corresponder automaticamente.",
     "hltbCurrentChosen": "Jogo atual: {{name}} (escolhido)",
@@ -489,8 +502,8 @@
     "steamAppId": "App ID da Steam",
     "steamAppIdHelp": "Cole um App ID da Steam, uma URL da Loja, da Comunidade ou do SteamDB. Deixe em branco para limpar a correspondência fixada da Steam.",
     "steamAppIdApply": "Aplicar App ID da Steam",
-    "shortcutName": "Nome do atalho",
     "shortcut": {
+      "immediateNotice": "Essas ações são aplicadas imediatamente, sem precisar selecionar “Salvar”.",
       "current": "Atual: {{name}}",
       "missingName": "A Steam não expôs um nome nativo para o atalho",
       "steamName": "Steam: {{name}}",
@@ -518,24 +531,22 @@
       "hltbInvalidBody": "Informe o número ou o link da página do jogo no HowLongToBeat.",
       "steamAppIdInvalidTitle": "ID de aplicativo Steam inválido",
       "steamAppIdInvalidBody": "Informe um ID de aplicativo Steam, URL da loja, da comunidade ou do SteamDB. Deixe o campo vazio para remover a correspondência.",
+      "hltbNotFoundTitle": "Não encontrado",
+      "hltbNotFoundBody": "O HowLongToBeat não tem nenhum jogo com esse número.",
+      "notApplicableTitle": "Não aplicável",
+      "notLoadedTitle": "Não carregado",
+      "notLoadedBody": "Os metadados salvos ainda não foram carregados.",
+      "metadataSaved": "Metadados salvos",
+      "saveFailedTitle": "Falha ao salvar",
+      "hltbCleared": "Jogo do HLTB removido",
+      "hltbGame": "Jogo do HLTB: {{name}}",
       "hltbDraftBody": "Salvar armazena esta escolha.",
       "detailsLoadedTitle": "Detalhes carregados",
       "steamPreviewBody": "Os detalhes da Steam foram carregados neste formulário. Salve para armazená-los.",
       "ignPreviewBody": "Os detalhes do IGN foram carregados neste formulário. Salve para armazená-los.",
       "steamAppIdNotAppliedTitle": "App ID da Steam não aplicado",
       "steamAppIdNotAppliedBody": "Selecione Aplicar App ID da Steam para carregar a nova correspondência antes de salvar.",
-      "hltbNotFoundTitle": "Não encontrado",
-      "hltbNotFoundBody": "O HowLongToBeat não tem nenhum jogo com esse número.",
-      "notApplicableTitle": "Não aplicável",
-      "notLoadedTitle": "Não carregado",
-      "notLoadedBody": "Os metadados salvos ainda não foram carregados.",
-      "savedTitle": "Salvo",
-      "metadataSaved": "Metadados salvos",
-      "saveFailedTitle": "Falha ao salvar",
-      "hltbCleared": "Jogo do HLTB removido",
-      "hltbGame": "Jogo do HLTB: {{name}}",
       "fetchFailedTitle": "Falha ao obter",
-      "removedTitle": "Removido",
       "removedBody": "Metadados removidos",
       "removeFailedTitle": "Falha ao remover",
       "shortcutNameChangedTitle": "Nome do atalho alterado",
@@ -553,13 +564,11 @@
       "nameHistoryNotClearedTitle": "O histórico de nomes salvo não foi limpo"
     },
     "steamTextLanguage": "Idioma do texto da Steam: {{language}}",
-    "fetchSteamText": "Buscar texto da Steam em {{language}}",
+    "fetchSteamText": "Carregar texto da Steam em {{language}}",
     "steamTextUnavailable": "A Steam não retornou texto para este jogo."
   },
   "matchPicker": {
-    "title": "Encontrar correspondência na Steam",
     "help": "Pesquise na Steam, selecione um resultado para conferir seus detalhes e depois escolha Usar esta correspondência da Steam. Navegar não altera seu jogo.",
-    "currentAppId": "App ID da Steam atual: {{appId}}",
     "searchAriaLabel": "Busca de jogos na Steam",
     "search": "Pesquisar na Steam",
     "searching": "Pesquisando na Steam...",

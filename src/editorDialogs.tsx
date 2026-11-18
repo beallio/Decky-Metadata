@@ -1,4 +1,4 @@
-import { ConfirmModal, Menu, MenuItem, showContextMenu, showModal } from "@decky/ui";
+import { ConfirmModal, showModal } from "@decky/ui";
 
 import { t } from "./i18n";
 import type { DraftFieldKey } from "./metadataDraft";
@@ -29,7 +29,7 @@ export function draftFieldLabel(t: TFunction, key: DraftFieldKey): string {
 }
 
 export function showUnsavedChangesModal(opts: {
-  changed: DraftFieldKey[];
+  groups: { page: string; fields: string[] }[];
   onSave: () => void;
   onDiscard: () => void;
   onCancel?: () => void;
@@ -45,10 +45,10 @@ export function showUnsavedChangesModal(opts: {
       onMiddleButton={opts.onDiscard}
       onCancel={opts.onCancel}
     >
-      {opts.changed.length > 0 ? (
+      {opts.groups.length > 0 ? (
         <ul style={changedListStyle}>
-          {opts.changed.map((key) => (
-            <li key={key}>{draftFieldLabel(t, key)}</li>
+          {opts.groups.map(({ page, fields }) => (
+            <li key={page}>{t("editor.unsaved.group", { page, fields: fields.join(", ") })}</li>
           ))}
         </ul>
       ) : null}
@@ -69,23 +69,6 @@ export function showRemoveMetadataModal(opts: {
       strCancelButtonText={t("editor.removeConfirm.cancel")}
       onOK={opts.onConfirm}
     />,
-  );
-}
-
-export function showEditorMoreMenu(opts: {
-  canRefresh: boolean;
-  onRefresh: () => void;
-  onRemove: () => void;
-  parent?: EventTarget;
-}): void {
-  showContextMenu(
-    <Menu label={t("editor.moreMenuTitle")}>
-      <MenuItem disabled={!opts.canRefresh} onSelected={() => { if (opts.canRefresh) opts.onRefresh(); }}>
-        {t("editor.refreshFromSteam")}
-      </MenuItem>
-      <MenuItem onSelected={opts.onRemove}>{t("editor.removeMetadata")}</MenuItem>
-    </Menu>,
-    opts.parent,
   );
 }
 

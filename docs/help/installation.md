@@ -17,7 +17,10 @@ After installation, Decky Metadata appears in the Decky menu.
 
 Open the **Quick Access Menu**, select **Decky**, then choose **Decky Metadata**. Select a section heading to show its settings and tools. **Versions** starts open; the other sections start closed.
 
-To edit one non-Steam game, open that game's menu in your Steam library and select **Change Metadata...**. The editor lets you add a Steam match or change game details. See [Edit a game's metadata](editing-games.md) for matching, saving, and shortcut-name steps.
+To edit a non-Steam game, select **Edit Metadata...** from the Library card's
+**Options** menu or from the game page's gear menu. See
+[Edit a game's metadata](editing-games.md) for matching, saving, and
+shortcut-name steps.
 
 ## If you cannot find the plugin
 

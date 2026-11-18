@@ -7,7 +7,7 @@ setup steps.
 ## Set up and choose games
 
 - [Install Decky Metadata](installation.md) — install the latest release and open the plugin.
-- [Match and edit games](editing-games.md) — choose the right Steam game, change details, refresh Steam text in your language, or restore a shortcut name.
+- [Match and edit games](editing-games.md) — choose the right Steam game, change details, load Steam text in your language, or restore a shortcut name.
 
 ## Choose what appears
 

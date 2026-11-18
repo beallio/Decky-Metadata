@@ -1,34 +1,7 @@
-import { colors } from "./tokens";
+import { accentRgba, colors, fontSize } from "./tokens";
 
 export const editorRootClassName = "decky-metadata-editor";
 export const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
-export const editorToolbarClearance = 104;
-export const editorScrollViewportStyle = {
-  scrollPaddingTop: editorToolbarClearance,
-  scrollPaddingBottom: 39,
-} as const;
-
-export const editorActionBarStyle = {
-  position: "sticky",
-  top: 40,
-  zIndex: 20,
-  display: "grid",
-  gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-  gap: 8,
-  width: "100%",
-  minWidth: 0,
-  margin: "-4px 0 0",
-  padding: "8px 16px",
-  boxSizing: "border-box",
-  background: "rgba(14, 20, 27, 0.96)",
-  backdropFilter: "blur(8px)",
-} as const;
-
-export const editorActionButtonStyle = {
-  width: "100%",
-  minWidth: 0,
-  whiteSpace: "nowrap",
-} as const;
 
 export const editorSearchRowStyle = {
   display: "grid",
@@ -82,60 +55,48 @@ export const editorSteamMatchPreviewStyle = {
   borderRadius: 4,
 } as const;
 
-export const editorSourceStackStyle = {
-  width: "100%",
+export const editorRowStyle = {
+  background: "rgb(35, 38, 46)",
+  borderRadius: 2,
+  padding: 12,
   minWidth: 0,
 } as const;
 
-export const editorSourceFieldStyle = {
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-  padding: "0 12px",
-  background: "transparent",
-  boxSizing: "border-box",
-} as const;
-
-export const editorLabelStyle = {
-  display: "block",
-  marginBottom: 7,
-} as const;
-
-export const editorDescriptionFieldStyle = {
-  ...editorSourceFieldStyle,
-  marginTop: 16,
-} as const;
-
-export const editorSourceGroupStyle = {
-  ...editorSourceFieldStyle,
-  marginTop: 14,
-} as const;
-
-export const editorReleaseRatingRowStyle = {
+export const editorLabeledRowStyle = {
+  ...editorRowStyle,
   display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 2fr)",
+  alignItems: "center",
+  gap: 12,
+} as const;
+
+export const editorStackedRowStyle = {
+  ...editorRowStyle,
+  display: "flex",
+  flexDirection: "column",
   gap: 8,
-  width: "100%",
-  maxWidth: "100%",
-  minWidth: 0,
-  marginTop: 14,
-  padding: "0 12px",
-  boxSizing: "border-box",
 } as const;
 
-export const editorCategoryGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
-  columnGap: 12,
-  rowGap: 6,
-  width: "100%",
-  minWidth: 0,
+export const editorRowLabelStyle = {
+  color: "rgb(139, 146, 154)",
+  fontSize: fontSize.md,
+  overflowWrap: "anywhere",
 } as const;
 
-export const editorCategoryRowMetrics = {
-  minHeight: 36,
-  padding: "4px 12px",
+export const editorSubheadingStyle = {
   margin: 0,
+  fontSize: fontSize.lg,
+  fontWeight: 500,
+} as const;
+
+export const editorNoticeStyle = {
+  background: accentRgba(0.07),
+  border: `1px solid ${accentRgba(0.25)}`,
+  borderRadius: 4,
+  padding: "8px 12px",
+  color: "#cfe3f5",
+  fontSize: fontSize.sm,
+  lineHeight: "18px",
 } as const;
 
 export const editorAppIdRowStyle = {
@@ -155,14 +116,12 @@ export const editorAppIdButtonStyle = {
   whiteSpace: "nowrap",
 } as const;
 
-export const editorActionBarNativeStyle = {
-  ...editorActionBarStyle,
-  gridTemplateColumns: "minmax(0, 1fr) minmax(0, 1fr) 72px",
-} as const;
-
-export const editorMoreButtonStyle = {
-  width: "100%",
-  minWidth: 0,
+export const editorRowActionStyle = {
+  ...editorAppIdButtonStyle,
+  maxWidth: "100%",
+  justifySelf: "end",
+  whiteSpace: "normal",
+  overflowWrap: "anywhere",
 } as const;
 
 export const editorFieldMarkerBaseStyle = {
@@ -195,39 +154,13 @@ export const editorFieldMarkerTagStyle = {
 } as const;
 
 export const editorScopedCss = `
-.decky-metadata-editor .decky-metadata-editor__focus-target,
-.decky-metadata-editor .decky-metadata-editor__category-grid > div,
-.decky-metadata-editor .decky-metadata-editor__category-grid > div [role="checkbox"] {
-  scroll-margin-top: ${editorToolbarClearance}px;
-  scroll-margin-bottom: 24px;
+.decky-metadata-editor .decky-metadata-editor__focus-target {
+  scroll-margin-block: 12px;
 }
 
-.decky-metadata-editor .decky-metadata-editor__action--save:disabled {
-  opacity: 0.55;
-  filter: saturate(0.45);
-}
-
-.decky-metadata-editor .decky-metadata-editor__category-grid > div {
-  display: flex;
-  align-items: center;
-  min-height: ${editorCategoryRowMetrics.minHeight}px !important;
-  padding: ${editorCategoryRowMetrics.padding} !important;
-  margin: ${editorCategoryRowMetrics.margin} !important;
-  box-sizing: border-box;
-}
-
-.decky-metadata-editor .decky-metadata-editor__shortcut-name {
-  background: transparent !important;
-}
-
-/*
- * Keep search results and shortcut-name text readable with a border-only
- * focus highlight instead of Steam's default filled background.
- */
+/* Keep search-result text readable instead of filling the focused row. */
 .decky-metadata-editor .decky-metadata-editor__result:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__result.gpfocus,
-.decky-metadata-editor .decky-metadata-editor__shortcut-name:focus-visible,
-.decky-metadata-editor .decky-metadata-editor__shortcut-name.gpfocus {
+.decky-metadata-editor .decky-metadata-editor__result.gpfocus {
   background: transparent !important;
   color: white !important;
   outline: 3px solid white !important;

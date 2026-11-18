@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} სთ",
-    "unknown": "უცნობი",
     "hours_one": "{{value}} საათი",
-    "hours_other": "{{value}} საათი"
+    "hours_other": "{{value}} საათი",
+    "hoursShort": "{{value}} სთ",
+    "unknown": "უცნობი"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "ქვედა ჩარჩო",
       "bottomBorderDescription": "HLTB-ის ზოლის ქვემოთ გამყოფ ხაზს აჩვენებს",
       "resetAppearance": "იერსახის გადატვირთვა",
-      "loadingPreferences": "HLTB-ის პარამეტრები იტვირთება…"
+      "loadingPreferences": "HLTB-ის პარამეტრები იტვირთება..."
     },
     "trailers": {
       "title": "თამაშის ტრეილერები",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "ქვედა მარცხენა",
       "positionTopLeft": "ზედა მარცხენა",
       "positionTopRight": "ზედა მარჯვენა",
-      "loadingPreferences": "ProtonDB-ის ნიშნის პარამეტრები იტვირთება…",
+      "loadingPreferences": "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
       "footnote": "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "თავსებადობის სტატუსი",
       "defaultStatus": "ნაგულისხმევი თავსებადობის სტატუსი",
       "applyDefaultTo": "ნაგულისხმევის გამოყენება",
-      "categoryAutomatic": "ავტომატური — შესატყვისი Steam სტატუსის გამოყენება",
+      "categoryAutomatic": "ავტომატური",
       "categoryVerified": "დადასტურებული",
       "categoryPlayable": "თამაშადი",
       "categoryUnsupported": "მხარდაუჭერელი",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "მეტამონაცემების შეცვლა..."
+    "editMetadata": "მეტამონაცემების რედაქტირება..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} ჩართულია Decky Loader-ში. გამორთეთ ეს პლაგინი, რომ აქ {{feature}} გამოიყენოთ.",
@@ -427,16 +427,27 @@
     "save": "შენახვა",
     "saveCount": "შენახვა ({{count}})",
     "removeMetadata": "მეტამონაცემების წაშლა",
-    "done": "მზადაა",
-    "moreOptions": "დამატებითი პარამეტრები",
-    "moreMenuTitle": "მეტამონაცემები",
-    "refreshFromSteam": "Steam-იდან განახლება",
+    "page": {
+      "details": "დეტალები",
+      "steamMatch": "Steam-ის შესატყვისი",
+      "hltb": "HowLongToBeat",
+      "compatibility": "თავსებადობა",
+      "storeCategories": "მაღაზიის კატეგორიები",
+      "shortcutName": "მალსახმობის სახელი",
+      "advanced": "დამატებითი პარამეტრები"
+    },
+    "currentMatch": "მიმდინარე შესატყვისი",
+    "loadFromSteam": "Steam-იდან ჩატვირთვა",
+    "loadFromSteamSteamGame": "Steam-იდან ჩატვირთვა (Steam-ის თამაშებისთვის მიუწვდომელია)",
+    "loadFromSteamNoMatch": "Steam-იდან ჩატვირთვა (Steam-ის შესატყვისი არ არის)",
+    "loadFromSteamBusy": "Steam-იდან ჩატვირთვა (მიმდინარეობს განახლება)",
     "fieldEdited": "შეცვლილია",
     "fieldFromSteam": "Steam-იდან, შეუნახავი",
     "steamDataChanged": "ფორმაში არ ნაჩვენები Steam-ის მონაცემები (სკრინშოტები, სიახლეები, თავსებადობა) შეიცვალა და არ არის შენახული.",
     "unsaved": {
       "title": "ცვლილებების შენახვა?",
       "body": "ამ თამაშის მეტამონაცემებში არ შენახული ცვლილებები გაქვთ.",
+      "group": "{{page}}: {{fields}}",
       "discard": "უარყოფა",
       "cancel": "გაუქმება"
     },
@@ -447,10 +458,12 @@
     },
     "nonSteamOnly": "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
     "searchIgn": "IGN-ის მეტამონაცემებში ძებნა",
+    "ign": {
+      "gameName": "თამაშის სახელი"
+    },
     "search": "ძებნა",
     "searching": "მიმდინარეობს ძებნა...",
     "noResults": "შედეგები ჯერ არ არის.",
-    "source": "წყარო",
     "field": {
       "title": "სათაური",
       "description": "აღწერა",
@@ -462,6 +475,7 @@
       "steamData": "ფორმაში არ ნაჩვენები Steam-ის მონაცემები"
     },
     "compat": {
+      "statusLabel": "სტატუსი",
       "useGlobalDefault": "გლობალური ნაგულისხმევის გამოყენება",
       "followValve": "Valve-ის მიყოლა",
       "verified": "დადასტურებული",
@@ -477,9 +491,8 @@
       "useGlobalDefaultFromValve": "გლობალური ნაგულისხმევის გამოყენება ({{category}} — Valve-ისგან)"
     },
     "compatibilityStatus": "თავსებადობის სტატუსი",
-    "compatibilityHelp": "„გლობალური ნაგულისხმევის გამოყენება“ იღებს QAM-ის პარამეტრს. „Valve-ის მიყოლა“ უგულებელყოფს მას და ინარჩუნებს Steam-ის ორიგინალ სტატუსს, როცა Valve-ის მონაცემები მიუწვდომელია.",
+    "compatibilityHelp": "„ავტომატური“ თითოეული თამაშისთვის Steam-ში მისი შესატყვისის სტატუსს იყენებს. „გლობალური ნაგულისხმევის გამოყენება“ ამ თამაშზე გლობალურ პარამეტრს ავრცელებს. „Valve-ის მიყოლა“ ყოველთვის Valve-ის სტატუსს იყენებს. თუ Valve-ის მონაცემები მიუწვდომელია, „Valve-ის მიყოლა“ Steam-ის თავდაპირველ სტატუსს ინარჩუნებს.",
     "compatibilityChoices": "ხელით არჩეული და ნაგულისხმევი კატეგორიები თქვენი არჩევანია და არა Valve-ის სერტიფიკატი ან ემულატორის მუშაობის შედეგი.",
-    "steamInfoFields": "Steam-ის ინფორმაციის ველები",
     "hltbGame": "HowLongToBeat-ის თამაში",
     "hltbHelp": "მოძებნეთ HowLongToBeat-ში ან ჩასვით თამაშის ნომერი ან თამაშის გვერდის ბმული, რათა აირჩიოთ ამ თამაშისთვის საჩვენებელი დროები. დატოვეთ ცარიელი ავტომატური შესაბამებისთვის.",
     "hltbCurrentChosen": "მიმდინარე თამაში: {{name}} (არჩეული)",
@@ -488,8 +501,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "ჩასვით Steam აპის ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ცარიელი Steam-ის დამაგრებული შესატყვისის გასასუფთავებლად.",
     "steamAppIdApply": "Steam App ID-ის გამოყენება",
-    "shortcutName": "მალსახმობის სახელი",
     "shortcut": {
+      "immediateNotice": "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
       "current": "მიმდინარე: {{name}}",
       "missingName": "Steam-მა მალსახმობის ნატიური სახელი არ გასცა",
       "steamName": "Steam: {{name}}",
@@ -517,24 +530,22 @@
       "hltbInvalidBody": "შეიყვანეთ HowLongToBeat-ის თამაშის ნომერი ან თამაშის გვერდის ბმული.",
       "steamAppIdInvalidTitle": "არასწორი Steam App ID",
       "steamAppIdInvalidBody": "შეიყვანეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ველი ცარიელი შესაბამისობის მოსაშორებლად.",
+      "hltbNotFoundTitle": "ვერ მოიძებნა",
+      "hltbNotFoundBody": "HowLongToBeat-ში ამ ნომრის თამაში არ არის.",
+      "notApplicableTitle": "არ ვრცელდება",
+      "notLoadedTitle": "არ ჩატვირთულა",
+      "notLoadedBody": "შენახული მეტამონაცემები ჯერ არ ჩატვირთულა.",
+      "metadataSaved": "მეტამონაცემები შენახულია",
+      "saveFailedTitle": "შენახვა ვერ მოხერხდა",
+      "hltbCleared": "HLTB-ის თამაში გასუფთავებულია",
+      "hltbGame": "HLTB-ის თამაში: {{name}}",
       "hltbDraftBody": "შენახვა ინახავს ამ არჩევანს.",
       "detailsLoadedTitle": "დეტალები ჩატვირთულია",
       "steamPreviewBody": "Steam-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
       "ignPreviewBody": "IGN-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
       "steamAppIdNotAppliedTitle": "Steam App ID არ არის გამოყენებული",
       "steamAppIdNotAppliedBody": "ახალი შესატყვისის ჩასატვირთად შენახვამდე აირჩიეთ „Steam App ID-ის გამოყენება“.",
-      "hltbNotFoundTitle": "ვერ მოიძებნა",
-      "hltbNotFoundBody": "HowLongToBeat-ში ამ ნომრის თამაში არ არის.",
-      "notApplicableTitle": "არ ვრცელდება",
-      "notLoadedTitle": "არ ჩატვირთულა",
-      "notLoadedBody": "შენახული მეტამონაცემები ჯერ არ ჩატვირთულა.",
-      "savedTitle": "შენახულია",
-      "metadataSaved": "მეტამონაცემები შენახულია",
-      "saveFailedTitle": "შენახვა ვერ მოხერხდა",
-      "hltbCleared": "HLTB-ის თამაში გასუფთავებულია",
-      "hltbGame": "HLTB-ის თამაში: {{name}}",
       "fetchFailedTitle": "მიღება ვერ მოხერხდა",
-      "removedTitle": "წაშლილია",
       "removedBody": "მეტამონაცემები წაშლილია",
       "removeFailedTitle": "წაშლა ვერ მოხერხდა",
       "shortcutNameChangedTitle": "მალსახმობის სახელი შეიცვალა",
@@ -552,13 +563,11 @@
       "nameHistoryNotClearedTitle": "სახელის შენახული ისტორია არ გასუფთავდა"
     },
     "steamTextLanguage": "Steam-ის ტექსტის ენა: {{language}}",
-    "fetchSteamText": "Steam-ის ტექსტის მიღება {{language}} ენაზე",
+    "fetchSteamText": "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
     "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
   },
   "matchPicker": {
-    "title": "Steam-ის შესატყვისის ძებნა",
     "help": "მოძებნეთ Steam-ში, აირჩიეთ შედეგი დეტალების შესამოწმებლად და შემდეგ აირჩიეთ „Steam-ის ამ შესატყვისის გამოყენება“. დათვალიერება თქვენს თამაშს არ ცვლის.",
-    "currentAppId": "მიმდინარე Steam App ID: {{appId}}",
     "searchAriaLabel": "Steam-ის თამაშის ძებნა",
     "search": "Steam-ში ძებნა",
     "searching": "Steam-ში მიმდინარეობს ძებნა...",

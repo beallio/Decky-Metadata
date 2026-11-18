@@ -32,7 +32,7 @@ import {
   Navigation,
   Patch,
 } from "@decky/ui";
-import { FC } from "react";
+import { isValidElement, type FC, type ReactNode } from "react";
 
 import {
   getNativeOverview,
@@ -54,24 +54,25 @@ export const setContextMenuTraceEnabled = (enabled: boolean) => {
   contextMenuTraceEnabled = enabled;
 };
 
+const hasAppPropertiesHandler = (node: { onSelected?: () => unknown }) =>
+  node?.onSelected?.toString?.().includes("AppProperties");
+
 const hasAppPropertiesHelper = (items: any[]): boolean => {
   if (!Array.isArray(items) || items.length === 0) return false;
-  return !!findInReactTree(
-    items,
-    (node) => node?.onSelected?.toString?.().includes("AppProperties")
-  );
+  return !!findInReactTree(items, hasAppPropertiesHandler);
 };
+
+type EntryAnchor = "change-artwork" | "properties" | "end";
 
 const traceMenu = (
   phase: "first-render" | "should-update" | "outer-rerender",
   ownerAppId: number,
   fallbackAppId: number,
   finalAppId: number,
-  isGameMenu: boolean,
-  hasAppProperties: boolean,
-  hasLaunchSource: boolean,
+  isAppContextMenu: boolean,
   removedExisting: boolean,
-  insertedOrSkipped: boolean | string,
+  insertedOrSkipped: string,
+  anchor: EntryAnchor | null,
   items: any[]
 ) => {
   if (!contextMenuTraceEnabled) return;
@@ -87,11 +88,12 @@ const traceMenu = (
       ownerAppId,
       fallbackAppId,
       finalAppId,
-      isGameContextMenu: isGameMenu,
-      hasAppProperties,
-      hasLaunchSource,
+      isAppContextMenu,
+      hasAppProperties: isAppContextMenu,
+      hasLaunchSource: hasLaunchSourceRow(items),
       removedExisting,
       insertedOrSkipped,
+      anchor,
       snippets,
     }).catch(() => undefined);
   } catch (_e) {}
@@ -146,12 +148,8 @@ const resolveAppId = (nodes: any[], fallbackAppId: number): number => {
   return Number(taggedNode?.app?.appid ?? fallbackAppId);
 };
 
-/**
- * True only for the per-game context menu. Its launch action's handler
- * references "launchSource"; menus like the screenshot menu do not, which
- * lets us ignore them.
- */
-const isGameContextMenu = (items: any[]): boolean => {
+/** The launch action is present in the library card menu but not the gear menu. */
+const hasLaunchSourceRow = (items: unknown[]): boolean => {
   if (!Array.isArray(items) || items.length === 0) return false;
   return !!findInReactTree(
     items,
@@ -171,27 +169,39 @@ const removeOurEntry = (items: any[]): boolean => {
   return removed;
 };
 
-/** Insert our entry just above "Properties..." (or at the end). */
-const insertOurEntry = (items: any[], appId: number): boolean => {
-  if (!isNativeNonSteamShortcut(getNativeOverview(appId))) return false;
+const visibleText = (children: ReactNode): string => {
+  if (typeof children === "string" || typeof children === "number") return String(children);
+  if (Array.isArray(children)) return children.map(visibleText).join("");
+  return isValidElement<{ children?: ReactNode }>(children) ? visibleText(children.props.children) : "";
+};
+
+const insertOurEntry = (
+  items: ({ key?: string | number | null; props?: { children?: ReactNode } } | null | undefined)[],
+  appId: number
+): EntryAnchor | null => {
+  if (!isNativeNonSteamShortcut(getNativeOverview(appId))) return null;
   const entry = (
     <MenuItem
       key={ENTRY_KEY}
       onSelected={() => Navigation.Navigate(`/decky-metadata/${appId}`)}
     >
-      {t("contextMenu.changeMetadata")}
+      {t("contextMenu.editMetadata")}
     </MenuItem>
   );
 
-  const propertiesIndex = items.findIndex((node) =>
-    findInReactTree(
-      node,
-      (x) => x?.onSelected?.toString?.().includes("AppProperties")
-    )
-  );
-  const insertAt = propertiesIndex >= 0 ? propertiesIndex : items.length;
-  items.splice(insertAt, 0, entry);
-  return true;
+  const propertiesIndex = items.findIndex((node) => findInReactTree(node, hasAppPropertiesHandler));
+  const artworkIndex = items.findIndex((node, index) => {
+    if (propertiesIndex >= 0 && index >= propertiesIndex) return false;
+    if (/sgdb|steamgriddb/i.test(String(node?.key))) return true;
+    // shortcut: English-only text match, used only when the key check fails
+    return visibleText(node?.props?.children) === "Change Artwork...";
+  });
+  if (artworkIndex >= 0) {
+    items.splice(artworkIndex + 1, 0, entry);
+    return "change-artwork";
+  }
+  items.splice(propertiesIndex >= 0 ? propertiesIndex : items.length, 0, entry);
+  return propertiesIndex >= 0 ? "properties" : "end";
 };
 
 const syncOurEntry = (
@@ -201,31 +211,27 @@ const syncOurEntry = (
   fallbackAppId: number
 ): void => {
   const removed = removeOurEntry(items);
-  const isGameMenu = isGameContextMenu(items);
-  const hasAppProps = hasAppPropertiesHelper(items);
+  const isAppContextMenu = hasAppPropertiesHelper(items);
 
-  let inserted: boolean | string = "skipped";
+  let inserted: string;
   let finalAppId = 0;
+  let anchor: EntryAnchor | null = null;
 
-  if (!isGameMenu) {
-    inserted = "skipped-not-top-level";
+  if (!isAppContextMenu) {
+    inserted = "skipped-incomplete-shape";
   } else if (ownerAppId > 0) {
     finalAppId = ownerAppId;
     inserted = "owner-app-id";
   } else if (fallbackAppId > 0) {
-    if (hasAppProps) {
-      finalAppId = fallbackAppId;
-      inserted = "fallback-app-id";
-    } else {
-      inserted = "skipped-incomplete-shape";
-    }
+    finalAppId = fallbackAppId;
+    inserted = "fallback-app-id";
   } else {
     inserted = "skipped-no-valid-appid";
   }
 
   if (finalAppId > 0) {
-    const actuallyInserted = insertOurEntry(items, finalAppId);
-    if (!actuallyInserted) {
+    anchor = insertOurEntry(items, finalAppId);
+    if (!anchor) {
       inserted = "skipped-not-non-steam";
     }
   }
@@ -235,11 +241,10 @@ const syncOurEntry = (
     ownerAppId,
     fallbackAppId,
     finalAppId,
-    isGameMenu,
-    hasAppProps,
-    isGameMenu,
+    isAppContextMenu,
     removed,
     inserted,
+    anchor,
     items
   );
 };
