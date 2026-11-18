@@ -8,8 +8,8 @@ Open Edit Metadata from two menus and use a Steam-style editor
 
 ### Changed
 
-- **Edit Metadata...** is in the Library card menu and under **Manage** in the
-  game page's gear menu, for non-Steam games only. It appears below
+- **Edit Metadata...** is in the Library card menu and in the game page's gear
+  menu, for non-Steam games only. It appears below
   SteamGridDB's **Change Artwork...** if that plugin is installed. Otherwise,
   it appears above **Properties...**.
 - **Steam-style editor.** The sidebar shows the game's name and seven pages:
