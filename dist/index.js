@@ -36550,6 +36550,11 @@ const css = `
   margin-left: 0;
 }
 
+/* Clean tabs keep an invisible dot so every label shares the native icon indent. */
+.${layout}__dirty-dot--clean {
+  background: transparent;
+}
+
 .${layout}__separator {
   height: 1px;
   margin: 6px 24px;
@@ -36618,7 +36623,7 @@ function NativeEditorLayout({ title, pages, page, onPageRequested, saveLabel, sa
             mapped.push({
                 identifier: editorPage.id,
                 title: editorPage.label,
-                icon: editorPage.dirty && (SP_JSX.jsx("span", { className: `${layout}__dirty-dot ${layout}__dirty-dot--icon`, "aria-hidden": "true" })),
+                icon: (SP_JSX.jsx("span", { className: `${layout}__dirty-dot ${layout}__dirty-dot--icon${editorPage.dirty ? "" : ` ${layout}__dirty-dot--clean`}`, "aria-hidden": "true" })),
                 visible: editorPage.visible,
                 content: SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id),
             });
