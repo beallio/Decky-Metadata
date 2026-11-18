@@ -14,12 +14,14 @@ Open Edit Metadata from two menus and use a Steam-style editor
   it appears above **Properties...**.
 - **Steam-style editor.** The sidebar shows the game's name and seven pages:
   **Details**, **Steam Match**, **HowLongToBeat**, **Compatibility**, **Store
-  Categories**, **Shortcut Name**, and **Advanced**. A blue dot marks each
-  page with unsaved changes. Select **Save** at the bottom of the sidebar or
-  press **X** to save. The label shows the number of changes, as in **Save (3)**.
-  Press **B** to leave. If you have unsaved changes, Steam lists them by page
-  and asks you to **Save**, **Discard**, or **Cancel**.
-  Shortcut name actions take effect without **Save**.
+  Categories**, **Shortcut Name**, and **Advanced**. Move the D-pad to a page
+  name to show it. Press **A** or **Right** to move into the page. Press **B**
+  in a page to return to the sidebar; press **B** in the sidebar to leave. If
+  you have unsaved changes, Steam asks you to **Save**, **Discard**, or
+  **Cancel**. A blue dot marks each page with unsaved changes. **Save** stays
+  at the bottom of the sidebar, and **X** also saves. The label shows the
+  number of changes, as in **Save (3)**. Shortcut name actions take effect
+  without **Save**.
 - **Load from Steam** is on **Steam Match**. It fills the form and gives a
   reason when it is unavailable. Select **Load Steam text in** *your language*
   on the same page to load the description and genres in your Steam language.

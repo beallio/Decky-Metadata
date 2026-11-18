@@ -1,5 +1,15 @@
-import { DialogButton, Focusable, NavEntryPositionPreferences, ScrollPanel } from "@decky/ui";
-import { Fragment, useId, useLayoutEffect, useRef, type ReactNode } from "react";
+import { DialogButton, findModuleExport, Focusable, NavEntryPositionPreferences, ScrollPanel } from "@decky/ui";
+import {
+  createContext,
+  Fragment,
+  useContext,
+  useId,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  type ComponentType,
+  type ReactNode,
+} from "react";
 import type { EditorPageId } from "./editorPages";
 import { accentRgba, colors, fontFamily } from "./tokens";
 
@@ -93,11 +103,17 @@ const css = `
 }
 
 .${layout}__dirty-dot {
+  display: block;
+  width: 7px;
   flex: 0 0 7px;
   height: 7px;
   border-radius: 50%;
   margin-left: auto;
   background: ${colors.accent};
+}
+
+.${layout}__dirty-dot--icon {
+  margin-left: 0;
 }
 
 .${layout}__separator {
@@ -137,7 +153,104 @@ const css = `
 }
 `;
 
-export function EditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }: EditorLayoutProps): JSX.Element {
+type NativePagedSettingsPage = {
+  identifier: EditorPageId;
+  title: string;
+  icon?: ReactNode;
+  visible: boolean;
+  content: ReactNode;
+};
+
+type NativePagedSettingsPageEntry = NativePagedSettingsPage | "separator";
+
+type NativePagedSettingsProps = {
+  pages: NativePagedSettingsPageEntry[];
+  page: EditorPageId;
+  onPageRequested(identifier: string): void;
+  title: string;
+  showTitle: boolean;
+  bottomControls: ReactNode;
+};
+
+// Steam's paged settings component; falls back to the custom rail when a client update hides it.
+const resolveNativePagedSettings = (): ComponentType<NativePagedSettingsProps> | null => {
+  try {
+    const component = findModuleExport((moduleExport: unknown) => {
+      if (typeof moduleExport !== "function") return false;
+      const source = String(moduleExport);
+      return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
+    });
+    return typeof component === "function" ? component as ComponentType<NativePagedSettingsProps> : null;
+  } catch {
+    return null;
+  }
+};
+
+const NativePagedSettings = resolveNativePagedSettings();
+const PageContentContext = createContext<EditorLayoutPage[]>([]);
+
+function CurrentPageContent({ id }: { id: EditorPageId }): JSX.Element {
+  const pages = useContext(PageContentContext);
+  return <>{pages.find((page) => page.id === id)?.content ?? null}</>;
+}
+
+function NativeEditorLayout({
+  title,
+  pages,
+  page,
+  onPageRequested,
+  saveLabel,
+  saveDisabled,
+  onSave,
+}: EditorLayoutProps): JSX.Element {
+  // Keep descriptors stable as fields edit; context supplies the latest content nodes.
+  const pageDependencies = pages.flatMap(({ id, label, dirty, visible, separatorBefore }) =>
+    [id, label, dirty, visible, separatorBefore]);
+  const nativePages = useMemo<NativePagedSettingsPageEntry[]>(() => {
+    const mapped: NativePagedSettingsPageEntry[] = [];
+    for (const editorPage of pages) {
+      if (editorPage.separatorBefore) mapped.push("separator");
+      mapped.push({
+        identifier: editorPage.id,
+        title: editorPage.label,
+        icon: editorPage.dirty && (
+          <span
+            className={`${layout}__dirty-dot ${layout}__dirty-dot--icon`}
+            aria-hidden="true"
+          />
+        ),
+        visible: editorPage.visible,
+        content: <CurrentPageContent key={editorPage.id} id={editorPage.id} />,
+      });
+    }
+    return mapped;
+  }, pageDependencies);
+
+  return (
+    <PageContentContext.Provider value={pages}>
+      <style>{css}</style>
+      <NativePagedSettings
+        pages={nativePages}
+        page={page}
+        onPageRequested={(id) => onPageRequested(id as EditorPageId)}
+        title={title}
+        showTitle={true}
+        bottomControls={
+          <DialogButton
+            className={`${layout}__save`}
+            focusable={!saveDisabled}
+            disabled={saveDisabled}
+            onClick={onSave}
+          >
+            {saveLabel}
+          </DialogButton>
+        }
+      />
+    </PageContentContext.Provider>
+  );
+}
+
+function CustomEditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }: EditorLayoutProps): JSX.Element {
   const panelId = useId();
   const paneRef = useRef<HTMLDivElement>(null);
   const selected = pages.find((tab) => tab.visible && tab.id === page);
@@ -208,4 +321,10 @@ export function EditorLayout({ title, pages, page, onPageRequested, saveLabel, s
       </EditorScrollPanel>
     </Focusable>
   );
+}
+
+export function EditorLayout(props: EditorLayoutProps): JSX.Element {
+  return NativePagedSettings
+    ? <NativeEditorLayout {...props} />
+    : <CustomEditorLayout {...props} />;
 }

@@ -36537,11 +36537,17 @@ const css = `
 }
 
 .${layout}__dirty-dot {
+  display: block;
+  width: 7px;
   flex: 0 0 7px;
   height: 7px;
   border-radius: 50%;
   margin-left: auto;
   background: ${colors.accent};
+}
+
+.${layout}__dirty-dot--icon {
+  margin-left: 0;
 }
 
 .${layout}__separator {
@@ -36580,7 +36586,48 @@ const css = `
   margin: 0 0 14px;
 }
 `;
-function EditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }) {
+// Steam's paged settings component; falls back to the custom rail when a client update hides it.
+const resolveNativePagedSettings = () => {
+    try {
+        const component = DFL.findModuleExport((moduleExport) => {
+            if (typeof moduleExport !== "function")
+                return false;
+            const source = String(moduleExport);
+            return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
+        });
+        return typeof component === "function" ? component : null;
+    }
+    catch {
+        return null;
+    }
+};
+const NativePagedSettings = resolveNativePagedSettings();
+const PageContentContext = SP_REACT.createContext([]);
+function CurrentPageContent({ id }) {
+    const pages = SP_REACT.useContext(PageContentContext);
+    return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
+}
+function NativeEditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave, }) {
+    // Keep descriptors stable as fields edit; context supplies the latest content nodes.
+    const pageDependencies = pages.flatMap(({ id, label, dirty, visible, separatorBefore }) => [id, label, dirty, visible, separatorBefore]);
+    const nativePages = SP_REACT.useMemo(() => {
+        const mapped = [];
+        for (const editorPage of pages) {
+            if (editorPage.separatorBefore)
+                mapped.push("separator");
+            mapped.push({
+                identifier: editorPage.id,
+                title: editorPage.label,
+                icon: editorPage.dirty && (SP_JSX.jsx("span", { className: `${layout}__dirty-dot ${layout}__dirty-dot--icon`, "aria-hidden": "true" })),
+                visible: editorPage.visible,
+                content: SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id),
+            });
+        }
+        return mapped;
+    }, pageDependencies);
+    return (SP_JSX.jsxs(PageContentContext.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: title, showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
+}
+function CustomEditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }) {
     const panelId = SP_REACT.useId();
     const paneRef = SP_REACT.useRef(null);
     const selected = pages.find((tab) => tab.visible && tab.id === page);
@@ -36598,6 +36645,11 @@ function EditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisa
                                             onPageRequested(tab.id);
                                         }
                                     }, children: [SP_JSX.jsx("span", { children: tab.label }), tab.dirty && SP_JSX.jsx("span", { className: `${layout}__dirty-dot`, "aria-hidden": "true" })] })] }, tab.id))) }), SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel })] }), SP_JSX.jsx(EditorScrollPanel, { ref: paneRef, className: `${layout}__pane`, id: panelId, "flow-children": "column", role: "tabpanel", "aria-labelledby": selected && `${panelId}-${selected.id}`, preferredFocus: true, children: selected && (SP_JSX.jsxs(SP_REACT.Fragment, { children: [SP_JSX.jsx("h2", { className: `${layout}__heading`, children: selected.label }), selected.content] }, selected.id)) })] }));
+}
+function EditorLayout(props) {
+    return NativePagedSettings
+        ? SP_JSX.jsx(NativeEditorLayout, { ...props })
+        : SP_JSX.jsx(CustomEditorLayout, { ...props });
 }
 
 const EDITOR_PAGE_ORDER = [
