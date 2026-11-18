@@ -426,6 +426,7 @@
   "editor": {
     "save": "Kaydet",
     "saveCount": "Kaydet ({{count}})",
+    "unsupportedSteam": "Bu Steam sürümü henüz desteklenmiyor. Üst verileri düzenlemek için Decky Metadata'yı güncelleyin.",
     "removeMetadata": "Meta Verileri Kaldır",
     "page": {
       "details": "Ayrıntılar",

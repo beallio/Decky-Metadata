@@ -8,8 +8,7 @@ const hooks = vi.hoisted(() => ({
 }));
 vi.mock("./backend", () => backend);
 vi.mock("@decky/ui", () => ({
-  PanelSection: "PanelSection", PanelSectionRow: "PanelSectionRow", TextField: "TextField",
-  DialogButton: "DialogButton", Spinner: "Spinner",
+  DialogControlsSection: "DialogControlsSection", Field: "Field", TextField: "TextField",
 }));
 vi.mock("react", () => ({
   createContext: () => ({}),
@@ -63,10 +62,11 @@ const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return text(node.props?.children);
+  return `${text(node.props?.label)}${text(node.props?.children)}`;
 };
 const button = (tree: any, label: string) => walk(tree, node => typeof node.props?.onClick === "function" && text(node) === label)[0];
-const candidate = (tree: any, id: number) => walk(tree, node => typeof node.props?.onClick === "function" && text(node).includes(`Steam App ID: ${id}`))[0];
+const candidate = (tree: any, id: number) =>
+  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.children).includes(`Steam App ID: ${id}`))[0];
 const changeQuery = (tree: any, query: string) => walk(tree, node => node.type === "TextField")[0].props.onChange({ target: { value: query } });
 const flush = async () => { for (let index = 0; index < 8; index++) await Promise.resolve(); };
 const deferred = <T,>() => {

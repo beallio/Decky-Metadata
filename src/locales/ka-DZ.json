@@ -426,6 +426,7 @@
   "editor": {
     "save": "შენახვა",
     "saveCount": "შენახვა ({{count}})",
+    "unsupportedSteam": "Steam-ის ეს ვერსია ჯერ არ არის მხარდაჭერილი. მეტამონაცემების შესაცვლელად განაახლეთ Decky Metadata.",
     "removeMetadata": "მეტამონაცემების წაშლა",
     "page": {
       "details": "დეტალები",

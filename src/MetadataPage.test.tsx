@@ -85,6 +85,8 @@ vi.mock("@decky/ui", () => ({
   ConfirmModal: "ConfirmModal",
   afterPatch: vi.fn(),
   findInReactTree: vi.fn(),
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
   Focusable: "Focusable",
@@ -208,11 +210,16 @@ const layoutProps = (page: unknown): LayoutProps =>
 const dirtyPageIds = (page: unknown) =>
   layoutProps(page).pages.filter(({ dirty }) => dirty).map(({ id }) => id);
 
-const text = (node: any): string => {
+const text = (node: unknown): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return text(renderedChildren(node));
+  if (typeof node !== "object" || !("props" in node)) return "";
+  const rawProps = node.props;
+  if (rawProps == null || typeof rawProps !== "object") return "";
+  const props = rawProps as Record<string, unknown>;
+  const element = node as { type?: unknown; props?: Record<string, unknown> };
+  return `${text(props.label)}${text(props.description)}${text(renderedChildren(element))}`;
 };
 
 const action = (page: any, label: string) =>
@@ -256,7 +263,13 @@ const hltbField = () => {
       const candidate = node as { type?: unknown; props?: Record<string, unknown> };
       const children = renderedChildren(candidate);
       if (candidate.type === "div" && Array.isArray(children)) {
-        const field = children.find((child) => child && typeof child === "object" && "type" in child && child.type === "TextField");
+        // The TextField sits directly in the row or inside its flex wrapper.
+        const isTextField = (child: unknown) => !!child && typeof child === "object" && "type" in child && child.type === "TextField";
+        const field = children.map((child) => {
+          if (isTextField(child)) return child;
+          const inner = child && typeof child === "object" ? renderedChildren(child as { props?: Record<string, unknown> }) : undefined;
+          return [inner].flat().find(isTextField);
+        }).find(Boolean);
         const apply = children.find((child) => {
           if (!child || typeof child !== "object" || !("props" in child)) return false;
           const props = child.props;
@@ -349,7 +362,7 @@ describe("MetadataPage compatibility status", () => {
 
     const control = dropdown(openPage("Compatibility"));
 
-    expect(control.props.label).toBe("Status");
+    expect(text(control.props.label)).toBe("Status");
     expect(control.props.rgOptions).toEqual([
       { data: null, label: "Use global default" },
       { data: "valve", label: "Follow Valve" },
@@ -502,6 +515,7 @@ describe("MetadataPage compatibility status", () => {
     expect(layout.title).toBe("Shortcut");
     expect(layout.page).toBe("details");
     expect(layout.pages.map(({ id }) => id)).toEqual(EDITOR_PAGE_ORDER);
+    expect(layout.pages.every(({ icon }) => icon !== undefined)).toBe(true);
     expect(layout.pages.map(({ visible }) => visible)).toEqual(
       EDITOR_PAGE_ORDER.map((id) => nonSteam || !shortcutOnly.includes(id)),
     );
@@ -1228,10 +1242,9 @@ describe("MetadataPage compatibility status", () => {
     await applying;
     await flushAsyncWork();
 
-    const titleLabel = walk(renderPage(), (node) => node.type === "label" && text(node).startsWith("Title"))[0];
+    const titleLabel = walk(renderPage(), (node) => node.type === "Field" && text(node.props.label).startsWith("Title"))[0];
     expect(text(titleLabel)).toContain("Edited");
     expect(text(titleLabel)).not.toContain("From Steam");
-
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({
@@ -2104,10 +2117,10 @@ describe("Draft field markers and editor actions", () => {
 
     editTitle(renderPage(), "Edited title");
 
-    const label = walk(renderPage(), (node) => node.type === "label" && text(node).startsWith("Title"))[0];
+    const label = walk(renderPage(), (node) => node.type === "Field" && text(node.props.label).startsWith("Title"))[0];
     expect(text(label)).toContain("Edited");
     expect(text(label)).not.toContain("From Steam");
-    expect(label.props.style).toMatchObject({ color: "#1a9fff" });
+    expect(label.props.label.props.style).toMatchObject({ color: "#1a9fff" });
   });
 
   it("marks a field a Steam preview filled as From Steam until the user edits it", async () => {
@@ -2121,13 +2134,13 @@ describe("Draft field markers and editor actions", () => {
 
     await applySteamAppId();
 
-    const previewed = walk(openPage("Details"), (node) => node.type === "label" && text(node).startsWith("Description"))[0];
+    const previewed = walk(openPage("Details"), (node) => node.type === "Field" && text(node.props.label).startsWith("Description"))[0];
     expect(text(previewed)).toContain("From Steam, not saved");
-    expect(previewed.props.style).toMatchObject({ color: "#f59e0b" });
+    expect(previewed.props.label.props.style).toMatchObject({ color: "#f59e0b" });
 
     walk(renderPage(), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My description" } });
-    const edited = walk(renderPage(), (node) => node.type === "label" && text(node).startsWith("Description"))[0];
+    const edited = walk(renderPage(), (node) => node.type === "Field" && text(node.props.label).startsWith("Description"))[0];
     expect(text(edited)).toContain("Edited");
     expect(text(edited)).not.toContain("From Steam");
   });

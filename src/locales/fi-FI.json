@@ -426,6 +426,7 @@
   "editor": {
     "save": "Tallenna",
     "saveCount": "Tallenna ({{count}})",
+    "unsupportedSteam": "Tätä Steam-versiota ei vielä tueta. Päivitä Decky Metadata muokataksesi metatietoja.",
     "removeMetadata": "Poista metatiedot",
     "page": {
       "details": "Tiedot",

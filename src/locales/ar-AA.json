@@ -430,6 +430,7 @@
   "editor": {
     "save": "حفظ",
     "saveCount": "حفظ ({{count}})",
+    "unsupportedSteam": "إصدار Steam هذا غير مدعوم بعد. حدّث Decky Metadata لتعديل البيانات الوصفية.",
     "removeMetadata": "إزالة البيانات الوصفية",
     "page": {
       "details": "التفاصيل",

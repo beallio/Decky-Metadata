@@ -425,6 +425,7 @@
   "editor": {
     "save": "保存",
     "saveCount": "保存 ({{count}})",
+    "unsupportedSteam": "このSteamバージョンはまだサポートされていません。メタデータを編集するにはDecky Metadataを更新してください。",
     "removeMetadata": "メタデータを削除",
     "page": {
       "details": "詳細",

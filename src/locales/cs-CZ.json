@@ -428,6 +428,7 @@
   "editor": {
     "save": "Uložit",
     "saveCount": "Uložit ({{count}})",
+    "unsupportedSteam": "Tato verze Steamu zatím není podporována. Aktualizujte Decky Metadata, abyste mohli upravovat metadata.",
     "removeMetadata": "Odstranit metadata",
     "page": {
       "details": "Podrobnosti",

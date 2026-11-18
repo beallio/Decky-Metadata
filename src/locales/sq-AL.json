@@ -426,6 +426,7 @@
   "editor": {
     "save": "Ruaj",
     "saveCount": "Ruaj ({{count}})",
+    "unsupportedSteam": "Ky version i Steam nuk mbështetet ende. Përditëso Decky Metadata për të redaktuar metadata.",
     "removeMetadata": "Hiq metadatat",
     "page": {
       "details": "Detajet",

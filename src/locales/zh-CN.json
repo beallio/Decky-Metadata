@@ -425,6 +425,7 @@
   "editor": {
     "save": "保存",
     "saveCount": "保存 ({{count}})",
+    "unsupportedSteam": "此 Steam 版本尚不受支持。请更新 Decky Metadata 以编辑元数据。",
     "removeMetadata": "移除元数据",
     "page": {
       "details": "详细信息",

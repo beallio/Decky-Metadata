@@ -427,6 +427,7 @@
   "editor": {
     "save": "Salvează",
     "saveCount": "Salvează ({{count}})",
+    "unsupportedSteam": "Această versiune Steam nu este încă acceptată. Actualizează Decky Metadata pentru a edita metadatele.",
     "removeMetadata": "Elimină metadatele",
     "page": {
       "details": "Detalii",
