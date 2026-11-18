@@ -36029,6 +36029,31 @@ const editorFieldMarkerTagStyle = {
     fontSize: 12,
     fontWeight: 600,
 };
+// Mirrors Steam's Properties > Shortcut > Launch Options block (AppProperties SectionTopLine/TopGap, Title, input row).
+const editorNativeInputSectionStyle = {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTop: "1px solid rgba(59, 63, 72, 0.5)",
+};
+const editorNativeInputGapStyle = {
+    marginTop: 10,
+    marginBottom: 20,
+};
+const editorNativeInputTitleStyle = {
+    color: "#8b929a",
+    fontSize: 15,
+    fontWeight: 500,
+    letterSpacing: "0.5px",
+    textTransform: "uppercase",
+};
+// Block-level row lets Steam's flex input wrapper take the full width.
+const editorNativeInputRowStyle = {
+    marginTop: 6,
+};
+// Steam's Custom Sort Name input keeps this width beside its inline label.
+const editorInlineInputStyle = {
+    minWidth: "20vw",
+};
 const editorScopedCss = `
 .decky-metadata-editor .decky-metadata-editor__focus-target {
   scroll-margin-block: 12px;
@@ -37794,27 +37819,27 @@ const MetadataPage = () => {
                                             description: e.target.value,
                                             short_description: e.target.value,
                                         }));
-                                    }, style: descriptionTextareaStyle }) })) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("developers", "editor.field.developers"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: developerText, onChange: (e) => {
-                                    markFormEdited();
-                                    clearPreviewMarker("developers");
-                                    developerTextRef.current = e.target.value;
-                                    setDeveloperText(e.target.value);
-                                }, style: fieldStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("publishers", "editor.field.publishers"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: publisherText, onChange: (e) => {
-                                    markFormEdited();
-                                    clearPreviewMarker("publishers");
-                                    publisherTextRef.current = e.target.value;
-                                    setPublisherText(e.target.value);
-                                }, style: fieldStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: releaseText, onChange: (e) => {
+                                    }, style: descriptionTextareaStyle }) })) }), SP_JSX.jsxs("div", { style: editorNativeInputSectionStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel("developers", "editor.field.developers") }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.developers"), value: developerText, onChange: (e) => {
+                                            markFormEdited();
+                                            clearPreviewMarker("developers");
+                                            developerTextRef.current = e.target.value;
+                                            setDeveloperText(e.target.value);
+                                        }, style: fieldStyle }) })] }), SP_JSX.jsxs("div", { style: editorNativeInputGapStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel("publishers", "editor.field.publishers") }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.publishers"), value: publisherText, onChange: (e) => {
+                                            markFormEdited();
+                                            clearPreviewMarker("publishers");
+                                            publisherTextRef.current = e.target.value;
+                                            setPublisherText(e.target.value);
+                                        }, style: fieldStyle }) })] }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
                                     markFormEdited();
                                     clearPreviewMarker("releaseDate");
                                     releaseTextRef.current = e.target.value;
                                     setReleaseText(e.target.value);
-                                }, style: fieldStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: ratingText, onChange: (e) => {
+                                }, style: editorInlineInputStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.rating"), value: ratingText, onChange: (e) => {
                                     markFormEdited();
                                     clearPreviewMarker("rating");
                                     ratingTextRef.current = e.target.value;
                                     setRatingText(e.target.value);
-                                }, style: fieldStyle }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [entryBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !entryBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                }, style: editorInlineInputStyle }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [entryBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !entryBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderSteamMatchPage() {
         const loadLabelKey = !nonSteam

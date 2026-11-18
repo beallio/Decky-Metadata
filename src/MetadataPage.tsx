@@ -87,6 +87,11 @@ import {
   editorFieldPreviewLabelStyle,
   editorFieldPreviewStyle,
   editorFocusTargetClassName,
+  editorInlineInputStyle,
+  editorNativeInputGapStyle,
+  editorNativeInputRowStyle,
+  editorNativeInputSectionStyle,
+  editorNativeInputTitleStyle,
   editorRootClassName,
   editorRowActionStyle,
   editorScopedCss,
@@ -1500,35 +1505,44 @@ export const MetadataPage = () => {
               </Focusable>
             )}
           </Field>
-          <Field label={markedLabel("developers", "editor.field.developers")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
+          <div style={editorNativeInputSectionStyle}>
+            <div style={editorNativeInputTitleStyle}>{markedLabel("developers", "editor.field.developers")}</div>
+            <div style={editorNativeInputRowStyle}>
+              <TextField
+                className={editorFocusTargetClassName}
+                aria-label={t("editor.field.developers")}
+                value={developerText}
+                onChange={(e) => {
+                  markFormEdited();
+                  clearPreviewMarker("developers");
+                  developerTextRef.current = e.target.value;
+                  setDeveloperText(e.target.value);
+                }}
+                style={fieldStyle}
+              />
+            </div>
+          </div>
+          <div style={editorNativeInputGapStyle}>
+            <div style={editorNativeInputTitleStyle}>{markedLabel("publishers", "editor.field.publishers")}</div>
+            <div style={editorNativeInputRowStyle}>
+              <TextField
+                className={editorFocusTargetClassName}
+                aria-label={t("editor.field.publishers")}
+                value={publisherText}
+                onChange={(e) => {
+                  markFormEdited();
+                  clearPreviewMarker("publishers");
+                  publisherTextRef.current = e.target.value;
+                  setPublisherText(e.target.value);
+                }}
+                style={fieldStyle}
+              />
+            </div>
+          </div>
+          <Field label={markedLabel("releaseDate", "editor.field.releaseDate")} bottomSeparator="standard">
             <TextField
               className={editorFocusTargetClassName}
-              value={developerText}
-              onChange={(e) => {
-                markFormEdited();
-                clearPreviewMarker("developers");
-                developerTextRef.current = e.target.value;
-                setDeveloperText(e.target.value);
-              }}
-              style={fieldStyle}
-            />
-          </Field>
-          <Field label={markedLabel("publishers", "editor.field.publishers")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
-            <TextField
-              className={editorFocusTargetClassName}
-              value={publisherText}
-              onChange={(e) => {
-                markFormEdited();
-                clearPreviewMarker("publishers");
-                publisherTextRef.current = e.target.value;
-                setPublisherText(e.target.value);
-              }}
-              style={fieldStyle}
-            />
-          </Field>
-          <Field label={markedLabel("releaseDate", "editor.field.releaseDate")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
-            <TextField
-              className={editorFocusTargetClassName}
+              aria-label={t("editor.field.releaseDate")}
               value={releaseText}
               onChange={(e) => {
                 markFormEdited();
@@ -1536,12 +1550,13 @@ export const MetadataPage = () => {
                 releaseTextRef.current = e.target.value;
                 setReleaseText(e.target.value);
               }}
-              style={fieldStyle}
+              style={editorInlineInputStyle}
             />
           </Field>
-          <Field label={markedLabel("rating", "editor.field.rating")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="none">
+          <Field label={markedLabel("rating", "editor.field.rating")} bottomSeparator="none">
             <TextField
               className={editorFocusTargetClassName}
+              aria-label={t("editor.field.rating")}
               value={ratingText}
               onChange={(e) => {
                 markFormEdited();
@@ -1549,7 +1564,7 @@ export const MetadataPage = () => {
                 ratingTextRef.current = e.target.value;
                 setRatingText(e.target.value);
               }}
-              style={fieldStyle}
+              style={editorInlineInputStyle}
             />
           </Field>
         </DialogControlsSection>
