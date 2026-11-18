@@ -9,9 +9,8 @@ Open Edit Metadata from two menus and use a Steam-style editor
 ### Changed
 
 - **Edit Metadata...** is in the Library card menu and in the game page's gear
-  menu, for non-Steam games only. It appears below
-  SteamGridDB's **Change Artwork...** if that plugin is installed. Otherwise,
-  it appears above **Properties...**.
+  menu, for non-Steam games only. It appears near **Properties...**, next to
+  SteamGridDB's **Change Artwork...** if that plugin is installed.
 - **Steam-style editor.** The sidebar shows the game's name and seven pages:
   **Details**, **Steam Match**, **HowLongToBeat**, **Compatibility**, **Store
   Categories**, **Shortcut Name**, and **Advanced**. Move the D-pad to a page
@@ -21,7 +20,9 @@ Open Edit Metadata from two menus and use a Steam-style editor
   **Cancel**. A blue dot marks each page with unsaved changes. **Save** stays
   at the bottom of the sidebar, and **X** also saves. The label shows the
   number of changes, as in **Save (3)**. Shortcut name actions take effect
-  without **Save**.
+  without **Save**. Each page has an icon, and fields use Steam's own row
+  layout with full-width text boxes. If a future Steam update hides the
+  sidebar, the editor says that this Steam version is not supported yet.
 - **Load from Steam** is on **Steam Match**. It fills the form and gives a
   reason when it is unavailable. Select **Load Steam text in** *your language*
   on the same page to load the description and genres in your Steam language.

@@ -42,8 +42,8 @@ cache and **Delisted Steam games** tools. **Compatibility status** is immediatel
 below it.
 
 To edit a non-Steam game, select **Edit Metadata...** from the Library card's
-**Options** menu. You can also open the gear menu on the game page and select
-**Manage**. On **Steam Match**, select **Search Steam** to find the game by
+**Options** menu or from the gear menu on the game page. The editor has a
+sidebar of pages, like Steam's own settings. On **Steam Match**, select **Search Steam** to find the game by
 name. Check the result's artwork, developer, and release date, then select
 **Use this Steam match**. If you know the Steam page link or app ID, enter it
 under **Steam App ID** and select **Apply Steam App ID**. Select **Save** at

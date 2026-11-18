@@ -3,10 +3,10 @@
 For a non-Steam game, select **Edit Metadata...** from either of these menus:
 
 - On the Library card, open **Options** or right-click the card.
-- On the game page, select the gear icon, then select **Manage**.
+- On the game page, select the gear icon.
 
-**Edit Metadata...** is just below SteamGridDB's **Change Artwork...** if that
-plugin is installed. Otherwise, it is just above **Properties...**.
+**Edit Metadata...** is near the bottom of the menu, close to **Properties...**.
+If SteamGridDB is installed, it is next to SteamGridDB's **Change Artwork...**.
 
 The editor looks like Steam's Properties page. The game's name is at the top
 of the sidebar. Move the D-pad to a page name to show that page. Press **A** or
