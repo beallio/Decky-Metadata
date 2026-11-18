@@ -9,7 +9,18 @@ For a non-Steam game, select **Edit Metadata...** from either of these menus:
 plugin is installed. Otherwise, it is just above **Properties...**.
 
 The editor looks like Steam's Properties page. The game's name is at the top
-of the sidebar. Select a page in the sidebar:
+of the sidebar. Move the D-pad to a page name to show that page. Press **A** or
+**Right** to move into the page. Press **B** in a page to return to the sidebar.
+Press **B** in the sidebar to leave the editor:
+
++ If you have unsaved changes, Steam asks you to choose **Save**, **Discard**,
+  or **Cancel**.
++ If you do not have unsaved changes, you leave the editor.
+
+The Steam or Home button does not show this prompt. If you leave that way, you
+lose unsaved changes.
+
+Pages in the sidebar:
 
 - **Details**: Edit the title, description, developers, publishers, release
   date, or rating. You can also search IGN for game details.
@@ -105,10 +116,6 @@ Select **Save** at the bottom of the sidebar or press **X**. The label shows the
 number of changes, for example **Save (3)**. You cannot save if nothing has
 changed. The **Metadata saved** message shows the game's name.
 
-Press **B** to leave. If you have unsaved changes, Steam lists them by page
-and asks you to choose **Save**, **Discard**, or **Cancel**. The Steam or Home
-button does not show this prompt. If you leave that way, you lose unsaved
-changes.
 
 ## Descriptions and release dates
 
