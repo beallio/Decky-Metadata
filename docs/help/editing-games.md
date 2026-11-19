@@ -23,9 +23,9 @@ lose unsaved changes.
 Pages in the sidebar:
 
 - **Details**: Edit the title, description, developers, publishers, release
-  date, or rating. You can also search IGN for game details.
-- **Steam Match**: Find a Steam game, load details for the current match, enter
-  a Steam App ID, or load Steam text in your language.
+  date, or rating.
+- **Game Match**: Find a Steam game, load details for the current match, enter
+  a Steam App ID, load Steam text in your language, or search IGN for details.
 - **HowLongToBeat**: Choose which game's times to show for a non-Steam game.
 - **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)
   for a non-Steam game.
@@ -38,7 +38,7 @@ Pages in the sidebar:
 
 A Steam match connects your non-Steam game to the right Steam store entry so Decky Metadata can use that game's details and other available information. Check the game title carefully before applying a match, especially when several games have similar names or editions.
 
-1. On **Steam Match**, enter the game's name and select **Search Steam**.
+1. On **Game Match**, enter the game's name and select **Search Steam**.
 2. Select a result to view its developer and release date, when available.
    Artwork helps distinguish similar titles. Some results are demos or DLC;
    check the title and the Steam type shown in the preview.
@@ -54,7 +54,7 @@ internet connection.
 
 ### Enter an app ID or page link instead
 
-On **Steam Match**, enter the game's ID or paste its Steam Store, Community,
+On **Game Match**, enter the game's ID or paste its Steam Store, Community,
 or SteamDB URL in **Steam App ID**, then select **Apply Steam App ID**. This
 loads its details into the form without saving them. Select **Save** to store
 the match. Use this option if the game does not appear in search results.
@@ -62,9 +62,10 @@ An invalid app ID or link shows a warning and changes nothing. If you change
 the **Steam App ID** without selecting **Apply Steam App ID**, **Save** asks
 you to apply it first.
 
-**Search IGN metadata** on **Details** searches IGN, not Steam. Select an IGN
-result to load the game's details into the form. This step does not save the
-details or choose a Steam match.
+At the bottom of **Game Match**, below **Steam App ID**, select
+**Search IGN metadata** to search IGN, not Steam. Select an IGN result to load
+the game's details into the form. This does not save the details or choose a
+Steam match.
 
 To correct a match, choose another Steam result or apply the correct app ID.
 To clear the match, empty **Steam App ID** and select **Apply Steam App ID**.
@@ -84,7 +85,7 @@ rating for the shortcut. Correcting or clearing the match updates badges that
 are already on screen. If no valid ID is saved, badge matching can use the
 shortcut's name instead. See [ProtonDB ratings](protondb-badges.md).
 
-To get current details for a match, go to **Current match** on **Steam Match**
+To get current details for a match, go to **Current match** on **Game Match**
 and select **Load from Steam**. This fills the form. Select **Save** to store
 the details. If you cannot load the data, the button tells you why:
 
@@ -93,7 +94,7 @@ the details. If you cannot load the data, the button tells you why:
 - **Load from Steam (Not available for Steam games)**: Use this action only
   for non-Steam games.
 
-If the saved Steam text is not in your Steam language, **Steam Match** shows
+If the saved Steam text is not in your Steam language, **Game Match** shows
 its language under **Steam text language**. Select **Load Steam text in**
 *your language* to load the description and genres. Select **Save** to store
 them. Decky Metadata does not replace a description by itself because you may

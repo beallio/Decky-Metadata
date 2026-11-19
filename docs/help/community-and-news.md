@@ -13,7 +13,7 @@ does not come back. To open the editor, see [Get started](../../README.md#get-st
 
 ## If posts or news are missing
 
-- Open **Edit Metadata...** and check the saved match on **Steam Match**.
+- Open **Edit Metadata...** and check the saved match on **Game Match**.
   Community posts and Activity news use that match.
 - Community screenshots from IGN appear only as a fallback when Steam has no Community cards to show. An empty area does not mean IGN screenshots are guaranteed to be available.
 - If you removed metadata, the injected Activity news is removed with it. Save the correct match again if you want the matched game's news to appear.

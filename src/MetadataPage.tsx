@@ -1561,55 +1561,6 @@ export const MetadataPage = () => {
             />
           </Field>
         </DialogControlsSection>
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{t("editor.searchIgn")}</DialogControlsSectionHeader>
-          <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
-            <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
-              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-                <TextField
-                  className={editorFocusTargetClassName}
-                  aria-label={t("editor.ign.gameName")}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  style={{ ...fieldStyle, width: "100%" }}
-                />
-              </div>
-              <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName}`}
-                disabled={entryBusy}
-                onClick={search}
-                style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
-              >
-                {entryBusy ? t("editor.searching") : t("editor.search")}
-              </FocusableButton>
-            </div>
-          </Field>
-          <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-            {entryBusy ? (
-              <Field focusable={false} padding="none" bottomSeparator="none">
-                <div style={compactTextStyle}>{t("editor.searching")}</div>
-              </Field>
-            ) : null}
-            {!entryBusy && !results.length ? (
-              <Field focusable={false} padding="none" bottomSeparator="none">
-                <div style={compactTextStyle}>{t("editor.noResults")}</div>
-              </Field>
-            ) : null}
-            {results.map((result) => (
-              <Field
-                key={result.slug || result.url}
-                className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
-                label={result.title}
-                description={result.description}
-                focusable={true}
-                highlightOnFocus={true}
-                bottomSeparator="standard"
-                onActivate={() => void applyResult(result)}
-                onClick={() => void applyResult(result)}
-              />
-            ))}
-          </div>
-        </DialogControlsSection>
       </>
     );
   }
@@ -1706,6 +1657,55 @@ export const MetadataPage = () => {
               </FocusableButton>
             </Field>
           ) : null}
+        </DialogControlsSection>
+        <DialogControlsSection>
+          <DialogControlsSectionHeader>{t("editor.searchIgn")}</DialogControlsSectionHeader>
+          <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
+            <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
+              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+                <TextField
+                  className={editorFocusTargetClassName}
+                  aria-label={t("editor.ign.gameName")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  style={{ ...fieldStyle, width: "100%" }}
+                />
+              </div>
+              <FocusableButton
+                className={`DialogButton ${editorFocusTargetClassName}`}
+                disabled={entryBusy}
+                onClick={search}
+                style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
+              >
+                {entryBusy ? t("editor.searching") : t("editor.search")}
+              </FocusableButton>
+            </div>
+          </Field>
+          <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
+            {entryBusy ? (
+              <Field focusable={false} padding="none" bottomSeparator="none">
+                <div style={compactTextStyle}>{t("editor.searching")}</div>
+              </Field>
+            ) : null}
+            {!entryBusy && !results.length ? (
+              <Field focusable={false} padding="none" bottomSeparator="none">
+                <div style={compactTextStyle}>{t("editor.noResults")}</div>
+              </Field>
+            ) : null}
+            {results.map((result) => (
+              <Field
+                key={result.slug || result.url}
+                className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
+                label={result.title}
+                description={result.description}
+                focusable={true}
+                highlightOnFocus={true}
+                bottomSeparator="standard"
+                onActivate={() => void applyResult(result)}
+                onClick={() => void applyResult(result)}
+              />
+            ))}
+          </div>
         </DialogControlsSection>
       </>
     );
