@@ -85,6 +85,7 @@ function FaTags (props) {
 
 /** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 const getAllMetadata = callable("get_all_metadata");
+const getNativeCssClasses = callable("get_native_css_classes");
 const getMetadata = callable("get_metadata");
 const saveMetadata = callable("save_metadata");
 const savePreviewedMetadata = callable("save_previewed_metadata");
@@ -179,6 +180,7 @@ var backend$p = /*#__PURE__*/Object.freeze({
     getMetadata: getMetadata,
     getMiniAchievementsEnabled: getMiniAchievementsEnabled,
     getMissingMetadataCount: getMissingMetadataCount,
+    getNativeCssClasses: getNativeCssClasses,
     getPluginLogs: getPluginLogs,
     getPluginVersion: getPluginVersion,
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
@@ -21161,6 +21163,130 @@ const clearRouteShield = () => {
     metadataState.routeShield = null;
 };
 
+const steamUiWindow = () => {
+    const candidates = [globalThis];
+    try {
+        const currentWindow = globalThis;
+        candidates.push(currentWindow.parent, currentWindow.top);
+    }
+    catch {
+        // A cross-origin frame can still use its own Decky module bridge.
+    }
+    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
+};
+const steamUiDocuments = () => {
+    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
+    // host bridge for every consumer so cards and Game Info inspect one ordered,
+    // deduplicated set of real browser documents.
+    const contexts = new Set([globalThis, steamUiWindow()]);
+    try {
+        const currentWindow = globalThis;
+        contexts.add(currentWindow.parent);
+        contexts.add(currentWindow.top);
+    }
+    catch {
+        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
+    }
+    const documents = new Set();
+    try {
+        for (const context of contexts) {
+            const windowStore = context?.SteamUIStore?.m_WindowStore;
+            const browserWindows = [
+                windowStore?.MainWindowInstance?.m_BrowserWindow,
+                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+            ];
+            for (const browserWindow of browserWindows) {
+                const document = browserWindow?.document;
+                if (typeof document?.querySelector === "function")
+                    documents.add(document);
+            }
+        }
+    }
+    catch {
+        // Continue with context documents when a Steam private field changes.
+    }
+    for (const context of contexts) {
+        const document = context?.document;
+        if (typeof document?.querySelector === "function")
+            documents.add(document);
+    }
+    return Array.from(documents);
+};
+/** Find an element in Steam's real browser documents, not only Decky's global. */
+const findSteamUiDocumentMatch = (finder) => {
+    for (const document of steamUiDocuments()) {
+        try {
+            const match = finder(document);
+            if (match !== undefined)
+                return match;
+        }
+        catch {
+            // Private DOM access is optional. Try the next known SteamUI document.
+        }
+    }
+    return undefined;
+};
+
+const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;
+const GLOBAL_MIRROR_KEY = "__DECKY_METADATA_NATIVE_CLASSES__";
+let translatedClasses = {};
+const listeners = new Set();
+function isValidCssIdentifier(value) {
+    return typeof value === "string" && CSS_IDENTIFIER_RE.test(value);
+}
+function mirrorToSteamWindow(next) {
+    try {
+        const host = steamUiWindow();
+        if (host && typeof host === "object") {
+            host[GLOBAL_MIRROR_KEY] = { ...next };
+        }
+    }
+    catch {
+        // Steam UI window may not be attached yet in unit tests or early boot.
+    }
+    try {
+        globalThis[GLOBAL_MIRROR_KEY] = { ...next };
+    }
+    catch {
+        // Ignore read-only globals.
+    }
+}
+function setNativeCssClasses(raw) {
+    const next = {};
+    if (raw && typeof raw === "object") {
+        for (const [key, value] of Object.entries(raw)) {
+            if (isValidCssIdentifier(value)) {
+                next[key] = value;
+            }
+        }
+    }
+    translatedClasses = next;
+    mirrorToSteamWindow(next);
+    for (const listener of Array.from(listeners)) {
+        try {
+            listener();
+        }
+        catch {
+            // Listener errors must never block class hydration.
+        }
+    }
+}
+function getNativeCssClass(key) {
+    const value = translatedClasses[key];
+    return isValidCssIdentifier(value) ? value : undefined;
+}
+function resolveSteamCssClass(primary, key) {
+    if (isValidCssIdentifier(primary))
+        return primary;
+    return getNativeCssClass(key);
+}
+function subscribeNativeCssClasses(listener) {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+}
+
 let verbose = false;
 const setVerboseLogging = (enabled) => {
     verbose = !!enabled;
@@ -21624,6 +21750,10 @@ const css$1 = `
 .decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
 .decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
 .decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
@@ -21658,9 +21788,13 @@ function HltbStats({ stats, hltbId, settings, launching }) {
         flow ? "decky-metadata-hltb-flow" : "",
     ].filter(Boolean).join(" ");
     const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+    const deckVerifiedInfoClass = resolveSteamCssClass(detailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(detailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(detailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(menuButtonClasses.MenuButton, "menuButton") ?? "";
     return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
-                                ? SP_JSX.jsx(DFL.Focusable, { className: `${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`, focusClassName: detailsClasses.Focused, children: SP_JSX.jsx(DFL.Focusable, { className: detailsClasses.Details, noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
+                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
 }
 
 const ROW_KEY = "decky-metadata-hltb-row";
@@ -21668,7 +21802,38 @@ const JOINED_CLASS = "decky-metadata-hltb-joined";
 const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
 const px = (value) => String(Math.round(value * 100) / 100);
 /** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height, paddingTop) => `.${DFL.appDetailsClasses.InnerContainer}:has(> .${JOINED_CLASS}) .${DFL.basicAppDetailsSectionStylerClasses.PlaySection} { margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+const joinedRule = (height, paddingTop) => {
+    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+    if (inner && playSection)
+        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+    if (playSection)
+        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+    return `.${JOINED_CLASS} + * ${rule}`;
+};
+const findHeaderElement = (row) => {
+    const container = row.parentElement;
+    if (!container)
+        return undefined;
+    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
+    if (headerClass) {
+        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+        if (matched)
+            return matched;
+    }
+    return row.previousElementSibling ?? undefined;
+};
+const findPlaySectionElement = (row) => {
+    const next = row.nextElementSibling;
+    if (!next)
+        return null;
+    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    if (playSectionClass) {
+        return next.querySelector(`.${playSectionClass}`);
+    }
+    return next.firstElementChild ?? next;
+};
 const positiveId = (value, maximum) => {
     const id = Number(value);
     return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
@@ -21698,23 +21863,27 @@ function useHltbSnapshot() {
 function useLaunching(ref, active) {
     const [launching, setLaunching] = SP_REACT.useState(false);
     SP_REACT.useEffect(() => {
-        if (!active)
+        if (!active || !ref.current)
             return;
-        const header = Array.from(ref.current?.parentElement?.children ?? [])
-            .find((child) => child.className.includes(DFL.appDetailsClasses.Header));
-        const capsule = Array.from(header?.children ?? [])
-            .find((child) => child.className.includes(DFL.appDetailsHeaderClasses.TopCapsule));
+        const header = findHeaderElement(ref.current);
+        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+        const capsule = topCapsuleClass
+            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+            : header?.firstElementChild ?? undefined;
         const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
         if (!capsule || !View)
             return;
         const observer = new View(() => {
             const name = capsule.className;
             const entering = [
-                DFL.appDetailsHeaderClasses.FullscreenEnterStart, DFL.appDetailsHeaderClasses.FullscreenEnterActive,
-                DFL.appDetailsHeaderClasses.FullscreenEnterDone, DFL.appDetailsHeaderClasses.FullscreenExitStart,
-                DFL.appDetailsHeaderClasses.FullscreenExitActive,
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
             ].some((value) => value && name.includes(value));
-            setLaunching(entering && !name.includes(DFL.appDetailsHeaderClasses.FullscreenExitDone));
+            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
         });
         observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
         return () => observer.disconnect();
@@ -21759,7 +21928,7 @@ function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
         const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
         const resize = { element: null, observer: null };
         function update() {
-            const section = row.nextElementSibling?.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.PlaySection}`);
+            const section = findPlaySectionElement(row);
             const bar = row.querySelector(".decky-metadata-hltb-info");
             if (!section) {
                 for (const name of names)
@@ -21780,7 +21949,8 @@ function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
             row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
             row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
             row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-            const root = section.closest(`.${DFL.basicAppDetailsSectionStylerClasses.AppDetailsRoot}`);
+            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
             const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
             row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
             row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
@@ -21824,13 +21994,15 @@ function useStatusBandOverlay(ref, wanted) {
             setOverlay(false);
             return;
         }
-        const status = DFL.playSectionClasses?.CloudStatusRow;
+        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
         const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
         let frame = 0;
         const touching = () => {
-            const art = Array.from(container.children)
-                .find((child) => child.className.includes(DFL.appDetailsClasses.Header))
-                ?.querySelector(`.${DFL.appDetailsHeaderClasses.HeaderBackgroundImage}`);
+            const header = findHeaderElement(row);
+            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+            const art = headerBgClass
+                ? header?.querySelector(`.${headerBgClass}`)
+                : header?.querySelector("img")?.parentElement ?? undefined;
             if (!art)
                 return false;
             const bounds = art.getBoundingClientRect();
@@ -21933,7 +22105,7 @@ function usePushRoom(ref, wanted) {
             const rowHeight = surface
                 ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
                 : 0;
-            const section = row.nextElementSibling?.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.PlaySection}`);
+            const section = findPlaySectionElement(row);
             if (!rowHeight || !section)
                 return null;
             let scroller = container.parentElement;
@@ -21953,8 +22125,7 @@ function usePushRoom(ref, wanted) {
                 if (footer)
                     footerResize.observe(footer);
             }
-            const header = Array.from(container.children)
-                .find((child) => child.className.includes(DFL.appDetailsClasses.Header));
+            const header = findHeaderElement(row);
             if (!header)
                 return null;
             // Layout, not rects: Steam scales and translates the page while it animates in,
@@ -21966,10 +22137,11 @@ function usePushRoom(ref, wanted) {
                 ? layoutTop(footer)
                 : layoutTop(scroller) + scroller.clientHeight;
             const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const playButton = DFL.appActionButtonClasses?.PlayButton;
+            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
+            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
             // The button face; the wrapper's AppActionButton class is the fallback.
             const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
-                section.querySelector(`.${DFL.basicAppDetailsSectionStylerClasses.AppActionButton}`);
+                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
             // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
             const buttonBottom = button
                 ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
@@ -22050,7 +22222,9 @@ function installHltbGameView() {
                     return children ?? null;
                 },
             ], (_args, ret) => {
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && node?.props?.className?.includes(DFL.appDetailsClasses.InnerContainer))?.props?.children;
+                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                    node.props.children.some(isPlaySection)))?.props?.children;
                 if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
                     return ret;
                 const index = children.findIndex(isPlaySection);
@@ -23924,70 +24098,6 @@ const nativeReleaseDate = (value) => {
     return Math.floor(date.getTime() / 1000);
 };
 
-const steamUiWindow = () => {
-    const candidates = [globalThis];
-    try {
-        const currentWindow = globalThis;
-        candidates.push(currentWindow.parent, currentWindow.top);
-    }
-    catch {
-        // A cross-origin frame can still use its own Decky module bridge.
-    }
-    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
-};
-const steamUiDocuments = () => {
-    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
-    // host bridge for every consumer so cards and Game Info inspect one ordered,
-    // deduplicated set of real browser documents.
-    const contexts = new Set([globalThis, steamUiWindow()]);
-    try {
-        const currentWindow = globalThis;
-        contexts.add(currentWindow.parent);
-        contexts.add(currentWindow.top);
-    }
-    catch {
-        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
-    }
-    const documents = new Set();
-    try {
-        for (const context of contexts) {
-            const windowStore = context?.SteamUIStore?.m_WindowStore;
-            const browserWindows = [
-                windowStore?.MainWindowInstance?.m_BrowserWindow,
-                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
-            ];
-            for (const browserWindow of browserWindows) {
-                const document = browserWindow?.document;
-                if (typeof document?.querySelector === "function")
-                    documents.add(document);
-            }
-        }
-    }
-    catch {
-        // Continue with context documents when a Steam private field changes.
-    }
-    for (const context of contexts) {
-        const document = context?.document;
-        if (typeof document?.querySelector === "function")
-            documents.add(document);
-    }
-    return Array.from(documents);
-};
-/** Find an element in Steam's real browser documents, not only Decky's global. */
-const findSteamUiDocumentMatch = (finder) => {
-    for (const document of steamUiDocuments()) {
-        try {
-            const match = finder(document);
-            if (match !== undefined)
-                return match;
-        }
-        catch {
-            // Private DOM access is optional. Try the next known SteamUI document.
-        }
-    }
-    return undefined;
-};
-
 const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
     typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
 /** Inspect webpack factories, never observable Steam stores or render-time state. */
@@ -24053,7 +24163,7 @@ const refreshNativeReleaseDateView = (appId) => {
             "InnerContainer" in module && typeof module.InnerContainer === "string")
             return module.InnerContainer;
         return undefined;
-    });
+    }) ?? getNativeCssClass("descriptionInnerContainer");
     if (typeof className !== "string" || !/^[A-Za-z_-][A-Za-z0-9_-]*$/.test(className))
         return false;
     return findSteamUiDocumentMatch(document => {
@@ -25659,10 +25769,14 @@ const resolveAppDetailsQuickLinksClasses = () => {
             });
         }
         const quickLinks = discovered?.GameInfoQuickLinks;
-        return typeof quickLinks === "string" && quickLinks.trim() ? [quickLinks.trim()] : [];
+        if (typeof quickLinks === "string" && quickLinks.trim())
+            return [quickLinks.trim()];
+        const translated = getNativeCssClass("gameInfoQuickLinks");
+        return translated ? [translated] : [];
     }
     catch (_error) {
-        return [];
+        const translated = getNativeCssClass("gameInfoQuickLinks");
+        return translated ? [translated] : [];
     }
 };
 const onGameDetailRoute = (path) => {
@@ -26076,7 +26190,9 @@ const resolveClasses = () => {
         const found = inspect(module);
         return found?.GameInfoContainer ? found : undefined;
     });
-    return descriptions && details ? { owner: details.GameInfoContainer, description: descriptions.GameDescription } : undefined;
+    const owner = (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer");
+    const description = (typeof descriptions?.GameDescription === "string" && descriptions.GameDescription) || getNativeCssClass("gameDescription");
+    return owner && description ? { owner, description } : undefined;
 };
 /** Read one confirmed scalar prop on host ancestors, never enumerate Steam stores. */
 const descriptionOwnerAppId = (owner) => {
@@ -26110,7 +26226,11 @@ const defaultDependencies$1 = () => {
             }) ?? (() => { });
         },
         revisions: (callback) => {
-            const stops = [subscribeCompatibilityRevision(callback), subscribeMetadataMatchChanges(callback)];
+            const stops = [
+                subscribeCompatibilityRevision(callback),
+                subscribeMetadataMatchChanges(callback),
+                subscribeNativeCssClasses(callback),
+            ];
             return () => stops.forEach((stop) => stop());
         },
         observe: (target, callback) => {
@@ -26131,9 +26251,13 @@ const defaultDependencies$1 = () => {
     };
 };
 const installMetadataDescriptions = (unpatchers, dependencies = defaultDependencies$1()) => {
-    const classes = dependencies.classes();
-    if (!classes || !selector(classes.owner) || !selector(classes.description))
-        return;
+    let classes = dependencies.classes();
+    const resolveValidClasses = () => {
+        if (!classes || !selector(classes.owner) || !selector(classes.description)) {
+            classes = dependencies.classes();
+        }
+        return classes && selector(classes.owner) && selector(classes.description) ? classes : undefined;
+    };
     let disposed = false;
     const owners = new Map();
     let discoveryStops = [];
@@ -26169,7 +26293,10 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
             releaseOwner(owner, record);
             return;
         }
-        const leaves = Array.from(owner.querySelectorAll(selector(classes.description)));
+        const currentClasses = resolveValidClasses();
+        if (!currentClasses)
+            return;
+        const leaves = Array.from(owner.querySelectorAll(selector(currentClasses.description)));
         for (const leaf of record.originals.keys())
             if (!leaves.includes(leaf))
                 restore(record, leaf);
@@ -26190,12 +26317,15 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
     const discover = () => {
         if (disposed)
             return;
+        const currentClasses = resolveValidClasses();
+        if (!currentClasses)
+            return;
         const route = dependencies.route();
         const appId = gameDetailAppIdFromPath(route);
         if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
             return;
         for (const doc of dependencies.documents()) {
-            const matched = Array.from(doc.querySelectorAll(selector(classes.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
+            const matched = Array.from(doc.querySelectorAll(selector(currentClasses.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
             if (!matched)
                 continue;
             stopDiscovery();
@@ -26227,6 +26357,8 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
         const route = dependencies.route();
         const appId = gameDetailAppIdFromPath(route);
         if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
+            return;
+        if (!resolveValidClasses())
             return;
         if (hasCurrentOwner(appId))
             return;
@@ -30013,10 +30145,12 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             catch { }
             for (const candidate of candidates) {
                 try {
-                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow;
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow ||
+                        candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.cloudStatusRow;
                     if (typeof value === "string" && value) {
                         nativeStatusRowClass = value;
-                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage;
+                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage ||
+                            candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.headerBackgroundImage;
                         if (typeof background === "string" && background)
                             nativeBackgroundClass = background;
                         break;
@@ -30889,12 +31023,15 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             for (const candidate of [window.opener, window, window.parent]) {
                 try {
                     const styles = candidate?.DFL?.findModuleChild?.(predicate);
-                    if (!styles)
+                    const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
+                    const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
+                    const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
+                    if (!rawContainer || !rawBackground)
                         continue;
                     const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
                         ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
-                    const container = escape(styles.RecentGamesContainer);
-                    const background = escape(styles.RecentGamesBackgroundImages);
+                    const container = escape(rawContainer);
+                    const background = escape(rawBackground);
                     if (!container || !background)
                         continue;
                     this.homeStyles = { container: `.${container}`, background: `.${background}` };
@@ -33706,6 +33843,15 @@ const statsClasses = () => {
             // A failed lookup keeps the previous classes and retries on the next use.
         }
     }
+    const translatedSection = getNativeCssClass("gameStatsSection");
+    const translatedPlayBar = getNativeCssClass("playBar");
+    if (!statsClassesCache?.GameStatsSection && translatedSection) {
+        return {
+            ...statsClassesCache,
+            GameStatsSection: translatedSection,
+            ...(translatedPlayBar ? { PlayBar: translatedPlayBar } : {}),
+        };
+    }
     return statsClassesCache ?? {};
 };
 // Repeated reads must return the same object so prop comparisons stay stable.
@@ -33877,6 +34023,11 @@ function installMiniAchievementsPatch() {
         }
         scheduleSync();
     };
+    const unsubscribeClasses = subscribeNativeCssClasses(() => {
+        if (!disposed)
+            requestSync();
+    });
+    unpatchers.push(unsubscribeClasses);
     requestSync();
     for (const route of GAME_DETAIL_ROUTES) {
         try {
@@ -37958,24 +38109,42 @@ const protonDbCoverSurface = (path) => {
 };
 
 // Native mounting boundaries and icon layout are from the local ProtonDB fork.
-const COVER_SELECTOR = "._1pwP4eeP1zQD7PEgmsep0W";
-const FOOTER_SELECTOR = "._3BPFqWN5T-x8njyrRYM1CX";
-const OVERLAY_SELECTOR = "._2GRcKrPZsMSF6glMPRMZei";
+const CLASSIC_BOX_CLASS = "WYgDg9NyCcMIVuMyZ_NBC";
+const CLASSIC_COVER_CLASS = "_1pwP4eeP1zQD7PEgmsep0W";
+const CLASSIC_FOOTER_CLASS = "_3BPFqWN5T-x8njyrRYM1CX";
+const CLASSIC_OVERLAY_CLASS = "_2GRcKrPZsMSF6glMPRMZei";
 const HOST_CLASS = "decky-metadata-protondb-cover-host";
 const STYLE_ID = "decky-metadata-protondb-covers-style";
 const APP_ID_FROM_SRC = /\/(?:assets|customimages)\/(\d+)/;
-const COVER_CSS = `
+const classSelector = (classes) => Array.from(new Set(classes.filter((value) => Boolean(value))))
+    .map(value => `.${value}`)
+    .join(", ");
+const buildCoverSelectors = () => {
+    const boxClasses = Array.from(new Set([CLASSIC_BOX_CLASS, getNativeCssClass("libraryItemBox")].filter((value) => Boolean(value))));
+    const coverClasses = Array.from(new Set([CLASSIC_COVER_CLASS, getNativeCssClass("libraryItemDraggable")].filter((value) => Boolean(value))));
+    const focusRules = [
+        ...boxClasses.map(box => `.${box}.gpfocus .decky-metadata-protondb-cover--focus`),
+        ...coverClasses.flatMap(cover => [
+            `.${cover}.gpfocuswithin .decky-metadata-protondb-cover--focus`,
+            `.${cover}:focus-within .decky-metadata-protondb-cover--focus`,
+            `.${cover}:hover .decky-metadata-protondb-cover--focus`,
+        ]),
+    ].join(",\n");
+    return {
+        cover: classSelector(coverClasses),
+        footer: classSelector([CLASSIC_FOOTER_CLASS, getNativeCssClass("libraryItemIcons")]),
+        overlay: classSelector([CLASSIC_OVERLAY_CLASS, getNativeCssClass("libraryItemOverlayInnerArea")]),
+        css: `
 .${HOST_CLASS}{display:contents}
 .decky-metadata-protondb-cover{width:20px;height:20px;padding:2px;border-radius:20px;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:1}
 .decky-metadata-protondb-cover--bottom-left{flex-shrink:0}
 .decky-metadata-protondb-cover--top-left{position:absolute;top:4px;left:4px}
 .decky-metadata-protondb-cover--top-right{position:absolute;top:4px;right:4px}
 .decky-metadata-protondb-cover--focus{opacity:0}
-.WYgDg9NyCcMIVuMyZ_NBC.gpfocus .decky-metadata-protondb-cover--focus,
-${COVER_SELECTOR}.gpfocuswithin .decky-metadata-protondb-cover--focus,
-${COVER_SELECTOR}:focus-within .decky-metadata-protondb-cover--focus,
-${COVER_SELECTOR}:hover .decky-metadata-protondb-cover--focus{opacity:1;transition:opacity .6s cubic-bezier(0,.73,.48,1)}
-`;
+${focusRules}{opacity:1;transition:opacity .6s cubic-bezier(0,.73,.48,1)}
+`,
+    };
+};
 const CoverIcon = SP_REACT.memo(function CoverIcon({ appId, sourceId, tier, position, focusOnly }) {
     const t = useT();
     if (!tier || sourceId === null)
@@ -38014,6 +38183,7 @@ const installProtonDbCoverBadges = () => {
     let observerQueued = false;
     let nextKey = 0;
     let settings = protonDbBadgeController.getSnapshot().settings;
+    let selectors = buildCoverSelectors();
     const surfaceEnabled = (surface) => {
         const snapshot = protonDbBadgeController.getSnapshot();
         return snapshot.effectiveEnabled && surface !== null && snapshot.settings[surface];
@@ -38075,8 +38245,8 @@ const installProtonDbCoverBadges = () => {
     const reconcile = (cover) => {
         const existing = hosts.get(cover);
         const appId = appIdFromCover(cover);
-        const footer = cover.querySelector(FOOTER_SELECTOR);
-        const overlay = footer?.closest(OVERLAY_SELECTOR);
+        const footer = cover.querySelector(selectors.footer);
+        const overlay = footer?.closest(selectors.overlay);
         const surface = existing?.surface ?? surfaces.get(cover) ?? currentSurface();
         if (surface !== null)
             surfaces.set(cover, surface);
@@ -38110,10 +38280,10 @@ const installProtonDbCoverBadges = () => {
         const element = node;
         if (element.closest(`.${HOST_CLASS}`) && !element.classList.contains(HOST_CLASS))
             return;
-        const cover = element.closest(COVER_SELECTOR);
+        const cover = element.closest(selectors.cover);
         if (cover)
             affected.add(cover);
-        for (const child of element.querySelectorAll(COVER_SELECTOR))
+        for (const child of element.querySelectorAll(selectors.cover))
             affected.add(child);
     };
     const detachDocument = () => {
@@ -38140,7 +38310,7 @@ const installProtonDbCoverBadges = () => {
                 releaseEntry(cover, entry);
             }
         }
-        for (const cover of document.querySelectorAll(COVER_SELECTOR))
+        for (const cover of document.querySelectorAll(selectors.cover))
             reconcile(cover);
     };
     const syncDocument = () => {
@@ -38150,7 +38320,7 @@ const installProtonDbCoverBadges = () => {
         // Observe Steam's main document even on Game Info so the next cover mount
         // is handled in the same turn, not by the one-second discovery fallback.
         const nextDocument = snapshot.effectiveEnabled && (settings.home || settings.library)
-            ? findSteamUiDocumentMatch(candidate => candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(COVER_SELECTOR)
+            ? findSteamUiDocumentMatch(candidate => candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(selectors.cover)
                 ? candidate : undefined) ?? null
             : null;
         if (nextDocument === document)
@@ -38162,7 +38332,7 @@ const installProtonDbCoverBadges = () => {
         root = createRoot(document.createElement("div"));
         style = document.createElement("style");
         style.id = STYLE_ID;
-        style.textContent = COVER_CSS;
+        style.textContent = selectors.css;
         document.head.appendChild(style);
         const popup = document.defaultView;
         if (!popup)
@@ -38208,6 +38378,15 @@ const installProtonDbCoverBadges = () => {
         queueRender();
     };
     const unsubscribe = protonDbBadgeController.subscribe(refreshSettings);
+    const unsubscribeClasses = subscribeNativeCssClasses(() => {
+        if (disposed)
+            return;
+        selectors = buildCoverSelectors();
+        if (style)
+            style.textContent = selectors.css;
+        syncDocument();
+        scan();
+    });
     const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
         if (disposed)
             return;
@@ -38223,6 +38402,7 @@ const installProtonDbCoverBadges = () => {
             return;
         disposed = true;
         unsubscribe();
+        unsubscribeClasses();
         unsubscribeMatch();
         clearInterval(maintenance);
         detachDocument();
@@ -38313,14 +38493,14 @@ function resolveNativeTargets() {
     const tooltip = moduleValues(["tool-tip-source", "bNavStop", "toolTipContent:"])
         .find(value => typeof value === "function" &&
         ["tool-tip-source", "bNavStop", "toolTipContent:"].every(fragment => value.toString().includes(fragment)));
-    if (!recordValue(actionStyles) || typeof actionStyles.AppButtons !== "string" ||
-        !recordValue(controllerStyles) || typeof controllerStyles.MenuButton !== "string" ||
-        typeof controllerStyles.ControllerConfigButton !== "string" || typeof tooltip !== "function")
+    const appButtons = resolveSteamCssClass(recordValue(actionStyles) ? actionStyles.AppButtons : undefined, "appButtons");
+    const menuButton = resolveSteamCssClass(recordValue(controllerStyles) ? controllerStyles.MenuButton : undefined, "menuButton");
+    const controllerConfigButton = resolveSteamCssClass(recordValue(controllerStyles) ? controllerStyles.ControllerConfigButton : undefined, "controllerConfigButton");
+    if (!appButtons || !menuButton || !controllerConfigButton || typeof tooltip !== "function")
         return;
     // The fingerprinted native tooltip export supplies Steam's focusable button shell.
     const Button = tooltip;
-    return { appButtons: actionStyles.AppButtons,
-        buttonClass: `${controllerStyles.MenuButton} ${controllerStyles.ControllerConfigButton}`, Button };
+    return { appButtons, buttonClass: `${menuButton} ${controllerConfigButton}`, Button };
 }
 function prependBadge(node, appButtonsClass, badge) {
     if (Array.isArray(node)) {
@@ -38350,12 +38530,15 @@ function fiberOf(element) {
             return recordValue(fiber.current) ? fiber.current : fiber;
     }
 }
-function actionRowType(fiber) {
+function actionRowType(fiber, appButtonsClass) {
     const type = fiber.elementType ?? fiber.type;
     if (!recordValue(type) || type.$$typeof !== Symbol.for("react.forward_ref") || typeof type.render !== "function")
         return;
     const source = type.render.toString();
-    return source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel") ? type : undefined;
+    return (source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel")) ||
+        (Boolean(appButtonsClass) && source.includes(appButtonsClass))
+        ? type
+        : undefined;
 }
 /** Capture the private forwardRef from its real DOM fiber; it is not a webpack export. */
 function installProtonDbGameView() {
@@ -38401,7 +38584,7 @@ function installProtonDbGameView() {
                 let foundType;
                 let parentToRefresh;
                 for (let depth = 0; fiber && depth < 128; depth += 1) {
-                    foundType ?? (foundType = actionRowType(fiber));
+                    foundType ?? (foundType = actionRowType(fiber, resolved.appButtons));
                     const state = fiber.stateNode;
                     if (foundType && recordValue(state) && typeof state.forceUpdate === "function") {
                         parentToRefresh = state;
@@ -38464,11 +38647,16 @@ function installProtonDbGameView() {
         const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
         routeCleanups.push(() => routerHook.removePatch(route, patch));
     }
+    const unsubscribeClasses = subscribeNativeCssClasses(() => {
+        if (!stopped && !targets)
+            scheduleCapture();
+    });
     scheduleCapture();
     return () => {
         if (stopped)
             return;
         stopped = true;
+        unsubscribeClasses();
         generation += 1;
         for (const observer of observers.values())
             observer.disconnect();
@@ -39368,6 +39556,9 @@ var index = DFL.definePlugin(() => {
     void getDebugLogging()
         .then((enabled) => setVerboseLogging(enabled))
         .catch((error) => warn("bridge", "debug logging setting load failed", error));
+    void getNativeCssClasses()
+        .then((classes) => setNativeCssClasses(classes))
+        .catch(() => undefined);
     void refreshMetadataCache();
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     resetProtonDbAppIdResolution();
@@ -39399,7 +39590,9 @@ var index = DFL.definePlugin(() => {
         // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
         name: "Decky Metadata",
         // Display label shown in the QAM header; kept human-readable on purpose.
-        titleView: SP_JSX.jsx("div", { className: DFL.staticClasses.Title, children: "Decky Metadata" }),
+        titleView: (SP_JSX.jsx("div", { className: DFL.staticClasses.Title, style: DFL.staticClasses.Title
+                ? undefined
+                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }, children: "Decky Metadata" })),
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {

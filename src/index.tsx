@@ -5,8 +5,9 @@ import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
-import { frontendLog, getDebugLogging } from "./backend";
+import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
+import { setNativeCssClasses } from "./steam/nativeCssClasses";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
@@ -77,6 +78,9 @@ export default definePlugin(() => {
   void getDebugLogging()
     .then((enabled) => log.setVerboseLogging(enabled))
     .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
+  void getNativeCssClasses()
+    .then((classes) => setNativeCssClasses(classes))
+    .catch(() => undefined);
   void refreshMetadataCache();
   void ensureCompatibilityDefault().catch((error) =>
     log.warn("bridge", "compatibility default load failed", error)
@@ -112,7 +116,18 @@ export default definePlugin(() => {
     // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
     name: "Decky Metadata",
     // Display label shown in the QAM header; kept human-readable on purpose.
-    titleView: <div className={staticClasses.Title}>{"Decky Metadata"}</div>,
+    titleView: (
+      <div
+        className={staticClasses.Title}
+        style={
+          staticClasses.Title
+            ? undefined
+            : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }
+        }
+      >
+        {"Decky Metadata"}
+      </div>
+    ),
     content: <Content />,
     icon: <FaTags />,
     onDismount() {

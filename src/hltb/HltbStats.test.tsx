@@ -58,4 +58,26 @@ describe("HLTB stats", () => {
       expect(className(style, true)).not.toContain("decky-metadata-hltb-flow");
     }
   });
+  it("applies translated Vite classes and zero-specificity fallback styles when JS class modules are absent", async () => {
+    const { setNativeCssClasses } = await import("../steam/nativeCssClasses");
+    setNativeCssClasses({
+      deckVerifiedInfo: "-gmqfyWnoYk-",
+      deckVerifiedDetails: "fhlkN4HzGQc-",
+      deckVerifiedFocused: "G2IDwnwNvx8-",
+      menuButton: "_9bDYflwE-1c-",
+    });
+    try {
+      const defaultTree = render({ settings: { ...DEFAULT_HLTB_SETTINGS, style: "default" } });
+      const defaultButton = nodes(defaultTree).find(node => node.props.onActivate)!;
+      expect(defaultButton.props.className).toContain("fhlkN4HzGQc-");
+      expect(defaultButton.props.className).toContain("decky-metadata-hltb-details-button");
+      const styleNode = nodes(defaultTree).find(node => node.type === "style")!;
+      expect(text(styleNode)).toContain(":where(.decky-metadata-hltb-details-button)");
+      const cleanTree = render({ settings: { ...DEFAULT_HLTB_SETTINGS, style: "clean" } });
+      const cleanButton = nodes(cleanTree).find(node => node.props.onActivate)!;
+      expect(cleanButton.props.className).toContain("_9bDYflwE-1c-");
+    } finally {
+      setNativeCssClasses(null);
+    }
+  });
 });
