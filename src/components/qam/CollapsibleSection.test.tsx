@@ -66,4 +66,26 @@ describe("QAM collapsible sections", () => {
     expect(header(closed).props["aria-expanded"]).toBe(false);
     expect(children(region(closed)).some(node => node.type === "PanelSection")).toBe(false);
   });
+
+  it("highlights on gamepad focus/blur even without DOM focus events", () => {
+    const initial = render("Metadata");
+    expect(header(initial).props.style.background).toBeUndefined();
+
+    const scrollIntoView = vi.fn();
+    const fakeHeading = {
+      isConnected: true,
+      scrollIntoView,
+      ownerDocument: { defaultView: { requestAnimationFrame: (cb: () => void) => cb() } },
+    };
+    header(initial).props.onGamepadFocus({ currentTarget: fakeHeading });
+    const focused = render("Metadata");
+    expect(header(focused).props.style.background).toBe("rgba(102, 182, 236, 0.18)");
+    expect(header(focused).props.style.color).toBe("#fff");
+    expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
+
+    header(focused).props.onGamepadBlur();
+    const blurred = render("Metadata");
+    expect(header(blurred).props.style.background).toBeUndefined();
+    expect(header(blurred).props.style.color).toBe("#aeb8c4");
+  });
 });
