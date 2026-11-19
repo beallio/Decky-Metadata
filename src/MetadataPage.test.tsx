@@ -249,6 +249,10 @@ const textField = (page: unknown, label: string) =>
 const editTitle = (page: unknown, value: string) =>
   textField(page, "Title").props.onChange({ target: { value } });
 
+// The marked heading above the stacked Title text box.
+const titleHeading = (page: unknown) =>
+  walk(page, (node) => node.type === "span" && node.props.style?.display === "inline-flex" && text(node).startsWith("Title"))[0];
+
 const applySteamAppId = () =>
   action(openPage("Steam Match"), "Apply Steam App ID").props.onClick();
 
@@ -1242,7 +1246,7 @@ describe("MetadataPage compatibility status", () => {
     await applying;
     await flushAsyncWork();
 
-    const titleLabel = walk(renderPage(), (node) => node.type === "Field" && text(node.props.label).startsWith("Title"))[0];
+    const titleLabel = titleHeading(renderPage());
     expect(text(titleLabel)).toContain("Edited");
     expect(text(titleLabel)).not.toContain("From Steam");
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -2117,10 +2121,10 @@ describe("Draft field markers and editor actions", () => {
 
     editTitle(renderPage(), "Edited title");
 
-    const label = walk(renderPage(), (node) => node.type === "Field" && text(node.props.label).startsWith("Title"))[0];
+    const label = titleHeading(renderPage());
     expect(text(label)).toContain("Edited");
     expect(text(label)).not.toContain("From Steam");
-    expect(label.props.label.props.style).toMatchObject({ color: "#1a9fff" });
+    expect(label.props.style).toMatchObject({ color: "#1a9fff" });
   });
 
   it("marks a field a Steam preview filled as From Steam until the user edits it", async () => {
