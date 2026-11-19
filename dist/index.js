@@ -36035,6 +36035,10 @@ const editorNativeInputSectionStyle = {
     paddingTop: 20,
     borderTop: "1px solid rgba(59, 63, 72, 0.5)",
 };
+// The first stacked field on a page has no separator line above it.
+const editorNativeInputFirstStyle = {
+    marginBottom: 20,
+};
 const editorNativeInputGapStyle = {
     marginTop: 10,
     marginBottom: 20,
@@ -37245,15 +37249,18 @@ const MetadataPage = () => {
                     : t("editor.fieldEdited"),
         };
     };
-    const markedLabel = (key, labelKey) => {
+    // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
+    const markedLabel = (key, labelKey, withBar = true) => {
         const marker = fieldMarker(key);
         return (SP_JSX.jsxs("span", { style: {
-                ...marker.container,
+                ...(withBar ? marker.container : undefined),
                 ...marker.label,
                 display: "inline-flex",
                 alignItems: "center",
             }, children: [SP_JSX.jsx("span", { children: t(labelKey) }), marker.tag ? SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: marker.tag }) : null] }));
     };
+    // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
+    const stackedTextField = (blockStyle, key, labelKey, value, onChange) => (SP_JSX.jsxs("div", { style: blockStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel(key, labelKey, false) }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t(labelKey), value: value, onChange: (e) => onChange(e.target.value), style: fieldStyle }) })] }));
     // Undefined means the field is not a usable HLTB game; the user has been told why.
     const checkHltbIdText = async () => {
         const text = hltbIdText.trim();
@@ -37802,10 +37809,10 @@ const MetadataPage = () => {
         });
     };
     function renderDetailsPage() {
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, SP_JSX.jsx(DFL.Field, { label: markedLabel("title", "editor.field.title"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.title"), value: metadata.title, onChange: (e) => {
-                                    clearPreviewMarker("title");
-                                    updateMetadata((prev) => ({ ...prev, title: e.target.value }));
-                                }, style: fieldStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
+                            clearPreviewMarker("title");
+                            updateMetadata((prev) => ({ ...prev, title: value }));
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
                                     clearPreviewMarker("description");
                                     updateMetadata((prev) => ({
                                         ...prev,
@@ -37819,17 +37826,17 @@ const MetadataPage = () => {
                                             description: e.target.value,
                                             short_description: e.target.value,
                                         }));
-                                    }, style: descriptionTextareaStyle }) })) }), SP_JSX.jsxs("div", { style: editorNativeInputSectionStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel("developers", "editor.field.developers") }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.developers"), value: developerText, onChange: (e) => {
-                                            markFormEdited();
-                                            clearPreviewMarker("developers");
-                                            developerTextRef.current = e.target.value;
-                                            setDeveloperText(e.target.value);
-                                        }, style: fieldStyle }) })] }), SP_JSX.jsxs("div", { style: editorNativeInputGapStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel("publishers", "editor.field.publishers") }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.publishers"), value: publisherText, onChange: (e) => {
-                                            markFormEdited();
-                                            clearPreviewMarker("publishers");
-                                            publisherTextRef.current = e.target.value;
-                                            setPublisherText(e.target.value);
-                                        }, style: fieldStyle }) })] }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
+                                    }, style: descriptionTextareaStyle }) })) }), stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
+                            markFormEdited();
+                            clearPreviewMarker("developers");
+                            developerTextRef.current = value;
+                            setDeveloperText(value);
+                        }), stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
+                            markFormEdited();
+                            clearPreviewMarker("publishers");
+                            publisherTextRef.current = value;
+                            setPublisherText(value);
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
                                     markFormEdited();
                                     clearPreviewMarker("releaseDate");
                                     releaseTextRef.current = e.target.value;

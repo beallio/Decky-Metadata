@@ -97,6 +97,11 @@ export const editorNativeInputSectionStyle = {
   borderTop: "1px solid rgba(59, 63, 72, 0.5)",
 } as const;
 
+// The first stacked field on a page has no separator line above it.
+export const editorNativeInputFirstStyle = {
+  marginBottom: 20,
+} as const;
+
 export const editorNativeInputGapStyle = {
   marginTop: 10,
   marginBottom: 20,

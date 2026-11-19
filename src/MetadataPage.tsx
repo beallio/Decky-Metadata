@@ -88,6 +88,7 @@ import {
   editorFieldPreviewStyle,
   editorFocusTargetClassName,
   editorInlineInputStyle,
+  editorNativeInputFirstStyle,
   editorNativeInputGapStyle,
   editorNativeInputRowStyle,
   editorNativeInputSectionStyle,
@@ -831,12 +832,13 @@ export const MetadataPage = () => {
           : t("editor.fieldEdited"),
     };
   };
-  const markedLabel = (key: DraftFieldKey, labelKey: string) => {
+  // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
+  const markedLabel = (key: DraftFieldKey, labelKey: string, withBar = true) => {
     const marker = fieldMarker(key);
     return (
       <span
         style={{
-          ...marker.container,
+          ...(withBar ? marker.container : undefined),
           ...marker.label,
           display: "inline-flex",
           alignItems: "center",
@@ -847,6 +849,27 @@ export const MetadataPage = () => {
       </span>
     );
   };
+  // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
+  const stackedTextField = (
+    blockStyle: CSSProperties,
+    key: DraftFieldKey,
+    labelKey: string,
+    value: string,
+    onChange: (value: string) => void,
+  ) => (
+    <div style={blockStyle}>
+      <div style={editorNativeInputTitleStyle}>{markedLabel(key, labelKey, false)}</div>
+      <div style={editorNativeInputRowStyle}>
+        <TextField
+          className={editorFocusTargetClassName}
+          aria-label={t(labelKey)}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          style={fieldStyle}
+        />
+      </div>
+    </div>
+  );
   // Undefined means the field is not a usable HLTB game; the user has been told why.
   const checkHltbIdText = async (): Promise<{ id: number | null; name: string } | undefined> => {
     const text = hltbIdText.trim();
@@ -1450,18 +1473,10 @@ export const MetadataPage = () => {
               <div style={compactTextStyle}>{t("editor.nonSteamOnly")}</div>
             </Field>
           ) : null}
-          <Field label={markedLabel("title", "editor.field.title")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
-            <TextField
-              className={editorFocusTargetClassName}
-              aria-label={t("editor.field.title")}
-              value={metadata.title}
-              onChange={(e) => {
-                clearPreviewMarker("title");
-                updateMetadata((prev) => ({ ...prev, title: e.target.value }));
-              }}
-              style={fieldStyle}
-            />
-          </Field>
+          {stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
+            clearPreviewMarker("title");
+            updateMetadata((prev) => ({ ...prev, title: value }));
+          })}
           <Field
             label={markedLabel("description", "editor.field.description")}
             childrenLayout="below"
@@ -1505,40 +1520,18 @@ export const MetadataPage = () => {
               </Focusable>
             )}
           </Field>
-          <div style={editorNativeInputSectionStyle}>
-            <div style={editorNativeInputTitleStyle}>{markedLabel("developers", "editor.field.developers")}</div>
-            <div style={editorNativeInputRowStyle}>
-              <TextField
-                className={editorFocusTargetClassName}
-                aria-label={t("editor.field.developers")}
-                value={developerText}
-                onChange={(e) => {
-                  markFormEdited();
-                  clearPreviewMarker("developers");
-                  developerTextRef.current = e.target.value;
-                  setDeveloperText(e.target.value);
-                }}
-                style={fieldStyle}
-              />
-            </div>
-          </div>
-          <div style={editorNativeInputGapStyle}>
-            <div style={editorNativeInputTitleStyle}>{markedLabel("publishers", "editor.field.publishers")}</div>
-            <div style={editorNativeInputRowStyle}>
-              <TextField
-                className={editorFocusTargetClassName}
-                aria-label={t("editor.field.publishers")}
-                value={publisherText}
-                onChange={(e) => {
-                  markFormEdited();
-                  clearPreviewMarker("publishers");
-                  publisherTextRef.current = e.target.value;
-                  setPublisherText(e.target.value);
-                }}
-                style={fieldStyle}
-              />
-            </div>
-          </div>
+          {stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
+            markFormEdited();
+            clearPreviewMarker("developers");
+            developerTextRef.current = value;
+            setDeveloperText(value);
+          })}
+          {stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
+            markFormEdited();
+            clearPreviewMarker("publishers");
+            publisherTextRef.current = value;
+            setPublisherText(value);
+          })}
           <Field label={markedLabel("releaseDate", "editor.field.releaseDate")} bottomSeparator="standard">
             <TextField
               className={editorFocusTargetClassName}

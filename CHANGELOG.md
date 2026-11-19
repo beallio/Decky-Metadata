@@ -21,8 +21,8 @@ Open Edit Metadata from two menus and use a Steam-style editor
   at the bottom of the sidebar, and **X** also saves. The label shows the
   number of changes, as in **Save (3)**. Shortcut name actions take effect
   without **Save**. Each page has an icon, and fields use Steam's own row
-  layout. On **Details**, **Developers** and **Publishers** use full-width
-  text boxes below their names, as in Steam's **Launch Options**.
+  layout. On **Details**, **Title**, **Developers**, and **Publishers** use
+  full-width text boxes below their names, as in Steam's **Launch Options**.
   **Release Date** and **Rating** have their text box beside the name, as in
   Steam's **Custom Sort Name**. If a future Steam update hides the
   sidebar, the editor says that this Steam version is not supported yet.
