@@ -47,6 +47,13 @@ export function CollapsibleSection({ title, icon, children, defaultExpanded = fa
   const [expanded, setExpanded] = useState(defaultExpanded);
   const [focused, setFocused] = useState(false);
   const id = useId();
+  const handleFocus = (target: EventTarget | null | undefined) => {
+    setFocused(true);
+    const heading = target as HTMLElement | null | undefined;
+    heading?.ownerDocument?.defaultView?.requestAnimationFrame?.(() => {
+      if (heading.isConnected) heading.scrollIntoView({ block: "nearest", inline: "nearest" });
+    });
+  };
 
   return (
     <div style={{ marginTop: 8 }}>
@@ -56,14 +63,10 @@ export function CollapsibleSection({ title, icon, children, defaultExpanded = fa
         aria-expanded={expanded}
         aria-controls={id}
         onActivate={() => setExpanded(value => !value)}
-        onFocus={(event) => {
-          const heading = event.currentTarget;
-          setFocused(true);
-          heading.ownerDocument.defaultView?.requestAnimationFrame(() => {
-            if (heading.isConnected) heading.scrollIntoView({ block: "nearest", inline: "nearest" });
-          });
-        }}
+        onFocus={(event) => handleFocus(event?.currentTarget)}
+        onGamepadFocus={(event) => handleFocus(event?.currentTarget ?? event?.target)}
         onBlur={() => setFocused(false)}
+        onGamepadBlur={() => setFocused(false)}
         style={focused ? focusedHeadingStyle : headingStyle}
       >
         <span style={headingLabelStyle}>
