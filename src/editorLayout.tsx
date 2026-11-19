@@ -1,4 +1,4 @@
-import { DialogButton, findModuleExport, Focusable } from "@decky/ui";
+import { DialogBody, DialogButton, DialogHeader, findModuleExport, Focusable } from "@decky/ui";
 import { createContext, useContext, useMemo, type ComponentType, type ReactNode } from "react";
 import type { EditorPageId } from "./editorPages";
 import { useT } from "./i18n";
@@ -49,14 +49,6 @@ const css = `
   height: 7px;
   border-radius: 50%;
   background: ${colors.accent};
-}
-
-.${layout}__heading {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 28px;
-  color: #fff;
-  margin: 10px 0;
 }
 
 .${layout}__save.DialogButton.Secondary {
@@ -148,10 +140,13 @@ function NativeEditorLayout({
         icon: editorPage.icon,
         visible: editorPage.visible,
         hideTitle: true,
+        // Steam's settings pages use DialogHeader + DialogBody; native CSS supplies their spacing.
         content: (
           <>
-            <h2 className={`${layout}__heading`}>{editorPage.label}</h2>
-            <CurrentPageContent key={editorPage.id} id={editorPage.id} />
+            <DialogHeader>{editorPage.label}</DialogHeader>
+            <DialogBody>
+              <CurrentPageContent key={editorPage.id} id={editorPage.id} />
+            </DialogBody>
           </>
         ),
       });

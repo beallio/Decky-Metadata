@@ -50,7 +50,7 @@ row](protondb-badges.md#enable-the-store-row).
 - **Steam games** are matched by their Steam App ID. HowLongToBeat lists the
   Steam game on its own page, so a different edition is not used by mistake.
   If HowLongToBeat does not list the Steam App ID, no times appear.
-- **Non-Steam games** use the Steam match saved on **Steam Match**. If there
+- **Non-Steam games** use the Steam match saved on **Game Match**. If there
   is no Steam match, HowLongToBeat searches for the game's name. If it finds
   only one game, Decky Metadata uses that game. HowLongToBeat also searches
   for other names of a game, so "Minecraft Bedrock" finds "Minecraft".
@@ -100,7 +100,7 @@ times. Its settings are not copied.
 - Check that **Show HowLongToBeat times** is on, and that **Store** is on if the
   game is on a Store page.
 - For a non-Steam game, open **Edit Metadata...** and check the saved match
-  on **Steam Match**, or choose a game on **HowLongToBeat**.
+  on **Game Match**, or choose a game on **HowLongToBeat**.
 - Select **Clear HLTB cache** in the **HLTB times** section to look up every
   game again. A message under the button tells you when the cache is clear.
 - HowLongToBeat has no official API. If it changes its site, times may stop

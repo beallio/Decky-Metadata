@@ -43,7 +43,7 @@ below it.
 
 To edit a non-Steam game, select **Edit Metadata...** from the Library card's
 **Options** menu or from the gear menu on the game page. The editor has a
-sidebar of pages, like Steam's own settings. On **Steam Match**, select **Search Steam** to find the game by
+sidebar of pages, like Steam's own settings. On **Game Match**, select **Search Steam** to find the game by
 name. Check the result's artwork, developer, and release date, then select
 **Use this Steam match**. If you know the Steam page link or app ID, enter it
 under **Steam App ID** and select **Apply Steam App ID**. Select **Save** at
@@ -56,7 +56,7 @@ games](docs/help/editing-games.md) for the full steps.
 
 ![Shortcut-name preview and controller-selectable action](assets/decky-metadata-shortcut-name.png?cacheBuster=202610011846)
 
-![Decky Metadata editor for Wobbly Life, a non-Steam game, showing Steam Match](assets/decky-metadata-editor.png?cacheBuster=20261115)
+![Decky Metadata editor for Wobbly Life, a non-Steam game, showing Game Match](assets/decky-metadata-editor.png?cacheBuster=20261115)
 
 ## What you can see
 
@@ -222,7 +222,7 @@ a translation, and in English when not. The description and genres follow your
 Steam language when the plugin first gets the game's Steam details. Names,
 developers, publishers, and release dates stay in English. If you change your
 Steam language later, the plugin does not replace a description by itself,
-because you may have edited it. On **Steam Match**, select **Load Steam text
+because you may have edited it. On **Game Match**, select **Load Steam text
 in** *your language*, then select **Save**.
 Steam gives English text if the store page has no text in your language.
 

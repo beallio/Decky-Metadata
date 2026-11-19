@@ -254,7 +254,7 @@ const titleHeading = (page: unknown) =>
   walk(page, (node) => node.type === "span" && node.props.style?.display === "inline-flex" && text(node).startsWith("Title"))[0];
 
 const applySteamAppId = () =>
-  action(openPage("Steam Match"), "Apply Steam App ID").props.onClick();
+  action(openPage("Game Match"), "Apply Steam App ID").props.onClick();
 
 const hltbField = () => {
   const findField = (node: unknown): { props: { value: string; onChange: (event: { target: { value: string } }) => void } } | undefined => {
@@ -528,7 +528,7 @@ describe("MetadataPage compatibility status", () => {
 
   it("puts Steam App ID and shortcut-name actions on their own pages", () => {
     configureShortcutPanel();
-    const steamMatch = openPage("Steam Match");
+    const steamMatch = openPage("Game Match");
     expect(textField(steamMatch, "Steam App ID")).toBeDefined();
     expect(action(steamMatch, "Use Steam name")).toBeUndefined();
 
@@ -663,7 +663,7 @@ describe("MetadataPage compatibility status", () => {
       steam_store_state: "unknown",
     }));
 
-    const input = textField(openPage("Steam Match"), "Steam App ID");
+    const input = textField(openPage("Game Match"), "Steam App ID");
     expect(input.props.value).toBe("15100");
     input.props.onChange({ target: { value: "15200" } });
     await applySteamAppId();
@@ -1076,7 +1076,7 @@ describe("MetadataPage compatibility status", () => {
 
     renderPage();
     effects.callbacks[2]();
-    textField(openPage("Steam Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
+    textField(openPage("Game Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
     await applySteamAppId();
     oldResponse.resolve(makeMetadata({ title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" }));
     await flushAsyncWork();
@@ -1133,7 +1133,7 @@ describe("MetadataPage compatibility status", () => {
       { title: "Old game result", description: "Old game", slug: "old-game", url: "https://www.ign.com/games/old-game" },
     ]);
 
-    ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
+    ignSearchInput(openPage("Game Match")).props.onChange({ target: { value: "Old game query" } });
     await action(renderPage(), "Search").props.onClick();
     expect(backend.searchMetadata).toHaveBeenCalledWith("Old game query", 8);
     expect(text(renderPage())).toContain("Old game result");
@@ -1143,7 +1143,7 @@ describe("MetadataPage compatibility status", () => {
     renderPage();
     effects.callbacks[1]();
 
-    const switched = renderPage();
+    const switched = openPage("Game Match");
     expect(ignSearchInput(switched).props.value).toBe("Second Game");
     expect(text(switched)).not.toContain("Old game result");
     expect(text(switched)).toContain("No results yet.");
@@ -1156,7 +1156,7 @@ describe("MetadataPage compatibility status", () => {
     const pendingSearch = deferred<any>();
     backend.searchMetadata.mockReturnValue(pendingSearch.promise);
 
-    ignSearchInput(renderPage()).props.onChange({ target: { value: "Old game query" } });
+    ignSearchInput(openPage("Game Match")).props.onChange({ target: { value: "Old game query" } });
     const searching = action(renderPage(), "Search").props.onClick();
 
     route.appid = "200";
@@ -1169,7 +1169,7 @@ describe("MetadataPage compatibility status", () => {
     await searching;
     await flushAsyncWork();
 
-    const switched = renderPage();
+    const switched = openPage("Game Match");
     expect(text(switched)).not.toContain("Old game result");
     expect(ignSearchInput(switched).props.value).toBe("Second Game");
   });
@@ -1623,7 +1623,7 @@ describe("Steam text language", () => {
   const show = (metadata: Record<string, unknown>, language: string) => {
     hydrateMetadata(makeMetadata(metadata));
     state.values[18] = language;
-    return openPage("Steam Match");
+    return openPage("Game Match");
   };
 
   it("offers the manual refetch only while the stored language differs", () => {
@@ -1650,7 +1650,7 @@ describe("Steam text language", () => {
     renderPage();
     effects.callbacks[5]();
     await flushAsyncWork();
-    expect(action(openPage("Steam Match"), "Load Steam text in French")).toBeDefined();
+    expect(action(openPage("Game Match"), "Load Steam text in French")).toBeDefined();
   });
 
   it("previews Steam text in the current language without storing it", async () => {
@@ -1949,7 +1949,7 @@ describe("Steam-match picker application", () => {
       steam_store_name: "New Steam Name",
     }));
 
-    await picker(openPage("Steam Match")).props.onApply(15200);
+    await picker(openPage("Game Match")).props.onApply(15200);
 
     // The preview is in the form, but only Save stores it.
     expect(state.values[0].steam_appid).toBe(15200);
@@ -1962,7 +1962,7 @@ describe("Steam-match picker application", () => {
     configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
     state.values[8] = "620";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
-    const applying = picker(openPage("Steam Match")).props.onApply(400);
+    const applying = picker(openPage("Game Match")).props.onApply(400);
     walk(openPage("Details"), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My edit during the request" } });
     pendingPreview.resolve(makeMetadata({
@@ -1996,7 +1996,7 @@ describe("Steam-match picker application", () => {
   });
 
   it("rejects a retired picker callback after visiting another game and returning", async () => {
-    const retired = picker(openPage("Steam Match")).props.onApply;
+    const retired = picker(openPage("Game Match")).props.onApply;
     route.appid = "101";
     renderPage();
     route.appid = "100";
@@ -2026,7 +2026,7 @@ describe("Steam-match picker application", () => {
       steam_appid: 15100,
       steam_store_name: "Steam Name",
     }));
-    action(renderPage(), "Hades").props.onClick();
+    action(openPage("Game Match"), "Hades").props.onClick();
     await flushAsyncWork();
 
     expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(
@@ -2149,12 +2149,12 @@ describe("Draft field markers and editor actions", () => {
     expect(text(edited)).not.toContain("From Steam");
   });
 
-  it("loads a matched shortcut from Steam and marks only Steam Match dirty without saving", async () => {
+  it("loads a matched shortcut from Steam and marks only Game Match dirty without saving", async () => {
     configureShortcutPanel();
     const pending = deferred<MetadataData>();
     backend.previewSteamMetadata.mockReturnValue(pending.promise);
 
-    const steamMatch = openPage("Steam Match");
+    const steamMatch = openPage("Game Match");
     const load = action(steamMatch, "Load from Steam");
     expect(load.props.disabled).toBe(false);
     expect(dirtyPageIds(steamMatch)).toEqual([]);
@@ -2216,7 +2216,7 @@ describe("Draft field markers and editor actions", () => {
     steam.isNonSteamApp.mockReturnValue(nonSteam);
     configureShortcutPanel({ metadata: { steam_appid: match } });
 
-    const load = action(openPage("Steam Match"), label);
+    const load = action(openPage("Game Match"), label);
     expect(load.props.disabled).toBe(true);
     load.props.onClick();
     await flushAsyncWork();
@@ -2312,7 +2312,7 @@ describe("Leaving the editor with a draft", () => {
     editTitle(details, "Edited title");
     walk(details, (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "Edited description" } });
-    textField(openPage("Steam Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
+    textField(openPage("Game Match"), "Steam App ID").props.onChange({ target: { value: "15200" } });
 
     pressB();
 
@@ -2321,7 +2321,7 @@ describe("Leaving the editor with a draft", () => {
     expect(modal.props.strTitle).toBe("Save changes?");
     expect(walk(modal, (node) => node.type === "li").map(text)).toEqual([
       "Details: Title, Description",
-      "Steam Match: Steam App ID",
+      "Game Match: Steam App ID",
     ]);
     expect(modal.props.strOKButtonText).toBe("Save");
     expect(modal.props.strMiddleButtonText).toBe("Discard");

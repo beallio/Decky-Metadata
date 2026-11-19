@@ -3365,7 +3365,7 @@ var editor$o = {
 	removeMetadata: "إزالة البيانات الوصفية",
 	page: {
 		details: "التفاصيل",
-		steamMatch: "مطابقة Steam",
+		steamMatch: "مطابقة اللعبة",
 		hltb: "HowLongToBeat",
 		compatibility: "التوافق",
 		storeCategories: "فئات المتجر",
@@ -3995,7 +3995,7 @@ var editor$n = {
 	removeMetadata: "Премахване на метаданните",
 	page: {
 		details: "Подробности",
-		steamMatch: "Съвпадение в Steam",
+		steamMatch: "Съвпадение на играта",
 		hltb: "HowLongToBeat",
 		compatibility: "Съвместимост",
 		storeCategories: "Категории в магазина",
@@ -4627,7 +4627,7 @@ var editor$m = {
 	removeMetadata: "Odstranit metadata",
 	page: {
 		details: "Podrobnosti",
-		steamMatch: "Shoda ve Steamu",
+		steamMatch: "Shoda hry",
 		hltb: "HowLongToBeat",
 		compatibility: "Kompatibilita",
 		storeCategories: "Kategorie v obchodu",
@@ -5257,7 +5257,7 @@ var editor$l = {
 	removeMetadata: "Metadaten entfernen",
 	page: {
 		details: "Details",
-		steamMatch: "Steam-Zuordnung",
+		steamMatch: "Spiel-Zuordnung",
 		hltb: "HowLongToBeat",
 		compatibility: "Kompatibilität",
 		storeCategories: "Shop-Kategorien",
@@ -5887,7 +5887,7 @@ var editor$k = {
 	removeMetadata: "Αφαίρεση μεταδεδομένων",
 	page: {
 		details: "Λεπτομέρειες",
-		steamMatch: "Αντιστοίχιση Steam",
+		steamMatch: "Αντιστοίχιση παιχνιδιού",
 		hltb: "HowLongToBeat",
 		compatibility: "Συμβατότητα",
 		storeCategories: "Κατηγορίες καταστήματος",
@@ -6517,7 +6517,7 @@ var editor$j = {
 	removeMetadata: "Remove Metadata",
 	page: {
 		details: "Details",
-		steamMatch: "Steam Match",
+		steamMatch: "Game Match",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibility",
 		storeCategories: "Store Categories",
@@ -7148,7 +7148,7 @@ var editor$i = {
 	removeMetadata: "Eliminar metadatos",
 	page: {
 		details: "Detalles",
-		steamMatch: "Coincidencia en Steam",
+		steamMatch: "Coincidencia de juego",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilidad",
 		storeCategories: "Categorías de la tienda",
@@ -7778,7 +7778,7 @@ var editor$h = {
 	removeMetadata: "Poista metatiedot",
 	page: {
 		details: "Tiedot",
-		steamMatch: "Steam-vastaavuus",
+		steamMatch: "Pelin vastaavuus",
 		hltb: "HowLongToBeat",
 		compatibility: "Yhteensopivuus",
 		storeCategories: "Kaupan kategoriat",
@@ -8409,7 +8409,7 @@ var editor$g = {
 	removeMetadata: "Supprimer les métadonnées",
 	page: {
 		details: "Détails",
-		steamMatch: "Correspondance Steam",
+		steamMatch: "Correspondance du jeu",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilité",
 		storeCategories: "Catégories du magasin",
@@ -9040,7 +9040,7 @@ var editor$f = {
 	removeMetadata: "Rimuovi i metadati",
 	page: {
 		details: "Dettagli",
-		steamMatch: "Corrispondenza Steam",
+		steamMatch: "Corrispondenza del gioco",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilità",
 		storeCategories: "Categorie del Negozio",
@@ -9669,7 +9669,7 @@ var editor$e = {
 	removeMetadata: "メタデータを削除",
 	page: {
 		details: "詳細",
-		steamMatch: "Steam の照合",
+		steamMatch: "ゲームの照合",
 		hltb: "HowLongToBeat",
 		compatibility: "互換性",
 		storeCategories: "ストアカテゴリ",
@@ -10299,7 +10299,7 @@ var editor$d = {
 	removeMetadata: "მეტამონაცემების წაშლა",
 	page: {
 		details: "დეტალები",
-		steamMatch: "Steam-ის შესატყვისი",
+		steamMatch: "თამაშის შესატყვისი",
 		hltb: "HowLongToBeat",
 		compatibility: "თავსებადობა",
 		storeCategories: "მაღაზიის კატეგორიები",
@@ -10928,7 +10928,7 @@ var editor$c = {
 	removeMetadata: "메타데이터 제거",
 	page: {
 		details: "세부 정보",
-		steamMatch: "Steam 일치 항목",
+		steamMatch: "게임 일치 항목",
 		hltb: "HowLongToBeat",
 		compatibility: "호환성",
 		storeCategories: "상점 카테고리",
@@ -11558,7 +11558,7 @@ var editor$b = {
 	removeMetadata: "Metadata verwijderen",
 	page: {
 		details: "Details",
-		steamMatch: "Steam-match",
+		steamMatch: "Game-match",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibiliteit",
 		storeCategories: "Winkelcategorieën",
@@ -12190,7 +12190,7 @@ var editor$a = {
 	removeMetadata: "Usuń metadane",
 	page: {
 		details: "Szczegóły",
-		steamMatch: "Dopasowanie Steam",
+		steamMatch: "Dopasowanie gry",
 		hltb: "HowLongToBeat",
 		compatibility: "Kompatybilność",
 		storeCategories: "Kategorie sklepu",
@@ -12821,7 +12821,7 @@ var editor$9 = {
 	removeMetadata: "Remover metadados",
 	page: {
 		details: "Detalhes",
-		steamMatch: "Correspondência da Steam",
+		steamMatch: "Correspondência do jogo",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilidade",
 		storeCategories: "Categorias da loja",
@@ -13452,7 +13452,7 @@ var editor$8 = {
 	removeMetadata: "Remover metadados",
 	page: {
 		details: "Detalhes",
-		steamMatch: "Correspondência da Steam",
+		steamMatch: "Correspondência do jogo",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilidade",
 		storeCategories: "Categorias da loja",
@@ -14083,7 +14083,7 @@ var editor$7 = {
 	removeMetadata: "Elimină metadatele",
 	page: {
 		details: "Detalii",
-		steamMatch: "Potrivire Steam",
+		steamMatch: "Potrivire joc",
 		hltb: "HowLongToBeat",
 		compatibility: "Compatibilitate",
 		storeCategories: "Categorii din magazin",
@@ -14715,7 +14715,7 @@ var editor$6 = {
 	removeMetadata: "Удалить метаданные",
 	page: {
 		details: "Сведения",
-		steamMatch: "Совпадение в Steam",
+		steamMatch: "Совпадение игры",
 		hltb: "HowLongToBeat",
 		compatibility: "Совместимость",
 		storeCategories: "Категории магазина",
@@ -15345,7 +15345,7 @@ var editor$5 = {
 	removeMetadata: "Hiq metadatat",
 	page: {
 		details: "Detajet",
-		steamMatch: "Përputhja në Steam",
+		steamMatch: "Përputhja e lojës",
 		hltb: "HowLongToBeat",
 		compatibility: "Përputhshmëria",
 		storeCategories: "Kategoritë e dyqanit",
@@ -15975,7 +15975,7 @@ var editor$4 = {
 	removeMetadata: "Ta bort metadata",
 	page: {
 		details: "Detaljer",
-		steamMatch: "Steam-matchning",
+		steamMatch: "Spelmatchning",
 		hltb: "HowLongToBeat",
 		compatibility: "Kompatibilitet",
 		storeCategories: "Butikskategorier",
@@ -16605,7 +16605,7 @@ var editor$3 = {
 	removeMetadata: "Meta Verileri Kaldır",
 	page: {
 		details: "Ayrıntılar",
-		steamMatch: "Steam Eşleşmesi",
+		steamMatch: "Oyun Eşleşmesi",
 		hltb: "HowLongToBeat",
 		compatibility: "Uyumluluk",
 		storeCategories: "Mağaza Kategorileri",
@@ -17237,7 +17237,7 @@ var editor$2 = {
 	removeMetadata: "Видалити метадані",
 	page: {
 		details: "Відомості",
-		steamMatch: "Збіг у Steam",
+		steamMatch: "Збіг гри",
 		hltb: "HowLongToBeat",
 		compatibility: "Сумісність",
 		storeCategories: "Категорії крамниці",
@@ -17866,7 +17866,7 @@ var editor$1 = {
 	removeMetadata: "移除元数据",
 	page: {
 		details: "详细信息",
-		steamMatch: "Steam 匹配",
+		steamMatch: "游戏匹配",
 		hltb: "HowLongToBeat",
 		compatibility: "兼容性",
 		storeCategories: "商店分类",
@@ -18495,7 +18495,7 @@ var editor = {
 	removeMetadata: "移除中繼資料",
 	page: {
 		details: "詳細資料",
-		steamMatch: "Steam 比對",
+		steamMatch: "遊戲比對",
 		hltb: "HowLongToBeat",
 		compatibility: "相容性",
 		storeCategories: "商店分類",
@@ -36483,14 +36483,6 @@ const css = `
   background: ${colors.accent};
 }
 
-.${layout}__heading {
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 28px;
-  color: #fff;
-  margin: 10px 0;
-}
-
 .${layout}__save.DialogButton.Secondary {
   flex: 0 0 42px;
   height: 42px;
@@ -36543,7 +36535,8 @@ function NativeEditorLayout({ title, pages, page, onPageRequested, saveLabel, sa
                 icon: editorPage.icon,
                 visible: editorPage.visible,
                 hideTitle: true,
-                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("h2", { className: `${layout}__heading`, children: editorPage.label }), SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id)] })),
+                // Steam's settings pages use DialogHeader + DialogBody; native CSS supplies their spacing.
+                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: editorPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id) })] })),
             });
         }
         return mapped;
@@ -37809,44 +37802,44 @@ const MetadataPage = () => {
         });
     };
     function renderDetailsPage() {
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
-                            clearPreviewMarker("title");
-                            updateMetadata((prev) => ({ ...prev, title: value }));
-                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+        return (SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
+                        clearPreviewMarker("title");
+                        updateMetadata((prev) => ({ ...prev, title: value }));
+                    }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                                clearPreviewMarker("description");
+                                updateMetadata((prev) => ({
+                                    ...prev,
+                                    description: e.target.value,
+                                    short_description: e.target.value,
+                                }));
+                            }, style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
                                     clearPreviewMarker("description");
                                     updateMetadata((prev) => ({
                                         ...prev,
                                         description: e.target.value,
                                         short_description: e.target.value,
                                     }));
-                                }, style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
-                                        clearPreviewMarker("description");
-                                        updateMetadata((prev) => ({
-                                            ...prev,
-                                            description: e.target.value,
-                                            short_description: e.target.value,
-                                        }));
-                                    }, style: descriptionTextareaStyle }) })) }), stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
-                            markFormEdited();
-                            clearPreviewMarker("developers");
-                            developerTextRef.current = value;
-                            setDeveloperText(value);
-                        }), stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
-                            markFormEdited();
-                            clearPreviewMarker("publishers");
-                            publisherTextRef.current = value;
-                            setPublisherText(value);
-                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
-                                    markFormEdited();
-                                    clearPreviewMarker("releaseDate");
-                                    releaseTextRef.current = e.target.value;
-                                    setReleaseText(e.target.value);
-                                }, style: editorInlineInputStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.rating"), value: ratingText, onChange: (e) => {
-                                    markFormEdited();
-                                    clearPreviewMarker("rating");
-                                    ratingTextRef.current = e.target.value;
-                                    setRatingText(e.target.value);
-                                }, style: editorInlineInputStyle }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [entryBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !entryBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                }, style: descriptionTextareaStyle }) })) }), stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
+                        markFormEdited();
+                        clearPreviewMarker("developers");
+                        developerTextRef.current = value;
+                        setDeveloperText(value);
+                    }), stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
+                        markFormEdited();
+                        clearPreviewMarker("publishers");
+                        publisherTextRef.current = value;
+                        setPublisherText(value);
+                    }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
+                                markFormEdited();
+                                clearPreviewMarker("releaseDate");
+                                releaseTextRef.current = e.target.value;
+                                setReleaseText(e.target.value);
+                            }, style: editorInlineInputStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.rating"), value: ratingText, onChange: (e) => {
+                                markFormEdited();
+                                clearPreviewMarker("rating");
+                                ratingTextRef.current = e.target.value;
+                                setRatingText(e.target.value);
+                            }, style: editorInlineInputStyle }) })] }) }));
     }
     function renderSteamMatchPage() {
         const loadLabelKey = !nonSteam
@@ -37867,7 +37860,7 @@ const MetadataPage = () => {
                                                 markFormEdited();
                                                 clearPreviewMarker("steamAppId");
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.Field, { label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorRowActionStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) }) })) : null] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.Field, { label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorRowActionStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [entryBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !entryBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
         return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: markedLabel("hltb", "editor.page.hltb"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: [hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used

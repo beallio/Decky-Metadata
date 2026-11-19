@@ -8,7 +8,9 @@ const mocks = vi.hoisted(() => ({
   memo: undefined as { dependencies: readonly unknown[]; value: unknown } | undefined,
 }));
 vi.mock("@decky/ui", () => ({
+  DialogBody: "DialogBody",
   DialogButton: "DialogButton",
+  DialogHeader: "DialogHeader",
   Focusable: "Focusable",
   findModuleExport: mocks.findModuleExport,
 }));
@@ -158,7 +160,7 @@ describe("EditorLayout", () => {
     expect(detailsPage.hideTitle).toBe(true);
     const advancedPage = received.pages.find((entry) =>
       typeof entry !== "string" && entry.identifier === "advanced") as Exclude<NativePageEntry, "separator">;
-    expect(text(nodes(advancedPage.content).find((node) => node.type === "h2"))).toBe("Advanced");
+    expect(text(nodes(advancedPage.content).find((node) => node.type === "DialogHeader"))).toBe("Advanced");
     expect(received.page).toBe("advanced");
     expect(received.title).toBe("Deadpool");
     expect(received.showTitle).toBe(true);
