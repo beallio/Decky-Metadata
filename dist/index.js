@@ -27806,14 +27806,41 @@ const traceMenu = (phase, ownerAppId, fallbackAppId, finalAppId, isAppContextMen
  *
  * The class is not exported, so we locate the webpack module that references
  * it, pick the member whose source mentions "navigator:", and read the type
- * back from a throwaway render.
+ * back from a throwaway render. On Vite/Rolldown SteamUI builds where
+ * `().LibraryContextMenu` is CSS-inlined, fall back to finding the wrapper
+ * function directly by its `navigator:` + `instance:` forwarding signature.
  */
+const isViteContextMenuWrapper = (member) => {
+    if (typeof member !== "function")
+        return false;
+    try {
+        const source = Function.prototype.toString.call(member);
+        return (source.length < 220 &&
+            source.includes("navigator:") &&
+            source.includes("instance:") &&
+            source.includes("..."));
+    }
+    catch {
+        return false;
+    }
+};
 const resolveLibraryContextMenu = () => {
-    const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
-        member.toString().includes("().LibraryContextMenu"));
-    const menuComponent = Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
-        member.toString().includes("navigator:"));
-    return DFL.fakeRenderComponent(menuComponent).type;
+    try {
+        const owningModule = DFL.findModuleByExport((member) => typeof member?.toString === "function" &&
+            member.toString().includes("().LibraryContextMenu"));
+        const menuComponent = (owningModule && typeof owningModule === "object"
+            ? Object.values(owningModule).find((member) => typeof member?.toString === "function" &&
+                member.toString().includes("navigator:"))
+            : typeof DFL.findModuleExport === "function"
+                ? DFL.findModuleExport((member) => isViteContextMenuWrapper(member))
+                : undefined);
+        if (typeof menuComponent !== "function")
+            return undefined;
+        return DFL.fakeRenderComponent(menuComponent)?.type;
+    }
+    catch {
+        return undefined;
+    }
 };
 const LibraryContextMenu = resolveLibraryContextMenu();
 /**
