@@ -45,6 +45,9 @@ const decky = vi.hoisted(() => {
 
   return {
     navigate: vi.fn(),
+    findModuleByExport: vi.fn<(...args: any[]) => any>(() => undefined),
+    findModuleExport: vi.fn<(...args: any[]) => any>(() => undefined),
+    fakeRenderComponent: vi.fn<(...args: any[]) => any>(() => ({ type: {} })),
     findInTree,
     findInReactTree: (root: any, filter: (n: any) => any) =>
       findInTree(root, filter, { walkable: ["props", "children"] }),
@@ -73,10 +76,11 @@ const steam = vi.hoisted(() => ({
 
 vi.mock("@decky/ui", () => ({
   afterPatch: decky.afterPatch,
-  fakeRenderComponent: () => ({ type: {} }),
+  fakeRenderComponent: decky.fakeRenderComponent,
   findInReactTree: decky.findInReactTree,
   findInTree: decky.findInTree,
-  findModuleByExport: () => ({}),
+  findModuleByExport: decky.findModuleByExport,
+  findModuleExport: decky.findModuleExport,
   MenuItem: "MenuItem",
   Navigation: { Navigate: decky.navigate },
 }));
@@ -95,7 +99,7 @@ vi.mock("./backend", () => ({ frontendLog: vi.fn(() => Promise.resolve()) }));
 vi.mock("./i18n", () => ({ t: (key: string) => key }));
 
 import { frontendLog } from "./backend";
-import contextMenuPatch, { setContextMenuTraceEnabled } from "./contextMenuPatch";
+import contextMenuPatch, { resolveLibraryContextMenu, setContextMenuTraceEnabled } from "./contextMenuPatch";
 
 const ENTRY_KEY = "decky-metadata-edit";
 const LEGACY_COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
@@ -333,5 +337,23 @@ describe("contextMenuPatch", () => {
     expect(injectedTarget(new MenuBody().render().props.children[0])).toBe("/decky-metadata/200");
     second.unpatch();
     expect(MenuBody.prototype.render).toBe(originalRender);
+  });
+
+  it("returns undefined instead of throwing when Webpack CSS lookup misses and no Vite fallback matches", () => {
+    decky.findModuleByExport.mockReturnValueOnce(undefined);
+    decky.findModuleExport.mockReturnValueOnce(undefined);
+    expect(resolveLibraryContextMenu()).toBeUndefined();
+  });
+
+  it("resolves the Vite context-menu wrapper when Webpack CSS lookup misses", () => {
+    class FakeViteMenu {}
+    // Build a function whose toString() matches Steam's Vite wrapper signature.
+    const viteWrapper = (e: any) => ({ navigator: 1, instance: 2, ...e });
+    decky.findModuleByExport.mockReturnValueOnce(undefined);
+    decky.findModuleExport.mockImplementationOnce((predicate: (m: unknown) => boolean) =>
+      predicate(viteWrapper) ? viteWrapper : undefined,
+    );
+    decky.fakeRenderComponent.mockReturnValueOnce({ type: FakeViteMenu });
+    expect(resolveLibraryContextMenu()).toBe(FakeViteMenu);
   });
 });

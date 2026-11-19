@@ -27,6 +27,7 @@ import {
   findInReactTree,
   findInTree,
   findModuleByExport,
+  findModuleExport,
   Export,
   MenuItem,
   Navigation,
@@ -105,22 +106,50 @@ const traceMenu = (
  *
  * The class is not exported, so we locate the webpack module that references
  * it, pick the member whose source mentions "navigator:", and read the type
- * back from a throwaway render.
+ * back from a throwaway render. On Vite/Rolldown SteamUI builds where
+ * `().LibraryContextMenu` is CSS-inlined, fall back to finding the wrapper
+ * function directly by its `navigator:` + `instance:` forwarding signature.
  */
-const resolveLibraryContextMenu = (): any => {
-  const owningModule = findModuleByExport(
-    (member: Export) =>
-      typeof member?.toString === "function" &&
-      member.toString().includes("().LibraryContextMenu")
-  );
+const isViteContextMenuWrapper = (member: unknown): member is FC => {
+  if (typeof member !== "function") return false;
+  try {
+    const source = Function.prototype.toString.call(member);
+    return (
+      source.length < 220 &&
+      source.includes("navigator:") &&
+      source.includes("instance:") &&
+      source.includes("...")
+    );
+  } catch {
+    return false;
+  }
+};
 
-  const menuComponent = Object.values(owningModule).find(
-    (member) =>
-      typeof member?.toString === "function" &&
-      member.toString().includes("navigator:")
-  ) as FC;
+export const resolveLibraryContextMenu = (): any => {
+  try {
+    const owningModule = findModuleByExport(
+      (member: Export) =>
+        typeof member?.toString === "function" &&
+        member.toString().includes("().LibraryContextMenu")
+    );
 
-  return fakeRenderComponent(menuComponent).type;
+    const menuComponent = (
+      owningModule && typeof owningModule === "object"
+        ? Object.values(owningModule).find(
+            (member) =>
+              typeof member?.toString === "function" &&
+              member.toString().includes("navigator:")
+          )
+        : typeof findModuleExport === "function"
+          ? findModuleExport((member: Export) => isViteContextMenuWrapper(member))
+          : undefined
+    ) as FC | undefined;
+
+    if (typeof menuComponent !== "function") return undefined;
+    return fakeRenderComponent(menuComponent)?.type;
+  } catch {
+    return undefined;
+  }
 };
 
 export const LibraryContextMenu = resolveLibraryContextMenu();
