@@ -12,6 +12,7 @@ import {
 } from "@decky/ui";
 import { type ReactElement, useEffect, useRef, useState } from "react";
 import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
+import { resolveSteamCssClass } from "../steam/nativeCssClasses";
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
 import { hltbStore, type HltbInputs } from "./store";
@@ -25,8 +26,35 @@ const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
 const px = (value: number) => String(Math.round(value * 100) / 100);
 
 /** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height: number, paddingTop: number) =>
-  `.${appDetailsClasses.InnerContainer}:has(> .${JOINED_CLASS}) .${basicAppDetailsSectionStylerClasses.PlaySection} { margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+const joinedRule = (height: number, paddingTop: number) => {
+  const inner = resolveSteamCssClass(appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+  const playSection = resolveSteamCssClass(basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+  const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+  if (inner && playSection) return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+  if (playSection) return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+  return `.${JOINED_CLASS} + * ${rule}`;
+};
+
+const findHeaderElement = (row: HTMLDivElement): HTMLElement | undefined => {
+  const container = row.parentElement;
+  if (!container) return undefined;
+  const headerClass = resolveSteamCssClass(appDetailsClasses?.Header, "appDetailsHeader");
+  if (headerClass) {
+    const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+    if (matched) return matched as HTMLElement;
+  }
+  return (row.previousElementSibling as HTMLElement | null) ?? undefined;
+};
+
+const findPlaySectionElement = (row: HTMLDivElement): HTMLElement | null => {
+  const next = row.nextElementSibling as HTMLElement | null;
+  if (!next) return null;
+  const playSectionClass = resolveSteamCssClass(basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+  if (playSectionClass) {
+    return next.querySelector<HTMLElement>(`.${playSectionClass}`);
+  }
+  return next.firstElementChild as HTMLElement | null ?? next;
+};
 
 const positiveId = (value: unknown, maximum: number): number | null => {
   const id = Number(value);
@@ -59,21 +87,25 @@ export function useHltbSnapshot(): HltbSnapshot {
 function useLaunching(ref: { current: HTMLDivElement | null }, active: boolean): boolean {
   const [launching, setLaunching] = useState(false);
   useEffect(() => {
-    if (!active) return;
-    const header = Array.from(ref.current?.parentElement?.children ?? [])
-      .find((child) => child.className.includes(appDetailsClasses.Header));
-    const capsule = Array.from(header?.children ?? [])
-      .find((child) => child.className.includes(appDetailsHeaderClasses.TopCapsule));
+    if (!active || !ref.current) return;
+    const header = findHeaderElement(ref.current);
+    const topCapsuleClass = resolveSteamCssClass(appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+    const capsule = topCapsuleClass
+      ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+      : header?.firstElementChild ?? undefined;
     const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
     if (!capsule || !View) return;
     const observer = new View(() => {
       const name = capsule.className;
       const entering = [
-        appDetailsHeaderClasses.FullscreenEnterStart, appDetailsHeaderClasses.FullscreenEnterActive,
-        appDetailsHeaderClasses.FullscreenEnterDone, appDetailsHeaderClasses.FullscreenExitStart,
-        appDetailsHeaderClasses.FullscreenExitActive,
+        resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+        resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+        resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+        resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+        resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
       ].some((value) => value && name.includes(value));
-      setLaunching(entering && !name.includes(appDetailsHeaderClasses.FullscreenExitDone));
+      const exitDone = resolveSteamCssClass(appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+      setLaunching(entering && (!exitDone || !name.includes(exitDone)));
     });
     observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
     return () => observer.disconnect();
@@ -125,7 +157,7 @@ function useNativeCleanSurface(
     const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
     const resize: { element: HTMLElement | null; observer: ResizeObserver | null } = { element: null, observer: null };
     function update(): void {
-      const section = row.nextElementSibling?.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      const section = findPlaySectionElement(row);
       const bar = row.querySelector<HTMLElement>(".decky-metadata-hltb-info");
       if (!section) {
         for (const name of names) row.style.removeProperty(name);
@@ -144,7 +176,8 @@ function useNativeCleanSurface(
       row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
       row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
       row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-      const root = section.closest<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.AppDetailsRoot}`);
+      const appDetailsRootClass = resolveSteamCssClass(basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+      const root = appDetailsRootClass ? section.closest<HTMLElement>(`.${appDetailsRootClass}`) : null;
       const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
       row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
       row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
@@ -188,13 +221,15 @@ function useStatusBandOverlay(ref: { current: HTMLDivElement | null }, wanted: b
       setOverlay(false);
       return;
     }
-    const status = playSectionClasses?.CloudStatusRow;
+    const status = resolveSteamCssClass(playSectionClasses?.CloudStatusRow, "cloudStatusRow");
     const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
     let frame = 0;
     const touching = (): boolean => {
-      const art = Array.from(container.children)
-        .find((child) => child.className.includes(appDetailsClasses.Header))
-        ?.querySelector<HTMLElement>(`.${appDetailsHeaderClasses.HeaderBackgroundImage}`);
+      const header = findHeaderElement(row);
+      const headerBgClass = resolveSteamCssClass(appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+      const art = headerBgClass
+        ? header?.querySelector<HTMLElement>(`.${headerBgClass}`)
+        : header?.querySelector<HTMLElement>("img")?.parentElement ?? undefined;
       if (!art) return false;
       const bounds = art.getBoundingClientRect();
       // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
@@ -293,7 +328,7 @@ function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): 
       const rowHeight = surface
         ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
         : 0;
-      const section = row.nextElementSibling?.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.PlaySection}`);
+      const section = findPlaySectionElement(row);
       if (!rowHeight || !section) return null;
       let scroller = container.parentElement;
       while (scroller) {
@@ -309,8 +344,7 @@ function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): 
         footer = nextFooter;
         if (footer) footerResize.observe(footer);
       }
-      const header = Array.from(container.children)
-        .find((child) => child.className.includes(appDetailsClasses.Header)) as HTMLElement | undefined;
+      const header = findHeaderElement(row);
       if (!header) return null;
       // Layout, not rects: Steam scales and translates the page while it animates in,
       // and a rect read mid-animation would stick until something else moved.
@@ -321,10 +355,11 @@ function usePushRoom(ref: { current: HTMLDivElement | null }, wanted: boolean): 
         ? layoutTop(footer)
         : layoutTop(scroller) + scroller.clientHeight;
       const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-      const playButton = appActionButtonClasses?.PlayButton;
+      const playButton = resolveSteamCssClass(appActionButtonClasses?.PlayButton, "playButton");
+      const appActionButton = resolveSteamCssClass(basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
       // The button face; the wrapper's AppActionButton class is the fallback.
       const button = (playButton ? section.querySelector<HTMLElement>(`.${playButton}`) : null) ??
-        section.querySelector<HTMLElement>(`.${basicAppDetailsSectionStylerClasses.AppActionButton}`);
+        (appActionButton ? section.querySelector<HTMLElement>(`.${appActionButton}`) : null);
       // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
       const buttonBottom = button
         ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
@@ -408,8 +443,12 @@ function installHltbGameView(): () => void {
           return children ?? null;
         },
       ], (_args: unknown[], ret: ReactElement) => {
+        const innerContainer = resolveSteamCssClass(appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
         const children = findInReactTree(ret, (node: any) =>
-          Array.isArray(node?.props?.children) && node?.props?.className?.includes(appDetailsClasses.InnerContainer),
+          Array.isArray(node?.props?.children) && (
+            (innerContainer && node?.props?.className?.includes(innerContainer)) ||
+            node.props.children.some(isPlaySection)
+          ),
         )?.props?.children as Array<ReactElement | null> | undefined;
         if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY)) return ret;
         const index = children.findIndex(isPlaySection);

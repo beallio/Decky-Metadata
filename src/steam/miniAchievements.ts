@@ -5,6 +5,7 @@ import { routerHook } from "@decky/api";
 import { afterPatch, findClassModule, findInReactTree } from "@decky/ui";
 import * as log from "../log";
 import { GAME_DETAIL_ROUTES } from "./core";
+import { getNativeCssClass, subscribeNativeCssClasses } from "./nativeCssClasses";
 import { steamUiDocuments } from "./steamUiHost";
 
 const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000] as const;
@@ -32,6 +33,15 @@ const statsClasses = (): Record<string, string> => {
     } catch {
       // A failed lookup keeps the previous classes and retries on the next use.
     }
+  }
+  const translatedSection = getNativeCssClass("gameStatsSection");
+  const translatedPlayBar = getNativeCssClass("playBar");
+  if (!statsClassesCache?.GameStatsSection && translatedSection) {
+    return {
+      ...statsClassesCache,
+      GameStatsSection: translatedSection,
+      ...(translatedPlayBar ? { PlayBar: translatedPlayBar } : {}),
+    };
   }
   return statsClassesCache ?? {};
 };
@@ -196,6 +206,10 @@ export function installMiniAchievementsPatch(): () => void {
     scheduleSync();
   };
 
+  const unsubscribeClasses = subscribeNativeCssClasses(() => {
+    if (!disposed) requestSync();
+  });
+  unpatchers.push(unsubscribeClasses);
   requestSync();
 
   for (const route of GAME_DETAIL_ROUTES) {

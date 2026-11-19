@@ -30,6 +30,9 @@ import type { HltbSettings } from "./hltb/settings";
 export const getAllMetadata = callable<[], Record<string, MetadataData>>(
   "get_all_metadata"
 );
+export const getNativeCssClasses = callable<[], Record<string, string>>(
+  "get_native_css_classes"
+);
 export const getMetadata = callable<[appId: number], MetadataData | null>(
   "get_metadata"
 );

@@ -2,6 +2,7 @@
 import { findClassModule, Focusable, Navigation } from "@decky/ui";
 import type { CSSProperties } from "react";
 import { formatHours, useT } from "../i18n";
+import { resolveSteamCssClass } from "../steam/nativeCssClasses";
 import type { HltbSettings } from "./settings";
 
 type HltbStatsProps = {
@@ -46,6 +47,10 @@ const css = `
 .decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
 .decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
 .decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
 .decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
 .decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
@@ -77,6 +82,10 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
     flow ? "decky-metadata-hltb-flow" : "",
   ].filter(Boolean).join(" ");
   const openDetails = () => Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+  const deckVerifiedInfoClass = resolveSteamCssClass(detailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+  const deckVerifiedDetailsClass = resolveSteamCssClass(detailsClasses.Details, "deckVerifiedDetails");
+  const deckVerifiedFocusedClass = resolveSteamCssClass(detailsClasses.Focused, "deckVerifiedFocused");
+  const menuButtonClass = resolveSteamCssClass(menuButtonClasses.MenuButton, "menuButton") ?? "";
   return <div id="decky-metadata-hltb" className={classes} style={vars as CSSProperties}>
     <style>{css}</style>
     <div className="decky-metadata-hltb-info">
@@ -87,10 +96,10 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
         </li>)}
         {hltbId && !settings.hideViewDetails ? <li className="decky-metadata-hltb-details-item">
           {style === "default"
-            ? <Focusable className={`${detailsClasses.DeckVerifiedInfo ?? ""} decky-metadata-hltb-details`} focusClassName={detailsClasses.Focused}>
-              <Focusable className={detailsClasses.Details} noFocusRing={false} onActivate={openDetails}>{t("hltb.details")}</Focusable>
+            ? <Focusable className={`${deckVerifiedInfoClass} decky-metadata-hltb-details`} focusClassName={deckVerifiedFocusedClass}>
+              <Focusable className={[deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" ")} noFocusRing={false} onActivate={openDetails}>{t("hltb.details")}</Focusable>
             </Focusable>
-            : <Focusable className={`${menuButtonClasses.MenuButton ?? ""} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`} onActivate={openDetails}>{t("hltb.details")}</Focusable>}
+            : <Focusable className={`${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`} onActivate={openDetails}>{t("hltb.details")}</Focusable>}
         </li> : null}
       </ul>
     </div>

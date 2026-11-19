@@ -1,4 +1,5 @@
 import { currentRoutePath, gameDetailAppIdFromPath, getOverview, isCurrentGameInfoRoute, isNativeNonSteamShortcut, metadataCache, subscribeCompatibilityRevision, subscribeMetadataMatchChanges, type Unpatch } from "./core";
+import { getNativeCssClass, subscribeNativeCssClasses } from "./nativeCssClasses";
 import { findLiveModuleChild } from "./steamUiModules";
 import { steamUiDocuments, steamUiWindow } from "./steamUiHost";
 
@@ -25,7 +26,9 @@ const resolveClasses = () => {
     const found = inspect(module);
     return found?.GameInfoContainer ? found : undefined;
   });
-  return descriptions && details ? { owner: details.GameInfoContainer, description: descriptions.GameDescription } : undefined;
+  const owner = (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer");
+  const description = (typeof descriptions?.GameDescription === "string" && descriptions.GameDescription) || getNativeCssClass("gameDescription");
+  return owner && description ? { owner, description } : undefined;
 };
 
 /** Read one confirmed scalar prop on host ancestors, never enumerate Steam stores. */
@@ -73,7 +76,11 @@ const defaultDependencies = (): DescriptionPresentationDependencies => {
       }) ?? (() => {});
     },
     revisions: (callback) => {
-      const stops = [subscribeCompatibilityRevision(callback), subscribeMetadataMatchChanges(callback)];
+      const stops = [
+        subscribeCompatibilityRevision(callback),
+        subscribeMetadataMatchChanges(callback),
+        subscribeNativeCssClasses(callback),
+      ];
       return () => stops.forEach((stop) => stop());
     },
     observe: (target, callback) => {
@@ -97,8 +104,13 @@ export const installMetadataDescriptions = (
   unpatchers: Unpatch[],
   dependencies: DescriptionPresentationDependencies = defaultDependencies(),
 ): void => {
-  const classes = dependencies.classes();
-  if (!classes || !selector(classes.owner) || !selector(classes.description)) return;
+  let classes = dependencies.classes();
+  const resolveValidClasses = () => {
+    if (!classes || !selector(classes.owner) || !selector(classes.description)) {
+      classes = dependencies.classes();
+    }
+    return classes && selector(classes.owner) && selector(classes.description) ? classes : undefined;
+  };
   let disposed = false;
   type Owner = {
     appId: number;
@@ -132,7 +144,9 @@ export const installMetadataDescriptions = (
       releaseOwner(owner, record);
       return;
     }
-    const leaves = Array.from(owner.querySelectorAll<HTMLElement>(selector(classes.description)));
+    const currentClasses = resolveValidClasses();
+    if (!currentClasses) return;
+    const leaves = Array.from(owner.querySelectorAll<HTMLElement>(selector(currentClasses.description)));
     for (const leaf of record.originals.keys()) if (!leaves.includes(leaf)) restore(record, leaf);
     for (const leaf of leaves) {
       if (!record.originals.has(leaf)) record.originals.set(leaf, {
@@ -147,11 +161,13 @@ export const installMetadataDescriptions = (
   const hasCurrentOwner = (appId: number) => Array.from(owners.values()).some((record) => record.appId === appId);
   const discover = () => {
     if (disposed) return;
+    const currentClasses = resolveValidClasses();
+    if (!currentClasses) return;
     const route = dependencies.route();
     const appId = gameDetailAppIdFromPath(route);
     if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId)) return;
     for (const doc of dependencies.documents()) {
-      const matched = Array.from(doc.querySelectorAll<HTMLElement>(selector(classes.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
+      const matched = Array.from(doc.querySelectorAll<HTMLElement>(selector(currentClasses.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
       if (!matched) continue;
       stopDiscovery();
       // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
@@ -177,6 +193,7 @@ export const installMetadataDescriptions = (
     const route = dependencies.route();
     const appId = gameDetailAppIdFromPath(route);
     if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId)) return;
+    if (!resolveValidClasses()) return;
     if (hasCurrentOwner(appId)) return;
     discover();
     if (hasCurrentOwner(appId)) return;

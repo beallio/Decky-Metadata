@@ -10,6 +10,7 @@ import {
   safeDecodeURIComponent,
   steamAppIdForApp,
 } from "./core";
+import { getNativeCssClass } from "./nativeCssClasses";
 
 const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
 const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
@@ -43,9 +44,12 @@ const resolveAppDetailsQuickLinksClasses = (): string[] => {
       });
     }
     const quickLinks = discovered?.GameInfoQuickLinks;
-    return typeof quickLinks === "string" && quickLinks.trim() ? [quickLinks.trim()] : [];
+    if (typeof quickLinks === "string" && quickLinks.trim()) return [quickLinks.trim()];
+    const translated = getNativeCssClass("gameInfoQuickLinks");
+    return translated ? [translated] : [];
   } catch (_error) {
-    return [];
+    const translated = getNativeCssClass("gameInfoQuickLinks");
+    return translated ? [translated] : [];
   }
 };
 
