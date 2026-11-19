@@ -24100,38 +24100,103 @@ const nativeReleaseDate = (value) => {
 
 const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
     typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
-/** Inspect webpack factories, never observable Steam stores or render-time state. */
+const collectSafeFunctionSources = (value) => {
+    if (typeof value === "function") {
+        let out = value.toString();
+        const proto = value.prototype;
+        if (proto && typeof proto === "object") {
+            for (const key of Object.getOwnPropertyNames(proto)) {
+                if (key === "constructor")
+                    continue;
+                const desc = Object.getOwnPropertyDescriptor(proto, key);
+                if (!desc)
+                    continue;
+                if (typeof desc.value === "function")
+                    out += `\n${desc.value.toString()}`;
+                if (typeof desc.get === "function")
+                    out += `\n${desc.get.toString()}`;
+                if (typeof desc.set === "function")
+                    out += `\n${desc.set.toString()}`;
+            }
+        }
+        return out;
+    }
+    if (value && typeof value === "object") {
+        let out = "";
+        const renderDesc = Object.getOwnPropertyDescriptor(value, "render");
+        if (typeof renderDesc?.value === "function")
+            out += `${renderDesc.value.toString()}\n`;
+        const typeDesc = Object.getOwnPropertyDescriptor(value, "type");
+        if (typeof typeDesc?.value === "function")
+            out += `${typeDesc.value.toString()}\n`;
+        return out;
+    }
+    return "";
+};
+const findViteEsmModulesBySource = (host, fragments) => {
+    const esm = host && typeof host === "object" && "__DECKY_ESM__" in host
+        ? host.__DECKY_ESM__
+        : undefined;
+    if (!(esm instanceof Map))
+        return [];
+    const matches = [];
+    for (const mod of esm.values()) {
+        if (!mod || typeof mod !== "object")
+            continue;
+        let combined = "";
+        for (const key of Object.keys(mod)) {
+            let exported;
+            try {
+                exported = mod[key];
+            }
+            catch {
+                continue;
+            }
+            const src = collectSafeFunctionSources(exported);
+            if (src)
+                combined += `${src}\n`;
+        }
+        if (combined && fragments.every((fragment) => combined.includes(fragment))) {
+            matches.push(mod);
+        }
+    }
+    return matches;
+};
+/** Inspect webpack factories (or Vite ESM export sources), never observable Steam stores or render-time state. */
 const findSteamModulesBySource = (fragments) => {
     const host = steamUiWindow();
     const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
-    if (!Array.isArray(chunks))
-        return [];
-    let webpackRequire;
-    try {
-        chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
-                if (isWebpackRequire(requireFn))
-                    webpackRequire = requireFn;
-            }]);
-        const requireModule = webpackRequire;
-        if (!requireModule)
-            return [];
-        const moduleIds = Object.keys(requireModule.m).filter((id) => {
-            const factory = requireModule.m[id];
-            const source = typeof factory === "function" ? factory.toString() : "";
-            return fragments.every((fragment) => source.includes(fragment));
-        });
-        return moduleIds.flatMap((moduleId) => {
-            try {
-                return [requireModule(moduleId)];
+    if (Array.isArray(chunks)) {
+        let webpackRequire;
+        try {
+            chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
+                    if (isWebpackRequire(requireFn))
+                        webpackRequire = requireFn;
+                }]);
+            const requireModule = webpackRequire;
+            if (requireModule) {
+                const moduleIds = Object.keys(requireModule.m).filter((id) => {
+                    const factory = requireModule.m[id];
+                    const source = typeof factory === "function" ? factory.toString() : "";
+                    return fragments.every((fragment) => source.includes(fragment));
+                });
+                const found = moduleIds.flatMap((moduleId) => {
+                    try {
+                        return [requireModule(moduleId)];
+                    }
+                    catch {
+                        return [];
+                    }
+                });
+                if (found.length > 0)
+                    return found;
             }
-            catch {
-                return [];
-            }
-        });
+        }
+        catch {
+            // Fall through to Vite ESM registry inspection.
+        }
     }
-    catch {
-        return [];
-    }
+    return findViteEsmModulesBySource(host, fragments);
 };
 const findSteamModuleBySource = (fragments) => {
     const candidates = findSteamModulesBySource(fragments);
@@ -38510,7 +38575,8 @@ function prependBadge(node, appButtonsClass, badge) {
     if (!SP_REACT.isValidElement(node))
         return node;
     const original = node.props.children;
-    if (node.props.className === appButtonsClass) {
+    const classTokens = typeof node.props.className === "string" ? node.props.className.split(/\s+/) : [];
+    if (node.props.className === appButtonsClass || classTokens.includes(appButtonsClass)) {
         const children = Array.isArray(original) ? original : [original];
         if (children.some(child => SP_REACT.isValidElement(child) && child.key === BUTTON_KEY))
             return node;
@@ -38536,6 +38602,7 @@ function actionRowType(fiber, appButtonsClass) {
         return;
     const source = type.render.toString();
     return (source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel")) ||
+        (source.includes("bShowStreamingSelector") && source.includes("statusPanelType")) ||
         (Boolean(appButtonsClass) && source.includes(appButtonsClass))
         ? type
         : undefined;

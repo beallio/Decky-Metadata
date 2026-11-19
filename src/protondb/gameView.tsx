@@ -64,7 +64,8 @@ function prependBadge(node: ReactNode, appButtonsClass: string, badge: ReactElem
   }
   if (!isValidElement<CardProps>(node)) return node;
   const original = node.props.children;
-  if (node.props.className === appButtonsClass) {
+  const classTokens = typeof node.props.className === "string" ? node.props.className.split(/\s+/) : [];
+  if (node.props.className === appButtonsClass || classTokens.includes(appButtonsClass)) {
     const children = Array.isArray(original) ? original : [original];
     if (children.some(child => isValidElement(child) && child.key === BUTTON_KEY)) return node;
     return cloneElement(node, { children: [badge, ...children] });
@@ -87,6 +88,7 @@ function actionRowType(fiber: RecordValue, appButtonsClass: string): object | un
   if (!recordValue(type) || type.$$typeof !== Symbol.for("react.forward_ref") || typeof type.render !== "function") return;
   const source = type.render.toString();
   return (source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel")) ||
+    (source.includes("bShowStreamingSelector") && source.includes("statusPanelType")) ||
     (Boolean(appButtonsClass) && source.includes(appButtonsClass))
     ? type
     : undefined;
