@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} h",
-    "unknown": "Tuntematon",
     "hours_one": "{{value}} tunti",
-    "hours_other": "{{value}} tuntia"
+    "hours_other": "{{value}} tuntia",
+    "hoursShort": "{{value}} h",
+    "unknown": "Tuntematon"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Alareuna",
       "bottomBorderDescription": "Näyttää erotusviivan HLTB-palkin alla",
       "resetAppearance": "Palauta ulkoasu",
-      "loadingPreferences": "Ladataan HLTB-asetuksia…"
+      "loadingPreferences": "Ladataan HLTB-asetuksia..."
     },
     "trailers": {
       "title": "Pelitrailerit",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Vasemmassa alakulmassa",
       "positionTopLeft": "Vasemmassa yläkulmassa",
       "positionTopRight": "Oikeassa yläkulmassa",
-      "loadingPreferences": "Ladataan ProtonDB-tunnusten asetuksia…",
+      "loadingPreferences": "Ladataan ProtonDB-tunnusten asetuksia...",
       "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Yhteensopivuustila",
       "defaultStatus": "Yhteensopivuuden oletustila",
       "applyDefaultTo": "Käytä oletusta kohteille",
-      "categoryAutomatic": "Automaattinen – käytä sovitettua Steam-tilaa",
+      "categoryAutomatic": "Automaattinen",
       "categoryVerified": "Vahvistettu",
       "categoryPlayable": "Pelattavissa",
       "categoryUnsupported": "Ei tuettu",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Muuta metatietoja..."
+    "editMetadata": "Muokkaa metatietoja..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} on käytössä Decky Loaderissa. Poista kyseinen liitännäinen käytöstä, jotta voit käyttää ominaisuutta {{feature}} täällä.",
@@ -426,17 +426,29 @@
   "editor": {
     "save": "Tallenna",
     "saveCount": "Tallenna ({{count}})",
+    "unsupportedSteam": "Tätä Steam-versiota ei vielä tueta. Päivitä Decky Metadata muokataksesi metatietoja.",
     "removeMetadata": "Poista metatiedot",
-    "done": "Valmis",
-    "moreOptions": "Lisää vaihtoehtoja",
-    "moreMenuTitle": "Metatiedot",
-    "refreshFromSteam": "Päivitä Steamistä",
+    "page": {
+      "details": "Tiedot",
+      "steamMatch": "Pelin vastaavuus",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Yhteensopivuus",
+      "storeCategories": "Kaupan kategoriat",
+      "shortcutName": "Pikakuvakkeen nimi",
+      "advanced": "Lisäasetukset"
+    },
+    "currentMatch": "Nykyinen vastaavuus",
+    "loadFromSteam": "Lataa Steamistä",
+    "loadFromSteamSteamGame": "Lataa Steamistä (ei käytettävissä Steam-peleille)",
+    "loadFromSteamNoMatch": "Lataa Steamistä (ei Steam-vastaavuutta)",
+    "loadFromSteamBusy": "Lataa Steamistä (päivitetään)",
     "fieldEdited": "Muokattu",
     "fieldFromSteam": "Steamistä, ei tallennettu",
     "steamDataChanged": "Lomakkeessa näyttämättömät Steam-tiedot (kuvakaappaukset, uutiset, yhteensopivuus) ovat muuttuneet, eikä niitä ole tallennettu.",
     "unsaved": {
       "title": "Tallennetaanko muutokset?",
       "body": "Tämän pelin metatiedoissa on tallentamattomia muutoksia.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Hylkää",
       "cancel": "Peruuta"
     },
@@ -447,10 +459,12 @@
     },
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
     "searchIgn": "Hae IGN-metatietoja",
+    "ign": {
+      "gameName": "Pelin nimi"
+    },
     "search": "Hae",
     "searching": "Haetaan...",
     "noResults": "Ei tuloksia vielä.",
-    "source": "Lähde",
     "field": {
       "title": "Nimi",
       "description": "Kuvaus",
@@ -462,6 +476,7 @@
       "steamData": "Steam-tiedot, joita ei näytetä lomakkeessa"
     },
     "compat": {
+      "statusLabel": "Tila",
       "useGlobalDefault": "Käytä yleistä oletusta",
       "followValve": "Seuraa Valvea",
       "verified": "Vahvistettu",
@@ -477,9 +492,8 @@
       "useGlobalDefaultFromValve": "Käytä yleistä oletusta ({{category}} – Valvelta)"
     },
     "compatibilityStatus": "Yhteensopivuustila",
-    "compatibilityHelp": "\"Käytä yleistä oletusta\" perii pikavalikon asetuksen. \"Seuraa Valvea\" jättää sen huomiotta ja säilyttää alkuperäisen Steam-tilan, kun Valve-tiedot eivät ole käytettävissä.",
+    "compatibilityHelp": "”Automaattinen” käyttää kullekin pelille sitä vastaavan Steam-pelin tilaa. ”Käytä yleistä oletusta” ottaa kyseisen asetuksen käyttöön tälle pelille. ”Seuraa Valvea” käyttää aina Valven ilmoittamaa tilaa. Jos Valven tietoja ei ole saatavilla, ”Seuraa Valvea” säilyttää alkuperäisen Steam-tilan.",
     "compatibilityChoices": "Manuaaliset ja oletusluokat ovat sinun valintojasi, eivät Valven sertifiointia tai emulaattorin suorituskykytulosta.",
-    "steamInfoFields": "Steamin tietokentät",
     "hltbGame": "HowLongToBeat-peli",
     "hltbHelp": "Hae HowLongToBeatistä tai liitä pelinumero tai pelisivun linkki valitaksesi tälle pelille näytettävät ajat. Jätä tyhjäksi, jos haluat sovittaa automaattisesti.",
     "hltbCurrentChosen": "Nykyinen peli: {{name}} (valittu)",
@@ -488,8 +502,8 @@
     "steamAppId": "Steam-sovellustunnus",
     "steamAppIdHelp": "Liitä Steam-sovellustunnus, kaupan URL, yhteisön URL tai SteamDB-URL. Jätä tyhjäksi, jos haluat poistaa kiinnitetyn Steam-vastaavuuden.",
     "steamAppIdApply": "Ota Steam-sovellustunnus käyttöön",
-    "shortcutName": "Pikakuvakkeen nimi",
     "shortcut": {
+      "immediateNotice": "Nämä toiminnot tulevat voimaan heti ilman, että sinun tarvitsee valita ”Tallenna”.",
       "current": "Nykyinen: {{name}}",
       "missingName": "Steam ei antanut alkuperäistä pikakuvakkeen nimeä",
       "steamName": "Steam: {{name}}",
@@ -517,24 +531,22 @@
       "hltbInvalidBody": "Anna HowLongToBeat-pelinumero tai pelisivun linkki.",
       "steamAppIdInvalidTitle": "Virheellinen Steam-sovellustunnus",
       "steamAppIdInvalidBody": "Anna Steam-sovellustunnus, kauppasivun URL, yhteisösivun URL tai SteamDB-URL. Jätä kenttä tyhjäksi poistaaksesi vastaavuuden.",
+      "hltbNotFoundTitle": "Ei löytynyt",
+      "hltbNotFoundBody": "HowLongToBeatissa ei ole peliä kyseisellä numerolla.",
+      "notApplicableTitle": "Ei sovellu",
+      "notLoadedTitle": "Ei ladattu",
+      "notLoadedBody": "Tallennettuja metatietoja ei ole vielä ladattu.",
+      "metadataSaved": "Metatiedot tallennettu",
+      "saveFailedTitle": "Tallennus epäonnistui",
+      "hltbCleared": "HLTB-peli tyhjennetty",
+      "hltbGame": "HLTB-peli: {{name}}",
       "hltbDraftBody": "Tallenna tallentaa tämän valinnan.",
       "detailsLoadedTitle": "Tiedot ladattu",
       "steamPreviewBody": "Steamin tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
       "ignPreviewBody": "IGN:n tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
       "steamAppIdNotAppliedTitle": "Steam-sovellustunnusta ei otettu käyttöön",
       "steamAppIdNotAppliedBody": "Valitse ”Ota Steam-sovellustunnus käyttöön” ladataksesi uuden vastaavuuden ennen tallentamista.",
-      "hltbNotFoundTitle": "Ei löytynyt",
-      "hltbNotFoundBody": "HowLongToBeatissa ei ole peliä kyseisellä numerolla.",
-      "notApplicableTitle": "Ei sovellu",
-      "notLoadedTitle": "Ei ladattu",
-      "notLoadedBody": "Tallennettuja metatietoja ei ole vielä ladattu.",
-      "savedTitle": "Tallennettu",
-      "metadataSaved": "Metatiedot tallennettu",
-      "saveFailedTitle": "Tallennus epäonnistui",
-      "hltbCleared": "HLTB-peli tyhjennetty",
-      "hltbGame": "HLTB-peli: {{name}}",
       "fetchFailedTitle": "Nouto epäonnistui",
-      "removedTitle": "Poistettu",
       "removedBody": "Metatiedot poistettu",
       "removeFailedTitle": "Poisto epäonnistui",
       "shortcutNameChangedTitle": "Pikakuvakkeen nimi muuttui",
@@ -552,13 +564,11 @@
       "nameHistoryNotClearedTitle": "Tallennettua nimihistoriaa ei tyhjennetty"
     },
     "steamTextLanguage": "Steamin tekstin kieli: {{language}}",
-    "fetchSteamText": "Hae Steamin teksti kielellä {{language}}",
+    "fetchSteamText": "Lataa Steamin teksti kielellä {{language}}",
     "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille."
   },
   "matchPicker": {
-    "title": "Etsi Steam-vastaavuus",
     "help": "Hae Steamista, valitse tulos tarkistaaksesi sen tiedot ja valitse sitten Käytä tätä Steam-vastaavuutta. Selailu ei muuta peliäsi.",
-    "currentAppId": "Nykyinen Steam-sovellustunnus: {{appId}}",
     "searchAriaLabel": "Steam-pelihaku",
     "search": "Hae Steamista",
     "searching": "Haetaan Steamista...",

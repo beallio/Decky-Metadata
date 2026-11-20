@@ -1,10 +1,10 @@
 {
   "common": {
-    "hoursShort": "{{value}} h",
-    "unknown": "Necunoscut",
     "hours_one": "{{value}} oră",
     "hours_few": "{{value}} ore",
-    "hours_other": "{{value}} de ore"
+    "hours_other": "{{value}} de ore",
+    "hoursShort": "{{value}} h",
+    "unknown": "Necunoscut"
   },
   "backend": {
     "progress": {
@@ -159,7 +159,7 @@
       "bottomBorderLabel": "Bordură inferioară",
       "bottomBorderDescription": "Afișează o linie de separare sub bara HLTB",
       "resetAppearance": "Resetează aspectul",
-      "loadingPreferences": "Se încarcă preferințele HLTB…"
+      "loadingPreferences": "Se încarcă preferințele HLTB..."
     },
     "trailers": {
       "title": "Trailere de joc",
@@ -207,7 +207,7 @@
       "positionBottomLeft": "Jos stânga",
       "positionTopLeft": "Sus stânga",
       "positionTopRight": "Sus dreapta",
-      "loadingPreferences": "Se încarcă preferințele pentru insignele ProtonDB…",
+      "loadingPreferences": "Se încarcă preferințele pentru insignele ProtonDB...",
       "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
     },
     "miniAchievements": {
@@ -221,7 +221,7 @@
       "title": "Starea de compatibilitate",
       "defaultStatus": "Starea de compatibilitate implicită",
       "applyDefaultTo": "Aplică implicit la",
-      "categoryAutomatic": "Automat — folosește starea Steam asociată",
+      "categoryAutomatic": "Automat",
       "categoryVerified": "Verificat",
       "categoryPlayable": "Jucabil",
       "categoryUnsupported": "Neacceptat",
@@ -417,7 +417,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Modifică metadatele..."
+    "editMetadata": "Editează metadatele..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} este activat în Decky Loader. Dezactivează acel plugin pentru a folosi {{feature}} aici.",
@@ -427,17 +427,29 @@
   "editor": {
     "save": "Salvează",
     "saveCount": "Salvează ({{count}})",
+    "unsupportedSteam": "Această versiune Steam nu este încă acceptată. Actualizează Decky Metadata pentru a edita metadatele.",
     "removeMetadata": "Elimină metadatele",
-    "done": "Gata",
-    "moreOptions": "Mai multe opțiuni",
-    "moreMenuTitle": "Metadate",
-    "refreshFromSteam": "Reîmprospătează din Steam",
+    "page": {
+      "details": "Detalii",
+      "steamMatch": "Potrivire joc",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Compatibilitate",
+      "storeCategories": "Categorii din magazin",
+      "shortcutName": "Numele scurtăturii",
+      "advanced": "Avansat"
+    },
+    "currentMatch": "Potrivirea curentă",
+    "loadFromSteam": "Încarcă din Steam",
+    "loadFromSteamSteamGame": "Încarcă din Steam (indisponibil pentru jocurile Steam)",
+    "loadFromSteamNoMatch": "Încarcă din Steam (nicio potrivire Steam)",
+    "loadFromSteamBusy": "Încarcă din Steam (se actualizează)",
     "fieldEdited": "Editat",
     "fieldFromSteam": "Din Steam, nesalvat",
     "steamDataChanged": "Datele Steam care nu sunt afișate în formular (capturi de ecran, știri, compatibilitate) s-au schimbat și nu sunt salvate.",
     "unsaved": {
       "title": "Salvezi modificările?",
       "body": "Ai modificări nesalvate la metadatele acestui joc.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Renunță",
       "cancel": "Anulează"
     },
@@ -448,10 +460,12 @@
     },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
+    "ign": {
+      "gameName": "Numele jocului"
+    },
     "search": "Caută",
     "searching": "Se caută...",
     "noResults": "Încă nu există rezultate.",
-    "source": "Sursă",
     "field": {
       "title": "Titlu",
       "description": "Descriere",
@@ -463,6 +477,7 @@
       "steamData": "Date Steam care nu sunt afișate în formular"
     },
     "compat": {
+      "statusLabel": "Stare",
       "useGlobalDefault": "Folosește valoarea implicită globală",
       "followValve": "Urmărește Valve",
       "verified": "Verificat",
@@ -478,9 +493,8 @@
       "useGlobalDefaultFromValve": "Folosește valoarea implicită globală ({{category}} — de la Valve)"
     },
     "compatibilityStatus": "Starea de compatibilitate",
-    "compatibilityHelp": "„Folosește valoarea implicită globală” preia setarea din meniul de acces rapid. „Urmărește Valve” o ignoră și păstrează starea Steam originală când datele Valve nu sunt disponibile.",
+    "compatibilityHelp": "„Automat” folosește starea din Steam a jocului asociat. „Folosește valoarea implicită globală” preia această setare pentru jocul curent. „Urmărește Valve” folosește întotdeauna starea stabilită de Valve. Dacă datele Valve nu sunt disponibile, „Urmărește Valve” păstrează starea Steam originală.",
     "compatibilityChoices": "Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve sau un rezultat de performanță al emulatorului.",
-    "steamInfoFields": "Câmpuri de informații Steam",
     "hltbGame": "Joc HowLongToBeat",
     "hltbHelp": "Caută pe HowLongToBeat sau lipește un număr de joc ori un link către pagina jocului pentru a alege timpii afișați pentru acest joc. Lasă gol pentru potrivire automată.",
     "hltbCurrentChosen": "Jocul curent: {{name}} (ales)",
@@ -489,8 +503,8 @@
     "steamAppId": "ID aplicație Steam",
     "steamAppIdHelp": "Lipește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB. Lasă gol pentru a șterge potrivirea Steam fixată.",
     "steamAppIdApply": "Aplică ID-ul de aplicație Steam",
-    "shortcutName": "Numele scurtăturii",
     "shortcut": {
+      "immediateNotice": "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
       "current": "Curent: {{name}}",
       "missingName": "Steam nu a expus un nume nativ pentru scurtătură",
       "steamName": "Steam: {{name}}",
@@ -518,24 +532,22 @@
       "hltbInvalidBody": "Introdu un număr de joc HowLongToBeat sau un link către pagina jocului.",
       "steamAppIdInvalidTitle": "ID de aplicație Steam nevalid",
       "steamAppIdInvalidBody": "Introdu un ID de aplicație Steam, un URL de magazin, de comunitate sau SteamDB. Lasă câmpul gol pentru a elimina potrivirea.",
+      "hltbNotFoundTitle": "Nu a fost găsit",
+      "hltbNotFoundBody": "HowLongToBeat nu are niciun joc cu acel număr.",
+      "notApplicableTitle": "Nu se aplică",
+      "notLoadedTitle": "Neîncărcat",
+      "notLoadedBody": "Metadatele salvate nu au fost încă încărcate.",
+      "metadataSaved": "Metadate salvate",
+      "saveFailedTitle": "Salvarea a eșuat",
+      "hltbCleared": "Jocul HLTB a fost șters",
+      "hltbGame": "Joc HLTB: {{name}}",
       "hltbDraftBody": "Salvarea păstrează această alegere.",
       "detailsLoadedTitle": "Detalii încărcate",
       "steamPreviewBody": "Detaliile Steam sunt încărcate în acest formular. Salvează pentru a le păstra.",
       "ignPreviewBody": "Detaliile IGN sunt încărcate în acest formular. Salvează pentru a le păstra.",
       "steamAppIdNotAppliedTitle": "ID-ul de aplicație Steam nu a fost aplicat",
       "steamAppIdNotAppliedBody": "Selectează Aplică ID-ul de aplicație Steam pentru a încărca noua potrivire înainte de a salva.",
-      "hltbNotFoundTitle": "Nu a fost găsit",
-      "hltbNotFoundBody": "HowLongToBeat nu are niciun joc cu acel număr.",
-      "notApplicableTitle": "Nu se aplică",
-      "notLoadedTitle": "Neîncărcat",
-      "notLoadedBody": "Metadatele salvate nu au fost încă încărcate.",
-      "savedTitle": "Salvat",
-      "metadataSaved": "Metadate salvate",
-      "saveFailedTitle": "Salvarea a eșuat",
-      "hltbCleared": "Jocul HLTB a fost șters",
-      "hltbGame": "Joc HLTB: {{name}}",
       "fetchFailedTitle": "Obținerea a eșuat",
-      "removedTitle": "Eliminat",
       "removedBody": "Metadate eliminate",
       "removeFailedTitle": "Eliminarea a eșuat",
       "shortcutNameChangedTitle": "Numele scurtăturii s-a schimbat",
@@ -553,13 +565,11 @@
       "nameHistoryNotClearedTitle": "Istoricul numelor salvat nu a fost șters"
     },
     "steamTextLanguage": "Limba textului Steam: {{language}}",
-    "fetchSteamText": "Obține textul Steam în {{language}}",
+    "fetchSteamText": "Încarcă textul Steam în {{language}}",
     "steamTextUnavailable": "Steam nu a returnat text pentru acest joc."
   },
   "matchPicker": {
-    "title": "Găsește o potrivire Steam",
     "help": "Caută pe Steam, selectează un rezultat pentru a-i verifica detaliile, apoi alege Folosește această potrivire Steam. Navigarea nu îți modifică jocul.",
-    "currentAppId": "ID aplicație Steam curent: {{appId}}",
     "searchAriaLabel": "Căutare jocuri Steam",
     "search": "Caută pe Steam",
     "searching": "Se caută pe Steam...",

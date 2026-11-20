@@ -199,4 +199,44 @@ describe("native description presentation ownership", () => {
     expect(h.leaf().getAttribute("data-decky-metadata-description")).toBeNull();
     expect(h.observers.filter((observer) => observer.active)).toHaveLength(0);
   });
+  it("resolves delayed Vite classes when hydration completes after install", () => {
+    let classesReady = false;
+    let revisionListener = () => {};
+    const leaf = {
+      isConnected: true,
+      textContent: "Hello\nWorld",
+      style: {
+        values: new Map<string, [string, string]>(),
+        getPropertyValue(k: string) { return this.values.get(k)?.[0] ?? ""; },
+        getPropertyPriority(k: string) { return this.values.get(k)?.[1] ?? ""; },
+        setProperty(k: string, v: string, p: string) { this.values.set(k, [v, p]); },
+        removeProperty(k: string) { this.values.delete(k); },
+      },
+      attrs: new Map<string, string>(),
+      getAttribute(k: string) { return this.attrs.get(k) ?? null; },
+      setAttribute(k: string, v: string) { this.attrs.set(k, v); },
+      removeAttribute(k: string) { this.attrs.delete(k); },
+    } as unknown as HTMLElement;
+    const owner = { isConnected: true, querySelectorAll: () => [leaf] } as unknown as HTMLElement;
+    const doc = { body: {}, querySelectorAll: () => [owner] } as unknown as Document;
+    const unpatchers: Array<() => void> = [];
+    installMetadataDescriptions(unpatchers, {
+      documents: () => [doc],
+      classes: () => classesReady ? { owner: "pzBMdSbGpu7XfypZMU6PK", description: "xftA50eui60-" } : undefined,
+      route: () => "/library/app/10/tab/GameInfo",
+      eligible: () => true,
+      ownerAppId: () => 10,
+      visible: () => true,
+      revisions: (cb) => { revisionListener = cb; return () => {}; },
+      listen: () => () => {},
+      observe: () => () => {},
+      schedule: () => 1,
+      cancel: () => {},
+    });
+    expect(leaf.getAttribute("data-decky-metadata-description")).toBeNull();
+    classesReady = true;
+    revisionListener();
+    expect(leaf.getAttribute("data-decky-metadata-description")).toBe("10");
+    unpatchers.forEach((stop) => stop());
+  });
 });

@@ -47,18 +47,20 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
   return (
     <>
       <PanelSectionRow>
-        <div style={{ ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }}>
-          <TextField
-            className={editorFocusTargetClassName}
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            style={fieldStyle}
-          />
+        <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center", ...editorSearchInputRowSpacingStyle }}>
+          <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+            <TextField
+              className={editorFocusTargetClassName}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              style={{ ...fieldStyle, width: "100%" }}
+            />
+          </div>
           <FocusableButton
             className={`DialogButton ${editorFocusTargetClassName}`}
             disabled={disabled || searching || !query.trim()}
             onClick={() => void search()}
-            style={editorSearchButtonStyle}
+            style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
           >
             {searching ? t("hltb.search.searching") : t("hltb.search.action")}
           </FocusableButton>

@@ -1,11 +1,11 @@
 {
   "common": {
-    "hoursShort": "{{value}} год",
-    "unknown": "Невідомо",
     "hours_one": "{{value}} година",
     "hours_few": "{{value}} години",
     "hours_many": "{{value}} годин",
-    "hours_other": "{{value}} години"
+    "hours_other": "{{value}} години",
+    "hoursShort": "{{value}} год",
+    "unknown": "Невідомо"
   },
   "backend": {
     "progress": {
@@ -83,7 +83,7 @@
     },
     "details": "Докладніше",
     "search": {
-      "searching": "Пошук…",
+      "searching": "Пошук...",
       "action": "Шукати в HLTB",
       "noGames": "HowLongToBeat не знайшов ігор.",
       "mainStory": "Основний сюжет {{hours}}",
@@ -145,8 +145,8 @@
       "allStylesStatLabel": "Перемкнути показник «усі стилі»",
       "allStylesStatDescription": "Показує/ховає лише показник «усі стилі»",
       "clearCacheButton": "Очистити кеш HLTB",
-      "clearingButton": "Очищення…",
-      "cacheClearing": "Очищення кешу HLTB…",
+      "clearingButton": "Очищення...",
+      "cacheClearing": "Очищення кешу HLTB...",
       "cacheCleared": "Кеш HLTB очищено. Час завантажиться знову під час відкриття гри.",
       "cacheFailed": "Не вдалося очистити кеш HLTB.",
       "customizeLabel": "Налаштувати вигляд",
@@ -160,7 +160,7 @@
       "bottomBorderLabel": "Нижня межа",
       "bottomBorderDescription": "Показує розділювальну лінію під панеллю HLTB",
       "resetAppearance": "Скинути вигляд",
-      "loadingPreferences": "Завантаження налаштувань HLTB…"
+      "loadingPreferences": "Завантаження налаштувань HLTB..."
     },
     "trailers": {
       "title": "Трейлери ігор",
@@ -208,7 +208,7 @@
       "positionBottomLeft": "Знизу ліворуч",
       "positionTopLeft": "Зверху ліворуч",
       "positionTopRight": "Зверху праворуч",
-      "loadingPreferences": "Завантаження налаштувань значків ProtonDB…",
+      "loadingPreferences": "Завантаження налаштувань значків ProtonDB...",
       "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
     },
     "miniAchievements": {
@@ -222,7 +222,7 @@
       "title": "Статус сумісності",
       "defaultStatus": "Статус сумісності за замовчуванням",
       "applyDefaultTo": "Застосовувати за замовчуванням до",
-      "categoryAutomatic": "Автоматично — використовувати статус Steam",
+      "categoryAutomatic": "Автоматично",
       "categoryVerified": "Сумісна",
       "categoryPlayable": "Можна грати",
       "categoryUnsupported": "Не підтримується",
@@ -245,12 +245,12 @@
       "saved": "Метадані збережено:",
       "missing": "Немає метаданих:",
       "refresh": "Оновити метадані",
-      "refreshing": "Оновлення…",
-      "refreshingStatus": "Оновлення метаданих…",
+      "refreshing": "Оновлення...",
+      "refreshingStatus": "Оновлення метаданих...",
       "refreshDescription": "Знайти й зберегти метадані для виявлених ігор поза Steam, які ще не мають збігу.",
       "cacheHeading": "Кеш метаданих",
       "clearCache": "Очистити кеш",
-      "clearing": "Очищення…",
+      "clearing": "Очищення...",
       "clearCacheDescription": "Очистити збережені збіги й метадані, щоб ігри можна було зіставити заново.",
       "delistedHeading": "Ігри, вилучені зі Steam",
       "refreshDelisted": "Оновити вилучені ігри"
@@ -265,7 +265,7 @@
       "autoCheckDescription": "Перевіряє у фоні, поки плагін завантажено.",
       "status": "Стан",
       "lastChecked": "Остання перевірка: {{date}}",
-      "checking": "Перевірка…",
+      "checking": "Перевірка...",
       "checkInterrupted": "Перевірку перервано через {{seconds}} с",
       "checkFailed": "Не вдалося перевірити",
       "upToDate": "Актуальна версія",
@@ -282,8 +282,8 @@
       "actionRevertToStable": "Повернутися до стабільної v{{version}}",
       "actionInstallDevelopment": "Встановити збірку для розробки v{{version}}",
       "actionUpdate": "Оновити до v{{version}}",
-      "waitingForDecky": "Очікування Decky…",
-      "preparing": "Підготовка…",
+      "waitingForDecky": "Очікування Decky...",
+      "preparing": "Підготовка...",
       "localBuildOnlyStable": "Локальні збірки можуть самооновлюватися лише до стабільного випуску. Встановіть цю збірку для розробки вручну з GitHub Releases.",
       "manualInstallUnavailable": "Автоматичне встановлення недоступне в цьому середовищі Decky. Встановіть цей випуск вручну з GitHub Releases.",
       "viewReleaseNotes": "Переглянути примітки до випуску",
@@ -301,7 +301,7 @@
     },
     "logs": {
       "title": "Журнали",
-      "loading": "Завантаження…",
+      "loading": "Завантаження...",
       "view": "Відкрити журнали",
       "debugLogging": "Налагоджувальний журнал",
       "debugLoggingDescription": "Вмикає докладне журналювання для діагностики.",
@@ -418,7 +418,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Змінити метадані…"
+    "editMetadata": "Редагувати метадані..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} увімкнено в Decky Loader. Вимкніть цей плагін, щоб використовувати {{feature}} тут.",
@@ -428,17 +428,29 @@
   "editor": {
     "save": "Зберегти",
     "saveCount": "Зберегти ({{count}})",
+    "unsupportedSteam": "Ця версія Steam поки не підтримується. Оновіть Decky Metadata, щоб редагувати метадані.",
     "removeMetadata": "Видалити метадані",
-    "done": "Готово",
-    "moreOptions": "Більше параметрів",
-    "moreMenuTitle": "Метадані",
-    "refreshFromSteam": "Оновити зі Steam",
+    "page": {
+      "details": "Відомості",
+      "steamMatch": "Збіг гри",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Сумісність",
+      "storeCategories": "Категорії крамниці",
+      "shortcutName": "Назва ярлика",
+      "advanced": "Додатково"
+    },
+    "currentMatch": "Поточний збіг",
+    "loadFromSteam": "Завантажити зі Steam",
+    "loadFromSteamSteamGame": "Завантажити зі Steam (недоступно для ігор Steam)",
+    "loadFromSteamNoMatch": "Завантажити зі Steam (немає збігу у Steam)",
+    "loadFromSteamBusy": "Завантажити зі Steam (оновлення)",
     "fieldEdited": "Змінено",
     "fieldFromSteam": "Зі Steam, не збережено",
     "steamDataChanged": "Дані Steam, не показані у формі (скриншоти, новини, сумісність), змінилися й не збережені.",
     "unsaved": {
       "title": "Зберегти зміни?",
       "body": "У вас є незбережені зміни метаданих цієї гри.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Відхилити",
       "cancel": "Скасувати"
     },
@@ -449,10 +461,12 @@
     },
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
     "searchIgn": "Шукати метадані в IGN",
+    "ign": {
+      "gameName": "Назва гри"
+    },
     "search": "Шукати",
-    "searching": "Пошук…",
+    "searching": "Пошук...",
     "noResults": "Результатів ще немає.",
-    "source": "Джерело",
     "field": {
       "title": "Назва",
       "description": "Опис",
@@ -464,6 +478,7 @@
       "steamData": "Дані Steam, не показані у формі"
     },
     "compat": {
+      "statusLabel": "Статус",
       "useGlobalDefault": "Використовувати глобальне значення за замовчуванням",
       "followValve": "Як у Valve",
       "verified": "Сумісна",
@@ -479,9 +494,8 @@
       "useGlobalDefaultFromValve": "Використовувати глобальне значення за замовчуванням ({{category}} — від Valve)"
     },
     "compatibilityStatus": "Статус сумісності",
-    "compatibilityHelp": "«Використовувати глобальне значення за замовчуванням» успадковує налаштування меню швидкого доступу. «Як у Valve» ігнорує його й зберігає початковий статус Steam, коли дані Valve недоступні.",
+    "compatibilityHelp": "«Автоматично» використовує для кожної гри статус відповідної гри в Steam. «Використовувати глобальне значення за замовчуванням» успадковує це налаштування для поточної гри. «Як у Valve» завжди використовує статус Valve. Якщо дані Valve недоступні, цей режим зберігає початковий статус Steam.",
     "compatibilityChoices": "Ручні категорії та категорії за замовчуванням — ваш вибір, а не сертифікація Valve чи результат продуктивності емулятора.",
-    "steamInfoFields": "Відомості Steam",
     "hltbGame": "Гра HowLongToBeat",
     "hltbHelp": "Знайдіть гру в HowLongToBeat або вставте номер гри чи посилання на її сторінку, щоб вибрати час, який показується для цієї гри. Залиште порожнім для автоматичного зіставлення.",
     "hltbCurrentChosen": "Поточна гра: {{name}} (вибрано)",
@@ -490,12 +504,12 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставте Steam App ID, URL крамниці, URL спільноти або URL SteamDB. Залиште порожнім, щоб скасувати прив’язаний збіг Steam.",
     "steamAppIdApply": "Застосувати Steam App ID",
-    "shortcutName": "Назва ярлика",
     "shortcut": {
+      "immediateNotice": "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
       "current": "Поточна: {{name}}",
       "missingName": "Steam не надав назву власного ярлика",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Завантаження назви Steam…",
+      "loadingSteamName": "Завантаження назви Steam...",
       "noOfficialName": "Steam не повернув офіційну назву",
       "managementUnavailable": "Керування назвами ярликів недоступне",
       "apiUnavailable": "Власний API назв ярликів Steam недоступний",
@@ -519,24 +533,22 @@
       "hltbInvalidBody": "Введіть номер гри HowLongToBeat або посилання на сторінку гри.",
       "steamAppIdInvalidTitle": "Неприпустимий Steam App ID",
       "steamAppIdInvalidBody": "Введіть Steam App ID, посилання на магазин, спільноту або SteamDB. Залиште поле порожнім, щоб зняти збіг.",
+      "hltbNotFoundTitle": "Не знайдено",
+      "hltbNotFoundBody": "У HowLongToBeat немає гри з таким номером.",
+      "notApplicableTitle": "Не застосовно",
+      "notLoadedTitle": "Не завантажено",
+      "notLoadedBody": "Збережені метадані ще не завантажено.",
+      "metadataSaved": "Метадані збережено",
+      "saveFailedTitle": "Не вдалося зберегти",
+      "hltbCleared": "Гру HLTB очищено",
+      "hltbGame": "Гра HLTB: {{name}}",
       "hltbDraftBody": "Натисніть «Зберегти», щоб запам'ятати цей вибір.",
       "detailsLoadedTitle": "Відомості завантажено",
       "steamPreviewBody": "Відомості Steam завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
       "ignPreviewBody": "Відомості IGN завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
       "steamAppIdNotAppliedTitle": "Steam App ID не застосовано",
       "steamAppIdNotAppliedBody": "Виберіть «Застосувати Steam App ID», щоб завантажити новий збіг перед збереженням.",
-      "hltbNotFoundTitle": "Не знайдено",
-      "hltbNotFoundBody": "У HowLongToBeat немає гри з таким номером.",
-      "notApplicableTitle": "Не застосовно",
-      "notLoadedTitle": "Не завантажено",
-      "notLoadedBody": "Збережені метадані ще не завантажено.",
-      "savedTitle": "Збережено",
-      "metadataSaved": "Метадані збережено",
-      "saveFailedTitle": "Не вдалося зберегти",
-      "hltbCleared": "Гру HLTB очищено",
-      "hltbGame": "Гра HLTB: {{name}}",
       "fetchFailedTitle": "Не вдалося отримати дані",
-      "removedTitle": "Видалено",
       "removedBody": "Метадані видалено",
       "removeFailedTitle": "Не вдалося видалити",
       "shortcutNameChangedTitle": "Назву ярлика змінено",
@@ -554,23 +566,21 @@
       "nameHistoryNotClearedTitle": "Збережену історію назв не очищено"
     },
     "steamTextLanguage": "Мова тексту Steam: {{language}}",
-    "fetchSteamText": "Отримати текст Steam мовою {{language}}",
+    "fetchSteamText": "Завантажити текст Steam мовою {{language}}",
     "steamTextUnavailable": "Steam не повернув текст для цієї гри."
   },
   "matchPicker": {
-    "title": "Знайти збіг у Steam",
     "help": "Знайдіть гру в Steam, виберіть результат, щоб перевірити відомості, потім виберіть «Використати цей збіг Steam». Перегляд не змінює вашу гру.",
-    "currentAppId": "Поточний Steam App ID: {{appId}}",
     "searchAriaLabel": "Пошук гри в Steam",
     "search": "Шукати в Steam",
-    "searching": "Пошук у Steam…",
+    "searching": "Пошук у Steam...",
     "idle": "Введіть назву гри, щоб знайти збіги в Steam.",
     "empty": "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг",
     "appIdSelected": "Steam App ID: {{appId}} · вибрано",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · поточний збіг · вибрано",
-    "loadingDetails": "Завантаження відомостей Steam…",
+    "loadingDetails": "Завантаження відомостей Steam...",
     "artworkAlt": "Арт Steam для {{title}}",
     "developer": "Розробник: {{names}}",
     "developerUnavailable": "Розробник недоступний",

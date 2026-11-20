@@ -1,7 +1,7 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const native = vi.hoisted(() => ({ route: "/library/app/570", row: undefined as unknown, document: undefined as unknown }));
+const native = vi.hoisted(() => ({ route: "/library/app/570", row: undefined as unknown, document: undefined as unknown, viteMode: false }));
 vi.mock("@decky/api", () => ({ routerHook: {
   addPatch: (_route: string, patch: (props: unknown) => unknown) => patch,
   removePatch: vi.fn(),
@@ -21,6 +21,7 @@ vi.mock("../steam/core", () => ({
 }));
 vi.mock("../steam/steamUiModules", () => ({ findSteamModulesBySource: (fragments: string[]) => {
   if (fragments.includes("tool-tip-source")) return [{ Tooltip: NativeTooltip }];
+  if (native.viteMode) return [];
   if (fragments.includes("ControllerConfigButton")) return [{ MenuButton: "menu", ControllerConfigButton: "controller-style" }];
   return [{ AppButtons: "buttons", ActionButtonAndStatusPanel: "panel", PlaySection: "play" }];
 } }));
@@ -122,5 +123,49 @@ describe("private native action-row capture", () => {
     expect(buttonsFor(570).map(button => React.isValidElement<{ id: string }>(button) ? button.props.id : null))
       .toEqual(["controller", "settings"]);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("captures a Vite/Rolldown forwardRef whose class names are minified local identifiers", async () => {
+    const Lln = "XsaXvMN2zqk-";
+    const ViteRow = React.forwardRef<unknown, { overview: { appid: number }; details?: unknown }>(function ViteRow(props) {
+      const streaming = { bShowStreamingSelector: true, statusPanelType: 2 };
+      return React.createElement("div", { "data-streaming": streaming.bShowStreamingSelector },
+        React.createElement("div", { className: Lln },
+          React.createElement("button", { id: "controller" }, "Controller"),
+          React.createElement("button", { id: "settings" }, "Settings")),
+        React.createElement("span", null, props.overview.appid));
+    });
+    const { setNativeCssClasses } = await import("../steam/nativeCssClasses");
+    native.viteMode = true;
+    setNativeCssClasses({
+      appButtons: Lln,
+      menuButton: "_9bDYflwE-1c-",
+      controllerConfigButton: "a2fZdFfqFXY-",
+    });
+    const doc = {
+      body: {},
+      querySelector: () => ({ ownerDocument: native.document }),
+      querySelectorAll: () => [native.row],
+    };
+    native.document = doc;
+    native.row = {
+      ownerDocument: doc,
+      __reactFiber$fixture: {
+        type: "div",
+        return: { type: ViteRow, return: { type: OwnerType, stateNode: owner } },
+      },
+    };
+    try {
+      dispose = installProtonDbGameView();
+      await vi.advanceTimersByTimeAsync(0);
+      const render: unknown = Reflect.get(ViteRow, "render");
+      const result = Reflect.apply(render as (...a: unknown[]) => unknown, ViteRow, [{ overview: { appid: 1942280 } }, null]) as React.ReactElement<{ children: React.ReactNode[] }>;
+      const row = result.props.children[0] as React.ReactElement<{ children: React.ReactNode[] }>;
+      const children = React.Children.toArray(row.props.children);
+      expect(React.isValidElement(children[0]) && children[0].type).toBe("ProtonDbGameButton");
+    } finally {
+      native.viteMode = false;
+      setNativeCssClasses(null);
+    }
   });
 });

@@ -1,11 +1,11 @@
 {
   "common": {
-    "hoursShort": "{{value}} h",
-    "unknown": "Neznámé",
     "hours_one": "{{value}} hodina",
     "hours_few": "{{value}} hodiny",
     "hours_many": "{{value}} hodiny",
-    "hours_other": "{{value}} hodin"
+    "hours_other": "{{value}} hodin",
+    "hoursShort": "{{value}} h",
+    "unknown": "Neznámé"
   },
   "backend": {
     "progress": {
@@ -83,7 +83,7 @@
     },
     "details": "Podrobnosti",
     "search": {
-      "searching": "Hledání…",
+      "searching": "Hledání...",
       "action": "Hledat v HLTB",
       "noGames": "HowLongToBeat nenašel žádné hry.",
       "mainStory": "Hlavní příběh {{hours}}",
@@ -145,8 +145,8 @@
       "allStylesStatLabel": "Přepnout statistiku „všechny styly“",
       "allStylesStatDescription": "Zobrazí/skryje pouze statistiku všech stylů",
       "clearCacheButton": "Vymazat mezipaměť HLTB",
-      "clearingButton": "Mazání…",
-      "cacheClearing": "Mazání mezipaměti HLTB…",
+      "clearingButton": "Mazání...",
+      "cacheClearing": "Mazání mezipaměti HLTB...",
       "cacheCleared": "Mezipaměť HLTB vymazána. Časy se znovu načtou po otevření hry.",
       "cacheFailed": "Mezipaměť HLTB se nepodařilo vymazat.",
       "customizeLabel": "Přizpůsobit vzhled",
@@ -160,7 +160,7 @@
       "bottomBorderLabel": "Spodní ohraničení",
       "bottomBorderDescription": "Zobrazí oddělovací čáru pod pruhem HLTB",
       "resetAppearance": "Obnovit výchozí vzhled",
-      "loadingPreferences": "Načítání předvoleb HLTB…"
+      "loadingPreferences": "Načítání předvoleb HLTB..."
     },
     "trailers": {
       "title": "Trailery her",
@@ -208,7 +208,7 @@
       "positionBottomLeft": "Vlevo dole",
       "positionTopLeft": "Vlevo nahoře",
       "positionTopRight": "Vpravo nahoře",
-      "loadingPreferences": "Načítání předvoleb odznaků ProtonDB…",
+      "loadingPreferences": "Načítání předvoleb odznaků ProtonDB...",
       "footnote": "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
     },
     "miniAchievements": {
@@ -222,7 +222,7 @@
       "title": "Stav kompatibility",
       "defaultStatus": "Výchozí stav kompatibility",
       "applyDefaultTo": "Použít výchozí na",
-      "categoryAutomatic": "Automaticky — použít stav Steam",
+      "categoryAutomatic": "Automaticky",
       "categoryVerified": "Ověřeno",
       "categoryPlayable": "Hratelné",
       "categoryUnsupported": "Nepodporováno",
@@ -245,12 +245,12 @@
       "saved": "Uložená metadata:",
       "missing": "Chybějící metadata:",
       "refresh": "Obnovit metadata",
-      "refreshing": "Obnovování…",
-      "refreshingStatus": "Obnovování metadat…",
+      "refreshing": "Obnovování...",
+      "refreshingStatus": "Obnovování metadat...",
       "refreshDescription": "Najít a uložit metadata pro zjištěné hry mimo Steam, které ještě nemají shodu.",
       "cacheHeading": "Mezipaměť metadat",
       "clearCache": "Vymazat mezipaměť",
-      "clearing": "Mazání…",
+      "clearing": "Mazání...",
       "clearCacheDescription": "Vymazat uložené shody a metadata, aby se hry mohly znovu spárovat.",
       "delistedHeading": "Hry vyřazené ze Steamu",
       "refreshDelisted": "Obnovit vyřazené hry"
@@ -265,7 +265,7 @@
       "autoCheckDescription": "Kontroluje na pozadí, když je plugin načten.",
       "status": "Stav",
       "lastChecked": "Poslední kontrola: {{date}}",
-      "checking": "Kontrola…",
+      "checking": "Kontrola...",
       "checkInterrupted": "Kontrola přerušena po {{seconds}} s",
       "checkFailed": "Kontrola se nezdařila",
       "upToDate": "Aktuální verze",
@@ -282,8 +282,8 @@
       "actionRevertToStable": "Vrátit se na stabilní v{{version}}",
       "actionInstallDevelopment": "Nainstalovat vývojové sestavení v{{version}}",
       "actionUpdate": "Aktualizovat na v{{version}}",
-      "waitingForDecky": "Čekání na Decky…",
-      "preparing": "Připravování…",
+      "waitingForDecky": "Čekání na Decky...",
+      "preparing": "Připravování...",
       "localBuildOnlyStable": "Místní sestavení se mohou sama aktualizovat jen na stabilní vydání. Toto vývojové vydání nainstalujte ručně z GitHub Releases.",
       "manualInstallUnavailable": "Automatická instalace není v tomto prostředí Decky dostupná. Toto vydání nainstalujte ručně z GitHub Releases.",
       "viewReleaseNotes": "Zobrazit poznámky k vydání",
@@ -301,7 +301,7 @@
     },
     "logs": {
       "title": "Protokoly",
-      "loading": "Načítání…",
+      "loading": "Načítání...",
       "view": "Zobrazit protokoly",
       "debugLogging": "Ladicí protokolování",
       "debugLoggingDescription": "Povolí podrobné protokolování pro řešení problémů.",
@@ -418,7 +418,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Změnit metadata…"
+    "editMetadata": "Upravit metadata..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} je v Decky Loaderu povolen. Vypněte tento plugin, abyste zde mohli používat {{feature}}.",
@@ -428,17 +428,29 @@
   "editor": {
     "save": "Uložit",
     "saveCount": "Uložit ({{count}})",
+    "unsupportedSteam": "Tato verze Steamu zatím není podporována. Aktualizujte Decky Metadata, abyste mohli upravovat metadata.",
     "removeMetadata": "Odstranit metadata",
-    "done": "Hotovo",
-    "moreOptions": "Další možnosti",
-    "moreMenuTitle": "Metadata",
-    "refreshFromSteam": "Obnovit ze Steamu",
+    "page": {
+      "details": "Podrobnosti",
+      "steamMatch": "Shoda hry",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Kompatibilita",
+      "storeCategories": "Kategorie v obchodu",
+      "shortcutName": "Název zástupce",
+      "advanced": "Pokročilé"
+    },
+    "currentMatch": "Aktuální shoda",
+    "loadFromSteam": "Načíst ze Steamu",
+    "loadFromSteamSteamGame": "Načíst ze Steamu (není dostupné pro hry ze Steamu)",
+    "loadFromSteamNoMatch": "Načíst ze Steamu (bez shody ve Steamu)",
+    "loadFromSteamBusy": "Načíst ze Steamu (probíhá aktualizace)",
     "fieldEdited": "Upraveno",
     "fieldFromSteam": "Ze Steamu, neuloženo",
     "steamDataChanged": "Data ze Steamu nezobrazená ve formuláři (snímky obrazovky, novinky, kompatibilita) se změnila a nejsou uložena.",
     "unsaved": {
       "title": "Uložit změny?",
       "body": "Máte neuložené změny metadat této hry.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Zahodit",
       "cancel": "Zrušit"
     },
@@ -449,10 +461,12 @@
     },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
     "searchIgn": "Hledat metadata na IGN",
+    "ign": {
+      "gameName": "Název hry"
+    },
     "search": "Hledat",
-    "searching": "Hledání…",
+    "searching": "Hledání...",
     "noResults": "Zatím žádné výsledky.",
-    "source": "Zdroj",
     "field": {
       "title": "Název",
       "description": "Popis",
@@ -464,6 +478,7 @@
       "steamData": "Data ze Steamu nezobrazená ve formuláři"
     },
     "compat": {
+      "statusLabel": "Stav",
       "useGlobalDefault": "Použít globální výchozí",
       "followValve": "Podle Valve",
       "verified": "Ověřeno",
@@ -479,9 +494,8 @@
       "useGlobalDefaultFromValve": "Použít globální výchozí ({{category}} — od Valve)"
     },
     "compatibilityStatus": "Stav kompatibility",
-    "compatibilityHelp": "„Použít globální výchozí“ dědí nastavení z rychlého menu. „Podle Valve“ ho ignoruje a zachová původní stav Steam, když data Valve nejsou dostupná.",
+    "compatibilityHelp": "Volba „Automaticky“ používá pro každou hru stav odpovídající hry ve Steamu. Volba „Použít globální výchozí“ pro tuto hru převezme toto nastavení. Volba „Podle Valve“ používá vždy stav od Valve. Pokud údaje od Valve nejsou k dispozici, volba „Podle Valve“ zachová původní stav ze Steamu.",
     "compatibilityChoices": "Ruční a výchozí kategorie jsou vaše volby, nikoli certifikace Valve ani výsledek výkonu emulátoru.",
-    "steamInfoFields": "Informace Steam",
     "hltbGame": "Hra HowLongToBeat",
     "hltbHelp": "Vyhledejte hru v HowLongToBeat nebo vložte číslo hry či odkaz na její stránku a vyberte časy zobrazované pro tuto hru. Nechte prázdné pro automatické spárování.",
     "hltbCurrentChosen": "Aktuální hra: {{name}} (vybráno)",
@@ -490,12 +504,12 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Vložte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB. Nechte prázdné pro zrušení připnuté shody Steam.",
     "steamAppIdApply": "Použít Steam App ID",
-    "shortcutName": "Název zástupce",
     "shortcut": {
+      "immediateNotice": "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
       "current": "Aktuální: {{name}}",
       "missingName": "Steam neposkytl název nativního zástupce",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Načítání názvu ze Steamu…",
+      "loadingSteamName": "Načítání názvu ze Steamu...",
       "noOfficialName": "Steam nevrátil oficiální název",
       "managementUnavailable": "Správa názvů zástupců není dostupná",
       "apiUnavailable": "Nativní API názvů zástupců Steam není dostupné",
@@ -519,24 +533,22 @@
       "hltbInvalidBody": "Zadejte číslo hry HowLongToBeat nebo odkaz na stránku hry.",
       "steamAppIdInvalidTitle": "Neplatné Steam App ID",
       "steamAppIdInvalidBody": "Zadejte Steam App ID, URL obchodu, URL komunity nebo URL SteamDB. Nechte pole prázdné pro zrušení shody.",
+      "hltbNotFoundTitle": "Nenalezeno",
+      "hltbNotFoundBody": "HowLongToBeat nemá hru s tímto číslem.",
+      "notApplicableTitle": "Nelze použít",
+      "notLoadedTitle": "Nenačteno",
+      "notLoadedBody": "Uložená metadata ještě nejsou načtena.",
+      "metadataSaved": "Metadata uložena",
+      "saveFailedTitle": "Uložení se nezdařilo",
+      "hltbCleared": "Hra HLTB vymazána",
+      "hltbGame": "Hra HLTB: {{name}}",
       "hltbDraftBody": "Tuto volbu uložíte tlačítkem „Uložit“.",
       "detailsLoadedTitle": "Podrobnosti načteny",
       "steamPreviewBody": "Podrobnosti Steam jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
       "ignPreviewBody": "Podrobnosti IGN jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
       "steamAppIdNotAppliedTitle": "Steam App ID nebylo použito",
       "steamAppIdNotAppliedBody": "Před uložením vyberte „Použít Steam App ID“, abyste načetli novou shodu.",
-      "hltbNotFoundTitle": "Nenalezeno",
-      "hltbNotFoundBody": "HowLongToBeat nemá hru s tímto číslem.",
-      "notApplicableTitle": "Nelze použít",
-      "notLoadedTitle": "Nenačteno",
-      "notLoadedBody": "Uložená metadata ještě nejsou načtena.",
-      "savedTitle": "Uloženo",
-      "metadataSaved": "Metadata uložena",
-      "saveFailedTitle": "Uložení se nezdařilo",
-      "hltbCleared": "Hra HLTB vymazána",
-      "hltbGame": "Hra HLTB: {{name}}",
       "fetchFailedTitle": "Načtení se nezdařilo",
-      "removedTitle": "Odstraněno",
       "removedBody": "Metadata odstraněna",
       "removeFailedTitle": "Odstranění se nezdařilo",
       "shortcutNameChangedTitle": "Název zástupce změněn",
@@ -558,19 +570,17 @@
     "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
   },
   "matchPicker": {
-    "title": "Najít shodu Steam",
     "help": "Vyhledejte hru ve Steamu, vyberte výsledek pro kontrolu podrobností a potom zvolte „Použít tuto shodu Steam“. Procházení vaši hru nezmění.",
-    "currentAppId": "Aktuální Steam App ID: {{appId}}",
     "searchAriaLabel": "Vyhledávání her Steam",
     "search": "Hledat ve Steamu",
-    "searching": "Hledání ve Steamu…",
+    "searching": "Hledání ve Steamu...",
     "idle": "Zadejte název hry pro nalezení shod Steam.",
     "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda",
     "appIdSelected": "Steam App ID: {{appId}} · vybráno",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · aktuální shoda · vybráno",
-    "loadingDetails": "Načítání podrobností ze Steamu…",
+    "loadingDetails": "Načítání podrobností ze Steamu...",
     "artworkAlt": "Grafika Steam hry {{title}}",
     "developer": "Vývojář: {{names}}",
     "developerUnavailable": "Vývojář není dostupný",

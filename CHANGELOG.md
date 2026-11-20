@@ -4,6 +4,63 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-11-20
+
+New Steam-style metadata editor, Game Match, and Steam beta fixes
+
+### Changed
+
+- **Edit Metadata...** is in the Library card menu and in the game page's gear
+  menu, for non-Steam games only. It appears near **Properties...**, next to
+  SteamGridDB's **Change Artwork...** if that plugin is installed.
+- **Steam-style editor.** The sidebar shows the game's name and six pages:
+  **Details**, **Game Match**, **HowLongToBeat**, **Compatibility**,
+  **Shortcut Name**, and **Advanced**. Move the D-pad to a page
+  name to show it. Press **A** or **Right** to move into the page. Press **B**
+  in a page to return to the sidebar; press **B** in the sidebar to leave. If
+  you have unsaved changes, Steam asks you to **Save**, **Discard**, or
+  **Cancel**. A blue dot marks each page with unsaved changes. **Save** stays
+  at the bottom of the sidebar, and **X** also saves. The label shows the
+  number of changes, as in **Save (3)**. Shortcut name actions take effect
+  without **Save**. Each page has an icon and a heading spaced like Steam's
+  own settings pages, and fields use Steam's own row
+  layout. On **Details**, **Title**, **Developers**, and **Publishers** use
+  full-width text boxes below their names, as in Steam's **Launch Options**.
+  **Release Date** and **Rating** have their text box beside the name, as in
+  Steam's **Custom Sort Name**. **Store Categories** is a section at the
+  bottom of **Details**, and each category you change shows **Edited** until
+  you select **Save**. If a future Steam update hides the
+  sidebar, the editor says that this Steam version is not supported yet.
+- **Load from Steam** is on **Game Match**. It fills the form and gives a
+  reason when it is unavailable. Select **Load Steam text in** *your language*
+  on the same page to load the description and genres in your Steam language.
+  **Search IGN metadata** is also on **Game Match**, below **Steam App ID**.
+  While one of these loads, only its own button shows that it is busy.
+  Steam, IGN, and HowLongToBeat results are not stored until you select
+  **Save**. **Refresh metadata** in the Quick Access Menu still finds and saves
+  details for games without metadata.
+- **Remove Metadata** is on **Advanced**. Confirm in **Remove Metadata?** to
+  delete the saved details for that game. The **Metadata saved** and
+  **Metadata removed** messages show the game's name.
+- **Automatic compatibility.** The Quick Access Menu default now reads
+  **Automatic**. The **Compatibility** page explains the difference between
+  **Automatic**, **Use global default**, and **Follow Valve**.
+
+### Fixed
+
+- **Community tab on the Steam beta client.** Non-Steam games show their
+  saved screenshots and the matched game's Community posts again on the Steam
+  Deck Client Beta. The stable client was not affected.
+- **Edit Metadata on the Steam beta client.** The editor opens again instead
+  of showing an error screen, and the **Description** box uses Steam's
+  on-screen keyboard.
+- **Steam beta client support.** The **Edit Metadata...** menu row, the game
+  page's Steam-styled rows, and other patched Steam parts keep working with
+  the newer Steam Deck Client Beta, which renames Steam's internal parts.
+  (#53, #56, #57)
+- **Quick Access Menu focus.** Collapsible sections in the Quick Access Menu
+  show the focus highlight reliably when you move with the D-pad. (#55)
+
 ## [0.6.4] - 2026-11-17
 
 Add 25 plugin languages, editor Save and Done, and Push Play button down

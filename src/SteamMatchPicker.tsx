@@ -1,4 +1,4 @@
-import { PanelSection, PanelSectionRow, TextField } from "@decky/ui";
+import { DialogControlsSection, Field, TextField } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import { getSteamMatchPreview, searchSteamMatches } from "./backend";
 import {
@@ -7,9 +7,7 @@ import {
   editorSearchInputRowSpacingStyle,
   editorSearchResultsSpacingStyle,
   editorSearchRowStyle,
-  editorSteamMatchCardStyle,
   editorSteamMatchImageStyle,
-  editorSteamMatchPreviewStyle,
 } from "./metadataEditorStyles";
 import { compactTextStyle, fieldStyle, FocusableButton, rowStackStyle } from "./styles";
 import { translateBackendError, useT } from "./i18n";
@@ -96,7 +94,7 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
     requestAnimationFrame(() => {
       if (!mountedRef.current || previewRequestRef.current !== request || appId === undefined) return;
       resultsRootRef.current
-        ?.querySelector<HTMLButtonElement>(`[data-steam-match-appid="${appId}"] button`)
+        ?.querySelector<HTMLElement>(`[data-steam-match-appid="${appId}"] .decky-metadata-editor__result`)
         ?.focus();
     });
   };
@@ -179,58 +177,66 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
   };
 
   return (
-    <PanelSection title={t("matchPicker.title")}>
-      <PanelSectionRow>
-        <div style={compactTextStyle}>
-          {t("matchPicker.help")}
-        </div>
-        {matchedSteamAppId ? <div style={compactTextStyle}>{t("matchPicker.currentAppId", { appId: matchedSteamAppId })}</div> : null}
-        <div style={{ ...editorSearchRowStyle, ...editorSearchInputRowSpacingStyle }}>
-          <TextField
-            className={editorFocusTargetClassName}
-            aria-label={t("matchPicker.searchAriaLabel")}
-            value={query}
-            disabled={disabled}
-            onChange={(event) => changeQuery(event.target.value)}
-            style={fieldStyle}
-          />
-          <FocusableButton
-            className={`DialogButton ${editorFocusTargetClassName}`}
-            disabled={disabled || status === "loading" || !query.trim()}
-            onClick={() => void search()}
-            style={editorSearchButtonStyle}
-          >
-            {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
-          </FocusableButton>
-        </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
+    <DialogControlsSection>
+      <div style={editorSearchInputRowSpacingStyle}>
+        <Field
+          label={t("matchPicker.searchAriaLabel")}
+          description={t("matchPicker.help")}
+          childrenLayout="below"
+          childrenContainerWidth="max"
+          bottomSeparator="standard"
+        >
+          <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
+            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+              <TextField
+                className={editorFocusTargetClassName}
+                aria-label={t("matchPicker.searchAriaLabel")}
+                value={query}
+                disabled={disabled}
+                onChange={(event) => changeQuery(event.target.value)}
+                style={{ ...fieldStyle, width: "100%" }}
+              />
+            </div>
+            <FocusableButton
+              className={`DialogButton ${editorFocusTargetClassName}`}
+              disabled={disabled || status === "loading" || !query.trim()}
+              onClick={() => void search()}
+              style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
+            >
+              {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
+            </FocusableButton>
+          </div>
+        </Field>
+      </div>
+      <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
+        <Field focusable={false} padding="none" bottomSeparator="none">
           <div aria-live="polite" style={compactTextStyle}>
             {status === "idle" ? t("matchPicker.idle") : null}
             {status === "loading" ? t("matchPicker.searching") : null}
             {status === "empty" ? t("matchPicker.empty") : null}
             {status === "error" && searchError ? translateBackendError(searchError) : null}
           </div>
-          {items.map((candidate) => (
-            <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid} style={rowStackStyle}>
-              <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`}
-                aria-pressed={selected?.steam_appid === candidate.steam_appid}
-                disabled={disabled}
-                onClick={() => void select(candidate)}
-                style={editorSteamMatchCardStyle}
-              >
-                {candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : null}
-                <div style={{ minWidth: 0, whiteSpace: "normal", overflowWrap: "anywhere" }}>
-                  <b>{candidate.title}</b>
-                  <div style={compactTextStyle}>
-                    {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
-                  </div>
-                </div>
-              </FocusableButton>
-              {selected?.steam_appid === candidate.steam_appid ? (
-                <div style={editorSteamMatchPreviewStyle}>
+        </Field>
+        {items.map((candidate) => (
+          <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid}>
+            <Field
+              className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
+              label={candidate.title}
+              icon={candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : undefined}
+              focusable={true}
+              highlightOnFocus={true}
+              disabled={disabled}
+              bottomSeparator="standard"
+              onActivate={() => void select(candidate)}
+              onClick={() => void select(candidate)}
+            >
+              <div style={compactTextStyle}>
+                {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
+              </div>
+            </Field>
+            {selected?.steam_appid === candidate.steam_appid ? (
+              <Field focusable={false} childrenLayout="below" padding="standard" bottomSeparator="none">
+                <div style={rowStackStyle}>
                   {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
                   {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
                   {preview ? (
@@ -257,11 +263,11 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
                     {t("matchPicker.cancel")}
                   </FocusableButton>
                 </div>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      </PanelSectionRow>
-    </PanelSection>
+              </Field>
+            ) : null}
+          </div>
+        ))}
+      </div>
+    </DialogControlsSection>
   );
 };

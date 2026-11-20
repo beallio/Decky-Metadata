@@ -1,8 +1,8 @@
 {
   "common": {
+    "hours_other": "{{value}}時間",
     "hoursShort": "{{value}}時間",
-    "unknown": "不明",
-    "hours_other": "{{value}}時間"
+    "unknown": "不明"
   },
   "backend": {
     "progress": {
@@ -80,7 +80,7 @@
     },
     "details": "詳細",
     "search": {
-      "searching": "検索中…",
+      "searching": "検索中...",
       "action": "HLTB を検索",
       "noGames": "HowLongToBeat にゲームが見つかりませんでした。",
       "mainStory": "メインストーリー {{hours}}",
@@ -142,8 +142,8 @@
       "allStylesStatLabel": "「すべてのプレイスタイル」統計の切り替え",
       "allStylesStatDescription": "すべてのプレイスタイル統計のみを表示/非表示にします",
       "clearCacheButton": "HLTB キャッシュを消去",
-      "clearingButton": "消去中…",
-      "cacheClearing": "HLTB キャッシュを消去中…",
+      "clearingButton": "消去中...",
+      "cacheClearing": "HLTB キャッシュを消去中...",
       "cacheCleared": "HLTB キャッシュを消去しました。ゲームを開くと時間が再読み込みされます。",
       "cacheFailed": "HLTB キャッシュを消去できませんでした。",
       "customizeLabel": "外観をカスタマイズ",
@@ -157,7 +157,7 @@
       "bottomBorderLabel": "下の境界線",
       "bottomBorderDescription": "HLTB バーの下に区切り線を表示します",
       "resetAppearance": "外観をリセット",
-      "loadingPreferences": "HLTB の設定を読み込み中…"
+      "loadingPreferences": "HLTB の設定を読み込み中..."
     },
     "trailers": {
       "title": "ゲームトレーラー",
@@ -205,7 +205,7 @@
       "positionBottomLeft": "左下",
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
-      "loadingPreferences": "ProtonDB バッジの設定を読み込み中…",
+      "loadingPreferences": "ProtonDB バッジの設定を読み込み中...",
       "footnote": "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
     },
     "miniAchievements": {
@@ -219,7 +219,7 @@
       "title": "互換性ステータス",
       "defaultStatus": "既定の互換性ステータス",
       "applyDefaultTo": "既定値の適用先",
-      "categoryAutomatic": "自動 — 一致した Steam ステータスを使用",
+      "categoryAutomatic": "自動",
       "categoryVerified": "確認済み",
       "categoryPlayable": "プレイ可能",
       "categoryUnsupported": "非対応",
@@ -242,12 +242,12 @@
       "saved": "保存済みメタデータ:",
       "missing": "メタデータなし:",
       "refresh": "メタデータを更新",
-      "refreshing": "更新中…",
-      "refreshingStatus": "メタデータを更新中…",
+      "refreshing": "更新中...",
+      "refreshingStatus": "メタデータを更新中...",
       "refreshDescription": "まだ一致のない、検出された Steam 以外のゲームのメタデータを検索して保存します。",
       "cacheHeading": "メタデータキャッシュ",
       "clearCache": "キャッシュを消去",
-      "clearing": "消去中…",
+      "clearing": "消去中...",
       "clearCacheDescription": "保存済みの一致とメタデータを消去し、ゲームを再度照合できるようにします。",
       "delistedHeading": "配信終了した Steam ゲーム",
       "refreshDelisted": "配信終了ゲームを更新"
@@ -262,7 +262,7 @@
       "autoCheckDescription": "プラグインが読み込まれている間、バックグラウンドで確認します。",
       "status": "ステータス",
       "lastChecked": "最終確認: {{date}}",
-      "checking": "確認中…",
+      "checking": "確認中...",
       "checkInterrupted": "{{seconds}} 秒後に確認が中断されました",
       "checkFailed": "確認に失敗しました",
       "upToDate": "最新です",
@@ -279,8 +279,8 @@
       "actionRevertToStable": "安定版 v{{version}} に戻す",
       "actionInstallDevelopment": "開発ビルド v{{version}} をインストール",
       "actionUpdate": "v{{version}} に更新",
-      "waitingForDecky": "Decky を待機中…",
-      "preparing": "準備中…",
+      "waitingForDecky": "Decky を待機中...",
+      "preparing": "準備中...",
       "localBuildOnlyStable": "ローカルビルドは安定版リリースにのみ自己更新できます。この開発リリースは GitHub Releases から手動でインストールしてください。",
       "manualInstallUnavailable": "この Decky 環境では自動インストールを利用できません。このリリースは GitHub Releases から手動でインストールしてください。",
       "viewReleaseNotes": "リリースノートを表示",
@@ -298,7 +298,7 @@
     },
     "logs": {
       "title": "ログ",
-      "loading": "読み込み中…",
+      "loading": "読み込み中...",
       "view": "ログを表示",
       "debugLogging": "デバッグログ",
       "debugLoggingDescription": "トラブルシューティング用に詳細なログを有効にします。",
@@ -415,7 +415,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "メタデータを変更…"
+    "editMetadata": "メタデータを編集..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} が Decky Loader で有効です。ここで {{feature}} を使用するには、そのプラグインを無効にしてください。",
@@ -425,17 +425,29 @@
   "editor": {
     "save": "保存",
     "saveCount": "保存 ({{count}})",
+    "unsupportedSteam": "このSteamバージョンはまだサポートされていません。メタデータを編集するにはDecky Metadataを更新してください。",
     "removeMetadata": "メタデータを削除",
-    "done": "完了",
-    "moreOptions": "その他のオプション",
-    "moreMenuTitle": "メタデータ",
-    "refreshFromSteam": "Steam から再取得",
+    "page": {
+      "details": "詳細",
+      "steamMatch": "ゲームの照合",
+      "hltb": "HowLongToBeat",
+      "compatibility": "互換性",
+      "storeCategories": "ストアカテゴリ",
+      "shortcutName": "ショートカット名",
+      "advanced": "詳細設定"
+    },
+    "currentMatch": "現在の一致",
+    "loadFromSteam": "Steam から読み込む",
+    "loadFromSteamSteamGame": "Steam から読み込む（Steam ゲームでは利用不可）",
+    "loadFromSteamNoMatch": "Steam から読み込む（Steam で一致するゲームなし）",
+    "loadFromSteamBusy": "Steam から読み込む（更新中）",
     "fieldEdited": "編集済み",
     "fieldFromSteam": "Steam から取得、未保存",
     "steamDataChanged": "フォームに表示されない Steam データ（スクリーンショット、ニュース、互換性）が変更され、保存されていません。",
     "unsaved": {
       "title": "変更を保存しますか？",
       "body": "このゲームのメタデータに未保存の変更があります。",
+      "group": "{{page}}: {{fields}}",
       "discard": "破棄",
       "cancel": "キャンセル"
     },
@@ -446,10 +458,12 @@
     },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
     "searchIgn": "IGN メタデータを検索",
+    "ign": {
+      "gameName": "ゲーム名"
+    },
     "search": "検索",
-    "searching": "検索中…",
+    "searching": "検索中...",
     "noResults": "まだ結果がありません。",
-    "source": "ソース",
     "field": {
       "title": "タイトル",
       "description": "説明",
@@ -461,6 +475,7 @@
       "steamData": "フォームに表示されない Steam データ"
     },
     "compat": {
+      "statusLabel": "ステータス",
       "useGlobalDefault": "グローバル既定値を使用",
       "followValve": "Valve に従う",
       "verified": "確認済み",
@@ -476,9 +491,8 @@
       "useGlobalDefaultFromValve": "グローバル既定値を使用（{{category}} — Valve 提供）"
     },
     "compatibilityStatus": "互換性ステータス",
-    "compatibilityHelp": "「グローバル既定値を使用」は QAM 設定を継承します。「Valve に従う」はそれを無視し、Valve のデータが利用できない場合は Steam の元のステータスを保持します。",
+    "compatibilityHelp": "「自動」では、Steam で一致したゲームのステータスがゲームごとに適用されます。「グローバル既定値を使用」では、このゲームにグローバル設定が適用されます。「Valve に従う」では、常に Valve のステータスが使用されます。Valve のデータが利用できない場合は、Steam の元のステータスが維持されます。",
     "compatibilityChoices": "手動および既定のカテゴリはユーザーの選択であり、Valve の認定やエミュレーターのパフォーマンス結果ではありません。",
-    "steamInfoFields": "Steam 情報フィールド",
     "hltbGame": "HowLongToBeat ゲーム",
     "hltbHelp": "HowLongToBeat を検索するか、ゲーム番号またはゲームページのリンクを貼り付けて、このゲームで表示する時間を選択します。空欄のままにすると自動で照合します。",
     "hltbCurrentChosen": "現在のゲーム: {{name}}（選択済み）",
@@ -487,12 +501,12 @@
     "steamAppId": "Steam アプリ ID",
     "steamAppIdHelp": "Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を貼り付けてください。空欄にすると固定した Steam 一致が解除されます。",
     "steamAppIdApply": "Steam アプリ ID を適用",
-    "shortcutName": "ショートカット名",
     "shortcut": {
+      "immediateNotice": "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
       "current": "現在: {{name}}",
       "missingName": "Steam がネイティブのショートカット名を公開していません",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "Steam 名を読み込み中…",
+      "loadingSteamName": "Steam 名を読み込み中...",
       "noOfficialName": "Steam が正式な名前を返しませんでした",
       "managementUnavailable": "ショートカット名の管理を利用できません",
       "apiUnavailable": "Steam のネイティブなショートカット名 API を利用できません",
@@ -516,24 +530,22 @@
       "hltbInvalidBody": "HowLongToBeat のゲーム番号またはゲームページのリンクを入力してください。",
       "steamAppIdInvalidTitle": "無効な Steam アプリ ID",
       "steamAppIdInvalidBody": "Steam アプリ ID、ストア URL、コミュニティ URL、SteamDB URL のいずれかを入力してください。空欄にすると一致を解除します。",
+      "hltbNotFoundTitle": "見つかりません",
+      "hltbNotFoundBody": "その番号のゲームは HowLongToBeat にありません。",
+      "notApplicableTitle": "該当なし",
+      "notLoadedTitle": "未読み込み",
+      "notLoadedBody": "保存済みメタデータはまだ読み込まれていません。",
+      "metadataSaved": "メタデータを保存しました",
+      "saveFailedTitle": "保存に失敗しました",
+      "hltbCleared": "HLTB ゲームを解除しました",
+      "hltbGame": "HLTB ゲーム: {{name}}",
       "hltbDraftBody": "「保存」を押すとこの選択が保存されます。",
       "detailsLoadedTitle": "詳細を読み込みました",
       "steamPreviewBody": "Steam の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
       "ignPreviewBody": "IGN の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
       "steamAppIdNotAppliedTitle": "Steam アプリ ID が適用されていません",
       "steamAppIdNotAppliedBody": "新しい一致を読み込むには、保存する前に「Steam アプリ ID を適用」を選択してください。",
-      "hltbNotFoundTitle": "見つかりません",
-      "hltbNotFoundBody": "その番号のゲームは HowLongToBeat にありません。",
-      "notApplicableTitle": "該当なし",
-      "notLoadedTitle": "未読み込み",
-      "notLoadedBody": "保存済みメタデータはまだ読み込まれていません。",
-      "savedTitle": "保存しました",
-      "metadataSaved": "メタデータを保存しました",
-      "saveFailedTitle": "保存に失敗しました",
-      "hltbCleared": "HLTB ゲームを解除しました",
-      "hltbGame": "HLTB ゲーム: {{name}}",
       "fetchFailedTitle": "取得に失敗しました",
-      "removedTitle": "削除しました",
       "removedBody": "メタデータを削除しました",
       "removeFailedTitle": "削除に失敗しました",
       "shortcutNameChangedTitle": "ショートカット名が変更されました",
@@ -551,23 +563,21 @@
       "nameHistoryNotClearedTitle": "保存された名前履歴は消去されませんでした"
     },
     "steamTextLanguage": "Steam テキストの言語: {{language}}",
-    "fetchSteamText": "{{language}} で Steam テキストを取得",
+    "fetchSteamText": "{{language}} で Steam のテキストを読み込む",
     "steamTextUnavailable": "Steam はこのゲームのテキストを返しませんでした。"
   },
   "matchPicker": {
-    "title": "Steam の一致を検索",
     "help": "Steam を検索し、結果を選択して詳細を確認してから「この Steam 一致を使用」を選んでください。閲覧してもゲームは変更されません。",
-    "currentAppId": "現在の Steam アプリ ID: {{appId}}",
     "searchAriaLabel": "Steam ゲーム検索",
     "search": "Steam を検索",
-    "searching": "Steam を検索中…",
+    "searching": "Steam を検索中...",
     "idle": "ゲーム名を入力して Steam の一致を検索してください。",
     "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
     "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致",
     "appIdSelected": "Steam アプリ ID: {{appId}} · 選択済み",
     "appIdCurrentSelected": "Steam アプリ ID: {{appId}} · 現在の一致 · 選択済み",
-    "loadingDetails": "Steam の詳細を読み込み中…",
+    "loadingDetails": "Steam の詳細を読み込み中...",
     "artworkAlt": "{{title}} の Steam アートワーク",
     "developer": "開発元: {{names}}",
     "developerUnavailable": "開発元を取得できません",

@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Bottom border",
       "bottomBorderDescription": "Shows a divider line under the HLTB bar",
       "resetAppearance": "Reset appearance",
-      "loadingPreferences": "Loading HLTB preferences…"
+      "loadingPreferences": "Loading HLTB preferences..."
     },
     "trailers": {
       "title": "Game trailers",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Bottom left",
       "positionTopLeft": "Top left",
       "positionTopRight": "Top right",
-      "loadingPreferences": "Loading ProtonDB badge preferences…",
+      "loadingPreferences": "Loading ProtonDB badge preferences...",
       "footnote": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Compatibility status",
       "defaultStatus": "Default compatibility status",
       "applyDefaultTo": "Apply default to",
-      "categoryAutomatic": "Automatic — use matched Steam status",
+      "categoryAutomatic": "Automatic",
       "categoryVerified": "Verified",
       "categoryPlayable": "Playable",
       "categoryUnsupported": "Unsupported",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Change Metadata..."
+    "editMetadata": "Edit Metadata..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} is enabled in Decky Loader. Disable that plugin to use {{feature}} here.",
@@ -426,31 +426,45 @@
   "editor": {
     "save": "Save",
     "saveCount": "Save ({{count}})",
-    "removeMetadata": "Remove metadata",
-    "done": "Done",
-    "moreOptions": "More options",
-    "moreMenuTitle": "Metadata",
-    "refreshFromSteam": "Refresh from Steam",
+    "unsupportedSteam": "This Steam version is not supported yet. Update Decky Metadata to edit metadata.",
+    "removeMetadata": "Remove Metadata",
+    "page": {
+      "details": "Details",
+      "steamMatch": "Game Match",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Compatibility",
+      "storeCategories": "Store Categories",
+      "shortcutName": "Shortcut Name",
+      "advanced": "Advanced"
+    },
+    "currentMatch": "Current match",
+    "loadFromSteam": "Load from Steam",
+    "loadFromSteamSteamGame": "Load from Steam (Not available for Steam games)",
+    "loadFromSteamNoMatch": "Load from Steam (No Steam match)",
+    "loadFromSteamBusy": "Load from Steam (Updating)",
     "fieldEdited": "Edited",
     "fieldFromSteam": "From Steam, not saved",
     "steamDataChanged": "Steam data not shown in the form (screenshots, news, compatibility) changed and is not saved.",
     "unsaved": {
       "title": "Save changes?",
       "body": "You have unsaved changes to this game's metadata.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Discard",
       "cancel": "Cancel"
     },
     "removeConfirm": {
-      "title": "Remove metadata?",
+      "title": "Remove Metadata?",
       "body": "This deletes all saved metadata for {{name}}. You cannot undo this.",
       "cancel": "Cancel"
     },
     "nonSteamOnly": "This plugin only changes non-Steam games.",
     "searchIgn": "Search IGN metadata",
+    "ign": {
+      "gameName": "Game name"
+    },
     "search": "Search",
     "searching": "Searching...",
     "noResults": "No results yet.",
-    "source": "Source",
     "field": {
       "title": "Title",
       "description": "Description",
@@ -462,6 +476,7 @@
       "steamData": "Steam data not shown in the form"
     },
     "compat": {
+      "statusLabel": "Status",
       "useGlobalDefault": "Use global default",
       "followValve": "Follow Valve",
       "verified": "Verified",
@@ -477,9 +492,8 @@
       "useGlobalDefaultFromValve": "Use global default ({{category}} — from Valve)"
     },
     "compatibilityStatus": "Compatibility status",
-    "compatibilityHelp": "Use global default inherits the QAM setting. Follow Valve ignores it and keeps the original Steam status when Valve data is unavailable.",
+    "compatibilityHelp": "Automatic uses each game's Steam-matched status. Use global default inherits that setting for this game. Follow Valve always uses Valve's status. When Valve data is unavailable, Follow Valve keeps the original Steam status.",
     "compatibilityChoices": "Manual and default categories are your choices, not Valve certification or an emulator performance result.",
-    "steamInfoFields": "Steam info fields",
     "hltbGame": "HowLongToBeat game",
     "hltbHelp": "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically.",
     "hltbCurrentChosen": "Current game: {{name}} (chosen)",
@@ -488,8 +502,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
     "steamAppIdApply": "Apply Steam App ID",
-    "shortcutName": "Shortcut name",
     "shortcut": {
+      "immediateNotice": "These actions apply now. They do not use Save.",
       "current": "Current: {{name}}",
       "missingName": "Steam did not expose a native shortcut name",
       "steamName": "Steam: {{name}}",
@@ -522,7 +536,6 @@
       "notApplicableTitle": "Not applicable",
       "notLoadedTitle": "Not loaded",
       "notLoadedBody": "Saved metadata has not loaded yet.",
-      "savedTitle": "Saved",
       "metadataSaved": "Metadata saved",
       "saveFailedTitle": "Save failed",
       "hltbCleared": "HLTB game cleared",
@@ -534,7 +547,6 @@
       "steamAppIdNotAppliedTitle": "Steam App ID not applied",
       "steamAppIdNotAppliedBody": "Select Apply Steam App ID to load the new match before saving.",
       "fetchFailedTitle": "Fetch failed",
-      "removedTitle": "Removed",
       "removedBody": "Metadata removed",
       "removeFailedTitle": "Remove failed",
       "shortcutNameChangedTitle": "Shortcut name changed",
@@ -552,13 +564,11 @@
       "nameHistoryNotClearedTitle": "Saved name history was not cleared"
     },
     "steamTextLanguage": "Steam text language: {{language}}",
-    "fetchSteamText": "Fetch Steam text in {{language}}",
+    "fetchSteamText": "Load Steam text in {{language}}",
     "steamTextUnavailable": "Steam did not return text for this game."
   },
   "matchPicker": {
-    "title": "Find a Steam match",
     "help": "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game.",
-    "currentAppId": "Current Steam App ID: {{appId}}",
     "searchAriaLabel": "Steam game search",
     "search": "Search Steam",
     "searching": "Searching Steam...",

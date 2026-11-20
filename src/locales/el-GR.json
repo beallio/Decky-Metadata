@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} ώ",
-    "unknown": "Άγνωστο",
     "hours_one": "{{value}} ώρα",
-    "hours_other": "{{value}} ώρες"
+    "hours_other": "{{value}} ώρες",
+    "hoursShort": "{{value}} ώ",
+    "unknown": "Άγνωστο"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Κάτω περίγραμμα",
       "bottomBorderDescription": "Εμφανίζει γραμμή διαχωρισμού κάτω από τη γραμμή HLTB",
       "resetAppearance": "Επαναφορά εμφάνισης",
-      "loadingPreferences": "Φόρτωση προτιμήσεων HLTB…"
+      "loadingPreferences": "Φόρτωση προτιμήσεων HLTB..."
     },
     "trailers": {
       "title": "Τρέιλερ παιχνιδιών",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Κάτω αριστερά",
       "positionTopLeft": "Πάνω αριστερά",
       "positionTopRight": "Πάνω δεξιά",
-      "loadingPreferences": "Φόρτωση προτιμήσεων σημάτων ProtonDB…",
+      "loadingPreferences": "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
       "footnote": "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Κατάσταση συμβατότητας",
       "defaultStatus": "Προεπιλεγμένη κατάσταση συμβατότητας",
       "applyDefaultTo": "Εφαρμογή προεπιλογής σε",
-      "categoryAutomatic": "Αυτόματη — χρήση κατάστασης Steam",
+      "categoryAutomatic": "Αυτόματη",
       "categoryVerified": "Επαληθευμένο",
       "categoryPlayable": "Παίζεται",
       "categoryUnsupported": "Μη υποστηριζόμενο",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Αλλαγή μεταδεδομένων..."
+    "editMetadata": "Επεξεργασία μεταδεδομένων..."
   },
   "conflicts": {
     "pluginConflict": "Το {{pluginName}} είναι ενεργό στο Decky Loader. Απενεργοποιήστε αυτό το πρόσθετο για να χρησιμοποιήσετε {{feature}} εδώ.",
@@ -426,17 +426,29 @@
   "editor": {
     "save": "Αποθήκευση",
     "saveCount": "Αποθήκευση ({{count}})",
+    "unsupportedSteam": "Αυτή η έκδοση του Steam δεν υποστηρίζεται ακόμα. Ενημερώστε το Decky Metadata για να επεξεργαστείτε τα μεταδεδομένα.",
     "removeMetadata": "Αφαίρεση μεταδεδομένων",
-    "done": "Τέλος",
-    "moreOptions": "Περισσότερες επιλογές",
-    "moreMenuTitle": "Μεταδεδομένα",
-    "refreshFromSteam": "Ανανέωση από το Steam",
+    "page": {
+      "details": "Λεπτομέρειες",
+      "steamMatch": "Αντιστοίχιση παιχνιδιού",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Συμβατότητα",
+      "storeCategories": "Κατηγορίες καταστήματος",
+      "shortcutName": "Όνομα συντόμευσης",
+      "advanced": "Για προχωρημένους"
+    },
+    "currentMatch": "Τρέχουσα αντιστοίχιση",
+    "loadFromSteam": "Φόρτωση από το Steam",
+    "loadFromSteamSteamGame": "Φόρτωση από το Steam (μη διαθέσιμη για παιχνίδια Steam)",
+    "loadFromSteamNoMatch": "Φόρτωση από το Steam (δεν υπάρχει αντιστοίχιση στο Steam)",
+    "loadFromSteamBusy": "Φόρτωση από το Steam (ενημέρωση σε εξέλιξη)",
     "fieldEdited": "Τροποποιήθηκε",
     "fieldFromSteam": "Από το Steam, μη αποθηκευμένο",
     "steamDataChanged": "Τα δεδομένα Steam που δεν εμφανίζονται στη φόρμα (στιγμιότυπα οθόνης, νέα, συμβατότητα) άλλαξαν και δεν έχουν αποθηκευτεί.",
     "unsaved": {
       "title": "Αποθήκευση αλλαγών;",
       "body": "Έχετε μη αποθηκευμένες αλλαγές στα μεταδεδομένα αυτού του παιχνιδιού.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Απόρριψη",
       "cancel": "Ακύρωση"
     },
@@ -447,10 +459,12 @@
     },
     "nonSteamOnly": "Αυτό το πρόσθετο αλλάζει μόνο παιχνίδια εκτός Steam.",
     "searchIgn": "Αναζήτηση μεταδεδομένων IGN",
+    "ign": {
+      "gameName": "Όνομα παιχνιδιού"
+    },
     "search": "Αναζήτηση",
     "searching": "Αναζήτηση...",
     "noResults": "Δεν υπάρχουν ακόμη αποτελέσματα.",
-    "source": "Πηγή",
     "field": {
       "title": "Τίτλος",
       "description": "Περιγραφή",
@@ -462,6 +476,7 @@
       "steamData": "Δεδομένα Steam που δεν εμφανίζονται στη φόρμα"
     },
     "compat": {
+      "statusLabel": "Κατάσταση",
       "useGlobalDefault": "Χρήση καθολικής προεπιλογής",
       "followValve": "Ακολούθηση Valve",
       "verified": "Επαληθευμένο",
@@ -477,9 +492,8 @@
       "useGlobalDefaultFromValve": "Χρήση καθολικής προεπιλογής ({{category}} — από τη Valve)"
     },
     "compatibilityStatus": "Κατάσταση συμβατότητας",
-    "compatibilityHelp": "Η «Χρήση καθολικής προεπιλογής» κληρονομεί τη ρύθμιση του QAM. Η «Ακολούθηση Valve» την αγνοεί και διατηρεί την αρχική κατάσταση Steam όταν τα δεδομένα Valve δεν είναι διαθέσιμα.",
+    "compatibilityHelp": "Η επιλογή «Αυτόματη» χρησιμοποιεί για κάθε παιχνίδι την κατάσταση του αντίστοιχου παιχνιδιού στο Steam. Η «Χρήση καθολικής προεπιλογής» εφαρμόζει αυτήν τη ρύθμιση στο συγκεκριμένο παιχνίδι. Η «Ακολούθηση Valve» χρησιμοποιεί πάντα την κατάσταση που ορίζει η Valve. Όταν δεν υπάρχουν διαθέσιμα δεδομένα από τη Valve, η «Ακολούθηση Valve» διατηρεί την αρχική κατάσταση του Steam.",
     "compatibilityChoices": "Οι χειροκίνητες και προεπιλεγμένες κατηγορίες είναι δικές σας επιλογές, όχι πιστοποίηση της Valve ή αποτέλεσμα απόδοσης εξομοιωτή.",
-    "steamInfoFields": "Πεδία πληροφοριών Steam",
     "hltbGame": "Παιχνίδι HowLongToBeat",
     "hltbHelp": "Αναζητήστε στο HowLongToBeat ή επικολλήστε αριθμό παιχνιδιού ή σύνδεσμο σελίδας παιχνιδιού για να επιλέξετε τους χρόνους που εμφανίζονται για αυτό το παιχνίδι. Αφήστε κενό για αυτόματη αντιστοίχιση.",
     "hltbCurrentChosen": "Τρέχον παιχνίδι: {{name}} (επιλεγμένο)",
@@ -488,8 +502,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Επικολλήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB. Αφήστε κενό για να διαγράψετε την καρφιτσωμένη αντιστοίχιση Steam.",
     "steamAppIdApply": "Εφαρμογή Steam App ID",
-    "shortcutName": "Όνομα συντόμευσης",
     "shortcut": {
+      "immediateNotice": "Αυτές οι ενέργειες εφαρμόζονται αμέσως, χωρίς να χρειάζεται να επιλέξετε «Αποθήκευση».",
       "current": "Τρέχον: {{name}}",
       "missingName": "Το Steam δεν παρείχε εγγενές όνομα συντόμευσης",
       "steamName": "Steam: {{name}}",
@@ -517,24 +531,22 @@
       "hltbInvalidBody": "Εισαγάγετε αριθμό παιχνιδιού HowLongToBeat ή σύνδεσμο σελίδας παιχνιδιού.",
       "steamAppIdInvalidTitle": "Μη έγκυρο Steam App ID",
       "steamAppIdInvalidBody": "Εισαγάγετε Steam App ID, URL καταστήματος, URL κοινότητας ή URL SteamDB. Αφήστε το πεδίο κενό για να αφαιρέσετε την αντιστοίχιση.",
+      "hltbNotFoundTitle": "Δεν βρέθηκε",
+      "hltbNotFoundBody": "Το HowLongToBeat δεν έχει παιχνίδι με αυτόν τον αριθμό.",
+      "notApplicableTitle": "Δεν εφαρμόζεται",
+      "notLoadedTitle": "Δεν φορτώθηκε",
+      "notLoadedBody": "Τα αποθηκευμένα μεταδεδομένα δεν έχουν φορτωθεί ακόμη.",
+      "metadataSaved": "Τα μεταδεδομένα αποθηκεύτηκαν",
+      "saveFailedTitle": "Η αποθήκευση απέτυχε",
+      "hltbCleared": "Το παιχνίδι HLTB διαγράφηκε",
+      "hltbGame": "Παιχνίδι HLTB: {{name}}",
       "hltbDraftBody": "Η αποθήκευση διατηρεί αυτήν την επιλογή.",
       "detailsLoadedTitle": "Τα στοιχεία φορτώθηκαν",
       "steamPreviewBody": "Τα στοιχεία Steam έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
       "ignPreviewBody": "Τα στοιχεία IGN έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
       "steamAppIdNotAppliedTitle": "Το Steam App ID δεν εφαρμόστηκε",
       "steamAppIdNotAppliedBody": "Επιλέξτε «Εφαρμογή Steam App ID» για να φορτώσετε τη νέα αντιστοίχιση πριν από την αποθήκευση.",
-      "hltbNotFoundTitle": "Δεν βρέθηκε",
-      "hltbNotFoundBody": "Το HowLongToBeat δεν έχει παιχνίδι με αυτόν τον αριθμό.",
-      "notApplicableTitle": "Δεν εφαρμόζεται",
-      "notLoadedTitle": "Δεν φορτώθηκε",
-      "notLoadedBody": "Τα αποθηκευμένα μεταδεδομένα δεν έχουν φορτωθεί ακόμη.",
-      "savedTitle": "Αποθηκεύτηκε",
-      "metadataSaved": "Τα μεταδεδομένα αποθηκεύτηκαν",
-      "saveFailedTitle": "Η αποθήκευση απέτυχε",
-      "hltbCleared": "Το παιχνίδι HLTB διαγράφηκε",
-      "hltbGame": "Παιχνίδι HLTB: {{name}}",
       "fetchFailedTitle": "Η ανάκτηση απέτυχε",
-      "removedTitle": "Αφαιρέθηκε",
       "removedBody": "Τα μεταδεδομένα αφαιρέθηκαν",
       "removeFailedTitle": "Η αφαίρεση απέτυχε",
       "shortcutNameChangedTitle": "Το όνομα της συντόμευσης άλλαξε",
@@ -552,13 +564,11 @@
       "nameHistoryNotClearedTitle": "Το αποθηκευμένο ιστορικό ονομάτων δεν εκκαθαρίστηκε"
     },
     "steamTextLanguage": "Γλώσσα κειμένου Steam: {{language}}",
-    "fetchSteamText": "Λήψη κειμένου Steam στα {{language}}",
+    "fetchSteamText": "Φόρτωση κειμένου από το Steam στα {{language}}",
     "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
   },
   "matchPicker": {
-    "title": "Εύρεση αντιστοίχισης Steam",
     "help": "Αναζητήστε στο Steam, επιλέξτε ένα αποτέλεσμα για να δείτε τις λεπτομέρειες και μετά επιλέξτε «Χρήση αυτής της αντιστοίχισης Steam». Η περιήγηση δεν αλλάζει το παιχνίδι σας.",
-    "currentAppId": "Τρέχον Steam App ID: {{appId}}",
     "searchAriaLabel": "Αναζήτηση παιχνιδιού Steam",
     "search": "Αναζήτηση στο Steam",
     "searching": "Αναζήτηση στο Steam...",

@@ -43,10 +43,12 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             try { if (window.parent !== window) candidates.push(window.parent); } catch { }
             for (const candidate of candidates) {
                 try {
-                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow;
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow ||
+                        candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.cloudStatusRow;
                     if (typeof value === "string" && value) {
                         nativeStatusRowClass = value;
-                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage;
+                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage ||
+                            candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.headerBackgroundImage;
                         if (typeof background === "string" && background) nativeBackgroundClass = background;
                         break;
                     }
@@ -790,11 +792,14 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             for (const candidate of [window.opener, window, window.parent]) {
                 try {
                     const styles = candidate?.DFL?.findModuleChild?.(predicate);
-                    if (!styles) continue;
+                    const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
+                    const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
+                    const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
+                    if (!rawContainer || !rawBackground) continue;
                     const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
                         ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
-                    const container = escape(styles.RecentGamesContainer);
-                    const background = escape(styles.RecentGamesBackgroundImages);
+                    const container = escape(rawContainer);
+                    const background = escape(rawBackground);
                     if (!container || !background) continue;
                     this.homeStyles = { container: `.${container}`, background: `.${background}` };
                     return this.homeStyles;

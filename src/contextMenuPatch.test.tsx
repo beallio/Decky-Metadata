@@ -1,8 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 /**
  * Regression test for the stale-closure bug where opening the library
- * context menu for game A and then game B injected a "Change Metadata..."
+ * context menu for game A and then game B injected an "Edit Metadata..."
  * entry that always navigated to game A.
  *
  * Steam reuses a single context-menu instance and installs the inner (menu
@@ -45,6 +45,9 @@ const decky = vi.hoisted(() => {
 
   return {
     navigate: vi.fn(),
+    findModuleByExport: vi.fn<(...args: any[]) => any>(() => undefined),
+    findModuleExport: vi.fn<(...args: any[]) => any>(() => undefined),
+    fakeRenderComponent: vi.fn<(...args: any[]) => any>(() => ({ type: {} })),
     findInTree,
     findInReactTree: (root: any, filter: (n: any) => any) =>
       findInTree(root, filter, { walkable: ["props", "children"] }),
@@ -73,10 +76,11 @@ const steam = vi.hoisted(() => ({
 
 vi.mock("@decky/ui", () => ({
   afterPatch: decky.afterPatch,
-  fakeRenderComponent: () => ({ type: {} }),
+  fakeRenderComponent: decky.fakeRenderComponent,
   findInReactTree: decky.findInReactTree,
   findInTree: decky.findInTree,
-  findModuleByExport: () => ({}),
+  findModuleByExport: decky.findModuleByExport,
+  findModuleExport: decky.findModuleExport,
   MenuItem: "MenuItem",
   Navigation: { Navigate: decky.navigate },
 }));
@@ -92,11 +96,19 @@ vi.mock("./steam/core", () => ({
 
 vi.mock("./log", () => ({ info: vi.fn(), warn: vi.fn() }));
 vi.mock("./backend", () => ({ frontendLog: vi.fn(() => Promise.resolve()) }));
+vi.mock("./i18n", () => ({ t: (key: string) => key }));
 
-import contextMenuPatch from "./contextMenuPatch";
+import { frontendLog } from "./backend";
+import contextMenuPatch, { resolveLibraryContextMenu, setContextMenuTraceEnabled } from "./contextMenuPatch";
 
 const ENTRY_KEY = "decky-metadata-edit";
 const LEGACY_COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
+
+interface MenuRow {
+  key: string;
+  onSelected?: () => void;
+  props?: { onSelected?: () => void; children?: unknown };
+}
 
 /**
  * Build a fake LibraryContextMenu whose shape mirrors what the patch walks:
@@ -104,7 +116,7 @@ const LEGACY_COMPATIBILITY_ENTRY_KEY = "decky-metadata-compatibility";
  *  - menu.type() -> the menu body element, whose class prototype.render
  *    returns the item list at output.props.children[0].
  */
-function makeMenuStack(reusedItems?: any[]) {
+function makeMenuStack(reusedItems?: MenuRow[], outerItems: unknown[] = []) {
   const items = reusedItems || [
     { key: "launch", props: { onSelected: () => "launchSource" } },
     { key: "properties", onSelected: () => "AppProperties" },
@@ -118,6 +130,10 @@ function makeMenuStack(reusedItems?: any[]) {
         },
       };
     }
+
+    shouldComponentUpdate(_nextProps: { children: unknown[] }) {
+      return true;
+    }
   }
 
   const bodyType = () => ({ type: MenuBody });
@@ -130,7 +146,7 @@ function makeMenuStack(reusedItems?: any[]) {
     render() {
       return {
         _owner: { pendingProps: { overview: { appid: this._appid } } },
-        props: { children: [] as any[] },
+        props: { children: outerItems },
         type: bodyType,
       };
     }
@@ -140,22 +156,25 @@ function makeMenuStack(reusedItems?: any[]) {
 }
 
 /** Read the navigation target baked into the injected menu entry, if present. */
-function injectedTarget(items: any[]): string | undefined {
+function injectedTarget(items: MenuRow[]): string | undefined {
   const entry = items.find((node) => node?.key === ENTRY_KEY);
   if (!entry) return undefined;
   decky.navigate.mockClear();
-  entry.props.onSelected();
+  entry.props?.onSelected?.();
   return decky.navigate.mock.calls[0]?.[0];
 }
 
 describe("contextMenuPatch", () => {
   beforeEach(() => {
     decky.navigate.mockClear();
+    vi.mocked(frontendLog).mockClear();
     steam.getOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
     steam.getNativeOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
     steam.isNonSteamApp.mockImplementation((overview: any) => Number(overview?.app_type) === 1073741824);
     steam.isNativeNonSteamShortcut.mockImplementation((overview: any) => Number(overview?.app_type) === 1073741824);
   });
+
+  afterEach(() => setContextMenuTraceEnabled(false));
 
   it("navigates to the game whose menu is currently open, not the first one", () => {
     const { LibraryContextMenu, MenuBody } = makeMenuStack();
@@ -176,25 +195,94 @@ describe("contextMenuPatch", () => {
     expect(injectedTarget(itemsB)).toBe("/decky-metadata/200");
   });
 
-  it("adds one metadata editor entry above Properties for each non-Steam game", () => {
+  it.each([100, 0])("adds exactly one editor entry to gear menus without a launch row (owner app ID %i)", (ownerAppId) => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack(
+      [{ key: "properties", props: { onSelected: () => "AppProperties" } }],
+      [{ app: { appid: 200 } }],
+    );
+    contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(ownerAppId).render().type();
+    setContextMenuTraceEnabled(true);
+
+    const items = new MenuBody().render().props.children[0];
+    expect(items.map((item) => item.key)).toEqual([ENTRY_KEY, "properties"]);
+    expect(items[0].props?.children).toBe("contextMenu.editMetadata");
+    expect(injectedTarget(items)).toBe(`/decky-metadata/${ownerAppId || 200}`);
+    expect(frontendLog).toHaveBeenCalledWith("trace", "context-menu", expect.objectContaining({
+      isAppContextMenu: true,
+      hasLaunchSource: false,
+      anchor: "properties",
+    }));
+  });
+
+  it.each([
+    { key: "sgdb-change-artwork", props: { children: "Artwork options" } },
+    { key: "artwork", props: { children: ["Change ", <span>Artwork...</span>] } },
+  ])("inserts immediately after $key when it precedes Properties", (artwork) => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack([
+      artwork,
+      { key: "divider" },
+      { key: "properties", onSelected: () => "AppProperties" },
+    ]);
+    contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(100).render().type();
+
+    const items = new MenuBody().render().props.children[0];
+    expect(items.map((item) => item.key)).toEqual([artwork.key, ENTRY_KEY, "divider", "properties"]);
+  });
+
+  it.each([
+    { position: "absent", tail: [] },
+    { position: "after Properties", tail: [{ key: "steamgriddb-artwork" }] },
+  ])("inserts immediately above Properties when artwork is $position", ({ tail }) => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack([
+      { key: "launch", props: { onSelected: () => "launchSource" } },
+      { key: "properties", onSelected: () => "AppProperties" },
+      ...tail,
+    ]);
+    contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(100).render().type();
+
+    const items = new MenuBody().render().props.children[0];
+    expect(items.map((item) => item.key)).toEqual(["launch", ENTRY_KEY, "properties", ...tail.map((item) => item.key)]);
+  });
+
+  it("keeps one editor entry across repeated render and update passes", () => {
+    const items = [{ key: "properties", onSelected: () => "AppProperties" }];
+    const { LibraryContextMenu, MenuBody } = makeMenuStack(items, items);
+    contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(100).render().type();
+    const body = new MenuBody();
+
+    for (let pass = 0; pass < 2; pass++) {
+      body.render();
+      expect(items.map((item) => item.key)).toEqual([ENTRY_KEY, "properties"]);
+      body.shouldComponentUpdate({ children: items });
+      expect(items.map((item) => item.key)).toEqual([ENTRY_KEY, "properties"]);
+      new LibraryContextMenu(100).render();
+      expect(items.map((item) => item.key)).toEqual([ENTRY_KEY, "properties"]);
+    }
+  });
+
+  it.each([100, 0])("skips menus without Properties even with a launch row (owner app ID %i)", (ownerAppId) => {
+    const { LibraryContextMenu, MenuBody } = makeMenuStack(
+      [{ key: "launch", props: { onSelected: () => "launchSource" } }, { key: ENTRY_KEY }],
+      [{ app: { appid: 100 } }],
+    );
+    contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(ownerAppId).render().type();
+
+    const items = new MenuBody().render().props.children[0];
+    expect(items.map((item) => item.key)).toEqual(["launch"]);
+  });
+
+  it("skips app menus when no positive app ID resolves", () => {
     const { LibraryContextMenu, MenuBody } = makeMenuStack();
     contextMenuPatch(LibraryContextMenu);
+    new LibraryContextMenu(0).render().type();
 
-    const menu = new LibraryContextMenu(100).render();
-    menu.type();
-    const firstItems = new MenuBody().render().props.children[0];
-    const firstKeys = firstItems.map((item: any) => item?.key);
-
-    expect(firstKeys.filter((key: string) => key === ENTRY_KEY)).toHaveLength(1);
-    expect(firstKeys.indexOf(ENTRY_KEY)).toBeLessThan(firstKeys.indexOf("properties"));
-    expect(firstItems.find((item: any) => item?.key === ENTRY_KEY)?.props.children).toBe("Change Metadata...");
-
-    const secondItems = new MenuBody().render().props.children[0];
-    expect(secondItems.filter((item: any) => item?.key === ENTRY_KEY)).toHaveLength(1);
-
-    new LibraryContextMenu(200).render();
-    const otherItems = new MenuBody().render().props.children[0];
-    expect(injectedTarget(otherItems)).toBe("/decky-metadata/200");
+    const items = new MenuBody().render().props.children[0];
+    expect(items.map((item) => item.key)).toEqual(["launch", "properties"]);
   });
 
   it("does not add the Decky Metadata editor entry for official Steam games", () => {
@@ -233,6 +321,7 @@ describe("contextMenuPatch", () => {
   it("removes the menu body patches on unpatch so a reload installs one fresh layer", () => {
     const { LibraryContextMenu, MenuBody } = makeMenuStack();
     const originalRender = MenuBody.prototype.render;
+    const originalShouldUpdate = MenuBody.prototype.shouldComponentUpdate;
     const first = contextMenuPatch(LibraryContextMenu);
     const menu = new LibraryContextMenu(100).render();
     menu.type();
@@ -241,12 +330,30 @@ describe("contextMenuPatch", () => {
 
     first.unpatch();
     expect(MenuBody.prototype.render).toBe(originalRender);
-    expect((MenuBody.prototype as any).shouldComponentUpdate).toBeUndefined();
+    expect(MenuBody.prototype.shouldComponentUpdate).toBe(originalShouldUpdate);
 
     const second = contextMenuPatch(LibraryContextMenu);
     new LibraryContextMenu(200).render().type();
     expect(injectedTarget(new MenuBody().render().props.children[0])).toBe("/decky-metadata/200");
     second.unpatch();
     expect(MenuBody.prototype.render).toBe(originalRender);
+  });
+
+  it("returns undefined instead of throwing when Webpack CSS lookup misses and no Vite fallback matches", () => {
+    decky.findModuleByExport.mockReturnValueOnce(undefined);
+    decky.findModuleExport.mockReturnValueOnce(undefined);
+    expect(resolveLibraryContextMenu()).toBeUndefined();
+  });
+
+  it("resolves the Vite context-menu wrapper when Webpack CSS lookup misses", () => {
+    class FakeViteMenu {}
+    // Build a function whose toString() matches Steam's Vite wrapper signature.
+    const viteWrapper = (e: any) => ({ navigator: 1, instance: 2, ...e });
+    decky.findModuleByExport.mockReturnValueOnce(undefined);
+    decky.findModuleExport.mockImplementationOnce((predicate: (m: unknown) => boolean) =>
+      predicate(viteWrapper) ? viteWrapper : undefined,
+    );
+    decky.fakeRenderComponent.mockReturnValueOnce({ type: FakeViteMenu });
+    expect(resolveLibraryContextMenu()).toBe(FakeViteMenu);
   });
 });

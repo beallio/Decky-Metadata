@@ -5,6 +5,7 @@ import type { ComponentType, ReactElement, ReactNode } from "react";
 import { flushSync } from "react-dom";
 import * as log from "../log";
 import { GAME_DETAIL_ROUTES } from "../steam/core";
+import { resolveSteamCssClass, subscribeNativeCssClasses } from "../steam/nativeCssClasses";
 import { findSteamModulesBySource } from "../steam/steamUiModules";
 import { ProtonDbGameButton } from "./Badges";
 import type { NativeProtonDbButtonProps } from "./Badges";
@@ -44,13 +45,16 @@ function resolveNativeTargets(): NativeTargets | undefined {
   const tooltip = moduleValues(["tool-tip-source", "bNavStop", "toolTipContent:"])
     .find(value => typeof value === "function" &&
       ["tool-tip-source", "bNavStop", "toolTipContent:"].every(fragment => value.toString().includes(fragment)));
-  if (!recordValue(actionStyles) || typeof actionStyles.AppButtons !== "string" ||
-      !recordValue(controllerStyles) || typeof controllerStyles.MenuButton !== "string" ||
-      typeof controllerStyles.ControllerConfigButton !== "string" || typeof tooltip !== "function") return;
+  const appButtons = resolveSteamCssClass(recordValue(actionStyles) ? actionStyles.AppButtons : undefined, "appButtons");
+  const menuButton = resolveSteamCssClass(recordValue(controllerStyles) ? controllerStyles.MenuButton : undefined, "menuButton");
+  const controllerConfigButton = resolveSteamCssClass(
+    recordValue(controllerStyles) ? controllerStyles.ControllerConfigButton : undefined,
+    "controllerConfigButton",
+  );
+  if (!appButtons || !menuButton || !controllerConfigButton || typeof tooltip !== "function") return;
   // The fingerprinted native tooltip export supplies Steam's focusable button shell.
   const Button = tooltip as unknown as ComponentType<NativeProtonDbButtonProps>;
-  return { appButtons: actionStyles.AppButtons,
-    buttonClass: `${controllerStyles.MenuButton} ${controllerStyles.ControllerConfigButton}`, Button };
+  return { appButtons, buttonClass: `${menuButton} ${controllerConfigButton}`, Button };
 }
 
 function prependBadge(node: ReactNode, appButtonsClass: string, badge: ReactElement): ReactNode {
@@ -60,7 +64,8 @@ function prependBadge(node: ReactNode, appButtonsClass: string, badge: ReactElem
   }
   if (!isValidElement<CardProps>(node)) return node;
   const original = node.props.children;
-  if (node.props.className === appButtonsClass) {
+  const classTokens = typeof node.props.className === "string" ? node.props.className.split(/\s+/) : [];
+  if (node.props.className === appButtonsClass || classTokens.includes(appButtonsClass)) {
     const children = Array.isArray(original) ? original : [original];
     if (children.some(child => isValidElement(child) && child.key === BUTTON_KEY)) return node;
     return cloneElement(node, { children: [badge, ...children] });
@@ -78,11 +83,15 @@ function fiberOf(element: Element): RecordValue | undefined {
   }
 }
 
-function actionRowType(fiber: RecordValue): object | undefined {
+function actionRowType(fiber: RecordValue, appButtonsClass: string): object | undefined {
   const type = fiber.elementType ?? fiber.type;
   if (!recordValue(type) || type.$$typeof !== Symbol.for("react.forward_ref") || typeof type.render !== "function") return;
   const source = type.render.toString();
-  return source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel") ? type : undefined;
+  return (source.includes(".AppButtons") && source.includes(".ActionButtonAndStatusPanel")) ||
+    (source.includes("bShowStreamingSelector") && source.includes("statusPanelType")) ||
+    (Boolean(appButtonsClass) && source.includes(appButtonsClass))
+    ? type
+    : undefined;
 }
 
 /** Capture the private forwardRef from its real DOM fiber; it is not a webpack export. */
@@ -125,7 +134,7 @@ export function installProtonDbGameView(): () => void {
         let foundType: object | undefined;
         let parentToRefresh: RecordValue | undefined;
         for (let depth = 0; fiber && depth < 128; depth += 1) {
-          foundType ??= actionRowType(fiber);
+          foundType ??= actionRowType(fiber, resolved.appButtons);
           const state = fiber.stateNode;
           if (foundType && recordValue(state) && typeof state.forceUpdate === "function") {
             parentToRefresh = state;
@@ -178,10 +187,14 @@ export function installProtonDbGameView(): () => void {
     const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
     routeCleanups.push(() => routerHook.removePatch(route, patch));
   }
+  const unsubscribeClasses = subscribeNativeCssClasses(() => {
+    if (!stopped && !targets) scheduleCapture();
+  });
   scheduleCapture();
   return () => {
     if (stopped) return;
     stopped = true;
+    unsubscribeClasses();
     generation += 1;
     for (const observer of observers.values()) observer.disconnect();
     for (const timer of captureTimers) clearTimeout(timer);

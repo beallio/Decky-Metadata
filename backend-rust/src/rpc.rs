@@ -13,6 +13,7 @@ use std::sync::Arc;
 
 pub const METHODS: &[&str] = &[
     "get_platform_capabilities",
+    "get_native_css_classes",
     "get_system_versions",
     "get_plugin_version",
     "get_plugin_logs",
@@ -217,6 +218,16 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             tokio::task::spawn_blocking(state::platform_capabilities)
                 .await
                 .map_err(|error| error.to_string())
+        }
+        "get_native_css_classes" => {
+            arity(&args, 0, 0)?;
+            let decky_home = state.env.decky_home.clone();
+            let resolved = tokio::task::spawn_blocking(move || {
+                crate::css_classes::resolve_translated_css_classes(&decky_home)
+            })
+            .await
+            .map_err(|error| error.to_string())?;
+            serde_json::to_value(resolved).map_err(|error| error.to_string())
         }
         "get_system_versions" => {
             arity(&args, 0, 0)?;

@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} sa",
-    "unknown": "Bilinmiyor",
     "hours_one": "{{value}} saat",
-    "hours_other": "{{value}} saat"
+    "hours_other": "{{value}} saat",
+    "hoursShort": "{{value}} sa",
+    "unknown": "Bilinmiyor"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Alt kenarlık",
       "bottomBorderDescription": "HLTB çubuğunun altında ayırıcı bir çizgi gösterir",
       "resetAppearance": "Görünümü sıfırla",
-      "loadingPreferences": "HLTB tercihleri yükleniyor…"
+      "loadingPreferences": "HLTB tercihleri yükleniyor..."
     },
     "trailers": {
       "title": "Oyun fragmanları",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Sol alt",
       "positionTopLeft": "Sol üst",
       "positionTopRight": "Sağ üst",
-      "loadingPreferences": "ProtonDB rozet tercihleri yükleniyor…",
+      "loadingPreferences": "ProtonDB rozet tercihleri yükleniyor...",
       "footnote": "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Uyumluluk durumu",
       "defaultStatus": "Varsayılan uyumluluk durumu",
       "applyDefaultTo": "Varsayılanı şuna uygula",
-      "categoryAutomatic": "Otomatik — eşleşen Steam durumunu kullan",
+      "categoryAutomatic": "Otomatik",
       "categoryVerified": "Onaylı",
       "categoryPlayable": "Oynanabilir",
       "categoryUnsupported": "Desteklenmiyor",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Meta Verileri Değiştir..."
+    "editMetadata": "Meta Verileri Düzenle..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} Decky Loader'da etkin. Burada {{feature}} özelliğini kullanmak için o eklentiyi devre dışı bırakın.",
@@ -426,31 +426,45 @@
   "editor": {
     "save": "Kaydet",
     "saveCount": "Kaydet ({{count}})",
-    "removeMetadata": "Meta verileri kaldır",
-    "done": "Bitti",
-    "moreOptions": "Diğer seçenekler",
-    "moreMenuTitle": "Meta veriler",
-    "refreshFromSteam": "Steam'den yenile",
+    "unsupportedSteam": "Bu Steam sürümü henüz desteklenmiyor. Üst verileri düzenlemek için Decky Metadata'yı güncelleyin.",
+    "removeMetadata": "Meta Verileri Kaldır",
+    "page": {
+      "details": "Ayrıntılar",
+      "steamMatch": "Oyun Eşleşmesi",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Uyumluluk",
+      "storeCategories": "Mağaza Kategorileri",
+      "shortcutName": "Kısayol Adı",
+      "advanced": "Gelişmiş"
+    },
+    "currentMatch": "Geçerli eşleşme",
+    "loadFromSteam": "Steam'den yükle",
+    "loadFromSteamSteamGame": "Steam'den yükle (Steam oyunları için kullanılamaz)",
+    "loadFromSteamNoMatch": "Steam'den yükle (Steam eşleşmesi yok)",
+    "loadFromSteamBusy": "Steam'den yükle (güncelleniyor)",
     "fieldEdited": "Düzenlendi",
     "fieldFromSteam": "Steam'den, kaydedilmedi",
     "steamDataChanged": "Formda gösterilmeyen Steam verileri (ekran görüntüleri, haberler, uyumluluk) değişti ve kaydedilmedi.",
     "unsaved": {
       "title": "Değişiklikler kaydedilsin mi?",
       "body": "Bu oyunun meta verilerinde kaydedilmemiş değişiklikleriniz var.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Vazgeç",
       "cancel": "İptal"
     },
     "removeConfirm": {
-      "title": "Meta veriler kaldırılsın mı?",
+      "title": "Meta Veriler Kaldırılsın mı?",
       "body": "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
       "cancel": "İptal"
     },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
     "searchIgn": "IGN meta verilerinde ara",
+    "ign": {
+      "gameName": "Oyun adı"
+    },
     "search": "Ara",
     "searching": "Aranıyor...",
     "noResults": "Henüz sonuç yok.",
-    "source": "Kaynak",
     "field": {
       "title": "Başlık",
       "description": "Açıklama",
@@ -462,6 +476,7 @@
       "steamData": "Formda gösterilmeyen Steam verileri"
     },
     "compat": {
+      "statusLabel": "Durum",
       "useGlobalDefault": "Genel varsayılanı kullan",
       "followValve": "Valve'ı Takip Et",
       "verified": "Onaylı",
@@ -477,9 +492,8 @@
       "useGlobalDefaultFromValve": "Genel varsayılanı kullan ({{category}} — Valve'dan)"
     },
     "compatibilityStatus": "Uyumluluk durumu",
-    "compatibilityHelp": "Genel varsayılanı kullan, QAM ayarını devralır. Valve'ı Takip Et bunu yok sayar ve Valve verileri kullanılamadığında özgün Steam durumunu korur.",
+    "compatibilityHelp": "Otomatik seçeneği, her oyun için Steam'de eşleşen oyunun durumunu kullanır. Genel varsayılanı kullan seçeneği, bu oyun için o ayarı devralır. Valve'ı Takip Et seçeneği her zaman Valve'ın belirlediği durumu kullanır. Valve verileri kullanılamadığında özgün Steam durumu korunur.",
     "compatibilityChoices": "Elle seçilen ve varsayılan kategoriler sizin seçimlerinizdir; Valve sertifikası veya emülatör performans sonucu değildir.",
-    "steamInfoFields": "Steam bilgi alanları",
     "hltbGame": "HowLongToBeat oyunu",
     "hltbHelp": "Bu oyun için gösterilecek süreleri seçmek üzere HowLongToBeat'te arayın veya bir oyun numarası ya da oyun sayfası bağlantısı yapıştırın. Otomatik eşleştirmek için boş bırakın.",
     "hltbCurrentChosen": "Geçerli oyun: {{name}} (seçildi)",
@@ -488,8 +502,8 @@
     "steamAppId": "Steam Uygulama ID'si",
     "steamAppIdHelp": "Bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si yapıştırın. Sabitlenmiş Steam eşleşmesini temizlemek için boş bırakın.",
     "steamAppIdApply": "Steam Uygulama ID'sini uygula",
-    "shortcutName": "Kısayol adı",
     "shortcut": {
+      "immediateNotice": "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
       "current": "Geçerli: {{name}}",
       "missingName": "Steam yerel bir kısayol adı sunmadı",
       "steamName": "Steam: {{name}}",
@@ -517,24 +531,22 @@
       "hltbInvalidBody": "Bir HowLongToBeat oyun numarası veya oyun sayfası bağlantısı girin.",
       "steamAppIdInvalidTitle": "Geçersiz Steam uygulama kimliği",
       "steamAppIdInvalidBody": "Bir Steam uygulama kimliği, mağaza URL'si, topluluk URL'si veya SteamDB URL'si girin. Eşleşmeyi kaldırmak için alanı boş bırakın.",
+      "hltbNotFoundTitle": "Bulunamadı",
+      "hltbNotFoundBody": "HowLongToBeat'te bu numaraya sahip bir oyun yok.",
+      "notApplicableTitle": "Uygulanamaz",
+      "notLoadedTitle": "Yüklenmedi",
+      "notLoadedBody": "Kaydedilmiş meta veriler henüz yüklenmedi.",
+      "metadataSaved": "Meta veriler kaydedildi",
+      "saveFailedTitle": "Kaydetme başarısız",
+      "hltbCleared": "HLTB oyunu temizlendi",
+      "hltbGame": "HLTB oyunu: {{name}}",
       "hltbDraftBody": "Bu seçim, Kaydet düğmesiyle saklanır.",
       "detailsLoadedTitle": "Ayrıntılar yüklendi",
       "steamPreviewBody": "Steam ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
       "ignPreviewBody": "IGN ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
       "steamAppIdNotAppliedTitle": "Steam uygulama ID'si uygulanmadı",
       "steamAppIdNotAppliedBody": "Kaydetmeden önce yeni eşleşmeyi yüklemek için “Steam Uygulama ID'sini uygula” seçeneğini seçin.",
-      "hltbNotFoundTitle": "Bulunamadı",
-      "hltbNotFoundBody": "HowLongToBeat'te bu numaraya sahip bir oyun yok.",
-      "notApplicableTitle": "Uygulanamaz",
-      "notLoadedTitle": "Yüklenmedi",
-      "notLoadedBody": "Kaydedilmiş meta veriler henüz yüklenmedi.",
-      "savedTitle": "Kaydedildi",
-      "metadataSaved": "Meta veriler kaydedildi",
-      "saveFailedTitle": "Kaydetme başarısız",
-      "hltbCleared": "HLTB oyunu temizlendi",
-      "hltbGame": "HLTB oyunu: {{name}}",
       "fetchFailedTitle": "Getirme başarısız",
-      "removedTitle": "Kaldırıldı",
       "removedBody": "Meta veriler kaldırıldı",
       "removeFailedTitle": "Kaldırma başarısız",
       "shortcutNameChangedTitle": "Kısayol adı değişti",
@@ -552,13 +564,11 @@
       "nameHistoryNotClearedTitle": "Kaydedilmiş ad geçmişi temizlenmedi"
     },
     "steamTextLanguage": "Steam metin dili: {{language}}",
-    "fetchSteamText": "Steam metnini {{language}} dilinde getir",
+    "fetchSteamText": "Steam metnini {{language}} dilinde yükle",
     "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
   },
   "matchPicker": {
-    "title": "Steam eşleşmesi bul",
     "help": "Steam'de arayın, ayrıntılarını incelemek için bir sonuç seçin ve ardından Bu Steam eşleşmesini kullan öğesini seçin. Gezinmek oyununuzu değiştirmez.",
-    "currentAppId": "Geçerli Steam Uygulama ID'si: {{appId}}",
     "searchAriaLabel": "Steam oyun araması",
     "search": "Steam'de ara",
     "searching": "Steam'de aranıyor...",

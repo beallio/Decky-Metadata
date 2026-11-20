@@ -1,9 +1,9 @@
 {
   "common": {
-    "hoursShort": "{{value}} ч",
-    "unknown": "Неизвестно",
     "hours_one": "{{value}} час",
-    "hours_other": "{{value}} часа"
+    "hours_other": "{{value}} часа",
+    "hoursShort": "{{value}} ч",
+    "unknown": "Неизвестно"
   },
   "backend": {
     "progress": {
@@ -158,7 +158,7 @@
       "bottomBorderLabel": "Долна граница",
       "bottomBorderDescription": "Показва разделителна линия под лентата на HLTB",
       "resetAppearance": "Нулиране на външния вид",
-      "loadingPreferences": "Зареждане на предпочитанията за HLTB…"
+      "loadingPreferences": "Зареждане на предпочитанията за HLTB..."
     },
     "trailers": {
       "title": "Трейлъри на игри",
@@ -206,7 +206,7 @@
       "positionBottomLeft": "Долу вляво",
       "positionTopLeft": "Горе вляво",
       "positionTopRight": "Горе вдясно",
-      "loadingPreferences": "Зареждане на предпочитанията за значките на ProtonDB…",
+      "loadingPreferences": "Зареждане на предпочитанията за значките на ProtonDB...",
       "footnote": "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
     },
     "miniAchievements": {
@@ -220,7 +220,7 @@
       "title": "Състояние за съвместимост",
       "defaultStatus": "Състояние за съвместимост по подразбиране",
       "applyDefaultTo": "Прилагане по подразбиране към",
-      "categoryAutomatic": "Автоматично — използва състоянието от Steam",
+      "categoryAutomatic": "Автоматично",
       "categoryVerified": "Потвърдена",
       "categoryPlayable": "Годна за пускане",
       "categoryUnsupported": "Неподдържана",
@@ -416,7 +416,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "Промяна на метаданните..."
+    "editMetadata": "Редактиране на метаданните..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} е активирана в Decky Loader. Изключете тази приставка, за да използвате {{feature}} тук.",
@@ -426,17 +426,29 @@
   "editor": {
     "save": "Запазване",
     "saveCount": "Запазване ({{count}})",
+    "unsupportedSteam": "Тази версия на Steam все още не се поддържа. Актуализирайте Decky Metadata, за да редактирате метаданните.",
     "removeMetadata": "Премахване на метаданните",
-    "done": "Готово",
-    "moreOptions": "Още опции",
-    "moreMenuTitle": "Метаданни",
-    "refreshFromSteam": "Обновяване от Steam",
+    "page": {
+      "details": "Подробности",
+      "steamMatch": "Съвпадение на играта",
+      "hltb": "HowLongToBeat",
+      "compatibility": "Съвместимост",
+      "storeCategories": "Категории в магазина",
+      "shortcutName": "Име на прекия път",
+      "advanced": "Разширени"
+    },
+    "currentMatch": "Текущо съвпадение",
+    "loadFromSteam": "Зареждане от Steam",
+    "loadFromSteamSteamGame": "Зареждане от Steam (недостъпно за игри от Steam)",
+    "loadFromSteamNoMatch": "Зареждане от Steam (няма съвпадение в Steam)",
+    "loadFromSteamBusy": "Зареждане от Steam (обновява се)",
     "fieldEdited": "Редактирано",
     "fieldFromSteam": "От Steam, незапазено",
     "steamDataChanged": "Данните от Steam, които не се показват във формуляра (екранни снимки, новини, съвместимост), са се променили и не са запазени.",
     "unsaved": {
       "title": "Да се запазят ли промените?",
       "body": "Имате незапазени промени в метаданните на тази игра.",
+      "group": "{{page}}: {{fields}}",
       "discard": "Отхвърляне",
       "cancel": "Отказ"
     },
@@ -447,10 +459,12 @@
     },
     "nonSteamOnly": "Тази приставка променя само не-Steam игри.",
     "searchIgn": "Търсене на метаданни в IGN",
+    "ign": {
+      "gameName": "Име на играта"
+    },
     "search": "Търсене",
     "searching": "Търсене...",
     "noResults": "Все още няма резултати.",
-    "source": "Източник",
     "field": {
       "title": "Заглавие",
       "description": "Описание",
@@ -462,6 +476,7 @@
       "steamData": "Данни от Steam, които не се показват във формуляра"
     },
     "compat": {
+      "statusLabel": "Състояние",
       "useGlobalDefault": "Използване на глобалната стойност по подразбиране",
       "followValve": "Следване на Valve",
       "verified": "Потвърдена",
@@ -477,9 +492,8 @@
       "useGlobalDefaultFromValve": "Използване на глобалната стойност по подразбиране ({{category}} — от Valve)"
     },
     "compatibilityStatus": "Състояние за съвместимост",
-    "compatibilityHelp": "„Използване на глобалната стойност по подразбиране“ наследява настройката от менюто за бърз достъп. „Следване на Valve“ я игнорира и запазва оригиналното състояние в Steam, когато данните от Valve не са достъпни.",
+    "compatibilityHelp": "„Автоматично“ използва за всяка игра състоянието на съответстващата ѝ игра в Steam. „Използване на глобалната стойност по подразбиране“ наследява тази настройка за текущата игра. „Следване на Valve“ винаги използва състоянието от Valve. Когато няма данни от Valve, „Следване на Valve“ запазва първоначалното състояние от Steam.",
     "compatibilityChoices": "Ръчните категории и категориите по подразбиране са ваши избори, а не сертификация от Valve или резултат от производителността на емулатор.",
-    "steamInfoFields": "Информационни полета от Steam",
     "hltbGame": "Игра в HowLongToBeat",
     "hltbHelp": "Потърсете в HowLongToBeat или поставете номер на игра или връзка към страница на игра, за да изберете времената, показани за тази игра. Оставете празно за автоматично съпоставяне.",
     "hltbCurrentChosen": "Текуща игра: {{name}} (избрана)",
@@ -488,8 +502,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Поставете Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB. Оставете празно, за да изчистите закрепеното съвпадение в Steam.",
     "steamAppIdApply": "Прилагане на Steam App ID",
-    "shortcutName": "Име на прекия път",
     "shortcut": {
+      "immediateNotice": "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
       "current": "Текущо: {{name}}",
       "missingName": "Steam не предостави име на вградения пряк път",
       "steamName": "Steam: {{name}}",
@@ -517,24 +531,22 @@
       "hltbInvalidBody": "Въведете номер на игра в HowLongToBeat или връзка към страница на игра.",
       "steamAppIdInvalidTitle": "Невалиден Steam App ID",
       "steamAppIdInvalidBody": "Въведете Steam App ID, URL на магазина, URL на общността или URL на SteamDB. Оставете полето празно, за да премахнете съвпадението.",
+      "hltbNotFoundTitle": "Не е намерено",
+      "hltbNotFoundBody": "HowLongToBeat няма игра с този номер.",
+      "notApplicableTitle": "Не е приложимо",
+      "notLoadedTitle": "Не е заредено",
+      "notLoadedBody": "Запазените метаданни все още не са заредени.",
+      "metadataSaved": "Метаданните са запазени",
+      "saveFailedTitle": "Запазването е неуспешно",
+      "hltbCleared": "Играта в HLTB е изчистена",
+      "hltbGame": "Игра в HLTB: {{name}}",
       "hltbDraftBody": "Натиснете „Запази“, за да запомните този избор.",
       "detailsLoadedTitle": "Подробностите са заредени",
       "steamPreviewBody": "Подробностите от Steam са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
       "ignPreviewBody": "Подробностите от IGN са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
       "steamAppIdNotAppliedTitle": "Steam App ID не е приложен",
       "steamAppIdNotAppliedBody": "Преди запазване изберете „Прилагане на Steam App ID“, за да заредите новото съвпадение.",
-      "hltbNotFoundTitle": "Не е намерено",
-      "hltbNotFoundBody": "HowLongToBeat няма игра с този номер.",
-      "notApplicableTitle": "Не е приложимо",
-      "notLoadedTitle": "Не е заредено",
-      "notLoadedBody": "Запазените метаданни все още не са заредени.",
-      "savedTitle": "Запазено",
-      "metadataSaved": "Метаданните са запазени",
-      "saveFailedTitle": "Запазването е неуспешно",
-      "hltbCleared": "Играта в HLTB е изчистена",
-      "hltbGame": "Игра в HLTB: {{name}}",
       "fetchFailedTitle": "Извличането е неуспешно",
-      "removedTitle": "Премахнато",
       "removedBody": "Метаданните са премахнати",
       "removeFailedTitle": "Премахването е неуспешно",
       "shortcutNameChangedTitle": "Името на прекия път е променено",
@@ -552,13 +564,11 @@
       "nameHistoryNotClearedTitle": "Запазената история на имената не беше изчистена"
     },
     "steamTextLanguage": "Език на текста в Steam: {{language}}",
-    "fetchSteamText": "Изтегляне на текст от Steam на {{language}}",
+    "fetchSteamText": "Зареждане на текст от Steam на {{language}}",
     "steamTextUnavailable": "Steam не върна текст за тази игра."
   },
   "matchPicker": {
-    "title": "Намиране на съвпадение в Steam",
     "help": "Потърсете в Steam, изберете резултат, за да проверите подробностите, след което изберете „Използване на това съвпадение в Steam“. Разглеждането не променя играта ви.",
-    "currentAppId": "Текущ Steam App ID: {{appId}}",
     "searchAriaLabel": "Търсене на игра в Steam",
     "search": "Търсене в Steam",
     "searching": "Търсене в Steam...",

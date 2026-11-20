@@ -1,8 +1,8 @@
 {
   "common": {
+    "hours_other": "{{value}} 小时",
     "hoursShort": "{{value}} 小时",
-    "unknown": "未知",
-    "hours_other": "{{value}} 小时"
+    "unknown": "未知"
   },
   "backend": {
     "progress": {
@@ -157,7 +157,7 @@
       "bottomBorderLabel": "底部分隔线",
       "bottomBorderDescription": "在 HLTB 栏下方显示一条分隔线",
       "resetAppearance": "重置外观",
-      "loadingPreferences": "正在加载 HLTB 偏好设置…"
+      "loadingPreferences": "正在加载 HLTB 偏好设置..."
     },
     "trailers": {
       "title": "游戏预告片",
@@ -205,7 +205,7 @@
       "positionBottomLeft": "左下",
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
-      "loadingPreferences": "正在加载 ProtonDB 徽章偏好设置…",
+      "loadingPreferences": "正在加载 ProtonDB 徽章偏好设置...",
       "footnote": "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
     },
     "miniAchievements": {
@@ -219,7 +219,7 @@
       "title": "兼容性状态",
       "defaultStatus": "默认兼容性状态",
       "applyDefaultTo": "应用默认值到",
-      "categoryAutomatic": "自动 —— 使用匹配的 Steam 状态",
+      "categoryAutomatic": "自动",
       "categoryVerified": "已通过验证",
       "categoryPlayable": "可玩",
       "categoryUnsupported": "不支持",
@@ -415,7 +415,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "更改元数据..."
+    "editMetadata": "编辑元数据..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} 已在 Decky Loader 中启用。请禁用该插件以在此处使用{{feature}}。",
@@ -425,17 +425,29 @@
   "editor": {
     "save": "保存",
     "saveCount": "保存 ({{count}})",
+    "unsupportedSteam": "此 Steam 版本尚不受支持。请更新 Decky Metadata 以编辑元数据。",
     "removeMetadata": "移除元数据",
-    "done": "完成",
-    "moreOptions": "更多选项",
-    "moreMenuTitle": "元数据",
-    "refreshFromSteam": "从 Steam 刷新",
+    "page": {
+      "details": "详细信息",
+      "steamMatch": "游戏匹配",
+      "hltb": "HowLongToBeat",
+      "compatibility": "兼容性",
+      "storeCategories": "商店分类",
+      "shortcutName": "快捷方式名称",
+      "advanced": "高级"
+    },
+    "currentMatch": "当前匹配",
+    "loadFromSteam": "从 Steam 加载",
+    "loadFromSteamSteamGame": "从 Steam 加载（不适用于 Steam 游戏）",
+    "loadFromSteamNoMatch": "从 Steam 加载（无 Steam 匹配）",
+    "loadFromSteamBusy": "从 Steam 加载（正在更新）",
     "fieldEdited": "已编辑",
     "fieldFromSteam": "来自 Steam，未保存",
     "steamDataChanged": "表单中未显示的 Steam 数据（截图、新闻、兼容性）已更改且尚未保存。",
     "unsaved": {
       "title": "保存更改？",
       "body": "此游戏的元数据有未保存的更改。",
+      "group": "{{page}}: {{fields}}",
       "discard": "放弃",
       "cancel": "取消"
     },
@@ -446,10 +458,12 @@
     },
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
     "searchIgn": "搜索 IGN 元数据",
+    "ign": {
+      "gameName": "游戏名称"
+    },
     "search": "搜索",
     "searching": "正在搜索...",
     "noResults": "暂无结果。",
-    "source": "来源",
     "field": {
       "title": "标题",
       "description": "描述",
@@ -461,6 +475,7 @@
       "steamData": "表单中未显示的 Steam 数据"
     },
     "compat": {
+      "statusLabel": "状态",
       "useGlobalDefault": "使用全局默认值",
       "followValve": "跟随 Valve",
       "verified": "已通过验证",
@@ -476,9 +491,8 @@
       "useGlobalDefaultFromValve": "使用全局默认值（{{category}} —— 来自 Valve）"
     },
     "compatibilityStatus": "兼容性状态",
-    "compatibilityHelp": "使用全局默认值会继承快捷菜单中的设置。跟随 Valve 会忽略该设置，并在 Valve 数据不可用时保留 Steam 原始状态。",
+    "compatibilityHelp": "“自动”使用每款游戏在 Steam 上匹配到的游戏的兼容性状态。“使用全局默认值”会对此游戏沿用该设置。“跟随 Valve”始终使用 Valve 提供的状态；若 Valve 数据不可用，则保留 Steam 的原始状态。",
     "compatibilityChoices": "手动和默认分类是你的选择，并非 Valve 认证，也不是模拟器性能结果。",
-    "steamInfoFields": "Steam 信息字段",
     "hltbGame": "HowLongToBeat 游戏",
     "hltbHelp": "搜索 HowLongToBeat，或粘贴游戏编号或游戏页面链接，以选择此游戏显示的时长。留空则自动匹配。",
     "hltbCurrentChosen": "当前游戏：{{name}}（已选择）",
@@ -487,8 +501,8 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "粘贴 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可清除固定的 Steam 匹配。",
     "steamAppIdApply": "应用 Steam App ID",
-    "shortcutName": "快捷方式名称",
     "shortcut": {
+      "immediateNotice": "这些操作立即生效，无需点击“保存”。",
       "current": "当前：{{name}}",
       "missingName": "Steam 未提供原生快捷方式名称",
       "steamName": "Steam：{{name}}",
@@ -516,24 +530,22 @@
       "hltbInvalidBody": "请输入 HowLongToBeat 游戏编号或游戏页面链接。",
       "steamAppIdInvalidTitle": "Steam 应用 ID 无效",
       "steamAppIdInvalidBody": "请输入 Steam 应用 ID、商店链接、社区链接或 SteamDB 链接。留空可清除匹配。",
+      "hltbNotFoundTitle": "未找到",
+      "hltbNotFoundBody": "HowLongToBeat 中没有该编号的游戏。",
+      "notApplicableTitle": "不适用",
+      "notLoadedTitle": "未加载",
+      "notLoadedBody": "已保存的元数据尚未加载。",
+      "metadataSaved": "元数据已保存",
+      "saveFailedTitle": "保存失败",
+      "hltbCleared": "已清除 HLTB 游戏",
+      "hltbGame": "HLTB 游戏：{{name}}",
       "hltbDraftBody": "点击保存会存储此选择。",
       "detailsLoadedTitle": "详情已加载",
       "steamPreviewBody": "Steam 详情已加载到此表单中，点击保存后会存储。",
       "ignPreviewBody": "IGN 详情已加载到此表单中，点击保存后会存储。",
       "steamAppIdNotAppliedTitle": "Steam App ID 未应用",
       "steamAppIdNotAppliedBody": "保存前，请选择“应用 Steam App ID”以加载新的匹配。",
-      "hltbNotFoundTitle": "未找到",
-      "hltbNotFoundBody": "HowLongToBeat 中没有该编号的游戏。",
-      "notApplicableTitle": "不适用",
-      "notLoadedTitle": "未加载",
-      "notLoadedBody": "已保存的元数据尚未加载。",
-      "savedTitle": "已保存",
-      "metadataSaved": "元数据已保存",
-      "saveFailedTitle": "保存失败",
-      "hltbCleared": "已清除 HLTB 游戏",
-      "hltbGame": "HLTB 游戏：{{name}}",
       "fetchFailedTitle": "获取失败",
-      "removedTitle": "已移除",
       "removedBody": "元数据已移除",
       "removeFailedTitle": "移除失败",
       "shortcutNameChangedTitle": "快捷方式名称已更改",
@@ -551,13 +563,11 @@
       "nameHistoryNotClearedTitle": "未清除保存的名称历史记录"
     },
     "steamTextLanguage": "Steam 文本语言：{{language}}",
-    "fetchSteamText": "获取{{language}} Steam 文本",
+    "fetchSteamText": "加载 Steam 文本（{{language}}）",
     "steamTextUnavailable": "Steam 未返回此游戏的文本。"
   },
   "matchPicker": {
-    "title": "查找 Steam 匹配",
     "help": "搜索 Steam，选择一个结果查看详情，然后选择“使用此 Steam 匹配”。浏览不会更改你的游戏。",
-    "currentAppId": "当前 Steam App ID：{{appId}}",
     "searchAriaLabel": "Steam 游戏搜索",
     "search": "搜索 Steam",
     "searching": "正在搜索 Steam...",

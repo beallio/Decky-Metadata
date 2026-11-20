@@ -1,13 +1,13 @@
 {
   "common": {
-    "hoursShort": "{{value}} س",
-    "unknown": "غير معروف",
     "hours_zero": "{{value}} ساعة",
     "hours_one": "{{value}} ساعة",
     "hours_two": "{{value}} ساعتان",
     "hours_few": "{{value}} ساعات",
     "hours_many": "{{value}} ساعة",
-    "hours_other": "{{value}} ساعة"
+    "hours_other": "{{value}} ساعة",
+    "hoursShort": "{{value}} س",
+    "unknown": "غير معروف"
   },
   "backend": {
     "progress": {
@@ -85,7 +85,7 @@
     },
     "details": "التفاصيل",
     "search": {
-      "searching": "جارٍ البحث…",
+      "searching": "جارٍ البحث...",
       "action": "البحث في HLTB",
       "noGames": "لم يعثر HowLongToBeat على ألعاب.",
       "mainStory": "القصة الرئيسية {{hours}}",
@@ -147,8 +147,8 @@
       "allStylesStatLabel": "تبديل إحصاءة «كل أنماط اللعب»",
       "allStylesStatDescription": "إظهار/إخفاء إحصاءة كل أنماط اللعب فقط",
       "clearCacheButton": "مسح ذاكرة HLTB المؤقتة",
-      "clearingButton": "جارٍ المسح…",
-      "cacheClearing": "جارٍ مسح ذاكرة HLTB المؤقتة…",
+      "clearingButton": "جارٍ المسح...",
+      "cacheClearing": "جارٍ مسح ذاكرة HLTB المؤقتة...",
       "cacheCleared": "تم مسح ذاكرة HLTB المؤقتة. تُحمَّل الأوقات مجددًا عند فتح لعبة.",
       "cacheFailed": "تعذّر مسح ذاكرة HLTB المؤقتة.",
       "customizeLabel": "تخصيص المظهر",
@@ -162,7 +162,7 @@
       "bottomBorderLabel": "الحد السفلي",
       "bottomBorderDescription": "يعرض خطًا فاصلًا أسفل شريط HLTB",
       "resetAppearance": "إعادة ضبط المظهر",
-      "loadingPreferences": "جارٍ تحميل تفضيلات HLTB…"
+      "loadingPreferences": "جارٍ تحميل تفضيلات HLTB..."
     },
     "trailers": {
       "title": "مقاطع الألعاب الدعائية",
@@ -210,7 +210,7 @@
       "positionBottomLeft": "أسفل اليسار",
       "positionTopLeft": "أعلى اليسار",
       "positionTopRight": "أعلى اليمين",
-      "loadingPreferences": "جارٍ تحميل تفضيلات شارات ProtonDB…",
+      "loadingPreferences": "جارٍ تحميل تفضيلات شارات ProtonDB...",
       "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
     },
     "miniAchievements": {
@@ -224,7 +224,7 @@
       "title": "حالة التوافق",
       "defaultStatus": "حالة التوافق الافتراضية",
       "applyDefaultTo": "تطبيق الافتراضي على",
-      "categoryAutomatic": "تلقائي — استخدام حالة Steam المطابقة",
+      "categoryAutomatic": "تلقائي",
       "categoryVerified": "تم التحقق",
       "categoryPlayable": "قابلة للعب",
       "categoryUnsupported": "غير مدعومة",
@@ -247,12 +247,12 @@
       "saved": "البيانات الوصفية المحفوظة:",
       "missing": "البيانات الوصفية المفقودة:",
       "refresh": "تحديث البيانات الوصفية",
-      "refreshing": "جارٍ التحديث…",
-      "refreshingStatus": "جارٍ تحديث البيانات الوصفية…",
+      "refreshing": "جارٍ التحديث...",
+      "refreshingStatus": "جارٍ تحديث البيانات الوصفية...",
       "refreshDescription": "يبحث عن بيانات وصفية للألعاب غير التابعة لـ Steam المكتشفة التي ليس لها مطابقة بعد ويحفظها.",
       "cacheHeading": "ذاكرة البيانات الوصفية المؤقتة",
       "clearCache": "مسح الذاكرة المؤقتة",
-      "clearing": "جارٍ المسح…",
+      "clearing": "جارٍ المسح...",
       "clearCacheDescription": "يمسح المطابقات والبيانات الوصفية المحفوظة كي يمكن مطابقة الألعاب مجددًا.",
       "delistedHeading": "ألعاب Steam المحذوفة",
       "refreshDelisted": "تحديث الألعاب المحذوفة"
@@ -267,7 +267,7 @@
       "autoCheckDescription": "يتحقق في الخلفية أثناء تحميل الإضافة.",
       "status": "الحالة",
       "lastChecked": "آخر تحقق: {{date}}",
-      "checking": "جارٍ التحقق…",
+      "checking": "جارٍ التحقق...",
       "checkInterrupted": "توقف التحقق بعد {{seconds}} ثانية",
       "checkFailed": "فشل التحقق",
       "upToDate": "محدّث",
@@ -284,8 +284,8 @@
       "actionRevertToStable": "العودة إلى الإصدار المستقر v{{version}}",
       "actionInstallDevelopment": "تثبيت بناء التطوير v{{version}}",
       "actionUpdate": "التحديث إلى v{{version}}",
-      "waitingForDecky": "في انتظار Decky…",
-      "preparing": "جارٍ التحضير…",
+      "waitingForDecky": "في انتظار Decky...",
+      "preparing": "جارٍ التحضير...",
       "localBuildOnlyStable": "يمكن لعمليات البناء المحلية تحديث نفسها إلى إصدار مستقر فقط. ثبّت إصدار التطوير هذا يدويًا من GitHub Releases.",
       "manualInstallUnavailable": "التثبيت التلقائي غير متاح في بيئة Decky هذه. ثبّت هذا الإصدار يدويًا من GitHub Releases.",
       "viewReleaseNotes": "عرض ملاحظات الإصدار",
@@ -303,7 +303,7 @@
     },
     "logs": {
       "title": "السجلات",
-      "loading": "جارٍ التحميل…",
+      "loading": "جارٍ التحميل...",
       "view": "عرض السجلات",
       "debugLogging": "تسجيل التصحيح",
       "debugLoggingDescription": "يفعّل تسجيلًا مفصلًا لاستكشاف الأخطاء وإصلاحها.",
@@ -420,7 +420,7 @@
     }
   },
   "contextMenu": {
-    "changeMetadata": "تغيير البيانات الوصفية…"
+    "editMetadata": "تحرير البيانات الوصفية..."
   },
   "conflicts": {
     "pluginConflict": "{{pluginName}} مفعّلة في Decky Loader. عطّل تلك الإضافة لاستخدام {{feature}} هنا.",
@@ -430,17 +430,29 @@
   "editor": {
     "save": "حفظ",
     "saveCount": "حفظ ({{count}})",
+    "unsupportedSteam": "إصدار Steam هذا غير مدعوم بعد. حدّث Decky Metadata لتعديل البيانات الوصفية.",
     "removeMetadata": "إزالة البيانات الوصفية",
-    "done": "تم",
-    "moreOptions": "خيارات إضافية",
-    "moreMenuTitle": "البيانات الوصفية",
-    "refreshFromSteam": "التحديث من Steam",
+    "page": {
+      "details": "التفاصيل",
+      "steamMatch": "مطابقة اللعبة",
+      "hltb": "HowLongToBeat",
+      "compatibility": "التوافق",
+      "storeCategories": "فئات المتجر",
+      "shortcutName": "اسم الاختصار",
+      "advanced": "إعدادات متقدمة"
+    },
+    "currentMatch": "المطابقة الحالية",
+    "loadFromSteam": "تحميل من Steam",
+    "loadFromSteamSteamGame": "تحميل من Steam (غير متاح لألعاب Steam)",
+    "loadFromSteamNoMatch": "تحميل من Steam (لا توجد مطابقة في Steam)",
+    "loadFromSteamBusy": "تحميل من Steam (جارٍ التحديث)",
     "fieldEdited": "معدّل",
     "fieldFromSteam": "من Steam، غير محفوظ",
     "steamDataChanged": "تغيّرت بيانات Steam غير المعروضة في النموذج (لقطات الشاشة والأخبار والتوافق) ولم تُحفظ.",
     "unsaved": {
       "title": "حفظ التغييرات؟",
       "body": "لديك تغييرات غير محفوظة لبيانات هذا اللعبة الوصفية.",
+      "group": "{{page}}: {{fields}}",
       "discard": "تجاهل",
       "cancel": "إلغاء"
     },
@@ -451,10 +463,12 @@
     },
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
     "searchIgn": "البحث في بيانات IGN الوصفية",
+    "ign": {
+      "gameName": "اسم اللعبة"
+    },
     "search": "بحث",
-    "searching": "جارٍ البحث…",
+    "searching": "جارٍ البحث...",
     "noResults": "لا نتائج بعد.",
-    "source": "المصدر",
     "field": {
       "title": "العنوان",
       "description": "الوصف",
@@ -466,6 +480,7 @@
       "steamData": "بيانات Steam غير المعروضة في النموذج"
     },
     "compat": {
+      "statusLabel": "الحالة",
       "useGlobalDefault": "استخدام الافتراضي العام",
       "followValve": "اتّباع Valve",
       "verified": "تم التحقق",
@@ -481,9 +496,8 @@
       "useGlobalDefaultFromValve": "استخدام الافتراضي العام ({{category}} — من Valve)"
     },
     "compatibilityStatus": "حالة التوافق",
-    "compatibilityHelp": "«استخدام الافتراضي العام» يرث إعداد قائمة الوصول السريع. «اتّباع Valve» يتجاهله ويحتفظ بحالة Steam الأصلية عندما تكون بيانات Valve غير متاحة.",
+    "compatibilityHelp": "يستخدم خيار «تلقائي» حالة التوافق في Steam للمطابقة الخاصة بكل لعبة. يرث خيار «استخدام الافتراضي العام» هذا الإعداد لهذه اللعبة. يستخدم خيار «اتّباع Valve» حالة Valve دائمًا. إذا لم تتوفر بيانات Valve، يُبقي خيار «اتّباع Valve» على حالة Steam الأصلية.",
     "compatibilityChoices": "الفئات اليدوية والافتراضية هي اختياراتك، وليست شهادة من Valve أو نتيجة أداء للمحاكي.",
-    "steamInfoFields": "حقول معلومات Steam",
     "hltbGame": "لعبة HowLongToBeat",
     "hltbHelp": "ابحث في HowLongToBeat أو الصق رقم لعبة أو رابط صفحة لعبة لاختيار الأوقات المعروضة لهذه اللعبة. اتركه فارغًا للمطابقة التلقائية.",
     "hltbCurrentChosen": "اللعبة الحالية: {{name}} (مختارة)",
@@ -492,12 +506,12 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "الصق Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اتركه فارغًا لمسح مطابقة Steam المثبّتة.",
     "steamAppIdApply": "تطبيق Steam App ID",
-    "shortcutName": "اسم الاختصار",
     "shortcut": {
+      "immediateNotice": "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
       "current": "الحالي: {{name}}",
       "missingName": "لم يكشف Steam عن اسم اختصار أصلي",
       "steamName": "Steam: {{name}}",
-      "loadingSteamName": "جارٍ تحميل اسم Steam…",
+      "loadingSteamName": "جارٍ تحميل اسم Steam...",
       "noOfficialName": "لم يُرجع Steam اسمًا رسميًا",
       "managementUnavailable": "إدارة أسماء الاختصارات غير متاحة",
       "apiUnavailable": "واجهة أسماء الاختصارات الأصلية في Steam غير متاحة",
@@ -521,24 +535,22 @@
       "hltbInvalidBody": "أدخل رقم لعبة في HowLongToBeat أو رابط صفحة لعبة.",
       "steamAppIdInvalidTitle": "معرّف Steam App ID غير صالح",
       "steamAppIdInvalidBody": "أدخل معرّف تطبيق Steam أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اترك الحقل فارغًا لإزالة المطابقة.",
+      "hltbNotFoundTitle": "لم يُعثر عليها",
+      "hltbNotFoundBody": "لا توجد في HowLongToBeat لعبة بهذا الرقم.",
+      "notApplicableTitle": "غير قابل للتطبيق",
+      "notLoadedTitle": "لم تُحمَّل",
+      "notLoadedBody": "لم تُحمَّل البيانات الوصفية المحفوظة بعد.",
+      "metadataSaved": "تم حفظ البيانات الوصفية",
+      "saveFailedTitle": "فشل الحفظ",
+      "hltbCleared": "تم مسح لعبة HLTB",
+      "hltbGame": "لعبة HLTB: {{name}}",
       "hltbDraftBody": "يحفظ زر «حفظ» هذا الاختيار.",
       "detailsLoadedTitle": "تم تحميل التفاصيل",
       "steamPreviewBody": "تم تحميل تفاصيل Steam في هذا النموذج. يحفظها زر «حفظ».",
       "ignPreviewBody": "تم تحميل تفاصيل IGN في هذا النموذج. يحفظها زر «حفظ».",
       "steamAppIdNotAppliedTitle": "لم يتم تطبيق Steam App ID",
       "steamAppIdNotAppliedBody": "اختر «تطبيق Steam App ID» لتحميل المطابقة الجديدة قبل الحفظ.",
-      "hltbNotFoundTitle": "لم يُعثر عليها",
-      "hltbNotFoundBody": "لا توجد في HowLongToBeat لعبة بهذا الرقم.",
-      "notApplicableTitle": "غير قابل للتطبيق",
-      "notLoadedTitle": "لم تُحمَّل",
-      "notLoadedBody": "لم تُحمَّل البيانات الوصفية المحفوظة بعد.",
-      "savedTitle": "تم الحفظ",
-      "metadataSaved": "تم حفظ البيانات الوصفية",
-      "saveFailedTitle": "فشل الحفظ",
-      "hltbCleared": "تم مسح لعبة HLTB",
-      "hltbGame": "لعبة HLTB: {{name}}",
       "fetchFailedTitle": "فشل الجلب",
-      "removedTitle": "تمت الإزالة",
       "removedBody": "تمت إزالة البيانات الوصفية",
       "removeFailedTitle": "فشلت الإزالة",
       "shortcutNameChangedTitle": "تغيّر اسم الاختصار",
@@ -556,23 +568,21 @@
       "nameHistoryNotClearedTitle": "لم يُمسح سجل الأسماء المحفوظ"
     },
     "steamTextLanguage": "لغة نص Steam: {{language}}",
-    "fetchSteamText": "جلب نص Steam باللغة {{language}}",
+    "fetchSteamText": "تحميل نص Steam باللغة {{language}}",
     "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
   },
   "matchPicker": {
-    "title": "العثور على مطابقة في Steam",
     "help": "ابحث في Steam، واختر نتيجة لفحص تفاصيلها، ثم اختر «استخدام مطابقة Steam هذه». التصفح لا يغيّر لعبتك.",
-    "currentAppId": "Steam App ID الحالي: {{appId}}",
     "searchAriaLabel": "بحث ألعاب Steam",
     "search": "البحث في Steam",
-    "searching": "جارٍ البحث في Steam…",
+    "searching": "جارٍ البحث في Steam...",
     "idle": "أدخل اسم لعبة للعثور على مطابقات في Steam.",
     "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية",
     "appIdSelected": "Steam App ID: {{appId}} · محدد",
     "appIdCurrentSelected": "Steam App ID: {{appId}} · المطابقة الحالية · محدد",
-    "loadingDetails": "جارٍ تحميل تفاصيل Steam…",
+    "loadingDetails": "جارٍ تحميل تفاصيل Steam...",
     "artworkAlt": "رسومات Steam لـ {{title}}",
     "developer": "المطوّر: {{names}}",
     "developerUnavailable": "المطوّر غير متاح",

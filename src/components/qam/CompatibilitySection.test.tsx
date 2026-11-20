@@ -104,9 +104,7 @@ describe("CompatibilitySection default scope", () => {
       )?.props;
     const automatic = categoryDropdown(null);
     expect(automatic?.renderButtonValue).toBeTypeOf("function");
-    expect((automatic?.renderButtonValue as any)().props.children).toBe(
-      "Automatic — use matched Steam status",
-    );
+    expect((automatic?.renderButtonValue as any)().props.children).toBe("Automatic");
     expect((categoryDropdown(3)?.renderButtonValue as any)().props.children).toBe("Verified");
     onCompatibilityDefaultMenuWillOpen.mockClear();
     (automatic?.onMenuWillOpen as any)();

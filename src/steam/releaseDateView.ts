@@ -1,4 +1,5 @@
 import { currentRoutePath, getNativeOverview, isCurrentGameInfoRoute, isNativeNonSteamShortcut, metadataCache } from "./core";
+import { getNativeCssClass } from "./nativeCssClasses";
 import { findSteamUiDocumentMatch } from "./steamUiHost";
 import { findLiveModuleChild } from "./steamUiModules";
 
@@ -13,7 +14,7 @@ export const refreshNativeReleaseDateView = (appId: number): boolean => {
         "DescriptionStatsCtn" in module && typeof module.DescriptionStatsCtn === "string" &&
         "InnerContainer" in module && typeof module.InnerContainer === "string") return module.InnerContainer;
     return undefined;
-  });
+  }) ?? getNativeCssClass("descriptionInnerContainer");
   if (typeof className !== "string" || !/^[A-Za-z_-][A-Za-z0-9_-]*$/.test(className)) return false;
   return findSteamUiDocumentMatch(document => {
     for (const element of document.querySelectorAll<HTMLElement>(`.${className}`)) {
