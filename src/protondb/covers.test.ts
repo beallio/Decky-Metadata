@@ -9,6 +9,7 @@ vi.mock("@decky/ui", () => ({
   Router: {},
 }));
 vi.mock("@decky/api", () => ({ fetchNoCors: vi.fn() }));
+vi.mock("react-dom", () => ({ flushSync: (render: () => void) => render() }));
 vi.mock("../backend", () => ({
   getProtonDbBadgeSettings: vi.fn(),
   getProviderCache: vi.fn(),
