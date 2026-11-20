@@ -405,7 +405,8 @@ const resolveTargets = (
     !carouselEntry ||
     Array.isArray(homeModule) ||
     Array.isArray(gridModule) ||
-    homeModule === gridModule ||
+    // Vite exposes many renderers from one aggregate module; only the targets must differ.
+    home === grid ||
     !hasWritableCallableMethod(home, "render") ||
     !hasWritableCallableMethod(grid, "type") ||
     !isWritableExport(carouselModule, carouselEntry[0]) ||
