@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.5] - 2026-11-20
+
 New Steam-style metadata editor, Game Match, and Steam beta fixes
 
 ### Changed
