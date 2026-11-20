@@ -1,11 +1,10 @@
-import { DialogControlsSection, Field, TextField } from "@decky/ui";
+import { Field, TextField } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
 import { getSteamMatchPreview, searchSteamMatches } from "./backend";
 import {
   editorFocusTargetClassName,
   editorSearchButtonStyle,
-  editorSearchInputRowSpacingStyle,
-  editorSearchResultsSpacingStyle,
+  editorSearchInputStyle,
   editorSearchRowStyle,
   editorSteamMatchImageStyle,
 } from "./metadataEditorStyles";
@@ -177,46 +176,49 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
   };
 
   return (
-    <DialogControlsSection>
-      <div style={editorSearchInputRowSpacingStyle}>
+    <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+      <div className="SettingsDialogSubHeader">{t("matchPicker.search")}</div>
+      <Field
+        label={t("matchPicker.searchAriaLabel")}
+        description={t("matchPicker.help")}
+        childrenLayout="below"
+        childrenContainerWidth="max"
+        bottomSeparator="standard"
+      >
+        <div style={editorSearchRowStyle}>
+          <div style={editorSearchInputStyle}>
+            <TextField
+              className={editorFocusTargetClassName}
+              aria-label={t("matchPicker.searchAriaLabel")}
+              value={query}
+              disabled={disabled}
+              onChange={(event) => changeQuery(event.target.value)}
+              style={{ ...fieldStyle, width: "100%" }}
+            />
+          </div>
+          <FocusableButton
+            className={editorFocusTargetClassName}
+            disabled={disabled || status === "loading" || !query.trim()}
+            onClick={() => void search()}
+            style={editorSearchButtonStyle}
+          >
+            {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
+          </FocusableButton>
+        </div>
+      </Field>
+      <div ref={resultsRootRef}>
         <Field
-          label={t("matchPicker.searchAriaLabel")}
-          description={t("matchPicker.help")}
-          childrenLayout="below"
-          childrenContainerWidth="max"
-          bottomSeparator="standard"
-        >
-          <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
-            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-              <TextField
-                className={editorFocusTargetClassName}
-                aria-label={t("matchPicker.searchAriaLabel")}
-                value={query}
-                disabled={disabled}
-                onChange={(event) => changeQuery(event.target.value)}
-                style={{ ...fieldStyle, width: "100%" }}
-              />
-            </div>
-            <FocusableButton
-              className={`DialogButton ${editorFocusTargetClassName}`}
-              disabled={disabled || status === "loading" || !query.trim()}
-              onClick={() => void search()}
-              style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
-            >
-              {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
-            </FocusableButton>
-          </div>
-        </Field>
-      </div>
-      <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-        <Field focusable={false} padding="none" bottomSeparator="none">
-          <div aria-live="polite" style={compactTextStyle}>
-            {status === "idle" ? t("matchPicker.idle") : null}
-            {status === "loading" ? t("matchPicker.searching") : null}
-            {status === "empty" ? t("matchPicker.empty") : null}
-            {status === "error" && searchError ? translateBackendError(searchError) : null}
-          </div>
-        </Field>
+          focusable={false}
+          description={
+            <span aria-live="polite">
+              {status === "idle" ? t("matchPicker.idle") : null}
+              {status === "loading" ? t("matchPicker.searching") : null}
+              {status === "empty" ? t("matchPicker.empty") : null}
+              {status === "error" && searchError ? translateBackendError(searchError) : null}
+            </span>
+          }
+          bottomSeparator="none"
+        />
         {items.map((candidate) => (
           <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid}>
             <Field
@@ -235,39 +237,79 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
               </div>
             </Field>
             {selected?.steam_appid === candidate.steam_appid ? (
-              <Field focusable={false} childrenLayout="below" padding="standard" bottomSeparator="none">
-                <div style={rowStackStyle}>
-                  {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
-                  {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
-                  {preview ? (
-                    <>
-                      {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={t("matchPicker.artworkAlt", { title: preview.title })} style={editorSteamMatchImageStyle} /> : null}
-                      <div style={compactTextStyle}>{preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable")}</div>
-                      <div style={compactTextStyle}>{preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable")}</div>
-                      {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{t("matchPicker.steamType", { type: preview.app_type })}</div> : null}
-                    </>
-                  ) : null}
-                  <div style={compactTextStyle}>{t("matchPicker.applyHelp")}</div>
+              <div style={rowStackStyle}>
+                {previewLoading ? (
+                  <Field
+                    focusable={false}
+                    description={<span aria-live="polite">{t("matchPicker.loadingDetails")}</span>}
+                    bottomSeparator="none"
+                  />
+                ) : null}
+                {previewError ? (
+                  <Field
+                    focusable={false}
+                    description={<span role="status">{translateBackendError(previewError)}</span>}
+                    bottomSeparator="none"
+                  />
+                ) : null}
+                {preview ? (
+                  <>
+                    {!selected.cover_url && preview.cover_url ? (
+                      <div>
+                        <img
+                          src={preview.cover_url}
+                          alt={t("matchPicker.artworkAlt", { title: preview.title })}
+                          style={{ ...editorSteamMatchImageStyle, objectFit: "contain" }}
+                        />
+                      </div>
+                    ) : null}
+                    {preview.developers.length ? (
+                      <Field label={t("editor.field.developers")} focusable={false} bottomSeparator="standard">
+                        {preview.developers.join(", ")}
+                      </Field>
+                    ) : (
+                      <Field focusable={false} description={t("matchPicker.developerUnavailable")} bottomSeparator="none" />
+                    )}
+                    {preview.release_date_label ? (
+                      <Field label={t("editor.field.releaseDate")} focusable={false} bottomSeparator="standard">
+                        {preview.release_date_label}
+                      </Field>
+                    ) : (
+                      <Field focusable={false} description={t("matchPicker.releaseUnavailable")} bottomSeparator="none" />
+                    )}
+                    {preview.app_type && preview.app_type !== "game" ? (
+                      <Field
+                        focusable={false}
+                        description={t("matchPicker.steamType", { type: preview.app_type })}
+                        bottomSeparator="none"
+                      />
+                    ) : null}
+                  </>
+                ) : null}
+                <Field focusable={false} description={t("matchPicker.applyHelp")} bottomSeparator="none" />
+                <div style={{ display: "flex", gap: 8 }}>
                   <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
+                    className={editorFocusTargetClassName}
                     disabled={disabled || previewLoading}
                     onClick={() => void apply()}
+                    style={{ flex: 1 }}
                   >
                     {t("matchPicker.apply")}
                   </FocusableButton>
                   <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
+                    className={editorFocusTargetClassName}
                     disabled={disabled}
                     onClick={cancelSelection}
+                    style={{ flex: 1 }}
                   >
                     {t("matchPicker.cancel")}
                   </FocusableButton>
                 </div>
-              </Field>
+              </div>
             ) : null}
           </div>
         ))}
       </div>
-    </DialogControlsSection>
+    </div>
   );
 };

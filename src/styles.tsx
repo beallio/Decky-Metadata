@@ -10,7 +10,7 @@ import {
 } from "./tokens";
 
 export const FocusableButton = (props: any) => (
-  <DialogButton focusable={true} {...props} />
+  <DialogButton focusable={!props.disabled} {...props} />
 );
 
 export const pageStyle = {
@@ -107,8 +107,10 @@ export const buttonLabelStyle = {
 export const sectionHeadingStyle = {
   width: "100%",
   paddingTop: space.md,
-  fontWeight: fontWeight.semibold,
-  fontSize: fontSize.md,
+  color: "#dcdedf",
+  fontSize: fontSize.lg,
+  fontWeight: fontWeight.medium,
+  lineHeight: "20px",
 } as const;
 
 export const focusableBlockStyle = {

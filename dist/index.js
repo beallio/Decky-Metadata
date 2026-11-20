@@ -3376,8 +3376,8 @@ var editor$o = {
 	},
 	currentMatch: "المطابقة الحالية",
 	loadFromSteam: "تحميل من Steam",
-	loadFromSteamSteamGame: "تحميل من Steam (غير متاح لألعاب Steam)",
-	loadFromSteamNoMatch: "تحميل من Steam (لا توجد مطابقة في Steam)",
+	loadFromSteamSteamGame: "غير متاح لألعاب Steam",
+	loadFromSteamNoMatch: "لا توجد مطابقة في Steam",
 	loadFromSteamBusy: "تحميل من Steam (جارٍ التحديث)",
 	fieldEdited: "معدّل",
 	fieldFromSteam: "من Steam، غير محفوظ",
@@ -3432,6 +3432,7 @@ var editor$o = {
 	compatibilityHelp: "يستخدم خيار «تلقائي» حالة التوافق في Steam للمطابقة الخاصة بكل لعبة. يرث خيار «استخدام الافتراضي العام» هذا الإعداد لهذه اللعبة. يستخدم خيار «اتّباع Valve» حالة Valve دائمًا. إذا لم تتوفر بيانات Valve، يُبقي خيار «اتّباع Valve» على حالة Steam الأصلية.",
 	compatibilityChoices: "الفئات اليدوية والافتراضية هي اختياراتك، وليست شهادة من Valve أو نتيجة أداء للمحاكي.",
 	hltbGame: "لعبة HowLongToBeat",
+	hltbSearchTitle: "البحث في HowLongToBeat",
 	hltbHelp: "ابحث في HowLongToBeat أو الصق رقم لعبة أو رابط صفحة لعبة لاختيار الأوقات المعروضة لهذه اللعبة. اتركه فارغًا للمطابقة التلقائية.",
 	hltbCurrentChosen: "اللعبة الحالية: {{name}} (مختارة)",
 	hltbCurrentAutomatic: "اللعبة الحالية: {{name}} (عُثر عليها تلقائيًا)",
@@ -3441,9 +3442,9 @@ var editor$o = {
 	steamAppIdApply: "تطبيق Steam App ID",
 	shortcut: {
 		immediateNotice: "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
-		current: "الحالي: {{name}}",
+		currentLabel: "الاسم الحالي",
 		missingName: "لم يكشف Steam عن اسم اختصار أصلي",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "اسم Steam",
 		loadingSteamName: "جارٍ تحميل اسم Steam...",
 		noOfficialName: "لم يُرجع Steam اسمًا رسميًا",
 		managementUnavailable: "إدارة أسماء الاختصارات غير متاحة",
@@ -4006,8 +4007,8 @@ var editor$n = {
 	},
 	currentMatch: "Текущо съвпадение",
 	loadFromSteam: "Зареждане от Steam",
-	loadFromSteamSteamGame: "Зареждане от Steam (недостъпно за игри от Steam)",
-	loadFromSteamNoMatch: "Зареждане от Steam (няма съвпадение в Steam)",
+	loadFromSteamSteamGame: "Недостъпно за игри от Steam",
+	loadFromSteamNoMatch: "Няма съвпадение в Steam",
 	loadFromSteamBusy: "Зареждане от Steam (обновява се)",
 	fieldEdited: "Редактирано",
 	fieldFromSteam: "От Steam, незапазено",
@@ -4062,6 +4063,7 @@ var editor$n = {
 	compatibilityHelp: "„Автоматично“ използва за всяка игра състоянието на съответстващата ѝ игра в Steam. „Използване на глобалната стойност по подразбиране“ наследява тази настройка за текущата игра. „Следване на Valve“ винаги използва състоянието от Valve. Когато няма данни от Valve, „Следване на Valve“ запазва първоначалното състояние от Steam.",
 	compatibilityChoices: "Ръчните категории и категориите по подразбиране са ваши избори, а не сертификация от Valve или резултат от производителността на емулатор.",
 	hltbGame: "Игра в HowLongToBeat",
+	hltbSearchTitle: "Търсене в HowLongToBeat",
 	hltbHelp: "Потърсете в HowLongToBeat или поставете номер на игра или връзка към страница на игра, за да изберете времената, показани за тази игра. Оставете празно за автоматично съпоставяне.",
 	hltbCurrentChosen: "Текуща игра: {{name}} (избрана)",
 	hltbCurrentAutomatic: "Текуща игра: {{name}} (намерена автоматично)",
@@ -4071,9 +4073,9 @@ var editor$n = {
 	steamAppIdApply: "Прилагане на Steam App ID",
 	shortcut: {
 		immediateNotice: "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
-		current: "Текущо: {{name}}",
+		currentLabel: "Текущо име",
 		missingName: "Steam не предостави име на вградения пряк път",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Име в Steam",
 		loadingSteamName: "Зареждане на името от Steam...",
 		noOfficialName: "Steam не върна официално име",
 		managementUnavailable: "Управлението на имената на преки пътища не е достъпно",
@@ -4638,8 +4640,8 @@ var editor$m = {
 	},
 	currentMatch: "Aktuální shoda",
 	loadFromSteam: "Načíst ze Steamu",
-	loadFromSteamSteamGame: "Načíst ze Steamu (není dostupné pro hry ze Steamu)",
-	loadFromSteamNoMatch: "Načíst ze Steamu (bez shody ve Steamu)",
+	loadFromSteamSteamGame: "Není dostupné pro hry ze Steamu",
+	loadFromSteamNoMatch: "Bez shody ve Steamu",
 	loadFromSteamBusy: "Načíst ze Steamu (probíhá aktualizace)",
 	fieldEdited: "Upraveno",
 	fieldFromSteam: "Ze Steamu, neuloženo",
@@ -4694,6 +4696,7 @@ var editor$m = {
 	compatibilityHelp: "Volba „Automaticky“ používá pro každou hru stav odpovídající hry ve Steamu. Volba „Použít globální výchozí“ pro tuto hru převezme toto nastavení. Volba „Podle Valve“ používá vždy stav od Valve. Pokud údaje od Valve nejsou k dispozici, volba „Podle Valve“ zachová původní stav ze Steamu.",
 	compatibilityChoices: "Ruční a výchozí kategorie jsou vaše volby, nikoli certifikace Valve ani výsledek výkonu emulátoru.",
 	hltbGame: "Hra HowLongToBeat",
+	hltbSearchTitle: "Hledat v HowLongToBeat",
 	hltbHelp: "Vyhledejte hru v HowLongToBeat nebo vložte číslo hry či odkaz na její stránku a vyberte časy zobrazované pro tuto hru. Nechte prázdné pro automatické spárování.",
 	hltbCurrentChosen: "Aktuální hra: {{name}} (vybráno)",
 	hltbCurrentAutomatic: "Aktuální hra: {{name}} (nalezeno automaticky)",
@@ -4703,9 +4706,9 @@ var editor$m = {
 	steamAppIdApply: "Použít Steam App ID",
 	shortcut: {
 		immediateNotice: "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
-		current: "Aktuální: {{name}}",
+		currentLabel: "Aktuální název",
 		missingName: "Steam neposkytl název nativního zástupce",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Název ve službě Steam",
 		loadingSteamName: "Načítání názvu ze Steamu...",
 		noOfficialName: "Steam nevrátil oficiální název",
 		managementUnavailable: "Správa názvů zástupců není dostupná",
@@ -5268,8 +5271,8 @@ var editor$l = {
 	},
 	currentMatch: "Aktuelle Zuordnung",
 	loadFromSteam: "Von Steam laden",
-	loadFromSteamSteamGame: "Von Steam laden (für Steam-Spiele nicht verfügbar)",
-	loadFromSteamNoMatch: "Von Steam laden (keine Steam-Zuordnung)",
+	loadFromSteamSteamGame: "Für Steam-Spiele nicht verfügbar",
+	loadFromSteamNoMatch: "Keine Steam-Zuordnung",
 	loadFromSteamBusy: "Von Steam laden (wird aktualisiert)",
 	fieldEdited: "Bearbeitet",
 	fieldFromSteam: "Von Steam, nicht gespeichert",
@@ -5324,6 +5327,7 @@ var editor$l = {
 	compatibilityHelp: "„Automatisch“ verwendet für jedes Spiel den Status des zugeordneten Steam-Spiels. „Globale Voreinstellung verwenden“ übernimmt diese Einstellung für dieses Spiel. „Valve folgen“ verwendet immer den Status von Valve. Wenn keine Valve-Daten verfügbar sind, behält „Valve folgen“ den ursprünglichen Steam-Status bei.",
 	compatibilityChoices: "Manuelle und Standard-Kategorien sind deine Auswahl, keine Valve-Zertifizierung oder ein Emulator-Leistungsergebnis.",
 	hltbGame: "HowLongToBeat-Spiel",
+	hltbSearchTitle: "HowLongToBeat durchsuchen",
 	hltbHelp: "Durchsuche HowLongToBeat oder füge eine Spielnummer bzw. einen Spielelink ein, um die für dieses Spiel angezeigten Zeiten zu wählen. Leer lassen für automatische Zuordnung.",
 	hltbCurrentChosen: "Aktuelles Spiel: {{name}} (ausgewählt)",
 	hltbCurrentAutomatic: "Aktuelles Spiel: {{name}} (automatisch gefunden)",
@@ -5333,9 +5337,9 @@ var editor$l = {
 	steamAppIdApply: "Steam-App-ID anwenden",
 	shortcut: {
 		immediateNotice: "Diese Aktionen werden sofort ausgeführt. „Speichern“ ist nicht nötig.",
-		current: "Aktuell: {{name}}",
+		currentLabel: "Aktueller Name",
 		missingName: "Steam hat keinen nativen Verknüpfungsnamen bereitgestellt",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam-Name",
 		loadingSteamName: "Steam-Name wird geladen...",
 		noOfficialName: "Steam hat keinen offiziellen Namen zurückgegeben",
 		managementUnavailable: "Verwaltung von Verknüpfungsnamen ist nicht verfügbar",
@@ -5898,8 +5902,8 @@ var editor$k = {
 	},
 	currentMatch: "Τρέχουσα αντιστοίχιση",
 	loadFromSteam: "Φόρτωση από το Steam",
-	loadFromSteamSteamGame: "Φόρτωση από το Steam (μη διαθέσιμη για παιχνίδια Steam)",
-	loadFromSteamNoMatch: "Φόρτωση από το Steam (δεν υπάρχει αντιστοίχιση στο Steam)",
+	loadFromSteamSteamGame: "Μη διαθέσιμη για παιχνίδια Steam",
+	loadFromSteamNoMatch: "Δεν υπάρχει αντιστοίχιση στο Steam",
 	loadFromSteamBusy: "Φόρτωση από το Steam (ενημέρωση σε εξέλιξη)",
 	fieldEdited: "Τροποποιήθηκε",
 	fieldFromSteam: "Από το Steam, μη αποθηκευμένο",
@@ -5954,6 +5958,7 @@ var editor$k = {
 	compatibilityHelp: "Η επιλογή «Αυτόματη» χρησιμοποιεί για κάθε παιχνίδι την κατάσταση του αντίστοιχου παιχνιδιού στο Steam. Η «Χρήση καθολικής προεπιλογής» εφαρμόζει αυτήν τη ρύθμιση στο συγκεκριμένο παιχνίδι. Η «Ακολούθηση Valve» χρησιμοποιεί πάντα την κατάσταση που ορίζει η Valve. Όταν δεν υπάρχουν διαθέσιμα δεδομένα από τη Valve, η «Ακολούθηση Valve» διατηρεί την αρχική κατάσταση του Steam.",
 	compatibilityChoices: "Οι χειροκίνητες και προεπιλεγμένες κατηγορίες είναι δικές σας επιλογές, όχι πιστοποίηση της Valve ή αποτέλεσμα απόδοσης εξομοιωτή.",
 	hltbGame: "Παιχνίδι HowLongToBeat",
+	hltbSearchTitle: "Αναζήτηση στο HowLongToBeat",
 	hltbHelp: "Αναζητήστε στο HowLongToBeat ή επικολλήστε αριθμό παιχνιδιού ή σύνδεσμο σελίδας παιχνιδιού για να επιλέξετε τους χρόνους που εμφανίζονται για αυτό το παιχνίδι. Αφήστε κενό για αυτόματη αντιστοίχιση.",
 	hltbCurrentChosen: "Τρέχον παιχνίδι: {{name}} (επιλεγμένο)",
 	hltbCurrentAutomatic: "Τρέχον παιχνίδι: {{name}} (βρέθηκε αυτόματα)",
@@ -5963,9 +5968,9 @@ var editor$k = {
 	steamAppIdApply: "Εφαρμογή Steam App ID",
 	shortcut: {
 		immediateNotice: "Αυτές οι ενέργειες εφαρμόζονται αμέσως, χωρίς να χρειάζεται να επιλέξετε «Αποθήκευση».",
-		current: "Τρέχον: {{name}}",
+		currentLabel: "Τρέχον όνομα",
 		missingName: "Το Steam δεν παρείχε εγγενές όνομα συντόμευσης",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Όνομα Steam",
 		loadingSteamName: "Φόρτωση ονόματος Steam...",
 		noOfficialName: "Το Steam δεν επέστρεψε επίσημο όνομα",
 		managementUnavailable: "Η διαχείριση ονομάτων συντομεύσεων δεν είναι διαθέσιμη",
@@ -6528,8 +6533,8 @@ var editor$j = {
 	},
 	currentMatch: "Current match",
 	loadFromSteam: "Load from Steam",
-	loadFromSteamSteamGame: "Load from Steam (Not available for Steam games)",
-	loadFromSteamNoMatch: "Load from Steam (No Steam match)",
+	loadFromSteamSteamGame: "Not available for Steam games",
+	loadFromSteamNoMatch: "No Steam match",
 	loadFromSteamBusy: "Load from Steam (Updating)",
 	fieldEdited: "Edited",
 	fieldFromSteam: "From Steam, not saved",
@@ -6584,6 +6589,7 @@ var editor$j = {
 	compatibilityHelp: "Automatic uses each game's Steam-matched status. Use global default inherits that setting for this game. Follow Valve always uses Valve's status. When Valve data is unavailable, Follow Valve keeps the original Steam status.",
 	compatibilityChoices: "Manual and default categories are your choices, not Valve certification or an emulator performance result.",
 	hltbGame: "HowLongToBeat game",
+	hltbSearchTitle: "Search HowLongToBeat",
 	hltbHelp: "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically.",
 	hltbCurrentChosen: "Current game: {{name}} (chosen)",
 	hltbCurrentAutomatic: "Current game: {{name}} (found automatically)",
@@ -6593,9 +6599,9 @@ var editor$j = {
 	steamAppIdApply: "Apply Steam App ID",
 	shortcut: {
 		immediateNotice: "These actions apply now. They do not use Save.",
-		current: "Current: {{name}}",
+		currentLabel: "Current name",
 		missingName: "Steam did not expose a native shortcut name",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam name",
 		loadingSteamName: "Loading Steam name...",
 		noOfficialName: "Steam did not return an official name",
 		managementUnavailable: "Shortcut-name management is unavailable",
@@ -7159,8 +7165,8 @@ var editor$i = {
 	},
 	currentMatch: "Coincidencia actual",
 	loadFromSteam: "Cargar desde Steam",
-	loadFromSteamSteamGame: "Cargar desde Steam (no disponible para juegos de Steam)",
-	loadFromSteamNoMatch: "Cargar desde Steam (sin coincidencia en Steam)",
+	loadFromSteamSteamGame: "No disponible para juegos de Steam",
+	loadFromSteamNoMatch: "Sin coincidencia en Steam",
 	loadFromSteamBusy: "Cargar desde Steam (actualizando)",
 	fieldEdited: "Editado",
 	fieldFromSteam: "De Steam, sin guardar",
@@ -7215,6 +7221,7 @@ var editor$i = {
 	compatibilityHelp: "«Automático» usa para cada juego el estado del juego con el que coincide en Steam. «Usar valor predeterminado global» aplica ese ajuste a este juego. «Seguir a Valve» usa siempre el estado de Valve. Si no hay datos de Valve, «Seguir a Valve» conserva el estado original de Steam.",
 	compatibilityChoices: "Las categorías manuales y predeterminadas son tus elecciones, no una certificación de Valve ni un resultado de rendimiento de un emulador.",
 	hltbGame: "Juego de HowLongToBeat",
+	hltbSearchTitle: "Buscar en HowLongToBeat",
 	hltbHelp: "Busca en HowLongToBeat, o pega un número de juego o un enlace a su página, para elegir los tiempos que se muestran para este juego. Déjalo vacío para buscar una coincidencia automáticamente.",
 	hltbCurrentChosen: "Juego actual: {{name}} (elegido)",
 	hltbCurrentAutomatic: "Juego actual: {{name}} (encontrado automáticamente)",
@@ -7224,9 +7231,9 @@ var editor$i = {
 	steamAppIdApply: "Aplicar ID de aplicación de Steam",
 	shortcut: {
 		immediateNotice: "Estas acciones se aplican inmediatamente, sin pulsar «Guardar».",
-		current: "Actual: {{name}}",
+		currentLabel: "Nombre actual",
 		missingName: "Steam no expuso un nombre de acceso directo nativo",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Nombre de Steam",
 		loadingSteamName: "Cargando el nombre de Steam...",
 		noOfficialName: "Steam no devolvió un nombre oficial",
 		managementUnavailable: "La gestión de nombres de accesos directos no está disponible",
@@ -7789,8 +7796,8 @@ var editor$h = {
 	},
 	currentMatch: "Nykyinen vastaavuus",
 	loadFromSteam: "Lataa Steamistä",
-	loadFromSteamSteamGame: "Lataa Steamistä (ei käytettävissä Steam-peleille)",
-	loadFromSteamNoMatch: "Lataa Steamistä (ei Steam-vastaavuutta)",
+	loadFromSteamSteamGame: "Ei käytettävissä Steam-peleille",
+	loadFromSteamNoMatch: "Ei Steam-vastaavuutta",
 	loadFromSteamBusy: "Lataa Steamistä (päivitetään)",
 	fieldEdited: "Muokattu",
 	fieldFromSteam: "Steamistä, ei tallennettu",
@@ -7845,6 +7852,7 @@ var editor$h = {
 	compatibilityHelp: "”Automaattinen” käyttää kullekin pelille sitä vastaavan Steam-pelin tilaa. ”Käytä yleistä oletusta” ottaa kyseisen asetuksen käyttöön tälle pelille. ”Seuraa Valvea” käyttää aina Valven ilmoittamaa tilaa. Jos Valven tietoja ei ole saatavilla, ”Seuraa Valvea” säilyttää alkuperäisen Steam-tilan.",
 	compatibilityChoices: "Manuaaliset ja oletusluokat ovat sinun valintojasi, eivät Valven sertifiointia tai emulaattorin suorituskykytulosta.",
 	hltbGame: "HowLongToBeat-peli",
+	hltbSearchTitle: "Hae HowLongToBeatistä",
 	hltbHelp: "Hae HowLongToBeatistä tai liitä pelinumero tai pelisivun linkki valitaksesi tälle pelille näytettävät ajat. Jätä tyhjäksi, jos haluat sovittaa automaattisesti.",
 	hltbCurrentChosen: "Nykyinen peli: {{name}} (valittu)",
 	hltbCurrentAutomatic: "Nykyinen peli: {{name}} (löydetty automaattisesti)",
@@ -7854,9 +7862,9 @@ var editor$h = {
 	steamAppIdApply: "Ota Steam-sovellustunnus käyttöön",
 	shortcut: {
 		immediateNotice: "Nämä toiminnot tulevat voimaan heti ilman, että sinun tarvitsee valita ”Tallenna”.",
-		current: "Nykyinen: {{name}}",
+		currentLabel: "Nykyinen nimi",
 		missingName: "Steam ei antanut alkuperäistä pikakuvakkeen nimeä",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam-nimi",
 		loadingSteamName: "Ladataan Steam-nimeä...",
 		noOfficialName: "Steam ei palauttanut virallista nimeä",
 		managementUnavailable: "Pikakuvakkeiden nimien hallinta ei ole käytettävissä",
@@ -8420,8 +8428,8 @@ var editor$g = {
 	},
 	currentMatch: "Correspondance actuelle",
 	loadFromSteam: "Charger depuis Steam",
-	loadFromSteamSteamGame: "Charger depuis Steam (indisponible pour les jeux Steam)",
-	loadFromSteamNoMatch: "Charger depuis Steam (aucune correspondance sur Steam)",
+	loadFromSteamSteamGame: "Indisponible pour les jeux Steam",
+	loadFromSteamNoMatch: "Aucune correspondance sur Steam",
 	loadFromSteamBusy: "Charger depuis Steam (mise à jour en cours)",
 	fieldEdited: "Modifié",
 	fieldFromSteam: "Depuis Steam, non enregistré",
@@ -8476,6 +8484,7 @@ var editor$g = {
 	compatibilityHelp: "« Automatique » utilise, pour chaque jeu, l’état du jeu correspondant sur Steam. « Utiliser la valeur globale par défaut » applique ce réglage à ce jeu. « Suivre Valve » utilise toujours l’état fourni par Valve. Si les données de Valve sont indisponibles, « Suivre Valve » conserve l’état Steam d’origine.",
 	compatibilityChoices: "Les catégories manuelles et par défaut sont vos choix, pas une certification Valve ni un résultat de performance d'émulateur.",
 	hltbGame: "Jeu HowLongToBeat",
+	hltbSearchTitle: "Rechercher sur HowLongToBeat",
 	hltbHelp: "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien de page, pour choisir les temps affichés pour ce jeu. Laissez vide pour associer automatiquement.",
 	hltbCurrentChosen: "Jeu actuel : {{name}} (choisi)",
 	hltbCurrentAutomatic: "Jeu actuel : {{name}} (trouvé automatiquement)",
@@ -8485,9 +8494,9 @@ var editor$g = {
 	steamAppIdApply: "Appliquer l'App ID Steam",
 	shortcut: {
 		immediateNotice: "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
-		current: "Actuel : {{name}}",
+		currentLabel: "Nom actuel",
 		missingName: "Steam n'a pas exposé de nom de raccourci natif",
-		steamName: "Steam : {{name}}",
+		steamNameLabel: "Nom Steam",
 		loadingSteamName: "Chargement du nom Steam...",
 		noOfficialName: "Steam n'a pas renvoyé de nom officiel",
 		managementUnavailable: "La gestion du nom du raccourci est indisponible",
@@ -9051,8 +9060,8 @@ var editor$f = {
 	},
 	currentMatch: "Corrispondenza attuale",
 	loadFromSteam: "Carica da Steam",
-	loadFromSteamSteamGame: "Carica da Steam (non disponibile per i giochi di Steam)",
-	loadFromSteamNoMatch: "Carica da Steam (nessuna corrispondenza su Steam)",
+	loadFromSteamSteamGame: "Non disponibile per i giochi di Steam",
+	loadFromSteamNoMatch: "Nessuna corrispondenza su Steam",
 	loadFromSteamBusy: "Carica da Steam (aggiornamento in corso)",
 	fieldEdited: "Modificato",
 	fieldFromSteam: "Da Steam, non salvato",
@@ -9107,6 +9116,7 @@ var editor$f = {
 	compatibilityHelp: "«Automatico» usa lo stato del gioco corrispondente su Steam. «Usa il valore predefinito globale» applica l'impostazione globale a questo gioco. «Segui Valve» usa sempre lo stato fornito da Valve. Se i dati di Valve non sono disponibili, «Segui Valve» mantiene lo stato originale di Steam.",
 	compatibilityChoices: "Le categorie manuali e predefinite sono scelte tue, non una certificazione Valve né un risultato di prestazioni dell'emulatore.",
 	hltbGame: "Gioco HowLongToBeat",
+	hltbSearchTitle: "Cerca su HowLongToBeat",
 	hltbHelp: "Cerca su HowLongToBeat, oppure incolla un numero di gioco o un link a una pagina di gioco, per scegliere i tempi mostrati per questo gioco. Lascia vuoto per abbinare automaticamente.",
 	hltbCurrentChosen: "Gioco attuale: {{name}} (scelto)",
 	hltbCurrentAutomatic: "Gioco attuale: {{name}} (trovato automaticamente)",
@@ -9116,9 +9126,9 @@ var editor$f = {
 	steamAppIdApply: "Applica l'ID app Steam",
 	shortcut: {
 		immediateNotice: "Queste azioni si applicano subito, senza premere «Salva».",
-		current: "Attuale: {{name}}",
+		currentLabel: "Nome attuale",
 		missingName: "Steam non ha fornito un nome nativo per il collegamento",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Nome Steam",
 		loadingSteamName: "Caricamento del nome Steam...",
 		noOfficialName: "Steam non ha restituito un nome ufficiale",
 		managementUnavailable: "La gestione del nome del collegamento non è disponibile",
@@ -9680,8 +9690,8 @@ var editor$e = {
 	},
 	currentMatch: "現在の一致",
 	loadFromSteam: "Steam から読み込む",
-	loadFromSteamSteamGame: "Steam から読み込む（Steam ゲームでは利用不可）",
-	loadFromSteamNoMatch: "Steam から読み込む（Steam で一致するゲームなし）",
+	loadFromSteamSteamGame: "Steam ゲームでは利用不可",
+	loadFromSteamNoMatch: "Steam で一致するゲームなし",
 	loadFromSteamBusy: "Steam から読み込む（更新中）",
 	fieldEdited: "編集済み",
 	fieldFromSteam: "Steam から取得、未保存",
@@ -9736,6 +9746,7 @@ var editor$e = {
 	compatibilityHelp: "「自動」では、Steam で一致したゲームのステータスがゲームごとに適用されます。「グローバル既定値を使用」では、このゲームにグローバル設定が適用されます。「Valve に従う」では、常に Valve のステータスが使用されます。Valve のデータが利用できない場合は、Steam の元のステータスが維持されます。",
 	compatibilityChoices: "手動および既定のカテゴリはユーザーの選択であり、Valve の認定やエミュレーターのパフォーマンス結果ではありません。",
 	hltbGame: "HowLongToBeat ゲーム",
+	hltbSearchTitle: "HowLongToBeat を検索",
 	hltbHelp: "HowLongToBeat を検索するか、ゲーム番号またはゲームページのリンクを貼り付けて、このゲームで表示する時間を選択します。空欄のままにすると自動で照合します。",
 	hltbCurrentChosen: "現在のゲーム: {{name}}（選択済み）",
 	hltbCurrentAutomatic: "現在のゲーム: {{name}}（自動検出）",
@@ -9745,9 +9756,9 @@ var editor$e = {
 	steamAppIdApply: "Steam アプリ ID を適用",
 	shortcut: {
 		immediateNotice: "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
-		current: "現在: {{name}}",
+		currentLabel: "現在の名前",
 		missingName: "Steam がネイティブのショートカット名を公開していません",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam の名前",
 		loadingSteamName: "Steam 名を読み込み中...",
 		noOfficialName: "Steam が正式な名前を返しませんでした",
 		managementUnavailable: "ショートカット名の管理を利用できません",
@@ -10310,8 +10321,8 @@ var editor$d = {
 	},
 	currentMatch: "მიმდინარე შესატყვისი",
 	loadFromSteam: "Steam-იდან ჩატვირთვა",
-	loadFromSteamSteamGame: "Steam-იდან ჩატვირთვა (Steam-ის თამაშებისთვის მიუწვდომელია)",
-	loadFromSteamNoMatch: "Steam-იდან ჩატვირთვა (Steam-ის შესატყვისი არ არის)",
+	loadFromSteamSteamGame: "Steam-ის თამაშებისთვის მიუწვდომელია",
+	loadFromSteamNoMatch: "Steam-ის შესატყვისი არ არის",
 	loadFromSteamBusy: "Steam-იდან ჩატვირთვა (მიმდინარეობს განახლება)",
 	fieldEdited: "შეცვლილია",
 	fieldFromSteam: "Steam-იდან, შეუნახავი",
@@ -10366,6 +10377,7 @@ var editor$d = {
 	compatibilityHelp: "„ავტომატური“ თითოეული თამაშისთვის Steam-ში მისი შესატყვისის სტატუსს იყენებს. „გლობალური ნაგულისხმევის გამოყენება“ ამ თამაშზე გლობალურ პარამეტრს ავრცელებს. „Valve-ის მიყოლა“ ყოველთვის Valve-ის სტატუსს იყენებს. თუ Valve-ის მონაცემები მიუწვდომელია, „Valve-ის მიყოლა“ Steam-ის თავდაპირველ სტატუსს ინარჩუნებს.",
 	compatibilityChoices: "ხელით არჩეული და ნაგულისხმევი კატეგორიები თქვენი არჩევანია და არა Valve-ის სერტიფიკატი ან ემულატორის მუშაობის შედეგი.",
 	hltbGame: "HowLongToBeat-ის თამაში",
+	hltbSearchTitle: "HowLongToBeat-ზე ძებნა",
 	hltbHelp: "მოძებნეთ HowLongToBeat-ში ან ჩასვით თამაშის ნომერი ან თამაშის გვერდის ბმული, რათა აირჩიოთ ამ თამაშისთვის საჩვენებელი დროები. დატოვეთ ცარიელი ავტომატური შესაბამებისთვის.",
 	hltbCurrentChosen: "მიმდინარე თამაში: {{name}} (არჩეული)",
 	hltbCurrentAutomatic: "მიმდინარე თამაში: {{name}} (ავტომატურად ნაპოვნი)",
@@ -10375,9 +10387,9 @@ var editor$d = {
 	steamAppIdApply: "Steam App ID-ის გამოყენება",
 	shortcut: {
 		immediateNotice: "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
-		current: "მიმდინარე: {{name}}",
+		currentLabel: "მიმდინარე სახელი",
 		missingName: "Steam-მა მალსახმობის ნატიური სახელი არ გასცა",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam-ის სახელი",
 		loadingSteamName: "Steam-ის სახელი იტვირთება...",
 		noOfficialName: "Steam-მა ოფიციალური სახელი არ დააბრუნა",
 		managementUnavailable: "მალსახმობის სახელის მართვა მიუწვდომელია",
@@ -10939,8 +10951,8 @@ var editor$c = {
 	},
 	currentMatch: "현재 일치 항목",
 	loadFromSteam: "Steam에서 불러오기",
-	loadFromSteamSteamGame: "Steam에서 불러오기 (Steam 게임에서는 사용할 수 없음)",
-	loadFromSteamNoMatch: "Steam에서 불러오기 (Steam 일치 항목 없음)",
+	loadFromSteamSteamGame: "Steam 게임에서는 사용할 수 없음",
+	loadFromSteamNoMatch: "Steam 일치 항목 없음",
 	loadFromSteamBusy: "Steam에서 불러오기 (업데이트 중)",
 	fieldEdited: "수정됨",
 	fieldFromSteam: "Steam에서 가져옴, 저장 안 됨",
@@ -10995,6 +11007,7 @@ var editor$c = {
 	compatibilityHelp: "‘자동’은 각 게임에 대응하는 Steam 게임의 상태를 사용합니다. ‘전역 기본값 사용’은 이 게임에 전역 설정을 적용합니다. ‘Valve 따르기’는 항상 Valve의 상태를 사용합니다. Valve 데이터를 사용할 수 없으면 ‘Valve 따르기’는 원래 Steam 상태를 유지합니다.",
 	compatibilityChoices: "수동 및 기본 범주는 사용자의 선택이며 Valve 인증이나 에뮬레이터 성능 결과가 아닙니다.",
 	hltbGame: "HowLongToBeat 게임",
+	hltbSearchTitle: "HowLongToBeat 검색",
 	hltbHelp: "HowLongToBeat를 검색하거나 게임 번호 또는 게임 페이지 링크를 붙여 넣어 이 게임에 표시할 시간을 선택합니다. 비워 두면 자동으로 일치시킵니다.",
 	hltbCurrentChosen: "현재 게임: {{name}} (선택됨)",
 	hltbCurrentAutomatic: "현재 게임: {{name}} (자동 검색됨)",
@@ -11004,9 +11017,9 @@ var editor$c = {
 	steamAppIdApply: "Steam 앱 ID 적용",
 	shortcut: {
 		immediateNotice: "이 작업은 즉시 적용되며, ‘저장’을 누를 필요가 없습니다.",
-		current: "현재: {{name}}",
+		currentLabel: "현재 이름",
 		missingName: "Steam이 네이티브 바로가기 이름을 제공하지 않았습니다",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam 이름",
 		loadingSteamName: "Steam 이름 불러오는 중...",
 		noOfficialName: "Steam이 공식 이름을 반환하지 않았습니다",
 		managementUnavailable: "바로가기 이름 관리를 사용할 수 없습니다",
@@ -11569,8 +11582,8 @@ var editor$b = {
 	},
 	currentMatch: "Huidige match",
 	loadFromSteam: "Laden vanuit Steam",
-	loadFromSteamSteamGame: "Laden vanuit Steam (niet beschikbaar voor Steam-games)",
-	loadFromSteamNoMatch: "Laden vanuit Steam (geen Steam-match)",
+	loadFromSteamSteamGame: "Niet beschikbaar voor Steam-games",
+	loadFromSteamNoMatch: "Geen Steam-match",
 	loadFromSteamBusy: "Laden vanuit Steam (bezig met bijwerken)",
 	fieldEdited: "Bewerkt",
 	fieldFromSteam: "Van Steam, niet opgeslagen",
@@ -11625,6 +11638,7 @@ var editor$b = {
 	compatibilityHelp: "Bij ‘Automatisch’ wordt voor elke game de status van de bijbehorende game op Steam gebruikt. ‘Globale standaard gebruiken’ past de globale instelling toe op deze game. ‘Valve volgen’ gebruikt altijd de status van Valve. Zijn er geen gegevens van Valve beschikbaar, dan behoudt ‘Valve volgen’ de oorspronkelijke Steam-status.",
 	compatibilityChoices: "Handmatige en standaardcategorieën zijn jouw keuzes, geen Valve-certificering of een emulatorprestatieresultaat.",
 	hltbGame: "HowLongToBeat-game",
+	hltbSearchTitle: "Zoeken op HowLongToBeat",
 	hltbHelp: "Doorzoek HowLongToBeat of plak een gamenummer of link naar de spelpagina om de tijden te kiezen die voor deze game worden getoond. Laat leeg om automatisch te matchen.",
 	hltbCurrentChosen: "Huidige game: {{name}} (gekozen)",
 	hltbCurrentAutomatic: "Huidige game: {{name}} (automatisch gevonden)",
@@ -11634,9 +11648,9 @@ var editor$b = {
 	steamAppIdApply: "Steam-app-ID toepassen",
 	shortcut: {
 		immediateNotice: "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
-		current: "Huidige: {{name}}",
+		currentLabel: "Huidige naam",
 		missingName: "Steam heeft geen native naam voor de snelkoppeling beschikbaar gesteld",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam-naam",
 		loadingSteamName: "Steam-naam laden...",
 		noOfficialName: "Steam heeft geen officiële naam teruggegeven",
 		managementUnavailable: "Beheer van snelkoppelingsnamen is niet beschikbaar",
@@ -12201,8 +12215,8 @@ var editor$a = {
 	},
 	currentMatch: "Bieżące dopasowanie",
 	loadFromSteam: "Wczytaj ze Steam",
-	loadFromSteamSteamGame: "Wczytaj ze Steam (niedostępne dla gier ze Steam)",
-	loadFromSteamNoMatch: "Wczytaj ze Steam (brak dopasowania na Steam)",
+	loadFromSteamSteamGame: "Niedostępne dla gier ze Steam",
+	loadFromSteamNoMatch: "Brak dopasowania na Steam",
 	loadFromSteamBusy: "Wczytaj ze Steam (trwa aktualizacja)",
 	fieldEdited: "Edytowano",
 	fieldFromSteam: "Ze Steam, niezapisane",
@@ -12257,6 +12271,7 @@ var editor$a = {
 	compatibilityHelp: "Opcja „Automatycznie” używa dla każdej gry statusu jej odpowiednika w Steam. Opcja „Użyj ustawienia globalnego” stosuje ustawienie globalne do tej gry. Opcja „Zgodnie z Valve” zawsze używa statusu Valve. Jeśli dane Valve są niedostępne, opcja „Zgodnie z Valve” zachowuje oryginalny status Steam.",
 	compatibilityChoices: "Ręczne kategorie i kategorie domyślne to Twoje wybory, a nie certyfikacja Valve ani wynik wydajności emulatora.",
 	hltbGame: "Gra HowLongToBeat",
+	hltbSearchTitle: "Szukaj w HowLongToBeat",
 	hltbHelp: "Wyszukaj grę w HowLongToBeat lub wklej numer gry albo link do jej strony, aby wybrać czasy pokazywane dla tej gry. Pozostaw puste, aby dopasować automatycznie.",
 	hltbCurrentChosen: "Bieżąca gra: {{name}} (wybrana)",
 	hltbCurrentAutomatic: "Bieżąca gra: {{name}} (znaleziona automatycznie)",
@@ -12266,9 +12281,9 @@ var editor$a = {
 	steamAppIdApply: "Zastosuj Steam App ID",
 	shortcut: {
 		immediateNotice: "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
-		current: "Bieżąca: {{name}}",
+		currentLabel: "Bieżąca nazwa",
 		missingName: "Steam nie udostępnił nazwy natywnego skrótu",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Nazwa Steam",
 		loadingSteamName: "Wczytywanie nazwy Steam...",
 		noOfficialName: "Steam nie zwrócił oficjalnej nazwy",
 		managementUnavailable: "Zarządzanie nazwami skrótów jest niedostępne",
@@ -12832,8 +12847,8 @@ var editor$9 = {
 	},
 	currentMatch: "Correspondência atual",
 	loadFromSteam: "Carregar da Steam",
-	loadFromSteamSteamGame: "Carregar da Steam (indisponível para jogos da Steam)",
-	loadFromSteamNoMatch: "Carregar da Steam (sem correspondência na Steam)",
+	loadFromSteamSteamGame: "Indisponível para jogos da Steam",
+	loadFromSteamNoMatch: "Sem correspondência na Steam",
 	loadFromSteamBusy: "Carregar da Steam (atualizando)",
 	fieldEdited: "Editado",
 	fieldFromSteam: "Da Steam, não salvo",
@@ -12888,6 +12903,7 @@ var editor$9 = {
 	compatibilityHelp: "A opção “Automático” usa, para cada jogo, o status do jogo correspondente na Steam. A opção “Usar padrão global” aplica a configuração global a este jogo. A opção “Seguir a Valve” sempre usa o status da Valve. Quando os dados da Valve não estão disponíveis, “Seguir a Valve” mantém o status original da Steam.",
 	compatibilityChoices: "As categorias manuais e padrão são suas escolhas, não uma certificação da Valve nem o resultado de desempenho de um emulador.",
 	hltbGame: "Jogo no HowLongToBeat",
+	hltbSearchTitle: "Pesquisar no HowLongToBeat",
 	hltbHelp: "Pesquise no HowLongToBeat, ou cole o número ou o link da página do jogo, para escolher os tempos exibidos para este jogo. Deixe em branco para corresponder automaticamente.",
 	hltbCurrentChosen: "Jogo atual: {{name}} (escolhido)",
 	hltbCurrentAutomatic: "Jogo atual: {{name}} (encontrado automaticamente)",
@@ -12897,9 +12913,9 @@ var editor$9 = {
 	steamAppIdApply: "Aplicar App ID da Steam",
 	shortcut: {
 		immediateNotice: "Essas ações são aplicadas imediatamente, sem precisar selecionar “Salvar”.",
-		current: "Atual: {{name}}",
+		currentLabel: "Nome atual",
 		missingName: "A Steam não expôs um nome nativo para o atalho",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Nome da Steam",
 		loadingSteamName: "Carregando nome da Steam...",
 		noOfficialName: "A Steam não retornou um nome oficial",
 		managementUnavailable: "O gerenciamento de nomes de atalho está indisponível",
@@ -13463,8 +13479,8 @@ var editor$8 = {
 	},
 	currentMatch: "Correspondência atual",
 	loadFromSteam: "Carregar a partir da Steam",
-	loadFromSteamSteamGame: "Carregar a partir da Steam (indisponível para jogos da Steam)",
-	loadFromSteamNoMatch: "Carregar a partir da Steam (sem correspondência na Steam)",
+	loadFromSteamSteamGame: "Indisponível para jogos da Steam",
+	loadFromSteamNoMatch: "Sem correspondência na Steam",
 	loadFromSteamBusy: "Carregar a partir da Steam (a atualizar)",
 	fieldEdited: "Editado",
 	fieldFromSteam: "Da Steam, não guardado",
@@ -13519,6 +13535,7 @@ var editor$8 = {
 	compatibilityHelp: "A opção «Automático» usa, para cada jogo, o estado do jogo correspondente na Steam. A opção «Usar predefinição global» aplica a definição global a este jogo. A opção «Seguir a Valve» usa sempre o estado da Valve. Quando os dados da Valve não estão disponíveis, «Seguir a Valve» mantém o estado original da Steam.",
 	compatibilityChoices: "As categorias manuais e predefinidas são escolhas suas, não uma certificação da Valve nem o resultado de desempenho de um emulador.",
 	hltbGame: "Jogo no HowLongToBeat",
+	hltbSearchTitle: "Pesquisar no HowLongToBeat",
 	hltbHelp: "Pesquise no HowLongToBeat, ou cole o número ou a ligação da página do jogo, para escolher os tempos mostrados para este jogo. Deixe vazio para corresponder automaticamente.",
 	hltbCurrentChosen: "Jogo atual: {{name}} (escolhido)",
 	hltbCurrentAutomatic: "Jogo atual: {{name}} (encontrado automaticamente)",
@@ -13528,9 +13545,9 @@ var editor$8 = {
 	steamAppIdApply: "Aplicar App ID da Steam",
 	shortcut: {
 		immediateNotice: "Estas ações são aplicadas de imediato, sem ter de selecionar «Guardar».",
-		current: "Atual: {{name}}",
+		currentLabel: "Nome atual",
 		missingName: "A Steam não expôs um nome nativo para o atalho",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Nome da Steam",
 		loadingSteamName: "A carregar o nome da Steam...",
 		noOfficialName: "A Steam não devolveu um nome oficial",
 		managementUnavailable: "A gestão de nomes de atalhos está indisponível",
@@ -14094,8 +14111,8 @@ var editor$7 = {
 	},
 	currentMatch: "Potrivirea curentă",
 	loadFromSteam: "Încarcă din Steam",
-	loadFromSteamSteamGame: "Încarcă din Steam (indisponibil pentru jocurile Steam)",
-	loadFromSteamNoMatch: "Încarcă din Steam (nicio potrivire Steam)",
+	loadFromSteamSteamGame: "Indisponibil pentru jocurile Steam",
+	loadFromSteamNoMatch: "Nicio potrivire Steam",
 	loadFromSteamBusy: "Încarcă din Steam (se actualizează)",
 	fieldEdited: "Editat",
 	fieldFromSteam: "Din Steam, nesalvat",
@@ -14150,6 +14167,7 @@ var editor$7 = {
 	compatibilityHelp: "„Automat” folosește starea din Steam a jocului asociat. „Folosește valoarea implicită globală” preia această setare pentru jocul curent. „Urmărește Valve” folosește întotdeauna starea stabilită de Valve. Dacă datele Valve nu sunt disponibile, „Urmărește Valve” păstrează starea Steam originală.",
 	compatibilityChoices: "Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve sau un rezultat de performanță al emulatorului.",
 	hltbGame: "Joc HowLongToBeat",
+	hltbSearchTitle: "Caută pe HowLongToBeat",
 	hltbHelp: "Caută pe HowLongToBeat sau lipește un număr de joc ori un link către pagina jocului pentru a alege timpii afișați pentru acest joc. Lasă gol pentru potrivire automată.",
 	hltbCurrentChosen: "Jocul curent: {{name}} (ales)",
 	hltbCurrentAutomatic: "Jocul curent: {{name}} (găsit automat)",
@@ -14159,9 +14177,9 @@ var editor$7 = {
 	steamAppIdApply: "Aplică ID-ul de aplicație Steam",
 	shortcut: {
 		immediateNotice: "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
-		current: "Curent: {{name}}",
+		currentLabel: "Numele curent",
 		missingName: "Steam nu a expus un nume nativ pentru scurtătură",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Numele Steam",
 		loadingSteamName: "Se încarcă numele Steam...",
 		noOfficialName: "Steam nu a returnat un nume oficial",
 		managementUnavailable: "Gestionarea numelor scurtăturilor nu este disponibilă",
@@ -14726,8 +14744,8 @@ var editor$6 = {
 	},
 	currentMatch: "Текущее совпадение",
 	loadFromSteam: "Загрузить из Steam",
-	loadFromSteamSteamGame: "Загрузить из Steam (недоступно для игр Steam)",
-	loadFromSteamNoMatch: "Загрузить из Steam (нет совпадения в Steam)",
+	loadFromSteamSteamGame: "Недоступно для игр Steam",
+	loadFromSteamNoMatch: "Нет совпадения в Steam",
 	loadFromSteamBusy: "Загрузить из Steam (идёт обновление)",
 	fieldEdited: "Изменено",
 	fieldFromSteam: "Из Steam, не сохранено",
@@ -14782,6 +14800,7 @@ var editor$6 = {
 	compatibilityHelp: "В режиме «Автоматически» для каждой игры используется статус соответствующей игры в Steam. Пункт «Использовать глобальное значение по умолчанию» применяет эту настройку к данной игре. Режим «Как у Valve» всегда использует статус Valve. Если данные Valve недоступны, он сохраняет исходный статус Steam.",
 	compatibilityChoices: "Ручные категории и категории по умолчанию — ваш выбор, а не сертификация Valve или результат производительности эмулятора.",
 	hltbGame: "Игра HowLongToBeat",
+	hltbSearchTitle: "Поиск в HowLongToBeat",
 	hltbHelp: "Найдите игру в HowLongToBeat или вставьте номер игры либо ссылку на её страницу, чтобы выбрать отображаемое для этой игры время. Оставьте пустым для автоматического сопоставления.",
 	hltbCurrentChosen: "Текущая игра: {{name}} (выбрана)",
 	hltbCurrentAutomatic: "Текущая игра: {{name}} (найдена автоматически)",
@@ -14791,9 +14810,9 @@ var editor$6 = {
 	steamAppIdApply: "Применить Steam App ID",
 	shortcut: {
 		immediateNotice: "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
-		current: "Текущее: {{name}}",
+		currentLabel: "Текущее имя",
 		missingName: "Steam не предоставил штатное название ярлыка",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Имя Steam",
 		loadingSteamName: "Загрузка названия Steam...",
 		noOfficialName: "Steam не вернул официальное название",
 		managementUnavailable: "Управление названиями ярлыков недоступно",
@@ -15356,8 +15375,8 @@ var editor$5 = {
 	},
 	currentMatch: "Përputhja aktuale",
 	loadFromSteam: "Ngarko nga Steam",
-	loadFromSteamSteamGame: "Ngarko nga Steam (nuk ofrohet për lojërat e Steam)",
-	loadFromSteamNoMatch: "Ngarko nga Steam (pa përputhje në Steam)",
+	loadFromSteamSteamGame: "Nuk ofrohet për lojërat e Steam",
+	loadFromSteamNoMatch: "Pa përputhje në Steam",
 	loadFromSteamBusy: "Ngarko nga Steam (po përditësohet)",
 	fieldEdited: "Ndryshuar",
 	fieldFromSteam: "Nga Steam, nuk është ruajtur",
@@ -15412,6 +15431,7 @@ var editor$5 = {
 	compatibilityHelp: "„Automatike“ përdor për çdo lojë gjendjen e lojës përkatëse në Steam. „Përdor parazgjedhjen globale“ trashëgon atë cilësim për këtë lojë. „Ndiq Valve“ përdor gjithmonë gjendjen e përcaktuar nga Valve. Kur të dhënat e Valve nuk janë të disponueshme, „Ndiq Valve“ ruan gjendjen origjinale në Steam.",
 	compatibilityChoices: "Kategoritë manuale dhe ato të paracaktuara janë zgjedhjet e tua, jo certifikim i Valve ose rezultat i performancës së emulatorit.",
 	hltbGame: "Loja në HowLongToBeat",
+	hltbSearchTitle: "Kërko në HowLongToBeat",
 	hltbHelp: "Kërko në HowLongToBeat ose ngjit një numër loje ose lidhje faqeje loje për të zgjedhur kohët që shfaqen për këtë lojë. Lëre bosh për përputhje automatike.",
 	hltbCurrentChosen: "Loja aktuale: {{name}} (e zgjedhur)",
 	hltbCurrentAutomatic: "Loja aktuale: {{name}} (gjetur automatikisht)",
@@ -15421,9 +15441,9 @@ var editor$5 = {
 	steamAppIdApply: "Zbato Steam App ID",
 	shortcut: {
 		immediateNotice: "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
-		current: "Aktual: {{name}}",
+		currentLabel: "Emri aktual",
 		missingName: "Steam nuk ekspozoi një emër shkurtoreje vendase",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Emri i Steam",
 		loadingSteamName: "Po ngarkohet emri nga Steam...",
 		noOfficialName: "Steam nuk ktheu një emër zyrtar",
 		managementUnavailable: "Menaxhimi i emrave të shkurtoreve nuk është i disponueshëm",
@@ -15986,8 +16006,8 @@ var editor$4 = {
 	},
 	currentMatch: "Aktuell matchning",
 	loadFromSteam: "Läs in från Steam",
-	loadFromSteamSteamGame: "Läs in från Steam (inte tillgängligt för Steam-spel)",
-	loadFromSteamNoMatch: "Läs in från Steam (ingen Steam-matchning)",
+	loadFromSteamSteamGame: "Inte tillgängligt för Steam-spel",
+	loadFromSteamNoMatch: "Ingen Steam-matchning",
 	loadFromSteamBusy: "Läs in från Steam (uppdatering pågår)",
 	fieldEdited: "Ändrad",
 	fieldFromSteam: "Från Steam, inte sparat",
@@ -16042,6 +16062,7 @@ var editor$4 = {
 	compatibilityHelp: "Automatisk använder statusen för varje spels matchning i Steam. Använd global standard ärver den inställningen för det här spelet. Följ Valve använder alltid Valves status. Om data från Valve saknas behåller Följ Valve den ursprungliga Steam-statusen.",
 	compatibilityChoices: "Manuella kategorier och standardkategorier är dina val, inte Valves certifiering eller ett resultat för emulatorprestanda.",
 	hltbGame: "HowLongToBeat-spel",
+	hltbSearchTitle: "Sök på HowLongToBeat",
 	hltbHelp: "Sök på HowLongToBeat eller klistra in ett spelnummer eller en länk till spelsidan för att välja tiderna som visas för det här spelet. Lämna tomt för att matcha automatiskt.",
 	hltbCurrentChosen: "Aktuellt spel: {{name}} (valt)",
 	hltbCurrentAutomatic: "Aktuellt spel: {{name}} (hittat automatiskt)",
@@ -16051,9 +16072,9 @@ var editor$4 = {
 	steamAppIdApply: "Tillämpa Steam-app-ID",
 	shortcut: {
 		immediateNotice: "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
-		current: "Aktuellt: {{name}}",
+		currentLabel: "Aktuellt namn",
 		missingName: "Steam angav inget inbyggt genvägsnamn",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam-namn",
 		loadingSteamName: "Läser in Steam-namnet...",
 		noOfficialName: "Steam returnerade inget officiellt namn",
 		managementUnavailable: "Hantering av genvägsnamn är inte tillgänglig",
@@ -16616,8 +16637,8 @@ var editor$3 = {
 	},
 	currentMatch: "Geçerli eşleşme",
 	loadFromSteam: "Steam'den yükle",
-	loadFromSteamSteamGame: "Steam'den yükle (Steam oyunları için kullanılamaz)",
-	loadFromSteamNoMatch: "Steam'den yükle (Steam eşleşmesi yok)",
+	loadFromSteamSteamGame: "Steam oyunları için kullanılamaz",
+	loadFromSteamNoMatch: "Steam eşleşmesi yok",
 	loadFromSteamBusy: "Steam'den yükle (güncelleniyor)",
 	fieldEdited: "Düzenlendi",
 	fieldFromSteam: "Steam'den, kaydedilmedi",
@@ -16672,6 +16693,7 @@ var editor$3 = {
 	compatibilityHelp: "Otomatik seçeneği, her oyun için Steam'de eşleşen oyunun durumunu kullanır. Genel varsayılanı kullan seçeneği, bu oyun için o ayarı devralır. Valve'ı Takip Et seçeneği her zaman Valve'ın belirlediği durumu kullanır. Valve verileri kullanılamadığında özgün Steam durumu korunur.",
 	compatibilityChoices: "Elle seçilen ve varsayılan kategoriler sizin seçimlerinizdir; Valve sertifikası veya emülatör performans sonucu değildir.",
 	hltbGame: "HowLongToBeat oyunu",
+	hltbSearchTitle: "HowLongToBeat'te ara",
 	hltbHelp: "Bu oyun için gösterilecek süreleri seçmek üzere HowLongToBeat'te arayın veya bir oyun numarası ya da oyun sayfası bağlantısı yapıştırın. Otomatik eşleştirmek için boş bırakın.",
 	hltbCurrentChosen: "Geçerli oyun: {{name}} (seçildi)",
 	hltbCurrentAutomatic: "Geçerli oyun: {{name}} (otomatik bulundu)",
@@ -16681,9 +16703,9 @@ var editor$3 = {
 	steamAppIdApply: "Steam Uygulama ID'sini uygula",
 	shortcut: {
 		immediateNotice: "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
-		current: "Geçerli: {{name}}",
+		currentLabel: "Geçerli ad",
 		missingName: "Steam yerel bir kısayol adı sunmadı",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Steam adı",
 		loadingSteamName: "Steam adı yükleniyor...",
 		noOfficialName: "Steam resmî bir ad döndürmedi",
 		managementUnavailable: "Kısayol adı yönetimi kullanılamıyor",
@@ -17248,8 +17270,8 @@ var editor$2 = {
 	},
 	currentMatch: "Поточний збіг",
 	loadFromSteam: "Завантажити зі Steam",
-	loadFromSteamSteamGame: "Завантажити зі Steam (недоступно для ігор Steam)",
-	loadFromSteamNoMatch: "Завантажити зі Steam (немає збігу у Steam)",
+	loadFromSteamSteamGame: "Недоступно для ігор Steam",
+	loadFromSteamNoMatch: "Немає збігу у Steam",
 	loadFromSteamBusy: "Завантажити зі Steam (оновлення)",
 	fieldEdited: "Змінено",
 	fieldFromSteam: "Зі Steam, не збережено",
@@ -17304,6 +17326,7 @@ var editor$2 = {
 	compatibilityHelp: "«Автоматично» використовує для кожної гри статус відповідної гри в Steam. «Використовувати глобальне значення за замовчуванням» успадковує це налаштування для поточної гри. «Як у Valve» завжди використовує статус Valve. Якщо дані Valve недоступні, цей режим зберігає початковий статус Steam.",
 	compatibilityChoices: "Ручні категорії та категорії за замовчуванням — ваш вибір, а не сертифікація Valve чи результат продуктивності емулятора.",
 	hltbGame: "Гра HowLongToBeat",
+	hltbSearchTitle: "Пошук у HowLongToBeat",
 	hltbHelp: "Знайдіть гру в HowLongToBeat або вставте номер гри чи посилання на її сторінку, щоб вибрати час, який показується для цієї гри. Залиште порожнім для автоматичного зіставлення.",
 	hltbCurrentChosen: "Поточна гра: {{name}} (вибрано)",
 	hltbCurrentAutomatic: "Поточна гра: {{name}} (знайдено автоматично)",
@@ -17313,9 +17336,9 @@ var editor$2 = {
 	steamAppIdApply: "Застосувати Steam App ID",
 	shortcut: {
 		immediateNotice: "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
-		current: "Поточна: {{name}}",
+		currentLabel: "Поточна назва",
 		missingName: "Steam не надав назву власного ярлика",
-		steamName: "Steam: {{name}}",
+		steamNameLabel: "Назва Steam",
 		loadingSteamName: "Завантаження назви Steam...",
 		noOfficialName: "Steam не повернув офіційну назву",
 		managementUnavailable: "Керування назвами ярликів недоступне",
@@ -17877,8 +17900,8 @@ var editor$1 = {
 	},
 	currentMatch: "当前匹配",
 	loadFromSteam: "从 Steam 加载",
-	loadFromSteamSteamGame: "从 Steam 加载（不适用于 Steam 游戏）",
-	loadFromSteamNoMatch: "从 Steam 加载（无 Steam 匹配）",
+	loadFromSteamSteamGame: "不适用于 Steam 游戏",
+	loadFromSteamNoMatch: "无 Steam 匹配",
 	loadFromSteamBusy: "从 Steam 加载（正在更新）",
 	fieldEdited: "已编辑",
 	fieldFromSteam: "来自 Steam，未保存",
@@ -17933,6 +17956,7 @@ var editor$1 = {
 	compatibilityHelp: "“自动”使用每款游戏在 Steam 上匹配到的游戏的兼容性状态。“使用全局默认值”会对此游戏沿用该设置。“跟随 Valve”始终使用 Valve 提供的状态；若 Valve 数据不可用，则保留 Steam 的原始状态。",
 	compatibilityChoices: "手动和默认分类是你的选择，并非 Valve 认证，也不是模拟器性能结果。",
 	hltbGame: "HowLongToBeat 游戏",
+	hltbSearchTitle: "搜索 HowLongToBeat",
 	hltbHelp: "搜索 HowLongToBeat，或粘贴游戏编号或游戏页面链接，以选择此游戏显示的时长。留空则自动匹配。",
 	hltbCurrentChosen: "当前游戏：{{name}}（已选择）",
 	hltbCurrentAutomatic: "当前游戏：{{name}}（自动匹配）",
@@ -17942,9 +17966,9 @@ var editor$1 = {
 	steamAppIdApply: "应用 Steam App ID",
 	shortcut: {
 		immediateNotice: "这些操作立即生效，无需点击“保存”。",
-		current: "当前：{{name}}",
+		currentLabel: "当前名称",
 		missingName: "Steam 未提供原生快捷方式名称",
-		steamName: "Steam：{{name}}",
+		steamNameLabel: "Steam 名称",
 		loadingSteamName: "正在加载 Steam 名称...",
 		noOfficialName: "Steam 未返回官方名称",
 		managementUnavailable: "快捷方式名称管理不可用",
@@ -18506,8 +18530,8 @@ var editor = {
 	},
 	currentMatch: "目前比對",
 	loadFromSteam: "從 Steam 載入",
-	loadFromSteamSteamGame: "從 Steam 載入（不適用於 Steam 遊戲）",
-	loadFromSteamNoMatch: "從 Steam 載入（無 Steam 比對結果）",
+	loadFromSteamSteamGame: "不適用於 Steam 遊戲",
+	loadFromSteamNoMatch: "無 Steam 比對結果",
 	loadFromSteamBusy: "從 Steam 載入（正在更新）",
 	fieldEdited: "已編輯",
 	fieldFromSteam: "來自 Steam，未儲存",
@@ -18562,6 +18586,7 @@ var editor = {
 	compatibilityHelp: "「自動」會使用每款遊戲在 Steam 上比對到的遊戲的相容性狀態。「使用全域預設值」會將該設定套用到這款遊戲。「跟隨 Valve」一律使用 Valve 提供的狀態；若 Valve 資料無法使用，則保留 Steam 的原始狀態。",
 	compatibilityChoices: "手動與預設分類是你的選擇，並非 Valve 認證，也不是模擬器效能結果。",
 	hltbGame: "HowLongToBeat 遊戲",
+	hltbSearchTitle: "搜尋 HowLongToBeat",
 	hltbHelp: "搜尋 HowLongToBeat，或貼上遊戲編號或遊戲頁面連結，以選擇此遊戲顯示的時數。留空則自動比對。",
 	hltbCurrentChosen: "目前遊戲：{{name}}（已選擇）",
 	hltbCurrentAutomatic: "目前遊戲：{{name}}（自動找到）",
@@ -18571,9 +18596,9 @@ var editor = {
 	steamAppIdApply: "套用 Steam App ID",
 	shortcut: {
 		immediateNotice: "這些操作會立即生效，不必按「儲存」。",
-		current: "目前：{{name}}",
+		currentLabel: "目前名稱",
 		missingName: "Steam 未提供原生捷徑名稱",
-		steamName: "Steam：{{name}}",
+		steamNameLabel: "Steam 名稱",
 		loadingSteamName: "正在載入 Steam 名稱...",
 		noOfficialName: "Steam 未傳回官方名稱",
 		managementUnavailable: "捷徑名稱管理無法使用",
@@ -18973,15 +18998,13 @@ const colors = {
     textSecondary: "#cbd5e1"};
 // Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
 const space = {
-    sm: 8,
     md: 12};
 // Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
 const fontSize = {
     sm: 13,
-    md: 14,
     lg: 16};
 const fontWeight = {
-    semibold: 600};
+    medium: 500};
 // Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
 const fontFamily = '"Motiva Sans", Arial, sans-serif';
 const statusColor = (kind) => ({
@@ -18992,7 +19015,7 @@ const statusColor = (kind) => ({
     idle: colors.textSecondary,
 }[kind]);
 
-const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: true, ...props }));
+const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: !props.disabled, ...props }));
 const qamPanelStyle = {
     width: "100%",
     fontFamily,
@@ -19042,8 +19065,10 @@ const buttonLabelStyle = {
 const sectionHeadingStyle = {
     width: "100%",
     paddingTop: space.md,
-    fontWeight: fontWeight.semibold,
-    fontSize: fontSize.md,
+    color: "#dcdedf",
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    lineHeight: "20px",
 };
 const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
 const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
@@ -19077,54 +19102,45 @@ function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
 }
 
+const headingClassName = "decky-metadata-qam-section-heading";
+const headingCss = `
+.${headingClassName}.gpfocus {
+  background: #3d4450;
+  color: #fff;
+  border-radius: 2px;
+}
+`;
 const headingStyle = {
     alignItems: "center",
-    borderRadius: 4,
-    color: "#aeb8c4",
     cursor: "pointer",
     display: "flex",
-    fontSize: 16,
-    fontWeight: 700,
     justifyContent: "space-between",
-    letterSpacing: "0.06em",
-    minHeight: 40,
-    padding: "8px 10px",
-    textTransform: "uppercase",
 };
-const headingLabelStyle = {
-    alignItems: "center",
-    display: "inline-flex",
-    gap: 8,
+const headingTextStyle = {
     minWidth: 0,
 };
-const headingIconStyle = {
+const headingAccessoriesStyle = {
+    alignItems: "center",
     display: "inline-flex",
     flexShrink: 0,
-};
-const focusedHeadingStyle = {
-    ...headingStyle,
-    background: "rgba(102, 182, 236, 0.18)",
-    color: "#fff",
+    gap: 8,
 };
 function CollapsibleSection({ title, icon, children, defaultExpanded = false }) {
     const [expanded, setExpanded] = SP_REACT.useState(defaultExpanded);
-    const [focused, setFocused] = SP_REACT.useState(false);
     const id = SP_REACT.useId();
     const handleFocus = (target) => {
-        setFocused(true);
         const heading = target;
         heading?.ownerDocument?.defaultView?.requestAnimationFrame?.(() => {
             if (heading.isConnected)
                 heading.scrollIntoView({ block: "nearest", inline: "nearest" });
         });
     };
-    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => handleFocus(event?.currentTarget), onGamepadFocus: (event) => handleFocus(event?.currentTarget ?? event?.target), onBlur: () => setFocused(false), onGamepadBlur: () => setFocused(false), style: focused ? focusedHeadingStyle : headingStyle, children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx("style", { children: headingCss }), SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, className: `${DFL.quickAccessControlsClasses.PanelSectionTitle} ${headingClassName}`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => handleFocus(event.currentTarget), onGamepadFocus: (event) => handleFocus(event?.currentTarget ?? event?.target), style: headingStyle, children: [SP_JSX.jsx("span", { style: headingTextStyle, children: title }), SP_JSX.jsxs("span", { style: headingAccessoriesStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", children: icon }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 18 }) : SP_JSX.jsx(FaChevronDown, { size: 18 })] })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? children : null })] }));
 }
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
 const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
 const dropdownValueStyle$1 = { whiteSpace: "normal" };
-const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm };
 function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
     const t = useT();
     const categoryLabel = (category) => {
@@ -19173,12 +19189,13 @@ function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault,
         data,
         label: scopeLabel(data),
     }));
+    const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
     return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.compat.title"), icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
                             onCompatibilityDefaultMenuWillOpen("category");
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                             compatibilityDefaultBusy ||
                             compatibilityDefaultScopeBusy ||
-                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: scopeDescription(compatibilityDefaultScope) }), SP_JSX.jsx("div", { style: secondaryHelpStyle, children: t("qam.compat.perGameNote") }), compatibilityDefaultError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) })) : null] }) })] }));
+                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) }) })) : null] }));
 }
 
 const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
@@ -19360,7 +19377,6 @@ function startPluginConflicts() {
     return () => pluginConflicts.stop();
 }
 
-const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg };
 function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
     const t = useT();
     const qualityOptions = [
@@ -19376,12 +19392,12 @@ function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange
     const display = state.displayWidth && state.displayHeight
         ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
         : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: t("qam.trailers.enableDescription"), checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: viewHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: t("qam.trailers.footnote") }), state.settingsError && (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }))] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
     const t = useT();
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? t("qam.logs.loading") : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
 }
 
 function MiniAchievementsSection({ state, onEnabledChange }) {
@@ -19389,29 +19405,34 @@ function MiniAchievementsSection({ state, onEnabledChange }) {
     const enableDisabled = !state.settingsLoaded || state.busy ||
         (Boolean(state.conflict.pluginName) && !state.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.miniAchievements.title"), icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: t("qam.miniAchievements.enableDescription"), checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: { fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }, children: t("qam.miniAchievements.footnote") }), conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.miniAchievements.title"), icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), (conflictNotice || state.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })) : null] }));
 }
 
-const subsectionDescriptionStyle = { ...compactTextStyle, paddingBottom: space.md };
-function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
+function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
     const t = useT();
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.metadata.title"), icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsx("b", { children: t("qam.metadata.detectedGames") }), " ", detectedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("b", { children: t("qam.metadata.saved") }), " ", savedCount] }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("b", { children: t("qam.metadata.missing") }), " ", missingCount] })] }) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refresh")) }), scanBusy || scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage || t("qam.metadata.refreshingStatus") })) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: t("qam.metadata.refreshDescription") }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.cacheHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") })) : (t("qam.metadata.clearCache")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: subsectionDescriptionStyle, children: t("qam.metadata.clearCacheDescription") }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.delistedHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refreshDelisted")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedCountText }) }), delistedDateText ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: inlineStatusStyle("idle"), children: delistedDateText }) })) : null] }));
+    const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.metadata.title"), icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: detectedCount }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: savedCount }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: missingCount }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refresh")) }), !scanBusy && scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage })) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.cacheHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.clearCacheDescription"), bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") })) : (t("qam.metadata.clearCache")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.delistedHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: delistedDescription, bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refreshDelisted")) }) })] }));
 }
 
 function PluginLogModal({ logs, closeModal }) {
     const t = useT();
-    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: t("qam.logs.modalTitle"), strOKButtonText: t("qam.logs.ok"), onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx("div", { style: {
-                maxHeight: "60vh",
-                overflowY: "auto",
-                fontFamily: "monospace",
-                fontSize: "12px",
-                whiteSpace: "pre-wrap",
-                overflowWrap: "anywhere",
-                backgroundColor: "rgba(0, 0, 0, 0.3)",
-                padding: "10px",
-                borderRadius: "4px",
-                userSelect: "text",
-            }, children: logs || t("qam.logs.modalEmpty") }) }));
+    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: t("qam.logs.modalTitle"), strOKButtonText: t("qam.logs.ok"), onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx(DFL.ScrollPanelGroup, { children: SP_JSX.jsx(DFL.Focusable, { noFocusRing: true, style: {
+                    maxHeight: "60vh",
+                    overflowY: "auto",
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "anywhere",
+                    backgroundColor: "rgba(0, 0, 0, 0.3)",
+                    padding: "10px",
+                    borderRadius: "4px",
+                    userSelect: "text",
+                }, children: logs || t("qam.logs.modalEmpty") }) }) }));
+}
+
+// THIS FILE IS AUTO GENERATED
+function IoMdRefresh (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
 }
 
 // Must equal plugin.json "name" (Decky's find_plugin_folder identity). Space,
@@ -20000,28 +20021,6 @@ function usePluginUpdateController({ currentVersion, updateChannel, automaticUpd
     };
 }
 
-// THIS FILE IS AUTO GENERATED
-function IoMdRefresh (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
-}
-
-const buttonRowStyle = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "8px",
-    minHeight: "20px",
-    lineHeight: "20px",
-};
-const spinnerSlotStyle = {
-    width: "16px",
-    height: "16px",
-    flex: "0 0 16px",
-    overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-};
 function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, onToggleUpdateChannel, onToggleAutomaticUpdateChecks, onInstallVersionConfirmed }) {
     const t = useT();
     const { effectiveCurrentVersion, candidate, checkResult, errorMessage: errorMsg, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install: handleInstall, } = usePluginUpdateController({
@@ -20033,7 +20032,7 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     });
     const handleToggleChannel = (checked) => {
         if (checked) {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), onOK: () => onToggleUpdateChannel(true), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.update.receiveDevelopmentDescription") }) }));
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => onToggleUpdateChannel(true) }));
         }
         else {
             onToggleUpdateChannel(false);
@@ -20041,7 +20040,7 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     };
     const handleInstallClick = (targetCandidate) => {
         if (targetCandidate.action === "downgrade_to_stable") {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), onOK: () => handleInstall(targetCandidate), children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.update.confirmRevertBody", { version: targetCandidate.version }) }) }));
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: targetCandidate.version }), onOK: () => handleInstall(targetCandidate) }));
         }
         else {
             void handleInstall(targetCandidate);
@@ -20065,32 +20064,34 @@ function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChe
     };
     const getStatusContent = () => {
         if (isChecking) {
-            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }), SP_JSX.jsx("span", { children: t("qam.update.checking") })] }));
+            return SP_JSX.jsxs("span", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
         }
         if (errorMsg) {
-            return (SP_JSX.jsx("span", { style: { color: "#f87171" }, children: checkTimedOut
+            return (SP_JSX.jsx("span", { style: inlineStatusStyle("error"), children: checkTimedOut
                     ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
                     : t("qam.update.checkFailed") }));
         }
         if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: { color: "#4ade80" }, children: t("qam.update.upToDate") });
+            return SP_JSX.jsx("span", { style: inlineStatusStyle("success"), children: t("qam.update.upToDate") });
         }
         if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: { color: "#60a5fa" }, children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+            return (SP_JSX.jsx("span", { style: inlineStatusStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
                     ? t("qam.update.latestDevelopment")
                     : t("qam.update.updateAvailable") }));
         }
-        return SP_JSX.jsx("span", { children: t("qam.update.neverChecked") });
+        return SP_JSX.jsx("span", { style: inlineStatusStyle("idle"), children: t("qam.update.neverChecked") });
     };
     const lastCheckedText = checkResult?.checked_at
         ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
         : undefined;
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.update.title"), icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.installedVersion"), childrenLayout: "below", padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { display: "flex", alignItems: "center", gap: "8px", fontSize: "14px" }, children: getStatusContent() }) }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { display: "flex", gap: "8px", color: "#f87171", padding: "10px 15px", fontSize: "13px" }, children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMsg) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: [SP_JSX.jsx("div", { children: t("qam.update.newVersion", {
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.update.title"), icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), padding: "standard", focusable: true, highlightOnFocus: true, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: getStatusContent() }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMsg) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px" }, children: [SP_JSX.jsx("div", { children: t("qam.update.newVersion", {
                                     version: candidate.version,
                                     channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                                }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "12px", marginTop: "4px" }, children: t("qam.update.downgradeWarning") }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx("div", { style: buttonRowStyle, children: isInstalling ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: spinnerSlotStyle, children: SP_JSX.jsx(DFL.Spinner, { size: "small", style: { color: "#1a9fff" } }) }), SP_JSX.jsx("span", { children: isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing") })] })) : (SP_JSX.jsx("span", { children: getActionText(candidate) })) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: { color: "#f87171", fontSize: "13px", marginBottom: "8px" }, children: isLocalBuild && candidate.channel !== "stable"
+                                }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: t("qam.update.downgradeWarning") }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling, children: isInstalling
+                            ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
+                            : getActionText(candidate) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: isLocalBuild && candidate.channel !== "stable"
                             ? t("qam.update.localBuildOnlyStable")
-                            : t("qam.update.manualInstallUnavailable") }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.update.viewReleaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(DFL.Spinner, { style: { width: "16px", height: "16px", color: "#1a9fff" } })) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: t("qam.update.checkNow") })] }) }) })] }));
+                            : t("qam.update.manualInstallUnavailable") }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.update.viewReleaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(BusySpinner, {})) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: t("qam.update.checkNow") })] }) }) })] }));
 }
 
 const STEAM_DECK_CONTROLLER_TYPE = 4;
@@ -20220,7 +20221,12 @@ const formatConnectedControllerTypes = (types) => {
 function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
     const t = useT();
     const unknown = t("common.unknown");
-    return (SP_JSX.jsx(CollapsibleSection, { title: t("qam.versions.title"), icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: compactTextStyle, children: [SP_JSX.jsx("div", { children: t("qam.versions.plugin", { version: pluginVersion.trim() || unknown }) }), SP_JSX.jsx("div", { children: t("qam.versions.decky", { version: deckyVersion.trim() || unknown }) }), SP_JSX.jsx("div", { children: t("qam.versions.steamos", { version: steamosVersion.trim() || unknown }) }), SP_JSX.jsx("div", { children: t("qam.versions.controllerTypes", { types: formatConnectedControllerTypes(controllerTypes) }) })] }) }) }) }));
+    const marker = "\u0000";
+    const pluginLabel = t("qam.versions.plugin", { version: marker }).split(marker)[0].trimEnd();
+    const deckyLabel = t("qam.versions.decky", { version: marker }).split(marker)[0].trimEnd();
+    const steamosLabel = t("qam.versions.steamos", { version: marker }).split(marker)[0].trimEnd();
+    const controllerTypesLabel = t("qam.versions.controllerTypes", { types: marker }).split(marker)[0].trimEnd();
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.versions.title"), icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: pluginLabel, focusable: true, highlightOnFocus: true, children: pluginVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: deckyLabel, focusable: true, highlightOnFocus: true, children: deckyVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: steamosLabel, focusable: true, highlightOnFocus: true, children: steamosVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: controllerTypesLabel, focusable: true, highlightOnFocus: true, children: formatConnectedControllerTypes(controllerTypes) }) })] }));
 }
 
 const PROTONDB_COLORS = {
@@ -20261,7 +20267,7 @@ function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettings
     const updateSetting = (key, value) => {
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.protondb.title"), icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: t("qam.protondb.enableDescription"), checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.loadingPreferences") })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.protondb.footnote") }), conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.protondb.title"), icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })) : null] }));
 }
 
 const DEFAULT_HLTB_SETTINGS = {
@@ -20331,7 +20337,7 @@ function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, conf
     const updateAppearance = (key, value) => {
         void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
     };
-    return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
 }
 
 const patchInstallStatus = {
@@ -35372,6 +35378,8 @@ const Content = () => {
     const [missing, setMissing] = SP_REACT.useState(0);
     const [busy, setBusy] = SP_REACT.useState(false);
     const [scanMessage, setScanMessage] = SP_REACT.useState("");
+    const [scanCompleted, setScanCompleted] = SP_REACT.useState(0);
+    const [scanTotal, setScanTotal] = SP_REACT.useState(0);
     const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
     // One scan-progress poll is pending at a time; unmounting the panel stops polling.
     const scanPoll = SP_REACT.useRef({ timer: null, stopped: false });
@@ -35932,6 +35940,8 @@ const Content = () => {
             return;
         setBusy(true);
         setScanMessage("");
+        setScanCompleted(0);
+        setScanTotal(0);
         setScanStatusKind("active");
         const failScan = (error) => {
             setBusy(false);
@@ -35953,6 +35963,8 @@ const Content = () => {
                 const progress = await getScanProgress();
                 if (poll.stopped)
                     return;
+                setScanCompleted(Number(progress.completed || 0));
+                setScanTotal(Number(progress.total || 0));
                 setScanStatusKind("active");
                 setScanMessage(progress.current ||
                     translateProgress(progress) ||
@@ -36048,7 +36060,7 @@ const Content = () => {
     const returningDropdown = hasCompatibilityDropdownReturn()
         ? compatibilityDropdownReturnOrigin()
         : null;
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanCompleted: scanCompleted, scanTotal: scanTotal, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -36222,21 +36234,17 @@ const categoryLabel = (category, t) => {
 const editorRootClassName = "decky-metadata-editor";
 const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 const editorSearchRowStyle = {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) minmax(112px, max-content)",
+    display: "flex",
     alignItems: "center",
     gap: 8,
-    width: "100%",
     minWidth: 0,
 };
-const editorSearchInputRowSpacingStyle = {
-    marginTop: 12,
-};
-const editorSearchResultsSpacingStyle = {
-    marginTop: 12,
+const editorSearchInputStyle = {
+    flex: "1 1 auto",
+    minWidth: 0,
 };
 const editorSearchButtonStyle = {
-    width: "100%",
+    flex: "0 0 auto",
     minWidth: 112,
     whiteSpace: "nowrap",
 };
@@ -36246,43 +36254,6 @@ const editorSteamMatchImageStyle = {
     flexShrink: 0,
     objectFit: "cover",
     borderRadius: 4,
-};
-const editorAppIdRowStyle = {
-    display: "grid",
-    gridTemplateColumns: "minmax(0, 1fr) auto",
-    alignItems: "center",
-    gap: 8,
-    width: "100%",
-    minWidth: 0,
-};
-const editorAppIdButtonStyle = {
-    width: "auto",
-    minWidth: 0,
-    paddingLeft: 24,
-    paddingRight: 24,
-    whiteSpace: "nowrap",
-};
-const editorRowActionStyle = {
-    ...editorAppIdButtonStyle,
-    maxWidth: "100%",
-    justifySelf: "end",
-    whiteSpace: "normal",
-    overflowWrap: "anywhere",
-};
-// Longhands only: React drops a removed longhand after re-applying a shorthand, which left the bar visible.
-const editorFieldMarkerBaseStyle = {
-    borderLeftWidth: 3,
-    borderLeftStyle: "solid",
-    borderLeftColor: "transparent",
-    paddingLeft: 12,
-};
-const editorFieldEditedStyle = {
-    ...editorFieldMarkerBaseStyle,
-    borderLeftColor: colors.accent,
-};
-const editorFieldPreviewStyle = {
-    ...editorFieldMarkerBaseStyle,
-    borderLeftColor: colors.warning,
 };
 const editorFieldEditedLabelStyle = {
     color: colors.accent,
@@ -36484,7 +36455,7 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
             return;
         await onApplyRef.current(selected.steam_appid);
     };
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx("div", { style: editorSearchInputRowSpacingStyle, children: SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsxs("div", { "aria-live": "polite", style: compactTextStyle, children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }) }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, children: [SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void select(candidate), onClick: () => void select(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidateTitleLine(candidate, matchedSteamAppId, selected, t) }) }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [previewLoading ? SP_JSX.jsx("div", { "aria-live": "polite", style: compactTextStyle, children: t("matchPicker.loadingDetails") }) : null, previewError ? SP_JSX.jsx("div", { role: "status", style: compactTextStyle, children: translateBackendError(previewError) }) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? SP_JSX.jsx("img", { src: preview.cover_url, alt: t("matchPicker.artworkAlt", { title: preview.title }), style: editorSteamMatchImageStyle }) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable") }), SP_JSX.jsx("div", { style: compactTextStyle, children: preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable") }), preview.app_type && preview.app_type !== "game" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("matchPicker.steamType", { type: preview.app_type }) }) : null] })) : null, SP_JSX.jsx("div", { style: compactTextStyle, children: t("matchPicker.applyHelp") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || previewLoading, onClick: () => void apply(), children: t("matchPicker.apply") }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled, onClick: cancelSelection, children: t("matchPicker.cancel") })] }) })) : null] }, candidate.steam_appid)))] })] }));
+    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, children: [SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void select(candidate), onClick: () => void select(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidateTitleLine(candidate, matchedSteamAppId, selected, t) }) }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: rowStackStyle, children: [previewLoading ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("matchPicker.loadingDetails") }), bottomSeparator: "none" })) : null, previewError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { role: "status", children: translateBackendError(previewError) }), bottomSeparator: "none" })) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? (SP_JSX.jsx("div", { children: SP_JSX.jsx("img", { src: preview.cover_url, alt: t("matchPicker.artworkAlt", { title: preview.title }), style: { ...editorSteamMatchImageStyle, objectFit: "contain" } }) })) : null, preview.developers.length ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.developers"), focusable: false, bottomSeparator: "standard", children: preview.developers.join(", ") })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.developerUnavailable"), bottomSeparator: "none" })), preview.release_date_label ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.releaseDate"), focusable: false, bottomSeparator: "standard", children: preview.release_date_label })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.releaseUnavailable"), bottomSeparator: "none" })), preview.app_type && preview.app_type !== "game" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.steamType", { type: preview.app_type }), bottomSeparator: "none" })) : null] })) : null, SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.applyHelp"), bottomSeparator: "none" }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || previewLoading, onClick: () => void apply(), style: { flex: 1 }, children: t("matchPicker.apply") }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled, onClick: cancelSelection, style: { flex: 1 }, children: t("matchPicker.cancel") })] })] })) : null] }, candidate.steam_appid)))] })] }));
 };
 
 function parseHltbGameId(input) {
@@ -36537,7 +36508,9 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                 setSearching(false);
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center", ...editorSearchInputRowSpacingStyle }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [error ? SP_JSX.jsx("div", { style: compactTextStyle, children: error }) : null, !searching && results?.length === 0 ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("hltb.search.noGames") }) : null, results?.map((result) => (SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`, disabled: disabled, onClick: () => void onApply({ id: result.game_id, name: result.game_name }), style: { justifyContent: "flex-start", textAlign: "left" }, children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("b", { children: result.game_name }), SP_JSX.jsx("span", { style: compactTextStyle, children: result.main_seconds > 0 ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) }) : t("hltb.search.noMainStory") })] }) }, result.game_id)))] }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
+                    ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
+                    : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
 
 const parseSteamAppId = (input) => {
@@ -36757,15 +36730,6 @@ const css = `
   margin: auto 24px 22px;
 }
 
-.${layout}__save.DialogButton.Secondary:not(:disabled, :hover, :focus, .gpfocus) {
-  background: rgba(255, 255, 255, .15);
-}
-
-.${layout}__save.DialogButton.Secondary:disabled {
-  background: rgba(61, 67, 77, .35);
-  color: rgba(255, 255, 255, .3);
-  opacity: 1;
-}
 `;
 const resolveNativePagedSettings = () => {
     try {
@@ -36875,6 +36839,7 @@ function saveButtonLabel(t, count) {
     return count > 0 ? t("editor.saveCount", { count }) : t("editor.save");
 }
 
+const EditorButtonItem = DFL.ButtonItem;
 // Shared look for the multiline Description field, applied to both the
 // gamepad-aware textarea and the plain fallback.
 const descriptionTextareaStyle = {
@@ -37491,11 +37456,6 @@ const MetadataPage = () => {
         const edited = changed.includes(key);
         const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
         return {
-            container: !edited
-                ? editorFieldMarkerBaseStyle
-                : fromSteam
-                    ? editorFieldPreviewStyle
-                    : editorFieldEditedStyle,
             label: !edited
                 ? undefined
                 : fromSteam
@@ -37508,16 +37468,14 @@ const MetadataPage = () => {
                     : t("editor.fieldEdited"),
         };
     };
-    // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
-    const renderMarkedLabel = (marker, label, withBar = true) => (SP_JSX.jsxs("span", { style: {
-            ...(withBar ? marker.container : undefined),
+    const renderMarkedLabel = (marker, label) => (SP_JSX.jsxs("span", { style: {
             ...marker.label,
             display: "inline-flex",
             alignItems: "center",
         }, children: [SP_JSX.jsx("span", { children: label }), marker.tag ? SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: marker.tag }) : null] }));
-    const markedLabel = (key, labelKey, withBar = true) => renderMarkedLabel(fieldMarker(key), t(labelKey), withBar);
+    const markedLabel = (key, labelKey) => renderMarkedLabel(fieldMarker(key), t(labelKey));
     // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
-    const stackedTextField = (blockStyle, key, labelKey, value, onChange) => (SP_JSX.jsxs("div", { style: blockStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel(key, labelKey, false) }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t(labelKey), value: value, onChange: (e) => onChange(e.target.value), style: fieldStyle }) })] }));
+    const stackedTextField = (blockStyle, key, labelKey, value, onChange) => (SP_JSX.jsxs("div", { style: blockStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel(key, labelKey) }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t(labelKey), value: value, onChange: (e) => onChange(e.target.value), style: fieldStyle }) })] }));
     // Undefined means the field is not a usable HLTB game; the user has been told why.
     const checkHltbIdText = async () => {
         const text = hltbIdText.trim();
@@ -38038,21 +37996,21 @@ const MetadataPage = () => {
     const showUseSteamNameModal = () => {
         if (!canUseSteamName || !currentShortcutName)
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.useSteamNameTitle"), strOKButtonText: t("editor.shortcut.useSteamName"), onOK: () => void useSteamName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.useSteamNameBody", {
-                    current: currentShortcutName,
-                    target: savedSteamStoreName,
-                }) }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.useSteamNameTitle"), strOKButtonText: t("editor.shortcut.useSteamName"), onOK: () => void useSteamName(), strDescription: t("editor.shortcut.useSteamNameBody", {
+                current: currentShortcutName,
+                target: savedSteamStoreName,
+            }) }));
     };
     const showRestoreShortcutNameModal = () => {
         const state = shortcutManagement?.state;
         if (!state || entryBusy || !hasShortcutNameApi())
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.restoreTitle"), strOKButtonText: t("editor.shortcut.restore"), onOK: () => void restoreOriginalShortcutName(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.restoreBody", { name: state.original_name }) }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.restoreTitle"), strOKButtonText: t("editor.shortcut.restore"), onOK: () => void restoreOriginalShortcutName(), strDescription: t("editor.shortcut.restoreBody", { name: state.original_name }) }));
     };
     const showForgetShortcutNameHistoryModal = () => {
         if (entryBusy || (busyRef.current && busyEntryRef.current === editorEntryToken))
             return;
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.forgetTitle"), strOKButtonText: t("editor.shortcut.forgetAction"), onOK: () => void forgetShortcutNameHistory(), children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.forgetBody") }) }));
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.shortcut.forgetTitle"), strOKButtonText: t("editor.shortcut.forgetAction"), onOK: () => void forgetShortcutNameHistory(), strDescription: t("editor.shortcut.forgetBody") }));
     };
     const toggleCategory = (category, checked) => {
         clearPreviewMarker("categories");
@@ -38066,10 +38024,10 @@ const MetadataPage = () => {
         });
     };
     function renderDetailsPage() {
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.nonSteamOnly"), bottomSeparator: "none" })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
                             clearPreviewMarker("title");
                             updateMetadata((prev) => ({ ...prev, title: value }));
-                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "none", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
                                     clearPreviewMarker("description");
                                     updateMetadata((prev) => ({
                                         ...prev,
@@ -38106,51 +38064,56 @@ const MetadataPage = () => {
                                 }, style: editorInlineInputStyle }) })] }), renderCategoriesSection()] }));
     }
     function renderSteamMatchPage() {
-        const loadLabelKey = !nonSteam
+        const loadDisabledReasonKey = !nonSteam
             ? "editor.loadFromSteamSteamGame"
             : !hasSteamMatch
                 ? "editor.loadFromSteamNoMatch"
-                : steamBusy
-                    ? "editor.loadFromSteamBusy"
-                    : "editor.loadFromSteam";
+                : null;
+        const loadLabelKey = steamBusy && !loadDisabledReasonKey
+            ? "editor.loadFromSteamBusy"
+            : "editor.loadFromSteam";
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId);
-                    } }, editorEntryToken), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.currentMatch"), description: formSteamAppId !== null ? t("matchPicker.appId", { appId: formSteamAppId }) : undefined, bottomSeparator: "standard", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || loadLabelKey !== "editor.loadFromSteam", onClick: () => {
-                                    if (loadLabelKey === "editor.loadFromSteam")
-                                        void refreshFromSteam();
-                                }, style: editorRowActionStyle, children: t(loadLabelKey) }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("steamAppId", "editor.steamAppId"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), changed.includes("steamData") ? (SP_JSX.jsx("div", { style: { ...compactTextStyle, color: colors.warning }, children: t("editor.steamDataChanged") })) : null] }), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: steamLanguageMismatch ? "standard" : "none", children: SP_JSX.jsxs("div", { style: { ...editorAppIdRowStyle, display: "flex" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.steamAppId"), value: steamAppIdText, onChange: (e) => {
+                    } }, editorEntryToken), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.currentMatch") }), SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.currentMatch"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [formSteamAppId !== null
+                                        ? t("matchPicker.appId", { appId: formSteamAppId })
+                                        : loadDisabledReasonKey
+                                            ? null
+                                            : t("editor.toast.steamPreviewBody"), loadDisabledReasonKey ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), t(loadDisabledReasonKey)] })) : null] }), layout: "inline", disabled: entryBusy || !!loadDisabledReasonKey || steamBusy, onClick: () => {
+                                if (!loadDisabledReasonKey && !steamBusy)
+                                    void refreshFromSteam();
+                            }, children: t(loadLabelKey) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("steamAppId", "editor.steamAppId"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [t("editor.steamAppIdHelp"), changed.includes("steamData") ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.steamDataChanged") })] })) : null] }), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: steamLanguageMismatch ? "standard" : "none", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.steamAppId"), value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 clearPreviewMarker("steamAppId");
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.Field, { label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorRowActionStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !ignBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy, onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.noResults") }), bottomSeparator: "none" })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: markedLabel("hltb", "editor.page.hltb"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: [hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
                                 ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }) })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: { ...editorAppIdRowStyle, display: "flex" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, value: hltbIdText, onChange: (e) => {
-                                        markFormEdited();
-                                        clearPreviewMarker("hltb");
-                                        setHltbIdDraft(e.target.value);
-                                    }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applyHltbGameId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.hltbApply") })] }) })] }));
+                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }), bottomSeparator: "none" })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { label: markedLabel("hltb", "editor.hltbGame"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbGame"), value: hltbIdText, onChange: (e) => {
+                                            markFormEdited();
+                                            clearPreviewMarker("hltb");
+                                            setHltbIdDraft(e.target.value);
+                                        }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorSearchButtonStyle, children: t("editor.hltbApply") })] }) }) })] }));
     }
     function renderCompatibilityPage() {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: markedLabel("compatibility", "editor.compat.statusLabel"), bottomSeparator: "standard", rgOptions: compatibilityStatusOptions.map((data) => ({
-                        data,
-                        label: compatibilityStatusOptionLabel(data, t),
-                    })), selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
-                        ...prev,
-                        deck_compat_override: compatibilityStatusValue(option.data),
-                    })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityHelp") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityChoices") })] })] }));
+        return (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.DropdownItem, { label: markedLabel("compatibility", "editor.compat.statusLabel"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [t("editor.compatibilityHelp"), SP_JSX.jsx("br", {}), t("editor.compatibilityChoices")] }), bottomSeparator: "standard", rgOptions: compatibilityStatusOptions.map((data) => ({
+                    data,
+                    label: compatibilityStatusOptionLabel(data, t),
+                })), selectedOption: compatibilityStatusValue(metadata.deck_compat_override), onChange: (option) => updateMetadata((prev) => ({
+                    ...prev,
+                    deck_compat_override: compatibilityStatusValue(option.data),
+                })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) }) }));
     }
     function renderCategoriesSection() {
         const saved = savedRecordRef.current;
         const savedCategories = new Set(saved?.store_categories ?? []);
         const formCategories = new Set(metadata.store_categories ?? []);
         const changedMarker = fieldMarker("categories");
-        const unchangedMarker = { container: editorFieldMarkerBaseStyle, label: undefined, tag: null };
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.page.storeCategories") }), Object.keys(CATEGORY_LABELS).map((key) => {
+        const unchangedMarker = { label: undefined, tag: null };
+        return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.page.storeCategories") }), Object.keys(CATEGORY_LABELS).map((key) => {
                     const category = Number(key);
                     // Mark each toggle whose state differs from the stored record.
                     const categoryChanged = saved !== null && savedCategories.has(category) !== formCategories.has(category);
@@ -38158,15 +38121,18 @@ const MetadataPage = () => {
                 })] }));
     }
     function renderShortcutNamePage() {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.immediateNotice") }) }), SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.current", {
-                                    name: currentShortcutName ?? t("editor.shortcut.missingName"),
-                                }) }), steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.steamName", { name: steamStoreName }) }) : null, steamNameLoading ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.loadingSteamName") }) : null, steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.noOfficialName") }) : null, shortcutManagementError ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.managementUnavailable") }) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.apiUnavailable") }) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.notFound") }) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.derivedId") }) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.alreadyMatches") }) : null, shortcutStatus === "diverged" ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.diverged") }) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.noOfficialName") }) : null] }) }), canUseSteamName ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showUseSteamNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.useSteamName") }) })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.restore") }) })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, style: editorAppIdButtonStyle, children: t("editor.shortcut.forget") }) })) : null] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.shortcut.immediateNotice"), bottomSeparator: "standard" }), SP_JSX.jsx(DFL.Field, { label: t("editor.shortcut.currentLabel"), focusable: false, bottomSeparator: "standard", children: currentShortcutName ?? t("editor.shortcut.missingName") }), steamStoreName ? (SP_JSX.jsx(DFL.Field, { label: t("editor.shortcut.steamNameLabel"), focusable: false, bottomSeparator: "standard", children: steamStoreName })) : null, steamNameLoading ? SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.shortcut.loadingSteamName"), bottomSeparator: "none" }) : null, steamNameUnavailable ? SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.shortcut.noOfficialName"), bottomSeparator: "none" }) : null, shortcutManagementError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.shortcut.managementUnavailable") }), bottomSeparator: "none" })) : null, !shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.shortcut.apiUnavailable") }), bottomSeparator: "none" })) : null, !shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.shortcut.notFound") }), bottomSeparator: "none" })) : null, !shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.shortcut.derivedId") }), bottomSeparator: "none" })) : null, !shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.shortcut.alreadyMatches"), bottomSeparator: "none" })) : null, shortcutStatus === "diverged" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.shortcut.diverged") }), bottomSeparator: "none" })) : null, !steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.shortcut.noOfficialName"), bottomSeparator: "none" })) : null, canUseSteamName ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.page.shortcutName"), description: t("editor.shortcut.useSteamNameBody", {
+                        current: currentShortcutName,
+                        target: savedSteamStoreName,
+                    }), layout: "inline", disabled: entryBusy, onClick: showUseSteamNameModal, bottomSeparator: "standard", children: t("editor.shortcut.useSteamName") })) : null, shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.page.shortcutName"), description: t("editor.shortcut.restoreBody", {
+                        name: shortcutManagement.state.original_name,
+                    }), layout: "inline", disabled: entryBusy || !hasShortcutNameApi(), onClick: showRestoreShortcutNameModal, bottomSeparator: "standard", children: t("editor.shortcut.restore") })) : null, shortcutManagement?.eligible && shortcutStatus === "diverged" ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.page.shortcutName"), description: t("editor.shortcut.forgetBody"), layout: "inline", disabled: entryBusy, onClick: showForgetShortcutNameHistoryModal, bottomSeparator: "none", children: t("editor.shortcut.forget") })) : null] }));
     }
     function renderAdvancedPage() {
-        return (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, onClick: () => showRemoveMetadataModal({
-                        gameName: appName(appId),
-                        onConfirm: () => void removeCurrent(),
-                    }), style: editorAppIdButtonStyle, children: t("editor.removeMetadata") }) }) }));
+        return (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.removeMetadata"), description: t("editor.removeConfirm.body", { name: appName(appId) }), layout: "inline", onClick: () => showRemoveMetadataModal({
+                    gameName: appName(appId),
+                    onConfirm: () => void removeCurrent(),
+                }), bottomSeparator: "none", children: t("editor.removeMetadata") }) }));
     }
     const renderPageContent = {
         details: renderDetailsPage,

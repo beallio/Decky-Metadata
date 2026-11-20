@@ -2,8 +2,7 @@ import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
 import { SiSteamdeck } from "react-icons/si";
 
 import { translateBackendError, useT } from "../../i18n";
-import { compactTextStyle, inlineStatusStyle } from "../../styles";
-import { space } from "../../tokens";
+import { inlineStatusStyle } from "../../styles";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -11,7 +10,6 @@ const compatibilityDefaultData: ReadonlyArray<DeckCompatibilityCategory | null> 
 const compatibilityDefaultScopeData: ReadonlyArray<CompatibilityDefaultScope> = ["steam", "no-steam", "metadata", "all"];
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
-const secondaryHelpStyle = { ...compactTextStyle, marginTop: space.sm } as const;
 
 type CompatibilitySectionProps = {
   initiallyExpanded?: boolean;
@@ -93,7 +91,7 @@ export function CompatibilitySection({
     data,
     label: scopeLabel(data),
   }));
-
+  const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
   return (
     <CollapsibleSection title={t("qam.compat.title")} icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
       <PanelSectionRow>
@@ -121,6 +119,7 @@ export function CompatibilitySection({
         <div ref={onCompatibilityDefaultScopeControlRef}>
           <DropdownItem
             label={t("qam.compat.applyDefaultTo")}
+            description={scopeHelpDescription}
             layout="below"
             childrenContainerWidth="max"
             bottomSeparator="none"
@@ -142,24 +141,13 @@ export function CompatibilitySection({
           />
         </div>
       </PanelSectionRow>
-      <PanelSectionRow>
-        <Field
-          focusable={false}
-          childrenLayout="below"
-          padding="none"
-          bottomSeparator="none"
-        >
-          <div style={compactTextStyle}>
-            {scopeDescription(compatibilityDefaultScope)}
-          </div>
-          <div style={secondaryHelpStyle}>
-            {t("qam.compat.perGameNote")}
-          </div>
-          {compatibilityDefaultError ? (
+      {compatibilityDefaultError ? (
+        <PanelSectionRow>
+          <Field focusable={false} padding="none" bottomSeparator="none">
             <div style={inlineStatusStyle("error")}>{translateBackendError(compatibilityDefaultError)}</div>
-          ) : null}
-        </Field>
-      </PanelSectionRow>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
     </CollapsibleSection>
   );
 }

@@ -59,15 +59,6 @@ const css = `
   margin: auto 24px 22px;
 }
 
-.${layout}__save.DialogButton.Secondary:not(:disabled, :hover, :focus, .gpfocus) {
-  background: rgba(255, 255, 255, .15);
-}
-
-.${layout}__save.DialogButton.Secondary:disabled {
-  background: rgba(61, 67, 77, .35);
-  color: rgba(255, 255, 255, .3);
-  opacity: 1;
-}
 `;
 
 type NativePagedSettingsPage = {

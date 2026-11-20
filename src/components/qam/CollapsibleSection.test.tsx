@@ -19,7 +19,11 @@ vi.mock("react", async (importOriginal) => {
     },
   };
 });
-vi.mock("@decky/ui", () => ({ Focusable: "Focusable", PanelSection: "PanelSection" }));
+vi.mock("@decky/ui", () => ({
+  Focusable: "Focusable",
+  PanelSection: "PanelSection",
+  quickAccessControlsClasses: { PanelSectionTitle: "PanelSectionTitle" },
+}));
 
 import { CollapsibleSection } from "./CollapsibleSection";
 
@@ -41,35 +45,37 @@ const region = (tree: any) => children(tree).find(node => node.props?.role === "
 describe("QAM collapsible sections", () => {
   beforeEach(() => { state = []; hookIndex = 0; });
 
-  it("hides Metadata controls until activation and removes them again when closed", () => {
+  it("hides controls while closed and unmounts them again after closing", () => {
     const closed = render("Metadata");
     expect(header(closed).props["aria-expanded"]).toBe(false);
-    expect(children(region(closed)).some(node => node.type === "PanelSection")).toBe(false);
+    expect(children(region(closed)).some(node => node.type === "span")).toBe(false);
 
     header(closed).props.onActivate();
     const open = render("Metadata");
     expect(header(open).props["aria-expanded"]).toBe(true);
-    expect(children(region(open)).some(node => node.type === "PanelSection")).toBe(true);
+    expect(children(region(open)).some(node => node.type === "span")).toBe(true);
 
     header(open).props.onActivate();
     const closedAgain = render("Metadata");
     expect(header(closedAgain).props["aria-expanded"]).toBe(false);
-    expect(children(region(closedAgain)).some(node => node.type === "PanelSection")).toBe(false);
+    expect(children(region(closedAgain)).some(node => node.type === "span")).toBe(false);
   });
 
   it("starts Versions open and allows its controls to be closed", () => {
     const open = render("Versions", true);
     expect(header(open).props["aria-expanded"]).toBe(true);
-    expect(children(region(open)).some(node => node.type === "PanelSection")).toBe(true);
+    expect(children(region(open)).some(node => node.type === "span")).toBe(true);
     header(open).props.onActivate();
     const closed = render("Versions", true);
     expect(header(closed).props["aria-expanded"]).toBe(false);
-    expect(children(region(closed)).some(node => node.type === "PanelSection")).toBe(false);
+    expect(children(region(closed)).some(node => node.type === "span")).toBe(false);
   });
 
-  it("highlights on gamepad focus/blur even without DOM focus events", () => {
-    const initial = render("Metadata");
-    expect(header(initial).props.style.background).toBeUndefined();
+  it("uses the native section title and gamepad focus styling", () => {
+    const tree = render("Metadata");
+    expect(header(tree).props.className).toContain("PanelSectionTitle");
+    expect(children(tree).find(node => node.type === "style").props.children)
+      .toContain(".decky-metadata-qam-section-heading.gpfocus");
 
     const scrollIntoView = vi.fn();
     const fakeHeading = {
@@ -77,15 +83,7 @@ describe("QAM collapsible sections", () => {
       scrollIntoView,
       ownerDocument: { defaultView: { requestAnimationFrame: (cb: () => void) => cb() } },
     };
-    header(initial).props.onGamepadFocus({ currentTarget: fakeHeading });
-    const focused = render("Metadata");
-    expect(header(focused).props.style.background).toBe("rgba(102, 182, 236, 0.18)");
-    expect(header(focused).props.style.color).toBe("#fff");
+    header(tree).props.onGamepadFocus({ currentTarget: fakeHeading });
     expect(scrollIntoView).toHaveBeenCalledWith({ block: "nearest", inline: "nearest" });
-
-    header(focused).props.onGamepadBlur();
-    const blurred = render("Metadata");
-    expect(header(blurred).props.style.background).toBeUndefined();
-    expect(header(blurred).props.style.color).toBe("#aeb8c4");
   });
 });

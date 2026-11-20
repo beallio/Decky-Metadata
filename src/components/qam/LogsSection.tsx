@@ -3,6 +3,7 @@ import { FaFileAlt } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
+import { ButtonLabel } from "../../styles";
 
 type LogsSectionProps = {
   logsBusy: boolean;
@@ -30,7 +31,7 @@ export function LogsSection({
           disabled={logsBusy}
           onClick={onViewLogs}
         >
-          {logsBusy ? t("qam.logs.loading") : t("qam.logs.view")}
+          {logsBusy ? <ButtonLabel busy>{t("qam.logs.loading")}</ButtonLabel> : t("qam.logs.view")}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>

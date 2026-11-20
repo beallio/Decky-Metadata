@@ -82,6 +82,7 @@ type MockEffect = (() => unknown) & { deps: readonly unknown[] | undefined };
 const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as MockEffect[] }));
 
 vi.mock("@decky/ui", () => ({
+  ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
   afterPatch: vi.fn(),
   findInReactTree: vi.fn(),
@@ -223,8 +224,7 @@ const text = (node: unknown): string => {
 };
 
 const action = (page: any, label: string) =>
-  walk(page, (node) => typeof node.props?.onClick === "function" && text(node) === label)[0];
-
+  walk(page, (node) => typeof node.props?.onClick === "function" && text(renderedChildren(node)) === label)[0];
 const navButton = (page: unknown, label: string) =>
   action(walk(page, (node) => node.type === "nav")[0], label);
 
@@ -899,7 +899,8 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
+    expect(walk(openPage("Shortcut Name"), node => node.type === "Field" && node.props.label === "Steam name")[0])
+      .toMatchObject({ props: { children: "Steam Name" } });
     // The backfill persists the name, so the stored snapshot now offers it.
     expect(action(renderPage(), "Use Steam name")).toBeDefined();
 
@@ -991,7 +992,8 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
 
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
+    expect(walk(openPage("Shortcut Name"), node => node.type === "Field" && node.props.label === "Steam name")[0])
+      .toMatchObject({ props: { children: "Steam Name" } });
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
@@ -2031,7 +2033,9 @@ describe("Steam-match picker application", () => {
       steam_appid: 15100,
       steam_store_name: "Steam Name",
     }));
-    action(openPage("Game Match"), "Hades").props.onClick();
+    const result = walk(openPage("Game Match"), (node) =>
+      node.type === "Field" && node.props.label === "Hades" && typeof node.props.onClick === "function")[0];
+    result.props.onClick();
     await flushAsyncWork();
 
     expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(
@@ -2234,14 +2238,15 @@ describe("Draft field markers and editor actions", () => {
   });
 
   it.each([
-    { nonSteam: true, match: null, label: "Load from Steam (No Steam match)" },
-    { nonSteam: false, match: 15100, label: "Load from Steam (Not available for Steam games)" },
-  ])("disables $label", async ({ nonSteam, match, label }) => {
+    { nonSteam: true, match: null, reason: "No Steam match" },
+    { nonSteam: false, match: 15100, reason: "Not available for Steam games" },
+  ])("disables Load from Steam with $reason in its description", async ({ nonSteam, match, reason }) => {
     steam.isNonSteamApp.mockReturnValue(nonSteam);
     configureShortcutPanel({ metadata: { steam_appid: match } });
 
-    const load = action(openPage("Game Match"), label);
+    const load = action(openPage("Game Match"), "Load from Steam");
     expect(load.props.disabled).toBe(true);
+    expect(text(load.props.description)).toContain(reason);
     load.props.onClick();
     await flushAsyncWork();
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();

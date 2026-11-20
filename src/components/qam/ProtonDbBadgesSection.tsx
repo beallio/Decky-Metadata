@@ -2,7 +2,7 @@ import { DropdownItem, Field, PanelSectionRow, ToggleField } from "@decky/ui";
 import { ProtonDbIcon } from "../../protondb/Icon";
 
 import { useT } from "../../i18n";
-import { compactTextStyle, inlineStatusStyle } from "../../styles";
+import { inlineStatusStyle } from "../../styles";
 import type { ProtonDbBadgeSnapshot } from "../../protondb/controller";
 import type { ProtonDbBadgeSettings } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
@@ -47,7 +47,7 @@ export function ProtonDbBadgesSection({
       <PanelSectionRow>
         <ToggleField
           label={t("qam.protondb.enableLabel")}
-          description={t("qam.protondb.enableDescription")}
+          description={`${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`}
           checked={settings.enabled}
           disabled={enableDisabled}
           onChange={(enabled) => updateSetting("enabled", enabled)}
@@ -118,22 +118,21 @@ export function ProtonDbBadgesSection({
         />
         </div>
       </PanelSectionRow>
-      <PanelSectionRow>
-        <Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
-          {!snapshot.settingsLoaded ? (
-            <div style={compactTextStyle}>{t("qam.protondb.loadingPreferences")}</div>
-          ) : null}
-          <div style={compactTextStyle}>
-            {t("qam.protondb.footnote")}
-          </div>
-          {conflictNotice ? (
-            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
-          ) : null}
-          {snapshot.settingsError ? (
-            <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
-          ) : null}
-        </Field>
-      </PanelSectionRow>
+      {(!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (
+        <PanelSectionRow>
+          <Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
+            {!snapshot.settingsLoaded ? (
+              <div style={inlineStatusStyle("active")}>{t("qam.protondb.loadingPreferences")}</div>
+            ) : null}
+            {conflictNotice ? (
+              <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+            ) : null}
+            {snapshot.settingsError ? (
+              <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
+            ) : null}
+          </Field>
+        </PanelSectionRow>
+      ) : null}
     </CollapsibleSection>
   );
 }

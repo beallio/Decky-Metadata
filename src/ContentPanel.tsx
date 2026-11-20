@@ -260,6 +260,8 @@ export const Content = () => {
   const [missing, setMissing] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [scanCompleted, setScanCompleted] = useState(0);
+  const [scanTotal, setScanTotal] = useState(0);
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
   // One scan-progress poll is pending at a time; unmounting the panel stops polling.
   const scanPoll = useRef<{ timer: number | null; stopped: boolean }>({ timer: null, stopped: false });
@@ -847,6 +849,8 @@ export const Content = () => {
     if (busy) return;
     setBusy(true);
     setScanMessage("");
+    setScanCompleted(0);
+    setScanTotal(0);
     setScanStatusKind("active");
     const failScan = (error: unknown) => {
       setBusy(false);
@@ -866,6 +870,8 @@ export const Content = () => {
       try {
         const progress = await getScanProgress();
         if (poll.stopped) return;
+        setScanCompleted(Number(progress.completed || 0));
+        setScanTotal(Number(progress.total || 0));
         setScanStatusKind("active");
         setScanMessage(
           progress.current ||
@@ -973,6 +979,8 @@ export const Content = () => {
         savedCount={metadataCount}
         missingCount={missing}
         scanBusy={busy}
+        scanCompleted={scanCompleted}
+        scanTotal={scanTotal}
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}

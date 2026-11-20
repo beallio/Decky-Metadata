@@ -4,12 +4,10 @@ import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
-import { fontSize } from "../../tokens";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
 
-const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
 
 type GameTrailersSectionProps = {
   initiallyExpanded?: boolean;
@@ -60,7 +58,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.enableLabel")}
-          description={t("qam.trailers.enableDescription")}
+          description={`${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`}
           checked={state.settings.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -74,7 +72,7 @@ export function GameTrailersSection({
         </PanelSectionRow>
       ) : null}
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>{t("qam.trailers.detailHeading")}</div>
+        <div style={sectionHeadingStyle}>{t("qam.trailers.detailHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
@@ -118,7 +116,7 @@ export function GameTrailersSection({
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>{t("qam.trailers.homeHeading")}</div>
+        <div style={sectionHeadingStyle}>{t("qam.trailers.homeHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
@@ -177,21 +175,13 @@ export function GameTrailersSection({
           </div>
         </Field>
       </PanelSectionRow>
-      <PanelSectionRow>
-        <Field
-          focusable={false}
-          childrenLayout="below"
-          padding="none"
-          bottomSeparator="none"
-        >
-          <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            {t("qam.trailers.footnote")}
-          </div>
-          {state.settingsError && (
+      {state.settingsError ? (
+        <PanelSectionRow>
+          <Field focusable={false} padding="none" bottomSeparator="none">
             <div style={inlineStatusStyle("error")}>{state.settingsError}</div>
-          )}
-        </Field>
-      </PanelSectionRow>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
     </CollapsibleSection>
   );
 }

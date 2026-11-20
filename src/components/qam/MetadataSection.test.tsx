@@ -5,6 +5,7 @@ vi.mock("@decky/ui", () => ({
   DropdownItem: "DropdownItem",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
+  ProgressBarItem: "ProgressBarItem",
 }));
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
@@ -29,6 +30,8 @@ const render = (overrides: Partial<Parameters<typeof MetadataSection>[0]> = {}) 
   missingCount: 1,
   scanBusy: false,
   scanMessage: "",
+  scanCompleted: 0,
+  scanTotal: 0,
   scanStatusKind: "idle",
   cacheBusy: false,
   delistedCountText: "Delisted games: 24",
@@ -50,7 +53,7 @@ const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return text(node.props?.children);
+  return `${text(node.props?.label)}${text(node.props?.description)}${text(node.props?.children)}`;
 };
 
 const refreshButton = (tree: any) => nodes(tree).find(node =>
@@ -72,21 +75,14 @@ describe("Metadata delisted-games subsection", () => {
     expect(refreshDelisted).toHaveBeenCalledOnce();
   });
 
-  it("places the delisted refresh action before its details with or without a date", () => {
-    for (const date of ["Last updated: 9/29/2026", ""]) {
-      const rows = nodes(render({ delistedDateText: date }))
-        .filter((node) => node.type === "PanelSectionRow");
-      const heading = rows.findIndex((row) => text(row) === "Delisted Steam games");
-      const action = rows.findIndex((row) =>
-        nodes(row).some((node) => node.type === "ButtonItem" && node.props?.onClick === refreshDelisted)
-      );
-      const count = rows.findIndex((row) => text(row) === "Delisted games: 24");
-      expect(action).toBe(heading + 1);
-      expect(count).toBe(action + 1);
-      if (date) {
-        expect(rows.findIndex((row) => text(row) === date)).toBe(count + 1);
-      }
-    }
+  it("keeps delisted index details in the refresh action description", () => {
+    const withDate = refreshButton(render());
+    expect(text(withDate.props.description)).toContain("Delisted games: 24");
+    expect(text(withDate.props.description)).toContain("Last updated: 9/29/2026");
+
+    const withoutDate = refreshButton(render({ delistedDateText: "" }));
+    expect(text(withoutDate.props.description)).toContain("Delisted games: 24");
+    expect(text(withoutDate.props.description)).not.toContain("Last updated:");
   });
 
   it("shows an unavailable index without an old date and disables a busy refresh", () => {
@@ -99,5 +95,16 @@ describe("Metadata delisted-games subsection", () => {
     expect(text(tree)).not.toContain("Last updated:");
     expect(refreshButton(tree).props.disabled).toBe(true);
     expect(text(refreshButton(tree))).toContain("Refreshing...");
+  });
+  it("shows scan progress from the completed and total counts", () => {
+    const progress = nodes(render({
+      scanBusy: true,
+      scanMessage: "Scanning metadata",
+      scanCompleted: 2,
+      scanTotal: 4,
+    })).find(node => node.type === "ProgressBarItem");
+
+    expect(progress.props.nProgress).toBe(50);
+    expect(progress.props.description).toBe("Scanning metadata");
   });
 });
