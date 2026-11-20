@@ -416,6 +416,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     nonWritableHome?: boolean;
     nonWritableGrid?: boolean;
     nonWritableCarousel?: boolean;
+    aggregateModule?: boolean;
   } = {}) => {
     const carousel = function viteCarousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu */
@@ -455,11 +456,17 @@ describe("installLibraryCompatibilityIndicators", () => {
       get: () => carouselExport,
       set: options.nonWritableCarousel ? undefined : (value: unknown) => { carouselExport = value; },
     });
-    const modules: Record<string, object> = {
-      "GameCapsule unable to render": carouselExports,
-      "VBC_": { Qx: home },
-      "eForceHWCompatDisplay": { cP: grid },
-    };
+    const modules: Record<string, object> = options.aggregateModule
+      ? (() => {
+        // Beta's Vite build: one merged export object holds the home and grid renderers.
+        const aggregate = { Qx: home, cP: grid };
+        return { "GameCapsule unable to render": carouselExports, "VBC_": aggregate, "eForceHWCompatDisplay": aggregate };
+      })()
+      : {
+        "GameCapsule unable to render": carouselExports,
+        "VBC_": { Qx: home },
+        "eForceHWCompatDisplay": { cP: grid },
+      };
     return { modules, carousel, indicator, home, grid };
   };
 
@@ -1572,6 +1579,13 @@ describe("installLibraryCompatibilityIndicators", () => {
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
+    harness.unpatchers[0]();
+  });
+
+  it("resolves home and grid renderers exported from one aggregate Vite module", () => {
+    const harness = makeViteHarness({ aggregateModule: true });
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
     harness.unpatchers[0]();
   });
 
