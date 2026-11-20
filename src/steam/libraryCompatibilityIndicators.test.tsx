@@ -3,6 +3,17 @@ import { describe, expect, it, vi } from "vitest";
 import { afterPatch } from "@decky/ui/dist/utils/patcher";
 
 const { createElement, Fragment } = ReactModule;
+const callFunctionComponent = (element: unknown) => {
+  if (!ReactModule.isValidElement(element) || typeof element.type !== "function") return null;
+  return (element.type as (props: unknown) => unknown)(element.props);
+};
+const renderCompatibilitySlot = (slot: any) => {
+  let rendered = callFunctionComponent(slot);
+  for (let depth = 0; depth < 3 && ReactModule.isValidElement(rendered) && typeof rendered.type === "function"; depth += 1) {
+    rendered = callFunctionComponent(rendered);
+  }
+  return rendered;
+};
 
 const reactHooks = vi.hoisted(() => ({
   effects: [] as Array<() => void | (() => void)>,
@@ -26,6 +37,35 @@ vi.mock("react", async (importOriginal) => ({
   useEffect: reactHooks.useEffect,
   useState: reactHooks.useState,
 }));
+vi.mock("./compatDisplay", () => {
+  const fieldForDisplay = (display: number) => ({
+    1: "steam_deck_compat_category",
+    2: "steam_os_compat_category",
+    3: "steam_machine_compat_category",
+    4: "steam_frame_compat_category",
+    5: "steam_os_compat_category",
+  }[display] ?? null);
+  return {
+    findSteamCompatDisplayHook: vi.fn(() => null),
+    makeOwnedCompatIndicator: (native: any, hook: (() => [boolean, number]) | null, fallback: number | null) =>
+      function OwnedCompatibilityIndicator(props: any) {
+        const [show, hookDisplay] = hook ? hook() : [fallback !== null, fallback ?? 0];
+        const display = props.forcedDisplay ?? hookDisplay;
+        const field = fieldForDisplay(display);
+        if (!show || !field || !Number.isFinite(Number(props.overview?.[field])) || Number(props.overview[field]) <= 0) {
+          return null;
+        }
+        return {
+          type: native,
+          props: {
+            display,
+            overview: props.overview,
+            className: props.className,
+          },
+        };
+      },
+  };
+});
 
 vi.mock("@decky/api", () => ({
   callable: vi.fn(() => vi.fn()),
@@ -47,7 +87,15 @@ import {
 } from "./libraryCompatibilityIndicators";
 import { notifyCompatibilityRevision } from "./core";
 
-const nativeShortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
+const nativeShortcut = {
+  appid: 2155012430,
+  app_type: 1073741824,
+  steam_deck_compat_category: 2,
+  steam_os_compat_category: 2,
+  steam_machine_compat_category: 2,
+  steam_frame_compat_category: 2,
+  BIsShortcut: () => true,
+};
 const officialGame = { appid: 55150, app_type: 0, BIsShortcut: () => false };
 
 describe("resolveLibraryCompatibilityIndicator", () => {
@@ -118,7 +166,10 @@ describe("resolveLibraryCompatibilityIndicator", () => {
 });
 
 describe("Library card compatibility decoration", () => {
-  const CompatibilityIndicator = () => null;
+  type CompatibilityProps = { overview?: unknown; className?: string; display?: number; forcedDisplay?: number };
+  const CompatibilityIndicator = (_props: CompatibilityProps) => null;
+  const OwnedCompatibilityIndicator = (props: CompatibilityProps) =>
+    createElement(CompatibilityIndicator, { overview: props.overview, className: props.className, display: 1 });
 
   it("removes cached owned indicators when a distinct native indicator exists", () => {
     const ReactiveIndicator = () => null;
@@ -176,11 +227,15 @@ describe("Library card compatibility decoration", () => {
 
   it("adds Steam's native indicator to the Home carousel at its native slot", () => {
     const output = createElement("div", {}, "art", "in-library", false, "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "home-compat");
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, OwnedCompatibilityIndicator, "home-compat");
     const children = decorated.props.children as unknown[];
 
     expect(children).toHaveLength(4);
     expect(children[2]).toMatchObject({
+      type: OwnedCompatibilityIndicator,
+      props: { className: "home-compat" },
+    });
+    expect(callFunctionComponent(children[2])).toMatchObject({
       type: CompatibilityIndicator,
       props: { display: 1, className: "home-compat" },
     });
@@ -189,15 +244,20 @@ describe("Library card compatibility decoration", () => {
 
   it("keeps a non-placeholder Home child when Steam changes the card shape", () => {
     const output = createElement("div", {}, "art", "in-library", "new-native-child", "footer");
-    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "home-compat");
+    const decorated = decorateCarouselCompatibility(output, CompatibilityIndicator, OwnedCompatibilityIndicator, "home-compat");
+    const children = decorated.props.children as unknown[];
 
-    expect(decorated.props.children).toMatchObject([
+    expect(children).toMatchObject([
       "art",
       "in-library",
-      { type: CompatibilityIndicator, props: { display: 1, className: "home-compat" } },
+      { type: OwnedCompatibilityIndicator, props: { className: "home-compat" } },
       "new-native-child",
       "footer",
     ]);
+    expect(callFunctionComponent(children[2])).toMatchObject({
+      type: CompatibilityIndicator,
+      props: { display: 1, className: "home-compat" },
+    });
   });
 
   it("adds Steam's native indicator only inside the Library grid icon row", () => {
@@ -207,12 +267,16 @@ describe("Library card compatibility decoration", () => {
       createElement("div", { className: "outside" }, "outside"),
       createElement("div", { className: "grid-icons" }, "existing"),
     );
-    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, CompatibilityIndicator, "grid-icons", "grid-compat");
+    const decorated = decorateGridCompatibility(output, CompatibilityIndicator, OwnedCompatibilityIndicator, "grid-icons", "grid-compat");
     const gridIcons = (decorated.props.children as any[])[1];
     const children = gridIcons.props.children as unknown[];
 
     expect(children).toHaveLength(2);
     expect(children[1]).toMatchObject({
+      type: OwnedCompatibilityIndicator,
+      props: { className: "grid-compat" },
+    });
+    expect(callFunctionComponent(children[1])).toMatchObject({
       type: CompatibilityIndicator,
       props: { display: 1, className: "grid-compat" },
     });
@@ -244,7 +308,15 @@ describe("Library card compatibility decoration", () => {
 });
 
 describe("installLibraryCompatibilityIndicators", () => {
-  const alternateShortcut = { appid: 2155012431, app_type: 1073741824, BIsShortcut: () => true };
+  const alternateShortcut = {
+    appid: 2155012431,
+    app_type: 1073741824,
+    steam_deck_compat_category: 2,
+    steam_os_compat_category: 2,
+    steam_machine_compat_category: 2,
+    steam_frame_compat_category: 2,
+    BIsShortcut: () => true,
+  };
 
   const makeHarness = (options: {
     candidates?: any[];
@@ -268,6 +340,11 @@ describe("installLibraryCompatibilityIndicators", () => {
     maxResolutionAttempts?: number;
     homeDiscoveryIntervalMs?: number;
     maxHomeDiscoveryAttempts?: number;
+    maxGridDiscoveryAttempts?: number;
+    getCardDocument?: () => any;
+    getSteamUiDocuments?: LibraryCompatibilityIndicatorDependencies["getSteamUiDocuments"];
+    getCurrentRoute?: () => string;
+    findCompatDisplayHook?: () => (() => [boolean, number]) | null;
   } = {}) => {
     const carousel = function carousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu gamepadgamecapsule */
@@ -365,6 +442,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       findModuleChild: options.findModuleChild ?? ((predicate) => candidates.map(predicate).find(Boolean)),
       findModuleBySource: options.findModuleBySource ?? defaultFindModuleBySource,
       findModulesBySource: options.findModulesBySource ?? defaultFindModulesBySource,
+      getSteamUiDocuments: options.getSteamUiDocuments ?? (() => []),
       patchHomeRenderer: options.patchHomeRenderer ?? patchHomeRenderer,
       patchGridRenderer: options.patchGridRenderer ?? patchGridRenderer,
       refreshCompatibilitySurfaces,
@@ -374,10 +452,27 @@ describe("installLibraryCompatibilityIndicators", () => {
       maxResolutionAttempts: options.maxResolutionAttempts ?? 3,
       homeDiscoveryIntervalMs: options.homeDiscoveryIntervalMs ?? 0,
       maxHomeDiscoveryAttempts: options.maxHomeDiscoveryAttempts ?? 0,
+      maxGridDiscoveryAttempts: options.maxGridDiscoveryAttempts ?? 2,
+      getCardDocument: options.getCardDocument ?? (() => {
+        const host = globalThis as any;
+        for (const context of [host, host.parent, host.top]) {
+          const store = context?.SteamUIStore?.m_WindowStore;
+          const documents = [
+            store?.MainWindowInstance?.m_BrowserWindow?.document,
+            store?.GamepadUIMainWindowInstance?.m_BrowserWindow?.document,
+          ];
+          for (const document of documents) {
+            if (typeof document?.querySelector === "function" && document.querySelector("[data-id]")) return document;
+          }
+        }
+        return undefined;
+      }),
+      getCurrentRoute: options.getCurrentRoute ?? (() => ""),
       getOverview: options.getOverview ?? ((appId) => appId === nativeShortcut.appid ? nativeShortcut : alternateShortcut),
       metadataForApp: options.metadataForApp ?? (() => ({ deck_compat_override: 3 } as any)),
       isNativeNonSteamShortcut: options.isNativeNonSteamShortcut ?? ((overview) => overview === nativeShortcut || overview === alternateShortcut),
       ...(options.useDefaultRevisionHook ? {} : { useCompatibilityRevision }),
+      ...(options.findCompatDisplayHook ? { findCompatDisplayHook: options.findCompatDisplayHook } : {}),
     });
 
     return {
@@ -417,6 +512,8 @@ describe("installLibraryCompatibilityIndicators", () => {
     nonWritableGrid?: boolean;
     nonWritableCarousel?: boolean;
     aggregateModule?: boolean;
+    gridTarget?: any;
+    carouselGridTarget?: any;
   } = {}) => {
     const carousel = function viteCarousel() {
       /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu */
@@ -441,14 +538,17 @@ describe("installLibraryCompatibilityIndicators", () => {
         /* eForceHWCompatDisplay bHideCompatIcons LibraryItemBox */
         return null;
       };
-    const grid = { type: gridRenderer };
+    const grid = options.gridTarget ?? { type: gridRenderer };
     if (options.nonWritableHome) {
       Object.defineProperty(home, "render", { value: home.render, writable: false });
     }
     if (options.nonWritableGrid) {
       Object.defineProperty(grid, "type", { value: grid.type, writable: false });
     }
-    const carouselExports: Record<string, object> = { MZr: indicator };
+    const carouselExports: Record<string, object> = {
+      MZr: indicator,
+      ...(options.carouselGridTarget ? { l7: options.carouselGridTarget } : {}),
+    };
     let carouselExport: unknown = carousel;
     Object.defineProperty(carouselExports, "AQ", {
       enumerable: true,
@@ -470,14 +570,36 @@ describe("installLibraryCompatibilityIndicators", () => {
     return { modules, carousel, indicator, home, grid };
   };
 
-  const makeViteHarness = (options: Parameters<typeof makeViteFixture>[0] = {}) => {
+  const makeViteHarness = (options: Parameters<typeof makeViteFixture>[0] & {
+    getCardDocument?: () => any;
+    getSteamUiDocuments?: LibraryCompatibilityIndicatorDependencies["getSteamUiDocuments"];
+    getCurrentRoute?: () => string;
+    findModulesBySource?: (fragments: string[]) => any[];
+    findCompatDisplayHook?: () => (() => [boolean, number]) | null;
+    maxResolutionAttempts?: number;
+    maxGridDiscoveryAttempts?: number;
+  } = {}) => {
     const fixture = makeViteFixture(options);
     const harness = makeHarness({
       candidates: [],
       enableSourceFallbacks: true,
       findModuleBySource: (fragments) => fixture.modules[fragments[0]],
+      maxResolutionAttempts: options.maxResolutionAttempts,
+      maxGridDiscoveryAttempts: options.maxGridDiscoveryAttempts,
+      getSteamUiDocuments: options.getSteamUiDocuments,
+      getCardDocument: options.getCardDocument,
+      getCurrentRoute: options.getCurrentRoute,
+      findModulesBySource: options.findModulesBySource ?? ((fragments) => {
+        if (fragments.length === 0) return Object.values(fixture.modules);
+        if (fragments[0] === "DeckCompat") return [{ DeckCompat: "home-compat", GameCapsule: "capsule" }];
+        if (fragments[0] === "LibraryItemIcons") {
+          return [{ LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" }];
+        }
+        return [];
+      }),
+      findCompatDisplayHook: options.findCompatDisplayHook,
     });
-    return { ...harness, ...fixture };
+    return Object.assign(harness, fixture);
   };
 
   const renderHomeCapsule = (handler: (args: any[], output: any) => any, carousel: any, appid: number) => {
@@ -553,7 +675,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     const visibleItem: any = grid.props.cellRenderer({});
     const capsule = visibleItem.props.children;
     const slot = capsule.type(capsule.props).props.children[2];
-    expect(slot.type(slot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
@@ -575,11 +697,11 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     const firstSlot = first.output.props.children[2];
     const secondSlot = second.output.props.children[2];
-    expect(firstSlot.type(firstSlot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(firstSlot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
-    expect(secondSlot.type(secondSlot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(secondSlot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: alternateShortcut, className: "home-compat" },
     });
@@ -632,7 +754,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(visibleSlot).toMatchObject({
       type: expect.any(Function),
     });
-    expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(visibleSlot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
@@ -711,7 +833,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       const visibleCapsule = visibleItem.props.children;
       const visibleOutput = visibleCapsule.type(visibleCapsule.props);
       const visibleSlot = visibleOutput.props.children[2];
-      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+      expect(renderCompatibilitySlot(visibleSlot)).toMatchObject({
         type: harness.indicator,
         props: { display: 1, overview: nativeShortcut, className: "home-compat" },
       });
@@ -728,7 +850,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       const replacementVisibleCapsule = replacementVisibleItem.props.children;
       const replacementVisibleOutput = replacementVisibleCapsule.type(replacementVisibleCapsule.props);
       const replacementVisibleSlot = replacementVisibleOutput.props.children[2];
-      expect(replacementVisibleSlot.type(replacementVisibleSlot.props)).toMatchObject({
+      expect(renderCompatibilitySlot(replacementVisibleSlot)).toMatchObject({
         type: harness.indicator,
         props: { display: 1, overview: nativeShortcut, className: "home-compat" },
       });
@@ -1004,7 +1126,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       const [objectElement, capsule]: any[] = visibleItem.props.children;
       expect(objectElement.type).toBe(objectMarker);
       const slot = (capsule.type as any)(capsule.props).props.children[2];
-      expect(slot.type(slot.props)).toMatchObject({
+      expect(renderCompatibilitySlot(slot)).toMatchObject({
         type: harness.indicator,
         props: { display: 1, overview: nativeShortcut, className: "home-compat" },
       });
@@ -1414,7 +1536,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       const visibleItem: any = grid.props.cellRenderer({});
       const visibleCapsule: any = visibleItem.props.children;
       const visibleSlot = visibleCapsule.type(visibleCapsule.props).props.children[2];
-      expect(visibleSlot.type(visibleSlot.props)).toMatchObject({
+      expect(renderCompatibilitySlot(visibleSlot)).toMatchObject({
         type: harness.indicator,
         props: { display: 1, overview: nativeShortcut, className: "home-compat" },
       });
@@ -1443,7 +1565,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const homeSlot = home.output.props.children[2];
     expect(homeSlot.type).not.toBe(harness.indicator);
-    expect(homeSlot.type(homeSlot.props)).toBeNull();
+    expect(renderCompatibilitySlot(homeSlot)).toBeNull();
 
     const gridOutput = createElement(
       "div",
@@ -1454,23 +1576,48 @@ describe("installLibraryCompatibilityIndicators", () => {
     const gridIcons = decoratedGrid.props.children;
     const gridSlot = gridIcons.props.children[1];
     expect(gridSlot.type).toBe(homeSlot.type);
-    expect(gridSlot.type(gridSlot.props)).toBeNull();
+    expect(renderCompatibilitySlot(gridSlot)).toBeNull();
 
     metadata = { deck_compat_override: "valve", deck_compat_category: 2 };
-    expect(homeSlot.type(homeSlot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(homeSlot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
-    expect(gridSlot.type(gridSlot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(gridSlot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "grid-compat" },
     });
     expect(useCompatibilityRevision).toHaveBeenCalledTimes(4);
 
     metadata = { deck_compat_override: "valve", deck_compat_category: null };
-    expect(homeSlot.type(homeSlot.props)).toBeNull();
-    expect(gridSlot.type(gridSlot.props)).toBeNull();
+    expect(renderCompatibilitySlot(homeSlot)).toBeNull();
+    expect(renderCompatibilitySlot(gridSlot)).toBeNull();
 
+    harness.unpatchers[0]();
+  });
+  it("uses the selected device status when the effective Deck category is Unknown", () => {
+    const machineShortcut = {
+      ...nativeShortcut,
+      steam_deck_compat_category: 0,
+      steam_machine_compat_category: 3,
+    };
+    const hook = vi.fn((): [boolean, number] => [true, 3]);
+    const harness = makeHarness({
+      findCompatDisplayHook: () => hook,
+      getOverview: () => machineShortcut,
+      metadataForApp: () => ({ deck_compat_override: "valve", deck_compat_category: 0 }),
+      isNativeNonSteamShortcut: (overview) => overview === machineShortcut,
+    });
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    const slot = home.output.props.children[2];
+
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 3, overview: machineShortcut, className: "home-compat" },
+    });
+
+    hook.mockReturnValue([true, 1]);
+    expect(renderCompatibilitySlot(slot)).toBeNull();
     harness.unpatchers[0]();
   });
 
@@ -1484,7 +1631,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     });
     const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const homeSlot = home.output.props.children[2];
-    homeSlot.type(homeSlot.props);
+    renderCompatibilitySlot(homeSlot);
 
     notifyCompatibilityRevision();
     expect(listener).toHaveBeenCalledOnce();
@@ -1505,8 +1652,8 @@ describe("installLibraryCompatibilityIndicators", () => {
     const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const homeSlot = home.output.props.children[2];
 
-    homeSlot.type(homeSlot.props);
-    homeSlot.type(homeSlot.props);
+    renderCompatibilitySlot(homeSlot);
+    renderCompatibilitySlot(homeSlot);
     expect(reactHooks.useState).toHaveBeenCalledTimes(2);
     expect(reactHooks.useEffect).toHaveBeenCalledTimes(2);
     const firstDependencies = reactHooks.effectDependencies[0];
@@ -1542,7 +1689,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     const output = capsule.type(capsule.props);
 
     const slot = output.props.children[2];
-    expect(slot.type(slot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
@@ -1575,7 +1722,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     const capsule = patchedHome.props.fnItemRenderer({ app: nativeShortcut }).props.children;
     const output = capsule.type(capsule.props);
     const slot = output.props.children[2];
-    expect(slot.type(slot.props)).toMatchObject({
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
       type: harness.indicator,
       props: { display: 1, overview: nativeShortcut, className: "home-compat" },
     });
@@ -1589,10 +1736,10 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
-  it("fails closed when a Vite fingerprint is missing", () => {
+  it("installs Home when the Vite grid fingerprint is missing", () => {
     const harness = makeViteHarness({ missingGridFingerprint: true });
 
-    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
     harness.unpatchers[0]();
   });
@@ -1605,10 +1752,204 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
-  it("fails closed when the Vite carousel export is not writable", () => {
+  it("resolves a Vite carousel export even when its slot is not writable", () => {
     const harness = makeViteHarness({ nonWritableCarousel: true });
 
-    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    harness.unpatchers[0]();
+  });
+  it("re-arms beta grid discovery on a later route and decorates Home Recent cards", () => {
+    const mountedMemo = { type: function mountedTile() { return null; } };
+    const fiber = {
+      type: mountedMemo,
+      elementType: mountedMemo,
+      memoizedProps: { app: nativeShortcut, eForceHWCompatDisplay: undefined },
+      return: null,
+    };
+    const document = browserDocument(() => [{ "__reactFiber$tile": fiber }]);
+    let route = "/routes/library/home";
+    const harness = makeViteHarness({
+      missingGridFingerprint: true,
+      gridTarget: mountedMemo,
+      maxResolutionAttempts: 1,
+      getCardDocument: () => document,
+      getCurrentRoute: () => route,
+      findCompatDisplayHook: () => () => [true, 3],
+    });
+
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.pendingRetries.size).toBe(1);
+    route = "/routes/library/app/55150";
+    harness.runNextRetry();
+
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(mountedMemo, expect.any(Function));
+    const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
+    expect(renderCompatibilitySlot(home.output.props.children[2])).toMatchObject({
+      type: harness.indicator,
+      props: { display: 3 },
+    });
+    const output = createElement("div", {}, createElement("div", { className: "grid-icons" }, "controller"));
+    const homeRecent = harness.gridHandler!([{ app: nativeShortcut }], output);
+    const homeRecentSlot = homeRecent.props.children.props.children[1];
+    expect(renderCompatibilitySlot(homeRecentSlot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 3, overview: nativeShortcut, className: "grid-compat" },
+    });
+
+    const decorated = harness.gridHandler!([
+      { app: nativeShortcut, eForceHWCompatDisplay: 2 },
+    ], output);
+    const slot = decorated.props.children.props.children[1];
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 2, overview: nativeShortcut, className: "grid-compat" },
+    });
+    harness.unpatchers[0]();
+  });
+
+
+
+  it("discovers and decorates the shared Home Recent memo renderer", () => {
+    const memo = { type: function sharedTile() { return null; } };
+    const fiber = {
+      elementType: memo,
+      memoizedProps: { app: nativeShortcut, bShortLayout: false },
+      return: null,
+    };
+    const document = browserDocument(() => [{ "__reactFiber$home": fiber }]);
+    const harness = makeViteHarness({
+      missingGridFingerprint: true,
+      carouselGridTarget: memo,
+      maxResolutionAttempts: 1,
+      getCardDocument: () => document,
+      getCurrentRoute: () => "/routes/library/home",
+      findCompatDisplayHook: () => () => [true, 3],
+    });
+
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(memo, expect.any(Function));
+    const output = createElement("div", {}, createElement("div", { className: "grid-icons" }, "controller"));
+    const homeRecent = harness.gridHandler!([{ app: nativeShortcut }], output);
+    const homeSlot = homeRecent.props.children.props.children[1];
+    expect(renderCompatibilitySlot(homeSlot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 3, overview: nativeShortcut, className: "grid-compat" },
+    });
+
+    const grid = harness.gridHandler!([
+      { app: nativeShortcut, eForceHWCompatDisplay: 2 },
+    ], output);
+    const gridSlot = grid.props.children.props.children[1];
+    expect(renderCompatibilitySlot(gridSlot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 2, overview: nativeShortcut, className: "grid-compat" },
+    });
+    harness.unpatchers[0]();
+  });
+
+  it("does not patch a Home memo exported only by an unrelated module", () => {
+    const memo = { type: function unrelatedTile() { return null; } };
+    const fiber = {
+      elementType: memo,
+      memoizedProps: { app: nativeShortcut, bShortLayout: false },
+      return: null,
+    };
+    const document = browserDocument(() => [{ "__reactFiber$home": fiber }]);
+    const harness = makeViteHarness({
+      missingGridFingerprint: true,
+      maxResolutionAttempts: 1,
+      getCardDocument: () => document,
+      getCurrentRoute: () => "/routes/library/home",
+      findModulesBySource: (fragments) => {
+        if (fragments[0] === "DeckCompat") return [{ DeckCompat: "home-compat", GameCapsule: "capsule" }];
+        if (fragments[0] === "LibraryItemIcons") {
+          return [{ LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" }];
+        }
+        return fragments.length === 0 ? [{ l7: memo }] : [];
+      },
+      findCompatDisplayHook: () => null,
+    });
+
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    harness.unpatchers[0]();
+  });
+
+  it("discovers a later grid render from the React root when the document has no Home cells", () => {
+    const memo = { type: function sharedTile() { return null; } };
+    const tileFiber = {
+      elementType: memo,
+      memoizedProps: { app: nativeShortcut, eForceHWCompatDisplay: undefined },
+      return: undefined as unknown,
+    };
+    const rootFiber = { child: tileFiber, return: null };
+    tileFiber.return = rootFiber;
+    const element = { "__reactFiber$tile": tileFiber };
+    const document = {
+      querySelector: vi.fn(() => null),
+      querySelectorAll: vi.fn((selector: string) => selector === "*" ? [element] : []),
+    };
+    const getCardDocument = vi.fn(() => undefined);
+    const getSteamUiDocuments = vi.fn(() => [document as any]);
+    const harness = makeViteHarness({
+      missingGridFingerprint: true,
+      carouselGridTarget: memo,
+      maxResolutionAttempts: 1,
+      maxGridDiscoveryAttempts: 1,
+      getCardDocument,
+      getSteamUiDocuments,
+      getCurrentRoute: () => "/routes/library/app/55150",
+      findCompatDisplayHook: () => () => [true, 3],
+    });
+
+    expect(document.querySelectorAll).toHaveBeenCalledWith("*");
+    expect(document.querySelectorAll).not.toHaveBeenCalledWith("[data-id]");
+    expect(getCardDocument).toHaveBeenCalled();
+    expect(getSteamUiDocuments).toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(memo, expect.any(Function));
+
+    const laterTileOutput = createElement("div", {}, createElement("div", { className: "grid-icons" }, "controller"));
+    const rendered = harness.gridHandler!([
+      { app: nativeShortcut, eForceHWCompatDisplay: undefined },
+    ], laterTileOutput);
+    const slot = rendered.props.children.props.children[1];
+    expect(renderCompatibilitySlot(slot)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 3, overview: nativeShortcut, className: "grid-compat" },
+    });
+    harness.unpatchers[0]();
+  });
+
+  it("accepts duplicate grid style exports only when their values agree", () => {
+    const common = { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" };
+    const harness = makeViteHarness({
+      findModulesBySource: (fragments) => {
+        if (fragments[0] === "DeckCompat") return [{ DeckCompat: "home-compat", GameCapsule: "capsule" }];
+        if (fragments[0] === "LibraryItemIcons") return [common, { ...common }];
+        return [];
+      },
+      findCompatDisplayHook: () => null,
+    });
+
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+    harness.unpatchers[0]();
+  });
+
+  it("rejects conflicting duplicate grid style exports", () => {
+    const harness = makeViteHarness({
+      findModulesBySource: (fragments) => {
+        if (fragments[0] === "DeckCompat") return [{ DeckCompat: "home-compat", GameCapsule: "capsule" }];
+        if (fragments[0] === "LibraryItemIcons") {
+          return [
+            { LibraryItemIcons: "grid-icons", SteamDeckCompatIcon: "grid-compat" },
+            { LibraryItemIcons: "other-grid-icons", SteamDeckCompatIcon: "grid-compat" },
+          ];
+        }
+        return [];
+      },
+      findCompatDisplayHook: () => null,
+    });
+
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
     harness.unpatchers[0]();
   });
@@ -1663,26 +2004,27 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(cached.type(cached.props).props.children[2]).toBe(false);
     const reinstalledSlot = rerendered.output.props.children[2];
-    expect(reinstalledSlot.type(reinstalledSlot.props).type).toBe(second.indicator);
+    expect(renderCompatibilitySlot(reinstalledSlot)).toMatchObject({ type: second.indicator });
     expect(rerendered.capsule.type).not.toBe(cached.type);
     second.unpatchers[0]();
   });
 
   it("mounts inert owned slots for unresolved shortcuts and leaves official games unchanged", () => {
+    const unresolvedShortcut = { ...nativeShortcut, steam_deck_compat_category: 0 };
     const harness = makeHarness({
-      getOverview: (appId) => appId === nativeShortcut.appid ? nativeShortcut : officialGame,
+      getOverview: (appId) => appId === nativeShortcut.appid ? unresolvedShortcut : officialGame,
       metadataForApp: () => ({ deck_compat_override: 0 } as any),
-      isNativeNonSteamShortcut: (overview) => overview === nativeShortcut,
+      isNativeNonSteamShortcut: (overview) => overview === unresolvedShortcut,
     });
 
     const home = renderHomeCapsule(harness.homeHandler!, harness.carousel, nativeShortcut.appid);
     const homeSlot = home.output.props.children[2];
-    expect(homeSlot.type(homeSlot.props)).toBeNull();
+    expect(renderCompatibilitySlot(homeSlot)).toBeNull();
 
     const gridOutput = createElement("div", {}, createElement("div", { className: "grid-icons" }, "existing"));
-    const decoratedGrid = harness.gridHandler!([{ app: nativeShortcut }], gridOutput);
+    const decoratedGrid = harness.gridHandler!([{ app: unresolvedShortcut }], gridOutput);
     const gridSlot = decoratedGrid.props.children.props.children[1];
-    expect(gridSlot.type(gridSlot.props)).toBeNull();
+    expect(renderCompatibilitySlot(gridSlot)).toBeNull();
     expect(harness.gridHandler!([{ app: officialGame }], gridOutput)).toBe(gridOutput);
 
     harness.unpatchers[0]();
@@ -1694,7 +2036,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.unpatchers).toHaveLength(1);
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
     expect(harness.scheduleRetry).toHaveBeenCalledOnce();
     expect(harness.scheduleRetry).toHaveBeenCalledWith(expect.any(Function), 500);
 
@@ -1717,7 +2059,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(harness.pendingRetries.size).toBe(0);
     harness.runScheduledRetry(1);
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
     expect(harness.scheduleRetry).toHaveBeenCalledOnce();
   });
 
@@ -1726,7 +2068,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     const harness = makeHarness({ homeResolution: () => homeResolution });
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
 
     homeResolution = "valid";
     harness.runNextRetry();
@@ -1741,7 +2083,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
-    expect(harness.scheduleRetry).toHaveBeenCalledOnce();
+    expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
 
     harness.runNextRetry();
 
@@ -1760,7 +2102,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.runNextRetry();
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
     expect(harness.pendingRetries.size).toBe(0);
     expect(harness.scheduleRetry).toHaveBeenCalledOnce();
     harness.unpatchers[0]();
@@ -1771,7 +2113,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     ["renamed", (_home: any, grid: any) => ({ Yd: _home, TK: grid })],
     ["swapped", (_home: any, grid: any) => ({ TK: grid })],
     ["ambiguous", (home: any) => [{ Xd: home }, { Xd: home }]],
-  ])("fails closed when Home target resolution is %s", (_label, homeModule) => {
+  ])("keeps Grid independent when Home target resolution is %s", (_label, homeModule) => {
     const harness = makeHarness({
       findModuleBySource: (fragments) => fragments[0] === "VBC_"
         ? homeModule({ render: () => null }, Object.assign(() => null, { type: () => null }))
@@ -1779,7 +2121,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     });
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledOnce();
     expect(harness.unpatchers).toHaveLength(1);
   });
 
@@ -1803,8 +2145,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       findModuleBySource: (fragments) => fragments[0] === "VBC_" ? { Xd: home } : { TK: grid },
     });
 
-    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
-    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).toHaveBeenCalledTimes(typeof grid.type === "function" ? 1 : 0);
   });
 
   it("fails closed for an invalid indicator export", () => {
@@ -1824,15 +2165,18 @@ describe("installLibraryCompatibilityIndicators", () => {
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
   });
 
-  it("unwinds Home immediately when grid installation fails", () => {
+  it("keeps Home installed when grid installation fails", () => {
     const gridInstallFailure = vi.fn(() => { throw new Error("grid target changed"); });
     const harness = makeHarness({ patchGridRenderer: gridInstallFailure });
 
     expect(gridInstallFailure).toHaveBeenCalledOnce();
-    expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.patchHomeRenderer).toHaveBeenCalledOnce();
+    expect(harness.unpatchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.unpatchers).toHaveLength(1);
-  });
+    harness.unpatchers[0]();
+    expect(harness.unpatchHomeRenderer).toHaveBeenCalledOnce();
 
+  });
   it("requires writable renderer descriptors before patching", () => {
     const home = {
       render: function homeRenderer() {

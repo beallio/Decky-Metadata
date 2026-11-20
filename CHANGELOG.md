@@ -31,6 +31,12 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
 - On the Steam Deck Client Beta, game descriptions keep their line breaks,
   ProtonDB badges find Library covers without CSS Loader, and the HLTB
   **Details** button keeps Steam's style.
+- Library compatibility icons on non-Steam games now use your device's own
+  style, as Steam's icons do: Steam Machine and SteamOS icons instead of
+  always the Steam Deck logo (#58). A Library compatibility filter picks its
+  style too, and no icon appears where Steam shows none.
+- On the Steam Deck Client Beta, compatibility icons appear again on Library
+  Home and Library grid tiles for matched non-Steam games.
 
 ## [0.6.5] - 2026-11-20
 
