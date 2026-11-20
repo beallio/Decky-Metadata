@@ -23,13 +23,14 @@ lose unsaved changes.
 Pages in the sidebar:
 
 - **Details**: Edit the title, description, developers, publishers, release
-  date, or rating.
+  date, or rating. At the bottom of this page, under **Store Categories**, turn
+  any of the 11 Store categories on or off. A changed category shows **Edited**
+  until you select **Save**.
 - **Game Match**: Find a Steam game, load details for the current match, enter
   a Steam App ID, load Steam text in your language, or search IGN for details.
 - **HowLongToBeat**: Choose which game's times to show for a non-Steam game.
 - **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)
   for a non-Steam game.
-- **Store Categories**: Turn any of the 11 Store categories on or off.
 - **Shortcut Name**: Use the Steam name, restore the original name, or forget
   the saved name history for a non-Steam game.
 - **Advanced**: Remove saved metadata for this game.

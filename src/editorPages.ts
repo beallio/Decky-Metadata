@@ -6,7 +6,6 @@ export type EditorPageId =
   | "steam-match"
   | "hltb"
   | "compatibility"
-  | "categories"
   | "shortcut-name"
   | "advanced";
 
@@ -15,7 +14,6 @@ export const EDITOR_PAGE_ORDER: readonly EditorPageId[] = [
   "steam-match",
   "hltb",
   "compatibility",
-  "categories",
   "shortcut-name",
   "advanced",
 ];
@@ -32,7 +30,7 @@ export const PAGE_OF_FIELD: Record<DraftFieldKey, EditorPageId> = {
   steamData: "steam-match",
   hltb: "hltb",
   compatibility: "compatibility",
-  categories: "categories",
+  categories: "details",
 };
 
 /** Pages that hold at least one changed draft field. */

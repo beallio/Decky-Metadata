@@ -24,7 +24,7 @@ describe("metadata editor native-row contract", () => {
   });
 
   it("keeps field edit markers visible in Field labels", () => {
-    expect(editorFieldMarkerBaseStyle.borderLeft).toBe("3px solid transparent");
+    expect(editorFieldMarkerBaseStyle).toMatchObject({ borderLeftWidth: 3, borderLeftStyle: "solid", borderLeftColor: "transparent" });
     expect(editorFieldEditedStyle.borderLeftColor).toBe("#1a9fff");
     expect(editorFieldPreviewStyle.borderLeftColor).toBe("#f59e0b");
     expect(editorFieldMarkerTagStyle.fontSize).toBe(12);

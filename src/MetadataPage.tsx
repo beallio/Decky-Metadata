@@ -14,7 +14,6 @@ import {
 import type { CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaClock, FaCog, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
-import { FaTags } from "react-icons/fa6";
 import { SiSteamdeck } from "react-icons/si";
 import {
   clearShortcutNameState,
@@ -133,13 +132,13 @@ const descriptionTextareaStyle: CSSProperties = {
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
+type BusyOperation = "steam" | "ign" | "other";
 
 const PAGE_LABEL_KEYS: Record<EditorPageId, string> = {
   details: "editor.page.details",
   "steam-match": "editor.page.steamMatch",
   hltb: "editor.page.hltb",
   compatibility: "editor.page.compatibility",
-  categories: "editor.page.storeCategories",
   "shortcut-name": "editor.page.shortcutName",
   advanced: "editor.page.advanced",
 };
@@ -148,7 +147,6 @@ const PAGE_ICONS: Record<EditorPageId, ReactNode> = {
   "steam-match": <FaSteam size={20} />,
   hltb: <FaClock size={20} />,
   compatibility: <SiSteamdeck size={20} />,
-  categories: <FaTags size={20} />,
   "shortcut-name": <FaPencilAlt size={20} />,
   advanced: <FaCog size={20} />,
 };
@@ -365,7 +363,8 @@ export const MetadataPage = () => {
   const [ratingText, setRatingText] = useState("");
   const [query, setQuery] = useState(appName(appId));
   const [results, setResults] = useState<MetadataSearchResult[]>([]);
-  const [busy, setBusy] = useState(false);
+  // The operation that owns the shared busy guard; only its control shows busy text.
+  const [busy, setBusy] = useState<BusyOperation | false>(false);
   const [steamAppIdText, setSteamAppIdText] = useState("");
   const [shortcutManagement, setShortcutManagement] = useState<ShortcutNameManagement | null>(null);
   const [shortcutManagementError, setShortcutManagementError] = useState(false);
@@ -409,9 +408,11 @@ export const MetadataPage = () => {
   // A null owner only exists during initial state hydration/tests and remains
   // conservative. A known owner from another editor entry must not block this
   // view or be cleared by its completion callback.
-  const entryBusy = busy && (
+  const entryBusy = busy !== false && (
     busyEntryRef.current === null || busyEntryRef.current === editorEntryToken
   );
+  const steamBusy = entryBusy && busy === "steam";
+  const ignBusy = entryBusy && busy === "ign";
 
   const isCurrentEditorEntry = useCallback(
     (token: number) => editorEntryRef.current.token === token,
@@ -520,12 +521,12 @@ export const MetadataPage = () => {
     return reconciled;
   }, []);
 
-  const beginBusy = useCallback((entryToken: number) => {
+  const beginBusy = useCallback((entryToken: number, operation: BusyOperation = "other") => {
     if (!isCurrentEditorEntry(entryToken)) return false;
     if (busyRef.current && busyEntryRef.current === entryToken) return false;
     busyRef.current = true;
     busyEntryRef.current = entryToken;
-    setBusy(true);
+    setBusy(operation);
     return true;
   }, [isCurrentEditorEntry]);
 
@@ -833,22 +834,21 @@ export const MetadataPage = () => {
     };
   };
   // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
-  const markedLabel = (key: DraftFieldKey, labelKey: string, withBar = true) => {
-    const marker = fieldMarker(key);
-    return (
-      <span
-        style={{
-          ...(withBar ? marker.container : undefined),
-          ...marker.label,
-          display: "inline-flex",
-          alignItems: "center",
-        }}
-      >
-        <span>{t(labelKey)}</span>
-        {marker.tag ? <span style={editorFieldMarkerTagStyle}>{marker.tag}</span> : null}
-      </span>
-    );
-  };
+  const renderMarkedLabel = (marker: ReturnType<typeof fieldMarker>, label: string, withBar = true) => (
+    <span
+      style={{
+        ...(withBar ? marker.container : undefined),
+        ...marker.label,
+        display: "inline-flex",
+        alignItems: "center",
+      }}
+    >
+      <span>{label}</span>
+      {marker.tag ? <span style={editorFieldMarkerTagStyle}>{marker.tag}</span> : null}
+    </span>
+  );
+  const markedLabel = (key: DraftFieldKey, labelKey: string, withBar = true) =>
+    renderMarkedLabel(fieldMarker(key), t(labelKey), withBar);
   // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
   const stackedTextField = (
     blockStyle: CSSProperties,
@@ -960,7 +960,7 @@ export const MetadataPage = () => {
       toastWarn(t("editor.toast.steamAppIdInvalidTitle"), t("editor.toast.steamAppIdInvalidBody"));
       return false;
     }
-    if (!beginBusy(requestedEntry)) return false;
+    if (!beginBusy(requestedEntry, "steam")) return false;
     try {
       return await previewSteamDraft(requestedEntry, normalizedMetadata, steamAppId, language);
     } finally {
@@ -1082,7 +1082,7 @@ export const MetadataPage = () => {
       : explicitSteamAppId;
     if (steamAppId === undefined) return;
     const parsed = normalizedSteamAppId(steamAppId);
-    if (!beginBusy(requestedEntry)) return;
+    if (!beginBusy(requestedEntry, "steam")) return;
     try {
       if (parsed === null) {
         // Clearing the match is a form edit; Save removes the stored match.
@@ -1170,7 +1170,7 @@ export const MetadataPage = () => {
 
   const search = async () => {
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry)) return;
+    if (!beginBusy(requestedEntry, "ign")) return;
     try {
       const found = await searchMetadata(query, 8);
       if (!isCurrentEditorEntry(requestedEntry)) return;
@@ -1184,7 +1184,7 @@ export const MetadataPage = () => {
 
   const applyResult = async (result: MetadataSearchResult) => {
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry)) return;
+    if (!beginBusy(requestedEntry, "ign")) return;
     const baselineMetadata = metadataRef.current;
     const baselineText = formTextSnapshot();
     try {
@@ -1561,6 +1561,7 @@ export const MetadataPage = () => {
             />
           </Field>
         </DialogControlsSection>
+        {renderCategoriesSection()}
       </>
     );
   }
@@ -1570,7 +1571,7 @@ export const MetadataPage = () => {
       ? "editor.loadFromSteamSteamGame"
       : !hasSteamMatch
         ? "editor.loadFromSteamNoMatch"
-        : entryBusy
+        : steamBusy
           ? "editor.loadFromSteamBusy"
           : "editor.loadFromSteam";
     return (
@@ -1593,7 +1594,7 @@ export const MetadataPage = () => {
           >
             <FocusableButton
               className={`DialogButton ${editorFocusTargetClassName}`}
-              disabled={loadLabelKey !== "editor.loadFromSteam"}
+              disabled={entryBusy || loadLabelKey !== "editor.loadFromSteam"}
               onClick={() => {
                 if (loadLabelKey === "editor.loadFromSteam") void refreshFromSteam();
               }}
@@ -1677,17 +1678,17 @@ export const MetadataPage = () => {
                 onClick={search}
                 style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
               >
-                {entryBusy ? t("editor.searching") : t("editor.search")}
+                {ignBusy ? t("editor.searching") : t("editor.search")}
               </FocusableButton>
             </div>
           </Field>
           <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-            {entryBusy ? (
+            {ignBusy ? (
               <Field focusable={false} padding="none" bottomSeparator="none">
                 <div style={compactTextStyle}>{t("editor.searching")}</div>
               </Field>
             ) : null}
-            {!entryBusy && !results.length ? (
+            {!ignBusy && !results.length ? (
               <Field focusable={false} padding="none" bottomSeparator="none">
                 <div style={compactTextStyle}>{t("editor.noResults")}</div>
               </Field>
@@ -1802,21 +1803,29 @@ export const MetadataPage = () => {
     );
   }
 
-  function renderCategoriesPage() {
+  function renderCategoriesSection() {
+    const saved = savedRecordRef.current;
+    const savedCategories = new Set(saved?.store_categories ?? []);
+    const formCategories = new Set(metadata.store_categories ?? []);
+    const changedMarker = fieldMarker("categories");
+    const unchangedMarker = { container: editorFieldMarkerBaseStyle, label: undefined, tag: null };
     return (
       <DialogControlsSection>
-        <DialogControlsSectionHeader>
-          {markedLabel("categories", "editor.page.storeCategories")}
-        </DialogControlsSectionHeader>
-        {Object.keys(CATEGORY_LABELS).map((category) => (
-          <ToggleField
-            key={category}
-            bottomSeparator="standard"
-            label={categoryLabel(Number(category), t)}
-            checked={(metadata.store_categories || []).includes(Number(category))}
-            onChange={(checked) => toggleCategory(Number(category), checked)}
-          />
-        ))}
+        <DialogControlsSectionHeader>{t("editor.page.storeCategories")}</DialogControlsSectionHeader>
+        {Object.keys(CATEGORY_LABELS).map((key) => {
+          const category = Number(key);
+          // Mark each toggle whose state differs from the stored record.
+          const categoryChanged = saved !== null && savedCategories.has(category) !== formCategories.has(category);
+          return (
+            <ToggleField
+              key={key}
+              bottomSeparator="standard"
+              label={renderMarkedLabel(categoryChanged ? changedMarker : unchangedMarker, categoryLabel(category, t))}
+              checked={formCategories.has(category)}
+              onChange={(checked) => toggleCategory(category, checked)}
+            />
+          );
+        })}
       </DialogControlsSection>
     );
   }
@@ -1900,7 +1909,6 @@ export const MetadataPage = () => {
     "steam-match": renderSteamMatchPage,
     hltb: renderHltbPage,
     compatibility: renderCompatibilityPage,
-    categories: renderCategoriesPage,
     "shortcut-name": renderShortcutNamePage,
     advanced: renderAdvancedPage,
   };

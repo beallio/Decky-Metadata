@@ -61,8 +61,11 @@ export const editorRowActionStyle = {
   overflowWrap: "anywhere",
 } as const;
 
+// Longhands only: React drops a removed longhand after re-applying a shorthand, which left the bar visible.
 export const editorFieldMarkerBaseStyle = {
-  borderLeft: "3px solid transparent",
+  borderLeftWidth: 3,
+  borderLeftStyle: "solid",
+  borderLeftColor: "transparent",
   paddingLeft: 12,
 } as const;
 
