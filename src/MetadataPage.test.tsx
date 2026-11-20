@@ -2164,7 +2164,7 @@ describe("Draft field markers and editor actions", () => {
 
     const previewed = walk(openPage("Details"), (node) => node.type === "Field" && text(node.props.label).startsWith("Description"))[0];
     expect(text(previewed)).toContain("From Steam, not saved");
-    expect(previewed.props.label.props.style).toMatchObject({ color: "#f59e0b" });
+    expect(previewed.props.label.props.style).toMatchObject({ color: "#ffc53d" });
 
     walk(renderPage(), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My description" } });

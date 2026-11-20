@@ -6,6 +6,7 @@ import { useT } from "../../i18n";
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
+import { colors } from "../../tokens";
 import { featureConflictNotice } from "../../pluginConflicts";
 
 
@@ -170,7 +171,7 @@ export function GameTrailersSection({
           focusable={true}
           highlightOnFocus={true}
         >
-          <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
+          <div style={{ fontSize: "14px", color: colors.textSecondary }}>
             {t("qam.trailers.displayTarget", { display, height: state.targetHeight })}
           </div>
         </Field>

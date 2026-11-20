@@ -121,11 +121,11 @@ const descriptionTextareaStyle: CSSProperties = {
   minHeight: 144,
   boxSizing: "border-box",
   resize: "vertical",
-  borderRadius: 4,
-  padding: 10,
-  color: "white",
-  background: "rgba(0,0,0,0.28)",
-  border: "1px solid rgba(255,255,255,0.18)",
+  borderRadius: 2,
+  padding: "10px 16px",
+  color: colors.text,
+  background: "rgba(255,255,255,0.1)",
+  border: "none",
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;

@@ -1,6 +1,7 @@
 import { ConfirmModal, Focusable, ScrollPanelGroup } from "@decky/ui";
 
 import { useT } from "../../i18n";
+import { colors } from "../../tokens";
 
 type PluginLogModalProps = {
   logs: string;
@@ -30,7 +31,8 @@ export function PluginLogModal({ logs, closeModal }: PluginLogModalProps) {
             fontSize: "12px",
             whiteSpace: "pre-wrap",
             overflowWrap: "anywhere",
-            backgroundColor: "rgba(0, 0, 0, 0.3)",
+            backgroundColor: colors.surfaceKnockout,
+            color: colors.textSecondary,
             padding: "10px",
             borderRadius: "4px",
             userSelect: "text",

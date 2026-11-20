@@ -18989,13 +18989,16 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+// Semantic tokens follow Valve's SteamUI palette (steamui-watch VALVE_PALETTE).
 const colors = {
     accent: "#1a9fff",
-    success: "#4ade80",
-    warning: "#f59e0b",
-    error: "#f87171",
-    textSecondary: "#cbd5e1"};
+    success: "#5ba32b",
+    warning: "#ffc53d",
+    error: "#ec5d5e",
+    text: "#dcdedf",
+    textSecondary: "#b8bcbf",
+    surfaceKnockout: "#0e141b",
+};
 // Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
 const space = {
     md: 12};
@@ -19392,7 +19395,7 @@ function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange
     const display = state.displayWidth && state.displayHeight
         ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
         : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: "#cbd5e1" }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: disabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: disabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: disabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: disabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: !state.settingsLoaded, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: disabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
 }
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -19423,7 +19426,8 @@ function PluginLogModal({ logs, closeModal }) {
                     fontSize: "12px",
                     whiteSpace: "pre-wrap",
                     overflowWrap: "anywhere",
-                    backgroundColor: "rgba(0, 0, 0, 0.3)",
+                    backgroundColor: colors.surfaceKnockout,
+                    color: colors.textSecondary,
                     padding: "10px",
                     borderRadius: "4px",
                     userSelect: "text",
@@ -36847,11 +36851,11 @@ const descriptionTextareaStyle = {
     minHeight: 144,
     boxSizing: "border-box",
     resize: "vertical",
-    borderRadius: 4,
-    padding: 10,
-    color: "white",
-    background: "rgba(0,0,0,0.28)",
-    border: "1px solid rgba(255,255,255,0.18)",
+    borderRadius: 2,
+    padding: "10px 16px",
+    color: colors.text,
+    background: "rgba(255,255,255,0.1)",
+    border: "none",
 };
 const PAGE_LABEL_KEYS = {
     details: "editor.page.details",
