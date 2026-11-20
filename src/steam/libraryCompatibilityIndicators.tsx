@@ -1,5 +1,7 @@
 import { Fragment, cloneElement, createElement, isValidElement, useEffect, useState } from "react";
 import type { ElementType, ReactElement, ReactNode } from "react";
+import type { CompatDisplayHook } from "./compatDisplay";
+import { findSteamCompatDisplayHook, makeOwnedCompatIndicator } from "./compatDisplay";
 import { frontendLog } from "../backend";
 import type { MetadataData } from "../types";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../types";
@@ -16,7 +18,8 @@ import {
   subscribeCompatibilityRevision,
   Unpatch,
 } from "./core";
-import { findSteamUiDocumentMatch, steamUiWindow } from "./steamUiHost";
+import { findSteamUiDocumentMatch, steamUiDocuments, steamUiWindow } from "./steamUiHost";
+import type { SteamUiDocument } from "./steamUiHost";
 import {
   findLiveModuleChild,
   findSteamModuleBySource,
@@ -33,11 +36,54 @@ type CompatibilityMetadata = Pick<MetadataData, "deck_compat_override" | "deck_c
 const HOME_INDICATOR_KEY = "decky-metadata-compatibility-home";
 const GRID_INDICATOR_KEY = "decky-metadata-compatibility-grid";
 
+const reactFiberFor = (element: unknown) => {
+  try {
+    const key = Object.keys(element as object).find((name) =>
+      name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$")
+    );
+    return key ? (element as Record<string, unknown>)[key] : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const reactRootFor = (document: { querySelectorAll?: (selector: string) => Iterable<unknown> } | undefined) => {
+  try {
+    for (const element of document?.querySelectorAll?.("*") ?? []) {
+      let fiber = reactFiberFor(element);
+      for (let depth = 0; fiber && typeof fiber === "object" && "return" in fiber && fiber.return && depth < 20000; depth += 1) {
+        fiber = fiber.return;
+      }
+      if (fiber) return fiber;
+    }
+  } catch {
+    // React DOM discovery is optional.
+  }
+  return undefined;
+};
+
 const steamUiCardDocument = () => {
   return findSteamUiDocumentMatch((document) =>
     document.querySelector("[data-id]") ? document : undefined
   );
 };
+
+const currentLibraryRoute = () => {
+  const host = steamUiWindow() as any;
+  const globalHost = globalThis as any;
+  return host.SteamUIStore?.m_WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname ??
+    host.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname ??
+    globalHost.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname ??
+    globalHost.window?.location?.pathname ??
+    "";
+};
+
+const isLibraryGridRoute = (route: unknown) =>
+  typeof route === "string" && /(?:^|\/)library\/(?!home(?:\/|$)).*/.test(route.split(/[?#]/, 1)[0]);
+
+const hasOwn = (value: unknown, key: PropertyKey) =>
+  value !== null && (typeof value === "object" || typeof value === "function") &&
+  Object.prototype.hasOwnProperty.call(value, key);
 
 export type LibraryCompatibilityIndicatorDependencies = {
   findModuleChild: ModuleFinder;
@@ -52,20 +98,36 @@ export type LibraryCompatibilityIndicatorDependencies = {
   maxResolutionAttempts: number;
   homeDiscoveryIntervalMs: number;
   maxHomeDiscoveryAttempts: number;
+  maxGridDiscoveryAttempts: number;
+  getCardDocument: () => any;
+  getSteamUiDocuments: () => SteamUiDocument[];
+  getCurrentRoute: () => string;
+  findCompatDisplayHook?: () => CompatDisplayHook | null;
   getOverview: (appId: number) => any;
   metadataForApp: (appId: number) => MetadataData | undefined;
   isNativeNonSteamShortcut: (overview: any) => boolean;
   useCompatibilityRevision: (subscribe: (listener: () => void) => Unpatch) => void;
 };
 
-type LibraryCompatibilityTargets = {
+type HomeCompatibilityTargets = {
   home: any;
   carousel: any;
-  grid: any;
   indicator: ElementType;
   homeClassName: string;
+  stable: boolean;
+};
+
+type GridCompatibilityTargets = {
+  grid: any;
+  indicator: ElementType;
   gridIconsClassName: string;
   gridIndicatorClassName: string;
+  stable: boolean;
+};
+
+type LibraryCompatibilityTargets = {
+  home?: HomeCompatibilityTargets;
+  grid?: GridCompatibilityTargets;
 };
 
 type MountedHomeGrid = {
@@ -76,10 +138,21 @@ type MountedHomeGrid = {
   restore: () => boolean;
 };
 
-
 const findOneSourceExport = (modules: any[], predicate: (module: any) => boolean): any | undefined => {
   const matches = modules.filter(predicate);
   return matches.length === 1 ? matches[0] : undefined;
+};
+const findEquivalentSourceExport = (
+  modules: any[],
+  predicate: (module: any) => boolean,
+  keys: string[],
+): any | undefined => {
+  const matches = modules.filter(predicate);
+  if (matches.length === 0) return undefined;
+  const first = matches[0];
+  return matches.every((module) => keys.every((key) => module[key] === first[key]))
+    ? first
+    : undefined;
 };
 
 /**
@@ -187,7 +260,7 @@ export function decorateCarouselCompatibility<T>(
   const decorated = cloneElement(output, {
     children: [
       ...children.slice(0, 2),
-      createElement(indicator, { key: HOME_INDICATOR_KEY, display: DECK_DISPLAY, overview, className }),
+      createElement(indicator, { key: HOME_INDICATOR_KEY, overview, className }),
       ...remainingChildren,
     ],
   });
@@ -202,6 +275,7 @@ const decorateGridIconRow = (
   iconRowClassName: string,
   indicatorClassName: string,
   overview: unknown,
+  forcedDisplay?: number,
 ): ReactNode => {
   if (!isValidElement<CompatibilityCardProps>(node)) return node;
   if (node.props.className === iconRowClassName) {
@@ -213,19 +287,18 @@ const decorateGridIconRow = (
         ...children,
         createElement(indicator, {
           key: GRID_INDICATOR_KEY,
-          display: DECK_DISPLAY,
           overview,
           className: indicatorClassName,
+          forcedDisplay,
         }),
       ],
     });
   }
 
   const originalChildren = node.props.children;
-  if (originalChildren === undefined) return node;
   const children = childrenOf(node);
   const decoratedChildren = children.map((child) =>
-    decorateGridIconRow(child, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview)
+    decorateGridIconRow(child, nativeIndicator, indicator, iconRowClassName, indicatorClassName, overview, forcedDisplay)
   );
   if (decoratedChildren.every((child, index) => child === children[index])) return node;
   return cloneElement(node, {
@@ -240,6 +313,7 @@ export function decorateGridCompatibility(
   iconRowClassName: string,
   indicatorClassName: string,
   overview?: unknown,
+  forcedDisplay?: number,
 ): ReactElement<CompatibilityCardProps>;
 export function decorateGridCompatibility<T>(
   output: T,
@@ -248,6 +322,7 @@ export function decorateGridCompatibility<T>(
   iconRowClassName: string,
   indicatorClassName: string,
   overview?: unknown,
+  forcedDisplay?: number,
 ): T;
 export function decorateGridCompatibility<T>(
   output: T,
@@ -256,6 +331,7 @@ export function decorateGridCompatibility<T>(
   iconRowClassName: string,
   indicatorClassName: string,
   overview?: unknown,
+  forcedDisplay?: number,
 ): T {
   const decorated = decorateGridIconRow(
     output as ReactNode,
@@ -264,6 +340,7 @@ export function decorateGridCompatibility<T>(
     iconRowClassName,
     indicatorClassName,
     overview,
+    forcedDisplay,
   );
   return decorated as unknown as T;
 }
@@ -271,15 +348,15 @@ export function decorateGridCompatibility<T>(
 const resolveTargets = (
   dependencies: Pick<
     LibraryCompatibilityIndicatorDependencies,
-    "findModuleChild" | "findModuleBySource" | "findModulesBySource"
+    "findModuleChild" | "findModuleBySource" | "findModulesBySource" | "getCardDocument" | "getSteamUiDocuments"
   >,
-): LibraryCompatibilityTargets | null => {
+  discoverGrid: boolean,
+  discoverHomeGrid: boolean,
+): LibraryCompatibilityTargets => {
   const findChild = (predicate: (module: any) => any) => {
     try {
       return dependencies.findModuleChild(predicate);
     } catch {
-      // A lazy Steam module can disappear while Decky's finder is scanning it.
-      // Treat that race as unresolved so the installer retries fail-closed.
       return undefined;
     }
   };
@@ -319,26 +396,10 @@ const resolveTargets = (
     "bHideCompatIcons",
     "LibraryItemBox",
   ]);
-  const homeStyles = findChild((module) =>
-    typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined
-  ) ?? findOneSourceExport(dependencies.findModulesBySource(["DeckCompat", "GameCapsule"]), (module) =>
-    typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string"
-  );
-  const gridStyles = findChild((module) =>
-    typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined
-  ) ?? findOneSourceExport(dependencies.findModulesBySource(["LibraryItemIcons", "SteamDeckCompatIcon"]), (module) =>
-    typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string"
-  );
-
   const hasWritableCallableMethod = (target: unknown, methodName: string) => {
     if (!target || (typeof target !== "object" && typeof target !== "function")) return false;
     const descriptor = Object.getOwnPropertyDescriptor(target, methodName);
     return typeof descriptor?.value === "function" && descriptor.writable === true;
-  };
-  const isWritableExport = (module: unknown, key: string) => {
-    if (!module || (typeof module !== "object" && typeof module !== "function")) return false;
-    const descriptor = Object.getOwnPropertyDescriptor(module, key);
-    return descriptor?.writable === true || typeof descriptor?.set === "function";
   };
   const sourceOf = (value: unknown) => typeof value === "function" ? value.toString() : "";
   const sourceOfMethod = (target: unknown, methodName: string) =>
@@ -348,8 +409,13 @@ const resolveTargets = (
   const findOneExport = (module: unknown, predicate: (key: string, value: unknown) => boolean) => {
     if (!module || typeof module !== "object" || Array.isArray(module)) return undefined;
     const matches: Array<[string, unknown]> = [];
-    for (const [key, value] of Object.entries(module)) {
-      if (predicate(key, value)) matches.push([key, value]);
+    for (const key of Object.keys(module)) {
+      try {
+        const value = Reflect.get(module, key);
+        if (predicate(key, value)) matches.push([key, value]);
+      } catch {
+        // A lazy module getter is not a target.
+      }
     }
     return matches.length === 1 ? matches[0] : undefined;
   };
@@ -362,8 +428,8 @@ const resolveTargets = (
     typeof carouselModule?._ === "function" && isCarouselRenderer(carouselModule._)
       ? ["_", carouselModule._]
       : undefined;
-  const carouselEntry = carouselByName ?? findOneExport(carouselModule, (key, value) =>
-    isWritableExport(carouselModule, key) && isCarouselRenderer(value)
+  const carouselEntry = carouselByName ?? findOneExport(carouselModule, (_key, value) =>
+    isCarouselRenderer(value)
   );
   const isCompatIndicator = (value: unknown) => {
     const source = sourceOf(value);
@@ -386,8 +452,9 @@ const resolveTargets = (
     : findOneExport(homeModule, (_key, value) =>
       hasWritableCallableMethod(value, "render") && sourceOfMethod(value, "render").includes("VBC_")
     )?.[1];
+  const homeStable = home !== undefined;
   const gridByName = gridModule?.TK;
-  const grid: unknown = hasWritableCallableMethod(gridByName, "type")
+  let grid: unknown = hasWritableCallableMethod(gridByName, "type")
     ? gridByName
     : findOneExport(gridModule, (_key, value) => {
       const source = sourceOfMethod(value, "type");
@@ -396,34 +463,146 @@ const resolveTargets = (
         source.includes("bHideCompatIcons") &&
         source.includes("LibraryItemBox");
     })?.[1];
+  const gridStable = grid !== undefined;
+  if (!grid && (discoverGrid || discoverHomeGrid)) {
+    let document: any;
+    try {
+      document = dependencies.getCardDocument();
+    } catch {
+      document = undefined;
+    }
+    let cardRoots: any[] = [];
+    try {
+      const cards = Array.from(document?.querySelectorAll?.("[data-id]") ?? []).slice(0, 64);
+      cardRoots = cards.map(reactFiberFor).filter(Boolean);
+    } catch {
+      cardRoots = [];
+    }
+    const exported = (module: unknown, candidate: unknown) => {
+      if (!module || typeof module !== "object" || Array.isArray(module)) return false;
+      return Object.keys(module).some((name) => {
+        try {
+          return Reflect.get(module, name) === candidate;
+        } catch {
+          return false;
+        }
+      });
+    };
+    let otherModules: any[] = [];
+    let scannedOtherModules = false;
+    const isConfirmedGridExport = (candidate: unknown) => {
+      if (exported(carouselModule, candidate)) return true;
+      if (!scannedOtherModules) {
+        scannedOtherModules = true;
+        try {
+          otherModules = dependencies.findModulesBySource([]);
+        } catch {
+          otherModules = [];
+        }
+      }
+      return otherModules.some((module) => exported(module, candidate));
+    };
+    const findGridTarget = (fiber: any, includeHome: boolean) => {
+      try {
+        const props = fiber.memoizedProps;
+        const appId = Number(props?.app?.appid);
+        if (!Number.isFinite(appId) || appId <= 0) return undefined;
+        const homeMemo = fiber.elementType;
+        if (
+          includeHome &&
+          hasOwn(props, "bShortLayout") &&
+          homeMemo !== carouselEntry?.[1] &&
+          homeMemo &&
+          typeof homeMemo === "object" &&
+          hasWritableCallableMethod(homeMemo, "type") &&
+          exported(carouselModule, homeMemo)
+        ) {
+          return homeMemo;
+        }
+        if (!discoverGrid || !hasOwn(props, "eForceHWCompatDisplay")) return undefined;
+        for (const candidate of [fiber.elementType, fiber.type]) {
+          if (
+            candidate &&
+            typeof candidate === "object" &&
+            hasWritableCallableMethod(candidate, "type") &&
+            isConfirmedGridExport(candidate)
+          ) {
+            return candidate;
+          }
+        }
+      } catch {
+        // A stale fiber is ignored during this bounded discovery attempt.
+      }
+      return undefined;
+    };
+    const scanFibers = (roots: any[], limit: number, includeHome: boolean) => {
+      const pending = [...roots];
+      const seen = new Set<any>();
+      let visited = 0;
+      while (pending.length > 0 && visited < limit) {
+        const fiber = pending.pop();
+        if (!fiber || seen.has(fiber)) continue;
+        seen.add(fiber);
+        visited += 1;
+        const candidate = findGridTarget(fiber, includeHome);
+        if (candidate) return candidate;
+        if (fiber.child) pending.push(fiber.child);
+        if (fiber.sibling) pending.push(fiber.sibling);
+      }
+      return undefined;
+    };
+    grid = scanFibers(cardRoots, 512, discoverHomeGrid || discoverGrid);
+    if (!grid && discoverGrid) {
+      const roots = dependencies.getSteamUiDocuments()
+        .map(reactRootFor)
+        .filter(Boolean);
+      // shortcut: tiles mounted before a grid-route discovery keep the old renderer until they remount (scroll/revisit); Home-time discovery normally patches first.
+      grid = scanFibers(roots, 20000, false);
+    }
+  }
+  const homeStyles = findChild((module) =>
+    typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined
+  ) ?? findOneSourceExport(dependencies.findModulesBySource(["DeckCompat", "GameCapsule"]), (module) =>
+    typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string"
+  );
+  const gridStyles = findChild((module) =>
+    typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined
+  ) ?? findEquivalentSourceExport(
+    dependencies.findModulesBySource(["LibraryItemIcons", "SteamDeckCompatIcon"]),
+    (module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string",
+    ["LibraryItemIcons", "SteamDeckCompatIcon"],
+  );
   const isElementType = (value: unknown): value is ElementType => typeof value === "function";
   const isNonEmptyString = (value: unknown): value is string =>
     typeof value === "string" && value.length > 0;
-
-  if (
-    !carouselModule ||
-    !carouselEntry ||
-    Array.isArray(homeModule) ||
-    Array.isArray(gridModule) ||
-    // Vite exposes many renderers from one aggregate module; only the targets must differ.
-    home === grid ||
-    !hasWritableCallableMethod(home, "render") ||
-    !hasWritableCallableMethod(grid, "type") ||
-    !isWritableExport(carouselModule, carouselEntry[0]) ||
-    !isElementType(indicator) ||
-    !isNonEmptyString(homeStyles?.DeckCompat) ||
-    !isNonEmptyString(homeStyles?.GameCapsule) ||
-    !isNonEmptyString(gridStyles?.LibraryItemIcons) ||
-    !isNonEmptyString(gridStyles?.SteamDeckCompatIcon)
-  ) return null;
+  const nativeIndicator = isElementType(indicator) ? indicator : undefined;
+  const commonResolved = Boolean(carouselModule && carouselEntry && nativeIndicator);
+  const homeResolved = commonResolved &&
+    !Array.isArray(homeModule) &&
+    home !== grid &&
+    hasWritableCallableMethod(home, "render") &&
+    isNonEmptyString(homeStyles?.DeckCompat) &&
+    isNonEmptyString(homeStyles?.GameCapsule);
+  const gridResolved = commonResolved &&
+    !Array.isArray(gridModule) &&
+    hasWritableCallableMethod(grid, "type") &&
+    isNonEmptyString(gridStyles?.LibraryItemIcons) &&
+    isNonEmptyString(gridStyles?.SteamDeckCompatIcon);
   return {
-    home,
-    carousel: carouselEntry[1],
-    grid,
-    indicator,
-    homeClassName: homeStyles.DeckCompat,
-    gridIconsClassName: gridStyles.LibraryItemIcons,
-    gridIndicatorClassName: gridStyles.SteamDeckCompatIcon,
+    home: homeResolved ? {
+      home,
+      carousel: carouselEntry![1],
+      indicator: nativeIndicator!,
+      homeClassName: homeStyles!.DeckCompat,
+      stable: homeStable,
+    } : undefined,
+    grid: gridResolved ? {
+      grid,
+      indicator: nativeIndicator!,
+      gridIconsClassName: gridStyles!.LibraryItemIcons,
+      gridIndicatorClassName: gridStyles!.SteamDeckCompatIcon,
+      stable: gridStable,
+    } : undefined,
   };
 };
 
@@ -433,16 +612,20 @@ const defaultDependencies: LibraryCompatibilityIndicatorDependencies = {
   findModulesBySource: findSteamModulesBySource,
   patchHomeRenderer: (component, handler) => safeAfterPatch(component, "render", handler).unpatch,
   patchGridRenderer: (component, handler) => safeAfterPatch(component, "type", handler).unpatch,
+  refreshCompatibilitySurfaces,
   scheduleRetry: (callback, delayMs) => window.setTimeout(callback, delayMs),
   cancelRetry: (retryId) => window.clearTimeout(retryId),
   retryIntervalMs: 500,
   maxResolutionAttempts: 240,
   homeDiscoveryIntervalMs: 500,
   maxHomeDiscoveryAttempts: 60,
+  maxGridDiscoveryAttempts: 60,
+  getCardDocument: steamUiCardDocument,
+  getSteamUiDocuments: steamUiDocuments,
+  getCurrentRoute: currentLibraryRoute,
   getOverview,
   metadataForApp: (appId) => metadataCache[String(appId)],
   isNativeNonSteamShortcut,
-  refreshCompatibilitySurfaces,
   useCompatibilityRevision: (subscribe) => {
     const [, setRevision] = useState(compatibilityRevisionSnapshot);
     useEffect(() => {
@@ -509,7 +692,9 @@ export const installLibraryCompatibilityIndicators = (
   let active = true;
   let homeUnpatch: Unpatch | undefined;
   let gridUnpatch: Unpatch | undefined;
-  let retryId: number | undefined;
+  let homeRetryId: number | undefined;
+  let gridRetryId: number | undefined;
+  let routeRetryId: number | undefined;
   let homeDiscoveryRetryId: number | undefined;
   let homeCacheUnsubscribe: Unpatch | undefined;
   const indicatorUnsubscribers = new Set<Unpatch>();
@@ -518,18 +703,25 @@ export const installLibraryCompatibilityIndicators = (
   const mountedHomeCarouselTypes = new Set<any>();
   const mountedHomeCarouselWrappers = new Map<any, any>();
   const homeRefCallbacks = new Map<any, (instance: any) => void>();
-  let resolutionAttempts = 0;
+  let homeResolutionAttempts = 0;
+  let gridResolutionAttempts = 0;
   let homeDiscoveryAttempts = 0;
-  let installed = false;
+  let gridRouteDiscoveryAttempts = 0;
+  let compatHookResolved = false;
+  let compatHook: CompatDisplayHook | null = null;
+  let lastObservedRoute = "";
+  let reportedInstalled = false;
   let cleaned = false;
   const cleanup = () => {
     if (cleaned) return;
     cleaned = true;
     active = false;
-    if (retryId !== undefined) {
-      dependencies.cancelRetry(retryId);
-      retryId = undefined;
-    }
+    if (homeRetryId !== undefined) dependencies.cancelRetry(homeRetryId);
+    if (gridRetryId !== undefined) dependencies.cancelRetry(gridRetryId);
+    if (routeRetryId !== undefined) dependencies.cancelRetry(routeRetryId);
+    homeRetryId = undefined;
+    gridRetryId = undefined;
+    routeRetryId = undefined;
     if (homeDiscoveryRetryId !== undefined) {
       dependencies.cancelRetry(homeDiscoveryRetryId);
       homeDiscoveryRetryId = undefined;
@@ -596,50 +788,102 @@ export const installLibraryCompatibilityIndicators = (
       unsubscribe();
     };
   };
-  const installWhenTargetsResolve = () => {
-    if (!active || installed) return;
-    resolutionAttempts += 1;
-    let targets: LibraryCompatibilityTargets | null;
+  const scheduleResolutionRetry = (surface: "home" | "grid") => {
+    const installed = surface === "home" ? homeUnpatch !== undefined : gridUnpatch !== undefined;
+    const attempts = surface === "home" ? homeResolutionAttempts : gridResolutionAttempts;
+    const retryId = surface === "home" ? homeRetryId : gridRetryId;
+    if (!active || installed || retryId !== undefined || attempts >= dependencies.maxResolutionAttempts) return;
+    const scheduled = dependencies.scheduleRetry(() => {
+      if (surface === "home") homeRetryId = undefined;
+      else gridRetryId = undefined;
+      installWhenTargetsResolve(surface);
+    }, dependencies.retryIntervalMs);
+    if (surface === "home") homeRetryId = scheduled;
+    else gridRetryId = scheduled;
+  };
+  const cancelResolutionRetry = (surface: "home" | "grid") => {
+    const retryId = surface === "home" ? homeRetryId : gridRetryId;
+    if (retryId !== undefined) dependencies.cancelRetry(retryId);
+    if (surface === "home") homeRetryId = undefined;
+    else gridRetryId = undefined;
+  };
+  const installWhenTargetsResolve = (surface?: "home" | "grid") => {
+    if (!active || (homeUnpatch && gridUnpatch)) return;
+    if (!surface || surface === "home") homeResolutionAttempts += 1;
+    if (!surface || surface === "grid") gridResolutionAttempts += 1;
+    let gridRoute = false;
     try {
-      targets = resolveTargets(dependencies);
+      gridRoute = isLibraryGridRoute(dependencies.getCurrentRoute());
     } catch {
-      // Lazy exports can be observed while their module factory is still
-      // initializing. Retry that transient state instead of losing the timer.
-      targets = null;
+      gridRoute = false;
     }
-    if (!targets) {
-      if (resolutionAttempts < dependencies.maxResolutionAttempts) {
-        retryId = dependencies.scheduleRetry(() => {
-          retryId = undefined;
-          installWhenTargetsResolve();
-        }, dependencies.retryIntervalMs);
-      }
+    const discoverGrid = gridRoute && gridRouteDiscoveryAttempts < dependencies.maxGridDiscoveryAttempts;
+    if (discoverGrid) gridRouteDiscoveryAttempts += 1;
+    const discoverHomeGrid = !gridRoute && gridResolutionAttempts <= dependencies.maxResolutionAttempts;
+    let targets: LibraryCompatibilityTargets;
+    try {
+      targets = resolveTargets(dependencies, discoverGrid, discoverHomeGrid);
+    } catch {
+      targets = {};
+    }
+    if (!targets.home && !targets.grid) {
+      scheduleResolutionRetry("home");
+      scheduleResolutionRetry("grid");
       return;
     }
-
-    const ReactiveCompatibilityIndicator = (props: {
+    const homeTargets = targets.home;
+    const gridTargets = targets.grid;
+    if (!compatHookResolved) {
+      compatHookResolved = true;
+      compatHook = dependencies.findCompatDisplayHook
+        ? dependencies.findCompatDisplayHook()
+        : findSteamCompatDisplayHook(dependencies.findModulesBySource);
+    }
+    const sharedOwned = homeTargets && gridTargets && homeTargets.stable === gridTargets.stable
+      ? makeOwnedCompatIndicator(
+        homeTargets.indicator,
+        compatHook,
+        homeTargets.stable ? DECK_DISPLAY : null,
+      )
+      : undefined;
+    const homeOwned = homeTargets
+      ? sharedOwned ?? makeOwnedCompatIndicator(homeTargets.indicator, compatHook, homeTargets.stable ? DECK_DISPLAY : null)
+      : undefined;
+    const gridOwned = gridTargets
+      ? sharedOwned ?? makeOwnedCompatIndicator(gridTargets.indicator, compatHook, gridTargets.stable ? DECK_DISPLAY : null)
+      : undefined;
+    type IndicatorProps = {
       overview?: { appid?: unknown };
       className?: string;
-    }) => {
-      dependencies.useCompatibilityRevision(subscribeIndicator);
-      return renderIndicator(props);
+      forcedDisplay?: number;
     };
-    const renderIndicator = (props: { overview?: { appid?: unknown }; className?: string }) => {
+    const renderIndicator = (owned: ElementType, props: IndicatorProps) => {
       if (!active) return null;
       const appId = Number(props.overview?.appid);
-      const category = resolveLibraryCompatibilityIndicator({
-        renderedAppId: appId,
-        overview: props.overview,
-        metadata: dependencies.metadataForApp(appId),
-        isNativeNonSteamShortcut: dependencies.isNativeNonSteamShortcut,
-      });
-      if (!category) return null;
-      return createElement(targets.indicator, {
-        display: DECK_DISPLAY,
-        overview: props.overview,
-        className: props.className,
-      });
+      if (!Number.isFinite(appId) || appId <= 0) return null;
+      const metadata = dependencies.metadataForApp(appId);
+      const eligible = Number(props.overview?.appid) === appId &&
+        dependencies.isNativeNonSteamShortcut(props.overview) &&
+        effectiveCompatibilityCategory(metadata) !== null;
+      return eligible
+        ? createElement(owned, {
+          overview: props.overview,
+          className: props.className,
+          forcedDisplay: props.forcedDisplay,
+        })
+        : null;
     };
+    const reactiveIndicator = (owned: ElementType) => (props: IndicatorProps) => {
+      dependencies.useCompatibilityRevision(subscribeIndicator);
+      return renderIndicator(owned, props);
+    };
+    const HomeCompatibilityIndicator = homeOwned ? reactiveIndicator(homeOwned) : undefined;
+    const GridCompatibilityIndicator = gridOwned
+      ? (gridOwned === homeOwned ? HomeCompatibilityIndicator : reactiveIndicator(gridOwned))
+      : undefined;
+    const renderGridIndicator = gridOwned
+      ? (props: IndicatorProps) => renderIndicator(gridOwned, props)
+      : () => null;
 
     const decorateForApp = (
       appId: number,
@@ -669,9 +913,9 @@ export const installLibraryCompatibilityIndicators = (
           output,
           (card, overview) => decorateCarouselCompatibility(
             card,
-            targets.indicator,
-            ReactiveCompatibilityIndicator,
-            targets.homeClassName,
+            homeTargets!.indicator,
+            HomeCompatibilityIndicator!,
+            homeTargets!.homeClassName,
             overview,
           ),
         );
@@ -680,7 +924,7 @@ export const installLibraryCompatibilityIndicators = (
       return wrapper;
     };
     const isMountedHomeCarousel = (carousel: any) =>
-      carousel === targets.carousel || mountedHomeCarouselTypes.has(carousel);
+      carousel === homeTargets?.carousel || mountedHomeCarouselTypes.has(carousel);
 
     const homeFiberFor = (element: any) => {
       try {
@@ -695,7 +939,7 @@ export const installLibraryCompatibilityIndicators = (
     const isHomeCarouselFiber = (fiber: any) => {
       let current = fiber;
       for (let depth = 0; current && depth < 24; depth += 1, current = current.return) {
-        if (current.type === targets.home || current.elementType === targets.home) return true;
+        if (current.type === homeTargets?.home || current.elementType === homeTargets?.home) return true;
         try {
           for (const candidate of [current.type, current.elementType]) {
             const render = typeof candidate?.render === "function"
@@ -886,7 +1130,7 @@ export const installLibraryCompatibilityIndicators = (
       const discoveredGrids = new Set<any>();
       if (!active) return discoveredGrids;
       try {
-        const document = steamUiCardDocument();
+        const document = dependencies.getCardDocument();
         const cards = document?.querySelectorAll?.("[data-id]");
         if (!cards) return discoveredGrids;
         for (const card of Array.from(cards) as any[]) {
@@ -993,66 +1237,120 @@ export const installLibraryCompatibilityIndicators = (
       }, dependencies.homeDiscoveryIntervalMs);
     };
 
-    try {
-      homeUnpatch = dependencies.patchHomeRenderer(
-        targets.home,
-        (_args, output) => {
-          const homeOutput = output as any;
-          if (!active || !isValidElement(homeOutput)) return output;
-          const homeProps = (homeOutput as any).props;
-          if (typeof homeProps?.fnItemRenderer !== "function") return output;
-          const originalRenderer = homeProps.fnItemRenderer;
-          return cloneElement(homeOutput as any, {
-            ref: homeRefFor((homeOutput as any).ref),
-            fnItemRenderer: (...itemArgs: any[]) =>
-              wrapCarouselElement(originalRenderer(...itemArgs), isMountedHomeCarousel, carouselWrapperFor),
-          });
-        },
-      );
-      if (typeof homeUnpatch !== "function") {
-        cleanup();
-        return;
+    let didInstallTarget = false;
+    if (homeTargets && !homeUnpatch) {
+      try {
+        const patch = dependencies.patchHomeRenderer(
+          homeTargets.home,
+          (_args, output) => {
+            const homeOutput = output as any;
+            if (!active || !isValidElement(homeOutput)) return output;
+            const homeProps = (homeOutput as any).props;
+            if (typeof homeProps?.fnItemRenderer !== "function") return output;
+            const originalRenderer = homeProps.fnItemRenderer;
+            return cloneElement(homeOutput as any, {
+              ref: homeRefFor((homeOutput as any).ref),
+              fnItemRenderer: (...itemArgs: any[]) =>
+                wrapCarouselElement(originalRenderer(...itemArgs), isMountedHomeCarousel, carouselWrapperFor),
+            });
+          },
+        );
+        if (typeof patch === "function") {
+          homeUnpatch = patch;
+          didInstallTarget = true;
+        }
+      } catch {
+        homeUnpatch = undefined;
       }
-      const decorateGrid = (args: any[], output: unknown, owned: ElementType) => decorateForApp(
-        Number(args[0]?.app?.appid),
+      if (homeUnpatch) {
+        cancelResolutionRetry("home");
+        homeCacheUnsubscribe ??= subscribeCompatibilityRevision(refreshMountedHomeCarousels);
+        refreshMountedHomeCarousels();
+        scheduleMountedHomeDiscoveryRetry();
+      }
+    }
+    const decorateGrid = (args: any[], output: unknown, owned: ElementType) => {
+      const props = args[0];
+      return decorateForApp(
+        Number(props?.app?.appid),
         output,
         (card, overview) => decorateGridCompatibility(
           card,
-          targets.indicator,
+          gridTargets!.indicator,
           owned,
-          targets.gridIconsClassName,
-          targets.gridIndicatorClassName,
+          gridTargets!.gridIconsClassName,
+          gridTargets!.gridIndicatorClassName,
           overview,
+          props?.eForceHWCompatDisplay,
         ),
-        args[0]?.app,
+        props?.app,
       );
-      gridUnpatch = provided.patchGridRenderer
-        ? dependencies.patchGridRenderer(targets.grid, (args, output) => decorateGrid(args, output, ReactiveCompatibilityIndicator))
-        : installNativeGridCompatibilityDispatcher(targets.grid, {
-          patch: dependencies.patchGridRenderer,
-          decorate: decorateGrid,
-          render: renderIndicator,
-          subscribeRevision: subscribeCompatibilityRevision,
-        });
-      if (typeof gridUnpatch !== "function") {
-        cleanup();
-        return;
+    };
+    if (gridTargets && !gridUnpatch) {
+      try {
+        const patch = provided.patchGridRenderer
+          ? dependencies.patchGridRenderer(
+            gridTargets.grid,
+            (args, output) => decorateGrid(args, output, GridCompatibilityIndicator!),
+          )
+          : installNativeGridCompatibilityDispatcher(gridTargets.grid, {
+            patch: dependencies.patchGridRenderer,
+            decorate: decorateGrid,
+            render: renderGridIndicator,
+            subscribeRevision: subscribeCompatibilityRevision,
+          });
+        if (typeof patch === "function") {
+          gridUnpatch = patch;
+          didInstallTarget = true;
+        }
+      } catch {
+        gridUnpatch = undefined;
       }
-    } catch {
-      cleanup();
-      return;
+      if (gridUnpatch) cancelResolutionRetry("grid");
     }
-    installed = true;
-    homeCacheUnsubscribe = subscribeCompatibilityRevision(refreshMountedHomeCarousels);
-    refreshMountedHomeCarousels();
-    reportInstalled(resolutionAttempts);
-    dependencies.refreshCompatibilitySurfaces();
-    scheduleMountedHomeDiscoveryRetry();
+    if (homeUnpatch) cancelResolutionRetry("home");
+    if (gridUnpatch) cancelResolutionRetry("grid");
+    else scheduleResolutionRetry("grid");
+    if (homeUnpatch) cancelResolutionRetry("home");
+    else scheduleResolutionRetry("home");
+    if ((homeUnpatch || gridUnpatch) && !reportedInstalled) {
+      reportedInstalled = true;
+      reportInstalled(homeResolutionAttempts + gridResolutionAttempts);
+    }
+    if (didInstallTarget) dependencies.refreshCompatibilitySurfaces();
+    if (homeTargets && homeUnpatch) scheduleMountedHomeDiscoveryRetry();
   };
 
-  installWhenTargetsResolve();
-};
+  const checkLibraryRoute = () => {
+    routeRetryId = undefined;
+    if (!active) return;
+    let route = "";
+    try {
+      route = dependencies.getCurrentRoute();
+    } catch {
+      route = "";
+    }
+    if (route !== lastObservedRoute) {
+      lastObservedRoute = route;
+      if (isLibraryGridRoute(route) && !gridUnpatch) {
+        gridResolutionAttempts = 0;
+        gridRouteDiscoveryAttempts = 0;
+        cancelResolutionRetry("grid");
+        installWhenTargetsResolve("grid");
+      }
+    }
+    if (active) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
+  };
 
+  try {
+    lastObservedRoute = dependencies.getCurrentRoute();
+  } catch {
+    lastObservedRoute = "";
+  }
+  installWhenTargetsResolve();
+  if (lastObservedRoute) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
+
+};
 type NativeGridDispatcherOptions = {
   patch: (target: any, handler: (args: any[], output: any) => any) => Unpatch;
   decorate: (args: any[], output: any, owned: ElementType) => any;
