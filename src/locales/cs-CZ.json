@@ -441,8 +441,8 @@
     },
     "currentMatch": "Aktuální shoda",
     "loadFromSteam": "Načíst ze Steamu",
-    "loadFromSteamSteamGame": "Načíst ze Steamu (není dostupné pro hry ze Steamu)",
-    "loadFromSteamNoMatch": "Načíst ze Steamu (bez shody ve Steamu)",
+    "loadFromSteamSteamGame": "Není dostupné pro hry ze Steamu",
+    "loadFromSteamNoMatch": "Bez shody ve Steamu",
     "loadFromSteamBusy": "Načíst ze Steamu (probíhá aktualizace)",
     "fieldEdited": "Upraveno",
     "fieldFromSteam": "Ze Steamu, neuloženo",
@@ -462,7 +462,8 @@
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
     "searchIgn": "Hledat metadata na IGN",
     "ign": {
-      "gameName": "Název hry"
+      "gameName": "Název hry",
+      "noResults": "Žádné výsledky."
     },
     "search": "Hledat",
     "searching": "Hledání...",
@@ -497,6 +498,7 @@
     "compatibilityHelp": "Volba „Automaticky“ používá pro každou hru stav odpovídající hry ve Steamu. Volba „Použít globální výchozí“ pro tuto hru převezme toto nastavení. Volba „Podle Valve“ používá vždy stav od Valve. Pokud údaje od Valve nejsou k dispozici, volba „Podle Valve“ zachová původní stav ze Steamu.",
     "compatibilityChoices": "Ruční a výchozí kategorie jsou vaše volby, nikoli certifikace Valve ani výsledek výkonu emulátoru.",
     "hltbGame": "Hra HowLongToBeat",
+    "hltbSearchTitle": "Hledat v HowLongToBeat",
     "hltbHelp": "Vyhledejte hru v HowLongToBeat nebo vložte číslo hry či odkaz na její stránku a vyberte časy zobrazované pro tuto hru. Nechte prázdné pro automatické spárování.",
     "hltbCurrentChosen": "Aktuální hra: {{name}} (vybráno)",
     "hltbCurrentAutomatic": "Aktuální hra: {{name}} (nalezeno automaticky)",
@@ -506,9 +508,9 @@
     "steamAppIdApply": "Použít Steam App ID",
     "shortcut": {
       "immediateNotice": "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
-      "current": "Aktuální: {{name}}",
+      "currentLabel": "Aktuální název",
       "missingName": "Steam neposkytl název nativního zástupce",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Název ve službě Steam",
       "loadingSteamName": "Načítání názvu ze Steamu...",
       "noOfficialName": "Steam nevrátil oficiální název",
       "managementUnavailable": "Správa názvů zástupců není dostupná",

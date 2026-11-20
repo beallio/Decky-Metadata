@@ -443,8 +443,8 @@
     },
     "currentMatch": "المطابقة الحالية",
     "loadFromSteam": "تحميل من Steam",
-    "loadFromSteamSteamGame": "تحميل من Steam (غير متاح لألعاب Steam)",
-    "loadFromSteamNoMatch": "تحميل من Steam (لا توجد مطابقة في Steam)",
+    "loadFromSteamSteamGame": "غير متاح لألعاب Steam",
+    "loadFromSteamNoMatch": "لا توجد مطابقة في Steam",
     "loadFromSteamBusy": "تحميل من Steam (جارٍ التحديث)",
     "fieldEdited": "معدّل",
     "fieldFromSteam": "من Steam، غير محفوظ",
@@ -464,7 +464,8 @@
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
     "searchIgn": "البحث في بيانات IGN الوصفية",
     "ign": {
-      "gameName": "اسم اللعبة"
+      "gameName": "اسم اللعبة",
+      "noResults": "لا نتائج."
     },
     "search": "بحث",
     "searching": "جارٍ البحث...",
@@ -499,6 +500,7 @@
     "compatibilityHelp": "يستخدم خيار «تلقائي» حالة التوافق في Steam للمطابقة الخاصة بكل لعبة. يرث خيار «استخدام الافتراضي العام» هذا الإعداد لهذه اللعبة. يستخدم خيار «اتّباع Valve» حالة Valve دائمًا. إذا لم تتوفر بيانات Valve، يُبقي خيار «اتّباع Valve» على حالة Steam الأصلية.",
     "compatibilityChoices": "الفئات اليدوية والافتراضية هي اختياراتك، وليست شهادة من Valve أو نتيجة أداء للمحاكي.",
     "hltbGame": "لعبة HowLongToBeat",
+    "hltbSearchTitle": "البحث في HowLongToBeat",
     "hltbHelp": "ابحث في HowLongToBeat أو الصق رقم لعبة أو رابط صفحة لعبة لاختيار الأوقات المعروضة لهذه اللعبة. اتركه فارغًا للمطابقة التلقائية.",
     "hltbCurrentChosen": "اللعبة الحالية: {{name}} (مختارة)",
     "hltbCurrentAutomatic": "اللعبة الحالية: {{name}} (عُثر عليها تلقائيًا)",
@@ -508,9 +510,9 @@
     "steamAppIdApply": "تطبيق Steam App ID",
     "shortcut": {
       "immediateNotice": "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
-      "current": "الحالي: {{name}}",
+      "currentLabel": "الاسم الحالي",
       "missingName": "لم يكشف Steam عن اسم اختصار أصلي",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "اسم Steam",
       "loadingSteamName": "جارٍ تحميل اسم Steam...",
       "noOfficialName": "لم يُرجع Steam اسمًا رسميًا",
       "managementUnavailable": "إدارة أسماء الاختصارات غير متاحة",

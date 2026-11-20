@@ -82,6 +82,7 @@ type MockEffect = (() => unknown) & { deps: readonly unknown[] | undefined };
 const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as MockEffect[] }));
 
 vi.mock("@decky/ui", () => ({
+  ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
   afterPatch: vi.fn(),
   findInReactTree: vi.fn(),
@@ -163,6 +164,7 @@ import { EDITOR_PAGE_ORDER, type EditorPageId } from "./editorPages";
 import { metadataTemplate } from "./metadataForm";
 import type { MetadataData } from "./types";
 import { SteamMatchPicker } from "./SteamMatchPicker";
+import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
 
 type LayoutProps = Parameters<typeof EditorLayout>[0];
@@ -223,8 +225,7 @@ const text = (node: unknown): string => {
 };
 
 const action = (page: any, label: string) =>
-  walk(page, (node) => typeof node.props?.onClick === "function" && text(node) === label)[0];
-
+  walk(page, (node) => typeof node.props?.onClick === "function" && text(renderedChildren(node)) === label)[0];
 const navButton = (page: unknown, label: string) =>
   action(walk(page, (node) => node.type === "nav")[0], label);
 
@@ -310,6 +311,10 @@ const deferred = <T,>() => {
 };
 
 const ignSearchInput = (page: unknown) => textField(page, "Game name");
+const ignSearchButton = (page: unknown) => {
+  const ignField = walk(page, (node) => node.type === "Field" && text(node.props.label) === "Game name")[0];
+  return walk(renderedChildren(ignField), (node) => typeof node.props?.onClick === "function")[0];
+};
 
 const shortcutState = (overrides: Record<string, unknown> = {}) => ({
   eligible: true,
@@ -347,6 +352,7 @@ describe("MetadataPage compatibility status", () => {
     refs.cursor = 0;
     effects.enabled = false;
     effects.callbacks = [];
+    textarea.component = null;
     Object.keys(steam.metadataCache).forEach((key) => delete steam.metadataCache[key]);
     vi.clearAllMocks();
     i18nLanguage.currentSteamLanguage.mockReset();
@@ -899,7 +905,8 @@ describe("MetadataPage compatibility status", () => {
     effects.callbacks[2]();
     await flushAsyncWork();
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
+    expect(walk(openPage("Shortcut Name"), node => node.type === "Field" && node.props.label === "Steam name")[0])
+      .toMatchObject({ props: { children: "Steam Name" } });
     // The backfill persists the name, so the stored snapshot now offers it.
     expect(action(renderPage(), "Use Steam name")).toBeDefined();
 
@@ -991,7 +998,8 @@ describe("MetadataPage compatibility status", () => {
     await flushAsyncWork();
 
     expect(backend.enrichSteamApp).toHaveBeenCalledTimes(1);
-    expect(text(openPage("Shortcut Name"))).toContain("Steam: Steam Name");
+    expect(walk(openPage("Shortcut Name"), node => node.type === "Field" && node.props.label === "Steam name")[0])
+      .toMatchObject({ props: { children: "Steam Name" } });
   });
 
   it("merges a delayed legacy backfill while preserving an unsaved form edit", async () => {
@@ -1123,6 +1131,88 @@ describe("MetadataPage compatibility status", () => {
 
     expect(steam.metadataCache["100"]).toBeUndefined();
     expect(state.values[0]).toEqual(expect.objectContaining({ title: "New editor", steam_store_name: "" }));
+  });
+
+  it.each([null, "GamepadTextArea"])("disables metadata controls for Steam games (%s)", (component) => {
+    textarea.component = component;
+    steam.isNonSteamApp.mockReturnValue(false);
+
+    const details = openPage("Details");
+    for (const label of ["Title", "Developers", "Publishers", "Release date", "Rating"]) {
+      expect(textField(details, label).props.disabled).toBe(true);
+    }
+    expect(walk(details, (node) => node.type === (component ?? "textarea"))[0].props.disabled).toBe(true);
+    const categories = walk(details, (node) => node.type === "ToggleField");
+    expect(categories.length).toBeGreaterThan(0);
+    expect(categories.every((category) => category.props.disabled)).toBe(true);
+
+    const match = openPage("Game Match");
+    expect(textField(match, "Steam App ID").props.disabled).toBe(true);
+    expect(action(match, "Apply Steam App ID").props.disabled).toBe(true);
+    expect(ignSearchInput(match).props.disabled).toBe(true);
+    expect(ignSearchButton(match).props.disabled).toBe(true);
+    expect(walk(match, (node) => node.type === SteamMatchPicker)[0].props.disabled).toBe(true);
+  });
+
+  it("keeps IGN Search disabled for blank queries and while busy", async () => {
+    configureShortcutPanel();
+    const pendingSearch = deferred<any>();
+    backend.searchMetadata.mockReturnValue(pendingSearch.promise);
+
+    ignSearchInput(openPage("Game Match")).props.onChange({ target: { value: "  \t " } });
+    const blankQueryPage = renderPage();
+    expect(ignSearchButton(blankQueryPage).props.disabled).toBe(true);
+
+    ignSearchInput(blankQueryPage).props.onChange({ target: { value: "Shortcut" } });
+    const readyPage = renderPage();
+    expect(ignSearchButton(readyPage).props.disabled).toBe(false);
+    const searching = ignSearchButton(readyPage).props.onClick();
+    expect(ignSearchButton(renderPage()).props.disabled).toBe(true);
+    pendingSearch.resolve([]);
+    await searching;
+  });
+
+  it("shows the after-search empty state when IGN returns no results", async () => {
+    configureShortcutPanel();
+    backend.searchMetadata.mockResolvedValue([]);
+    const beforeSearch = openPage("Game Match");
+    expect(text(beforeSearch)).toContain("No results yet.");
+
+    await ignSearchButton(beforeSearch).props.onClick();
+
+    const afterSearch = renderPage();
+    expect(text(afterSearch)).toContain("No results.");
+    expect(text(afterSearch)).not.toContain("No results yet.");
+  });
+
+  it("uses the fetch-failed toast title when IGN search fails", async () => {
+    configureShortcutPanel();
+    backend.searchMetadata.mockRejectedValue(new Error("offline"));
+
+    await ignSearchButton(openPage("Game Match")).props.onClick();
+
+    expect(toast.toastError).toHaveBeenCalledWith("Fetch failed", expect.any(String));
+  });
+
+  it("does not show IGN search busy text while applying an IGN result", async () => {
+    configureShortcutPanel();
+    const result = {
+      title: "Chosen game",
+      description: "Chosen description",
+      slug: "chosen-game",
+      url: "https://www.ign.com/games/chosen-game",
+    };
+    state.values[6] = [result];
+    const pendingPreview = deferred<any>();
+    backend.previewFetchedMetadata.mockReturnValue(pendingPreview.promise);
+
+    const match = openPage("Game Match");
+    walk(match, (node) => node.type === "Field" && node.props.label === result.title)[0].props.onActivate();
+    const applying = renderPage();
+    expect(ignSearchButton(applying).props.children).toBe("Search");
+    expect(text(applying)).not.toContain("Searching...");
+    pendingPreview.resolve(null);
+    await flushAsyncWork();
   });
 
   it("resets the IGN search query and results when the editor moves to another game", async () => {
@@ -2031,7 +2121,9 @@ describe("Steam-match picker application", () => {
       steam_appid: 15100,
       steam_store_name: "Steam Name",
     }));
-    action(openPage("Game Match"), "Hades").props.onClick();
+    const result = walk(openPage("Game Match"), (node) =>
+      node.type === "Field" && node.props.label === "Hades" && typeof node.props.onClick === "function")[0];
+    result.props.onClick();
     await flushAsyncWork();
 
     expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(
@@ -2160,7 +2252,7 @@ describe("Draft field markers and editor actions", () => {
 
     const previewed = walk(openPage("Details"), (node) => node.type === "Field" && text(node.props.label).startsWith("Description"))[0];
     expect(text(previewed)).toContain("From Steam, not saved");
-    expect(previewed.props.label.props.style).toMatchObject({ color: "#f59e0b" });
+    expect(previewed.props.label.props.style).toMatchObject({ color: "#ffc53d" });
 
     walk(renderPage(), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My description" } });
@@ -2234,14 +2326,15 @@ describe("Draft field markers and editor actions", () => {
   });
 
   it.each([
-    { nonSteam: true, match: null, label: "Load from Steam (No Steam match)" },
-    { nonSteam: false, match: 15100, label: "Load from Steam (Not available for Steam games)" },
-  ])("disables $label", async ({ nonSteam, match, label }) => {
+    { nonSteam: true, match: null, reason: "No Steam match" },
+    { nonSteam: false, match: 15100, reason: "Not available for Steam games" },
+  ])("disables Load from Steam with $reason in its description", async ({ nonSteam, match, reason }) => {
     steam.isNonSteamApp.mockReturnValue(nonSteam);
     configureShortcutPanel({ metadata: { steam_appid: match } });
 
-    const load = action(openPage("Game Match"), label);
+    const load = action(openPage("Game Match"), "Load from Steam");
     expect(load.props.disabled).toBe(true);
+    expect(text(load.props.description)).toContain(reason);
     load.props.onClick();
     await flushAsyncWork();
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();

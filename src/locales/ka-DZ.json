@@ -439,8 +439,8 @@
     },
     "currentMatch": "მიმდინარე შესატყვისი",
     "loadFromSteam": "Steam-იდან ჩატვირთვა",
-    "loadFromSteamSteamGame": "Steam-იდან ჩატვირთვა (Steam-ის თამაშებისთვის მიუწვდომელია)",
-    "loadFromSteamNoMatch": "Steam-იდან ჩატვირთვა (Steam-ის შესატყვისი არ არის)",
+    "loadFromSteamSteamGame": "Steam-ის თამაშებისთვის მიუწვდომელია",
+    "loadFromSteamNoMatch": "Steam-ის შესატყვისი არ არის",
     "loadFromSteamBusy": "Steam-იდან ჩატვირთვა (მიმდინარეობს განახლება)",
     "fieldEdited": "შეცვლილია",
     "fieldFromSteam": "Steam-იდან, შეუნახავი",
@@ -460,7 +460,8 @@
     "nonSteamOnly": "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
     "searchIgn": "IGN-ის მეტამონაცემებში ძებნა",
     "ign": {
-      "gameName": "თამაშის სახელი"
+      "gameName": "თამაშის სახელი",
+      "noResults": "შედეგები არ არის."
     },
     "search": "ძებნა",
     "searching": "მიმდინარეობს ძებნა...",
@@ -495,6 +496,7 @@
     "compatibilityHelp": "„ავტომატური“ თითოეული თამაშისთვის Steam-ში მისი შესატყვისის სტატუსს იყენებს. „გლობალური ნაგულისხმევის გამოყენება“ ამ თამაშზე გლობალურ პარამეტრს ავრცელებს. „Valve-ის მიყოლა“ ყოველთვის Valve-ის სტატუსს იყენებს. თუ Valve-ის მონაცემები მიუწვდომელია, „Valve-ის მიყოლა“ Steam-ის თავდაპირველ სტატუსს ინარჩუნებს.",
     "compatibilityChoices": "ხელით არჩეული და ნაგულისხმევი კატეგორიები თქვენი არჩევანია და არა Valve-ის სერტიფიკატი ან ემულატორის მუშაობის შედეგი.",
     "hltbGame": "HowLongToBeat-ის თამაში",
+    "hltbSearchTitle": "HowLongToBeat-ზე ძებნა",
     "hltbHelp": "მოძებნეთ HowLongToBeat-ში ან ჩასვით თამაშის ნომერი ან თამაშის გვერდის ბმული, რათა აირჩიოთ ამ თამაშისთვის საჩვენებელი დროები. დატოვეთ ცარიელი ავტომატური შესაბამებისთვის.",
     "hltbCurrentChosen": "მიმდინარე თამაში: {{name}} (არჩეული)",
     "hltbCurrentAutomatic": "მიმდინარე თამაში: {{name}} (ავტომატურად ნაპოვნი)",
@@ -504,9 +506,9 @@
     "steamAppIdApply": "Steam App ID-ის გამოყენება",
     "shortcut": {
       "immediateNotice": "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
-      "current": "მიმდინარე: {{name}}",
+      "currentLabel": "მიმდინარე სახელი",
       "missingName": "Steam-მა მალსახმობის ნატიური სახელი არ გასცა",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam-ის სახელი",
       "loadingSteamName": "Steam-ის სახელი იტვირთება...",
       "noOfficialName": "Steam-მა ოფიციალური სახელი არ დააბრუნა",
       "managementUnavailable": "მალსახმობის სახელის მართვა მიუწვდომელია",

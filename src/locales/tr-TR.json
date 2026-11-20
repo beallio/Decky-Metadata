@@ -439,8 +439,8 @@
     },
     "currentMatch": "Geçerli eşleşme",
     "loadFromSteam": "Steam'den yükle",
-    "loadFromSteamSteamGame": "Steam'den yükle (Steam oyunları için kullanılamaz)",
-    "loadFromSteamNoMatch": "Steam'den yükle (Steam eşleşmesi yok)",
+    "loadFromSteamSteamGame": "Steam oyunları için kullanılamaz",
+    "loadFromSteamNoMatch": "Steam eşleşmesi yok",
     "loadFromSteamBusy": "Steam'den yükle (güncelleniyor)",
     "fieldEdited": "Düzenlendi",
     "fieldFromSteam": "Steam'den, kaydedilmedi",
@@ -460,7 +460,8 @@
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
     "searchIgn": "IGN meta verilerinde ara",
     "ign": {
-      "gameName": "Oyun adı"
+      "gameName": "Oyun adı",
+      "noResults": "Sonuç yok."
     },
     "search": "Ara",
     "searching": "Aranıyor...",
@@ -495,6 +496,7 @@
     "compatibilityHelp": "Otomatik seçeneği, her oyun için Steam'de eşleşen oyunun durumunu kullanır. Genel varsayılanı kullan seçeneği, bu oyun için o ayarı devralır. Valve'ı Takip Et seçeneği her zaman Valve'ın belirlediği durumu kullanır. Valve verileri kullanılamadığında özgün Steam durumu korunur.",
     "compatibilityChoices": "Elle seçilen ve varsayılan kategoriler sizin seçimlerinizdir; Valve sertifikası veya emülatör performans sonucu değildir.",
     "hltbGame": "HowLongToBeat oyunu",
+    "hltbSearchTitle": "HowLongToBeat'te ara",
     "hltbHelp": "Bu oyun için gösterilecek süreleri seçmek üzere HowLongToBeat'te arayın veya bir oyun numarası ya da oyun sayfası bağlantısı yapıştırın. Otomatik eşleştirmek için boş bırakın.",
     "hltbCurrentChosen": "Geçerli oyun: {{name}} (seçildi)",
     "hltbCurrentAutomatic": "Geçerli oyun: {{name}} (otomatik bulundu)",
@@ -504,9 +506,9 @@
     "steamAppIdApply": "Steam Uygulama ID'sini uygula",
     "shortcut": {
       "immediateNotice": "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
-      "current": "Geçerli: {{name}}",
+      "currentLabel": "Geçerli ad",
       "missingName": "Steam yerel bir kısayol adı sunmadı",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam adı",
       "loadingSteamName": "Steam adı yükleniyor...",
       "noOfficialName": "Steam resmî bir ad döndürmedi",
       "managementUnavailable": "Kısayol adı yönetimi kullanılamıyor",

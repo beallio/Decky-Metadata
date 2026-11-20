@@ -441,8 +441,8 @@
     },
     "currentMatch": "Поточний збіг",
     "loadFromSteam": "Завантажити зі Steam",
-    "loadFromSteamSteamGame": "Завантажити зі Steam (недоступно для ігор Steam)",
-    "loadFromSteamNoMatch": "Завантажити зі Steam (немає збігу у Steam)",
+    "loadFromSteamSteamGame": "Недоступно для ігор Steam",
+    "loadFromSteamNoMatch": "Немає збігу у Steam",
     "loadFromSteamBusy": "Завантажити зі Steam (оновлення)",
     "fieldEdited": "Змінено",
     "fieldFromSteam": "Зі Steam, не збережено",
@@ -462,7 +462,8 @@
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
     "searchIgn": "Шукати метадані в IGN",
     "ign": {
-      "gameName": "Назва гри"
+      "gameName": "Назва гри",
+      "noResults": "Немає результатів."
     },
     "search": "Шукати",
     "searching": "Пошук...",
@@ -497,6 +498,7 @@
     "compatibilityHelp": "«Автоматично» використовує для кожної гри статус відповідної гри в Steam. «Використовувати глобальне значення за замовчуванням» успадковує це налаштування для поточної гри. «Як у Valve» завжди використовує статус Valve. Якщо дані Valve недоступні, цей режим зберігає початковий статус Steam.",
     "compatibilityChoices": "Ручні категорії та категорії за замовчуванням — ваш вибір, а не сертифікація Valve чи результат продуктивності емулятора.",
     "hltbGame": "Гра HowLongToBeat",
+    "hltbSearchTitle": "Пошук у HowLongToBeat",
     "hltbHelp": "Знайдіть гру в HowLongToBeat або вставте номер гри чи посилання на її сторінку, щоб вибрати час, який показується для цієї гри. Залиште порожнім для автоматичного зіставлення.",
     "hltbCurrentChosen": "Поточна гра: {{name}} (вибрано)",
     "hltbCurrentAutomatic": "Поточна гра: {{name}} (знайдено автоматично)",
@@ -506,9 +508,9 @@
     "steamAppIdApply": "Застосувати Steam App ID",
     "shortcut": {
       "immediateNotice": "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
-      "current": "Поточна: {{name}}",
+      "currentLabel": "Поточна назва",
       "missingName": "Steam не надав назву власного ярлика",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Назва Steam",
       "loadingSteamName": "Завантаження назви Steam...",
       "noOfficialName": "Steam не повернув офіційну назву",
       "managementUnavailable": "Керування назвами ярликів недоступне",

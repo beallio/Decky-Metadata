@@ -438,8 +438,8 @@
     },
     "currentMatch": "当前匹配",
     "loadFromSteam": "从 Steam 加载",
-    "loadFromSteamSteamGame": "从 Steam 加载（不适用于 Steam 游戏）",
-    "loadFromSteamNoMatch": "从 Steam 加载（无 Steam 匹配）",
+    "loadFromSteamSteamGame": "不适用于 Steam 游戏",
+    "loadFromSteamNoMatch": "无 Steam 匹配",
     "loadFromSteamBusy": "从 Steam 加载（正在更新）",
     "fieldEdited": "已编辑",
     "fieldFromSteam": "来自 Steam，未保存",
@@ -459,7 +459,8 @@
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
     "searchIgn": "搜索 IGN 元数据",
     "ign": {
-      "gameName": "游戏名称"
+      "gameName": "游戏名称",
+      "noResults": "没有结果。"
     },
     "search": "搜索",
     "searching": "正在搜索...",
@@ -494,6 +495,7 @@
     "compatibilityHelp": "“自动”使用每款游戏在 Steam 上匹配到的游戏的兼容性状态。“使用全局默认值”会对此游戏沿用该设置。“跟随 Valve”始终使用 Valve 提供的状态；若 Valve 数据不可用，则保留 Steam 的原始状态。",
     "compatibilityChoices": "手动和默认分类是你的选择，并非 Valve 认证，也不是模拟器性能结果。",
     "hltbGame": "HowLongToBeat 游戏",
+    "hltbSearchTitle": "搜索 HowLongToBeat",
     "hltbHelp": "搜索 HowLongToBeat，或粘贴游戏编号或游戏页面链接，以选择此游戏显示的时长。留空则自动匹配。",
     "hltbCurrentChosen": "当前游戏：{{name}}（已选择）",
     "hltbCurrentAutomatic": "当前游戏：{{name}}（自动匹配）",
@@ -503,9 +505,9 @@
     "steamAppIdApply": "应用 Steam App ID",
     "shortcut": {
       "immediateNotice": "这些操作立即生效，无需点击“保存”。",
-      "current": "当前：{{name}}",
+      "currentLabel": "当前名称",
       "missingName": "Steam 未提供原生快捷方式名称",
-      "steamName": "Steam：{{name}}",
+      "steamNameLabel": "Steam 名称",
       "loadingSteamName": "正在加载 Steam 名称...",
       "noOfficialName": "Steam 未返回官方名称",
       "managementUnavailable": "快捷方式名称管理不可用",

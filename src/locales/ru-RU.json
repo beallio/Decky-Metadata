@@ -441,8 +441,8 @@
     },
     "currentMatch": "Текущее совпадение",
     "loadFromSteam": "Загрузить из Steam",
-    "loadFromSteamSteamGame": "Загрузить из Steam (недоступно для игр Steam)",
-    "loadFromSteamNoMatch": "Загрузить из Steam (нет совпадения в Steam)",
+    "loadFromSteamSteamGame": "Недоступно для игр Steam",
+    "loadFromSteamNoMatch": "Нет совпадения в Steam",
     "loadFromSteamBusy": "Загрузить из Steam (идёт обновление)",
     "fieldEdited": "Изменено",
     "fieldFromSteam": "Из Steam, не сохранено",
@@ -462,7 +462,8 @@
     "nonSteamOnly": "Этот плагин изменяет только игры вне Steam.",
     "searchIgn": "Искать метаданные в IGN",
     "ign": {
-      "gameName": "Название игры"
+      "gameName": "Название игры",
+      "noResults": "Нет результатов."
     },
     "search": "Искать",
     "searching": "Поиск...",
@@ -497,6 +498,7 @@
     "compatibilityHelp": "В режиме «Автоматически» для каждой игры используется статус соответствующей игры в Steam. Пункт «Использовать глобальное значение по умолчанию» применяет эту настройку к данной игре. Режим «Как у Valve» всегда использует статус Valve. Если данные Valve недоступны, он сохраняет исходный статус Steam.",
     "compatibilityChoices": "Ручные категории и категории по умолчанию — ваш выбор, а не сертификация Valve или результат производительности эмулятора.",
     "hltbGame": "Игра HowLongToBeat",
+    "hltbSearchTitle": "Поиск в HowLongToBeat",
     "hltbHelp": "Найдите игру в HowLongToBeat или вставьте номер игры либо ссылку на её страницу, чтобы выбрать отображаемое для этой игры время. Оставьте пустым для автоматического сопоставления.",
     "hltbCurrentChosen": "Текущая игра: {{name}} (выбрана)",
     "hltbCurrentAutomatic": "Текущая игра: {{name}} (найдена автоматически)",
@@ -506,9 +508,9 @@
     "steamAppIdApply": "Применить Steam App ID",
     "shortcut": {
       "immediateNotice": "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
-      "current": "Текущее: {{name}}",
+      "currentLabel": "Текущее имя",
       "missingName": "Steam не предоставил штатное название ярлыка",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Имя Steam",
       "loadingSteamName": "Загрузка названия Steam...",
       "noOfficialName": "Steam не вернул официальное название",
       "managementUnavailable": "Управление названиями ярлыков недоступно",

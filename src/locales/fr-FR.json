@@ -440,8 +440,8 @@
     },
     "currentMatch": "Correspondance actuelle",
     "loadFromSteam": "Charger depuis Steam",
-    "loadFromSteamSteamGame": "Charger depuis Steam (indisponible pour les jeux Steam)",
-    "loadFromSteamNoMatch": "Charger depuis Steam (aucune correspondance sur Steam)",
+    "loadFromSteamSteamGame": "Indisponible pour les jeux Steam",
+    "loadFromSteamNoMatch": "Aucune correspondance sur Steam",
     "loadFromSteamBusy": "Charger depuis Steam (mise à jour en cours)",
     "fieldEdited": "Modifié",
     "fieldFromSteam": "Depuis Steam, non enregistré",
@@ -461,7 +461,8 @@
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
     "searchIgn": "Rechercher des métadonnées IGN",
     "ign": {
-      "gameName": "Nom du jeu"
+      "gameName": "Nom du jeu",
+      "noResults": "Aucun résultat."
     },
     "search": "Rechercher",
     "searching": "Recherche...",
@@ -496,6 +497,7 @@
     "compatibilityHelp": "« Automatique » utilise, pour chaque jeu, l’état du jeu correspondant sur Steam. « Utiliser la valeur globale par défaut » applique ce réglage à ce jeu. « Suivre Valve » utilise toujours l’état fourni par Valve. Si les données de Valve sont indisponibles, « Suivre Valve » conserve l’état Steam d’origine.",
     "compatibilityChoices": "Les catégories manuelles et par défaut sont vos choix, pas une certification Valve ni un résultat de performance d'émulateur.",
     "hltbGame": "Jeu HowLongToBeat",
+    "hltbSearchTitle": "Rechercher sur HowLongToBeat",
     "hltbHelp": "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien de page, pour choisir les temps affichés pour ce jeu. Laissez vide pour associer automatiquement.",
     "hltbCurrentChosen": "Jeu actuel : {{name}} (choisi)",
     "hltbCurrentAutomatic": "Jeu actuel : {{name}} (trouvé automatiquement)",
@@ -505,9 +507,9 @@
     "steamAppIdApply": "Appliquer l'App ID Steam",
     "shortcut": {
       "immediateNotice": "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
-      "current": "Actuel : {{name}}",
+      "currentLabel": "Nom actuel",
       "missingName": "Steam n'a pas exposé de nom de raccourci natif",
-      "steamName": "Steam : {{name}}",
+      "steamNameLabel": "Nom Steam",
       "loadingSteamName": "Chargement du nom Steam...",
       "noOfficialName": "Steam n'a pas renvoyé de nom officiel",
       "managementUnavailable": "La gestion du nom du raccourci est indisponible",

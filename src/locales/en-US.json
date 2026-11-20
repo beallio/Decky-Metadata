@@ -439,8 +439,8 @@
     },
     "currentMatch": "Current match",
     "loadFromSteam": "Load from Steam",
-    "loadFromSteamSteamGame": "Load from Steam (Not available for Steam games)",
-    "loadFromSteamNoMatch": "Load from Steam (No Steam match)",
+    "loadFromSteamSteamGame": "Not available for Steam games",
+    "loadFromSteamNoMatch": "No Steam match",
     "loadFromSteamBusy": "Load from Steam (Updating)",
     "fieldEdited": "Edited",
     "fieldFromSteam": "From Steam, not saved",
@@ -460,7 +460,8 @@
     "nonSteamOnly": "This plugin only changes non-Steam games.",
     "searchIgn": "Search IGN metadata",
     "ign": {
-      "gameName": "Game name"
+      "gameName": "Game name",
+      "noResults": "No results."
     },
     "search": "Search",
     "searching": "Searching...",
@@ -495,6 +496,7 @@
     "compatibilityHelp": "Automatic uses each game's Steam-matched status. Use global default inherits that setting for this game. Follow Valve always uses Valve's status. When Valve data is unavailable, Follow Valve keeps the original Steam status.",
     "compatibilityChoices": "Manual and default categories are your choices, not Valve certification or an emulator performance result.",
     "hltbGame": "HowLongToBeat game",
+    "hltbSearchTitle": "Search HowLongToBeat",
     "hltbHelp": "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically.",
     "hltbCurrentChosen": "Current game: {{name}} (chosen)",
     "hltbCurrentAutomatic": "Current game: {{name}} (found automatically)",
@@ -504,9 +506,9 @@
     "steamAppIdApply": "Apply Steam App ID",
     "shortcut": {
       "immediateNotice": "These actions apply now. They do not use Save.",
-      "current": "Current: {{name}}",
+      "currentLabel": "Current name",
       "missingName": "Steam did not expose a native shortcut name",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam name",
       "loadingSteamName": "Loading Steam name...",
       "noOfficialName": "Steam did not return an official name",
       "managementUnavailable": "Shortcut-name management is unavailable",

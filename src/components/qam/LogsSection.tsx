@@ -3,10 +3,12 @@ import { FaFileAlt } from "react-icons/fa";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
+import { ButtonLabel } from "../../styles";
 
 type LogsSectionProps = {
   logsBusy: boolean;
   debugLogging: boolean;
+  debugLoggingLoaded: boolean;
   debugLoggingBusy: boolean;
   onViewLogs: () => void;
   onToggleDebugLogging: (enabled: boolean) => void;
@@ -15,6 +17,7 @@ type LogsSectionProps = {
 export function LogsSection({
   logsBusy,
   debugLogging,
+  debugLoggingLoaded,
   debugLoggingBusy,
   onViewLogs,
   onToggleDebugLogging,
@@ -30,7 +33,7 @@ export function LogsSection({
           disabled={logsBusy}
           onClick={onViewLogs}
         >
-          {logsBusy ? t("qam.logs.loading") : t("qam.logs.view")}
+          {logsBusy ? <ButtonLabel busy>{t("qam.logs.loading")}</ButtonLabel> : t("qam.logs.view")}
         </ButtonItem>
       </PanelSectionRow>
       <PanelSectionRow>
@@ -39,8 +42,7 @@ export function LogsSection({
           description={t("qam.logs.debugLoggingDescription")}
           bottomSeparator="none"
           checked={debugLogging}
-          disabled={debugLoggingBusy}
-          onChange={onToggleDebugLogging}
+          disabled={!debugLoggingLoaded || debugLoggingBusy}
         />
       </PanelSectionRow>
     </CollapsibleSection>

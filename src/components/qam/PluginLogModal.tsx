@@ -1,6 +1,7 @@
-import { ConfirmModal } from "@decky/ui";
+import { ConfirmModal, Focusable, ScrollPanelGroup } from "@decky/ui";
 
 import { useT } from "../../i18n";
+import { colors } from "../../tokens";
 
 type PluginLogModalProps = {
   logs: string;
@@ -20,22 +21,26 @@ export function PluginLogModal({ logs, closeModal }: PluginLogModalProps) {
       onEscKeypress={closeModal}
       closeModal={closeModal}
     >
-      <div
-        style={{
-          maxHeight: "60vh",
-          overflowY: "auto",
-          fontFamily: "monospace",
-          fontSize: "12px",
-          whiteSpace: "pre-wrap",
-          overflowWrap: "anywhere",
-          backgroundColor: "rgba(0, 0, 0, 0.3)",
-          padding: "10px",
-          borderRadius: "4px",
-          userSelect: "text",
-        }}
-      >
-        {logs || t("qam.logs.modalEmpty")}
-      </div>
+      <ScrollPanelGroup>
+        <Focusable
+          noFocusRing
+          style={{
+            maxHeight: "60vh",
+            overflowY: "auto",
+            fontFamily: "monospace",
+            fontSize: "12px",
+            whiteSpace: "pre-wrap",
+            overflowWrap: "anywhere",
+            backgroundColor: colors.surfaceKnockout,
+            color: colors.textSecondary,
+            padding: "10px",
+            borderRadius: "4px",
+            userSelect: "text",
+          }}
+        >
+          {logs || t("qam.logs.modalEmpty")}
+        </Focusable>
+      </ScrollPanelGroup>
     </ConfirmModal>
   );
 }

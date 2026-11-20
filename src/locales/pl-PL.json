@@ -441,8 +441,8 @@
     },
     "currentMatch": "Bieżące dopasowanie",
     "loadFromSteam": "Wczytaj ze Steam",
-    "loadFromSteamSteamGame": "Wczytaj ze Steam (niedostępne dla gier ze Steam)",
-    "loadFromSteamNoMatch": "Wczytaj ze Steam (brak dopasowania na Steam)",
+    "loadFromSteamSteamGame": "Niedostępne dla gier ze Steam",
+    "loadFromSteamNoMatch": "Brak dopasowania na Steam",
     "loadFromSteamBusy": "Wczytaj ze Steam (trwa aktualizacja)",
     "fieldEdited": "Edytowano",
     "fieldFromSteam": "Ze Steam, niezapisane",
@@ -462,7 +462,8 @@
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
     "searchIgn": "Szukaj metadanych w IGN",
     "ign": {
-      "gameName": "Nazwa gry"
+      "gameName": "Nazwa gry",
+      "noResults": "Brak wyników."
     },
     "search": "Szukaj",
     "searching": "Wyszukiwanie...",
@@ -497,6 +498,7 @@
     "compatibilityHelp": "Opcja „Automatycznie” używa dla każdej gry statusu jej odpowiednika w Steam. Opcja „Użyj ustawienia globalnego” stosuje ustawienie globalne do tej gry. Opcja „Zgodnie z Valve” zawsze używa statusu Valve. Jeśli dane Valve są niedostępne, opcja „Zgodnie z Valve” zachowuje oryginalny status Steam.",
     "compatibilityChoices": "Ręczne kategorie i kategorie domyślne to Twoje wybory, a nie certyfikacja Valve ani wynik wydajności emulatora.",
     "hltbGame": "Gra HowLongToBeat",
+    "hltbSearchTitle": "Szukaj w HowLongToBeat",
     "hltbHelp": "Wyszukaj grę w HowLongToBeat lub wklej numer gry albo link do jej strony, aby wybrać czasy pokazywane dla tej gry. Pozostaw puste, aby dopasować automatycznie.",
     "hltbCurrentChosen": "Bieżąca gra: {{name}} (wybrana)",
     "hltbCurrentAutomatic": "Bieżąca gra: {{name}} (znaleziona automatycznie)",
@@ -506,9 +508,9 @@
     "steamAppIdApply": "Zastosuj Steam App ID",
     "shortcut": {
       "immediateNotice": "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
-      "current": "Bieżąca: {{name}}",
+      "currentLabel": "Bieżąca nazwa",
       "missingName": "Steam nie udostępnił nazwy natywnego skrótu",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Nazwa Steam",
       "loadingSteamName": "Wczytywanie nazwy Steam...",
       "noOfficialName": "Steam nie zwrócił oficjalnej nazwy",
       "managementUnavailable": "Zarządzanie nazwami skrótów jest niedostępne",

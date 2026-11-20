@@ -439,8 +439,8 @@
     },
     "currentMatch": "Текущо съвпадение",
     "loadFromSteam": "Зареждане от Steam",
-    "loadFromSteamSteamGame": "Зареждане от Steam (недостъпно за игри от Steam)",
-    "loadFromSteamNoMatch": "Зареждане от Steam (няма съвпадение в Steam)",
+    "loadFromSteamSteamGame": "Недостъпно за игри от Steam",
+    "loadFromSteamNoMatch": "Няма съвпадение в Steam",
     "loadFromSteamBusy": "Зареждане от Steam (обновява се)",
     "fieldEdited": "Редактирано",
     "fieldFromSteam": "От Steam, незапазено",
@@ -460,7 +460,8 @@
     "nonSteamOnly": "Тази приставка променя само не-Steam игри.",
     "searchIgn": "Търсене на метаданни в IGN",
     "ign": {
-      "gameName": "Име на играта"
+      "gameName": "Име на играта",
+      "noResults": "Няма резултати."
     },
     "search": "Търсене",
     "searching": "Търсене...",
@@ -495,6 +496,7 @@
     "compatibilityHelp": "„Автоматично“ използва за всяка игра състоянието на съответстващата ѝ игра в Steam. „Използване на глобалната стойност по подразбиране“ наследява тази настройка за текущата игра. „Следване на Valve“ винаги използва състоянието от Valve. Когато няма данни от Valve, „Следване на Valve“ запазва първоначалното състояние от Steam.",
     "compatibilityChoices": "Ръчните категории и категориите по подразбиране са ваши избори, а не сертификация от Valve или резултат от производителността на емулатор.",
     "hltbGame": "Игра в HowLongToBeat",
+    "hltbSearchTitle": "Търсене в HowLongToBeat",
     "hltbHelp": "Потърсете в HowLongToBeat или поставете номер на игра или връзка към страница на игра, за да изберете времената, показани за тази игра. Оставете празно за автоматично съпоставяне.",
     "hltbCurrentChosen": "Текуща игра: {{name}} (избрана)",
     "hltbCurrentAutomatic": "Текуща игра: {{name}} (намерена автоматично)",
@@ -504,9 +506,9 @@
     "steamAppIdApply": "Прилагане на Steam App ID",
     "shortcut": {
       "immediateNotice": "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
-      "current": "Текущо: {{name}}",
+      "currentLabel": "Текущо име",
       "missingName": "Steam не предостави име на вградения пряк път",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Име в Steam",
       "loadingSteamName": "Зареждане на името от Steam...",
       "noOfficialName": "Steam не върна официално име",
       "managementUnavailable": "Управлението на имената на преки пътища не е достъпно",

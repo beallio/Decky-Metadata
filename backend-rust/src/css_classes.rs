@@ -15,6 +15,7 @@ const TRANSLATION_KEYS: &[(&str, &str)] = &[
     ("appButtons", "L3jh3XgZ_AppButtons"),
     ("gameInfoQuickLinks", "L3jh3XgZ_GameInfoQuickLinks"),
     ("gameInfoContainer", "L3jh3XgZ_GameInfoContainer"),
+    ("appGameInfoContainer", "wh08zlL9_AppGameInfoContainer"),
     ("topCapsule", "ELzXGJn8_TopCapsule"),
     ("headerBackgroundImage", "ELzXGJn8_HeaderBackgroundImage"),
     ("fullscreenEnterStart", "ELzXGJn8_FullscreenEnterStart"),
@@ -44,6 +45,14 @@ const TRANSLATION_KEYS: &[(&str, &str)] = &[
     (
         "recentGamesBackgroundImages",
         "tjjBDocm_RecentGamesBackgroundImages",
+    ),
+    (
+        "recentGamesBackgroundImage",
+        "tjjBDocm_RecentGamesBackgroundImage",
+    ),
+    (
+        "recentGamesBackgroundContainer",
+        "tjjBDocm_RecentGamesBackgroundContainer",
     ),
     ("playButton", "wGpIi7EP_PlayButton"),
 ];
@@ -152,6 +161,9 @@ mod tests {
                 "9jzUK0EK_InnerContainer": ["_1SvpjsckP9cPRxO6gCBHrw", "aqfOaplliDM-"],
                 "E9TkPRCA_Draggable": ["_1pwP4eeP1zQD7PEgmsep0W", "E6FHi-jyiIw-"],
                 "cuOVbdpY_GameStatsSection": ["_1mDAVT4sTzFRwJtlKCw2Ws", "DX26wbzR1iU-"],
+                "wh08zlL9_AppGameInfoContainer": ["_4kRDxEI2EMY-"],
+                "tjjBDocm_RecentGamesBackgroundImage": ["_--wf8MurgEk-"],
+                "tjjBDocm_RecentGamesBackgroundContainer": ["Ii-H-52Dzjw-"],
                 "L3jh3XgZ_PlaySection": ["bad class; injected"]
             }"#,
         )
@@ -170,6 +182,23 @@ mod tests {
             resolved.get("gameStatsSection").map(String::as_str),
             Some("DX26wbzR1iU-")
         );
+        assert_eq!(
+            resolved.get("appGameInfoContainer").map(String::as_str),
+            Some("_4kRDxEI2EMY-")
+        );
+        assert_eq!(
+            resolved
+                .get("recentGamesBackgroundImage")
+                .map(String::as_str),
+            Some("_--wf8MurgEk-")
+        );
+        assert_eq!(
+            resolved
+                .get("recentGamesBackgroundContainer")
+                .map(String::as_str),
+            Some("Ii-H-52Dzjw-")
+        );
+        assert_eq!(resolved.len(), 6);
         assert!(!resolved.contains_key("playSection"));
 
         // Symlinked css_translations.json must be rejected.

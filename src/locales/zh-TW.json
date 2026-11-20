@@ -438,8 +438,8 @@
     },
     "currentMatch": "目前比對",
     "loadFromSteam": "從 Steam 載入",
-    "loadFromSteamSteamGame": "從 Steam 載入（不適用於 Steam 遊戲）",
-    "loadFromSteamNoMatch": "從 Steam 載入（無 Steam 比對結果）",
+    "loadFromSteamSteamGame": "不適用於 Steam 遊戲",
+    "loadFromSteamNoMatch": "無 Steam 比對結果",
     "loadFromSteamBusy": "從 Steam 載入（正在更新）",
     "fieldEdited": "已編輯",
     "fieldFromSteam": "來自 Steam，未儲存",
@@ -459,7 +459,8 @@
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
     "searchIgn": "搜尋 IGN 中繼資料",
     "ign": {
-      "gameName": "遊戲名稱"
+      "gameName": "遊戲名稱",
+      "noResults": "沒有結果。"
     },
     "search": "搜尋",
     "searching": "正在搜尋...",
@@ -494,6 +495,7 @@
     "compatibilityHelp": "「自動」會使用每款遊戲在 Steam 上比對到的遊戲的相容性狀態。「使用全域預設值」會將該設定套用到這款遊戲。「跟隨 Valve」一律使用 Valve 提供的狀態；若 Valve 資料無法使用，則保留 Steam 的原始狀態。",
     "compatibilityChoices": "手動與預設分類是你的選擇，並非 Valve 認證，也不是模擬器效能結果。",
     "hltbGame": "HowLongToBeat 遊戲",
+    "hltbSearchTitle": "搜尋 HowLongToBeat",
     "hltbHelp": "搜尋 HowLongToBeat，或貼上遊戲編號或遊戲頁面連結，以選擇此遊戲顯示的時數。留空則自動比對。",
     "hltbCurrentChosen": "目前遊戲：{{name}}（已選擇）",
     "hltbCurrentAutomatic": "目前遊戲：{{name}}（自動找到）",
@@ -503,9 +505,9 @@
     "steamAppIdApply": "套用 Steam App ID",
     "shortcut": {
       "immediateNotice": "這些操作會立即生效，不必按「儲存」。",
-      "current": "目前：{{name}}",
+      "currentLabel": "目前名稱",
       "missingName": "Steam 未提供原生捷徑名稱",
-      "steamName": "Steam：{{name}}",
+      "steamNameLabel": "Steam 名稱",
       "loadingSteamName": "正在載入 Steam 名稱...",
       "noOfficialName": "Steam 未傳回官方名稱",
       "managementUnavailable": "捷徑名稱管理無法使用",

@@ -4,6 +4,34 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+Match Steam's own layout, colours and controls, and fix more Steam beta lookups
+
+### Changed
+
+- **Steam-style editor pages.** Help text now sits under the setting it
+  explains, as in Steam's settings. Actions such as **Load from Steam**,
+  **Use Steam name** and **Remove Metadata** are rows with a name, a short
+  explanation and a button. Groups such as **Store Categories**, **Search
+  Steam**, **Current match** and **Search IGN metadata** use Steam's section
+  headings. Edited fields show **Edited** in colour without moving the label.
+  HowLongToBeat results look like the Steam and IGN results.
+- **Quick Access Menu.** Section headings use Steam's own heading style and
+  focus highlight. Help text sits under its control. Metadata scans show a
+  progress bar, and the log viewer scrolls with the controller.
+- **Colours** follow Valve's Steam Deck palette.
+- Controls that cannot do anything are disabled: editor fields for Steam
+  games, update settings before they load, and trailer options while
+  trailers are off.
+
+### Fixed
+
+- Trailers stop when you press **Play** in every Steam language.
+- Picking an IGN result no longer shows **Searching...**, an empty IGN search
+  is blocked, and a failed search no longer says **Save failed**.
+- On the Steam Deck Client Beta, game descriptions keep their line breaks,
+  ProtonDB badges find Library covers without CSS Loader, and the HLTB
+  **Details** button keeps Steam's style.
+
 ## [0.6.5] - 2026-11-20
 
 New Steam-style metadata editor, Game Match, and Steam beta fixes

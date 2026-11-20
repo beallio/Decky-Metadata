@@ -440,8 +440,8 @@
     },
     "currentMatch": "Corrispondenza attuale",
     "loadFromSteam": "Carica da Steam",
-    "loadFromSteamSteamGame": "Carica da Steam (non disponibile per i giochi di Steam)",
-    "loadFromSteamNoMatch": "Carica da Steam (nessuna corrispondenza su Steam)",
+    "loadFromSteamSteamGame": "Non disponibile per i giochi di Steam",
+    "loadFromSteamNoMatch": "Nessuna corrispondenza su Steam",
     "loadFromSteamBusy": "Carica da Steam (aggiornamento in corso)",
     "fieldEdited": "Modificato",
     "fieldFromSteam": "Da Steam, non salvato",
@@ -461,7 +461,8 @@
     "nonSteamOnly": "Questo plugin modifica solo i giochi non Steam.",
     "searchIgn": "Cerca i metadati su IGN",
     "ign": {
-      "gameName": "Nome del gioco"
+      "gameName": "Nome del gioco",
+      "noResults": "Nessun risultato."
     },
     "search": "Cerca",
     "searching": "Ricerca in corso...",
@@ -496,6 +497,7 @@
     "compatibilityHelp": "«Automatico» usa lo stato del gioco corrispondente su Steam. «Usa il valore predefinito globale» applica l'impostazione globale a questo gioco. «Segui Valve» usa sempre lo stato fornito da Valve. Se i dati di Valve non sono disponibili, «Segui Valve» mantiene lo stato originale di Steam.",
     "compatibilityChoices": "Le categorie manuali e predefinite sono scelte tue, non una certificazione Valve né un risultato di prestazioni dell'emulatore.",
     "hltbGame": "Gioco HowLongToBeat",
+    "hltbSearchTitle": "Cerca su HowLongToBeat",
     "hltbHelp": "Cerca su HowLongToBeat, oppure incolla un numero di gioco o un link a una pagina di gioco, per scegliere i tempi mostrati per questo gioco. Lascia vuoto per abbinare automaticamente.",
     "hltbCurrentChosen": "Gioco attuale: {{name}} (scelto)",
     "hltbCurrentAutomatic": "Gioco attuale: {{name}} (trovato automaticamente)",
@@ -505,9 +507,9 @@
     "steamAppIdApply": "Applica l'ID app Steam",
     "shortcut": {
       "immediateNotice": "Queste azioni si applicano subito, senza premere «Salva».",
-      "current": "Attuale: {{name}}",
+      "currentLabel": "Nome attuale",
       "missingName": "Steam non ha fornito un nome nativo per il collegamento",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Nome Steam",
       "loadingSteamName": "Caricamento del nome Steam...",
       "noOfficialName": "Steam non ha restituito un nome ufficiale",
       "managementUnavailable": "La gestione del nome del collegamento non è disponibile",

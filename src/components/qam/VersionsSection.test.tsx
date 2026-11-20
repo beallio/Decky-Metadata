@@ -20,6 +20,19 @@ const text = (node: any): string => {
   if (Array.isArray(node)) return node.map(text).join("");
   return text(node.props?.children);
 };
+type TestNode = { type?: unknown; props?: Record<string, unknown> };
+type FieldNode = TestNode & { type: "Field"; props: Record<string, unknown> };
+
+const nodes = (node: unknown): TestNode[] => {
+  if (node == null || typeof node === "boolean") return [];
+  if (Array.isArray(node)) return node.flatMap(nodes);
+  if (typeof node !== "object") return [];
+  const element = node as TestNode;
+  return [element, ...nodes(element.props?.children)];
+};
+
+const fields = (tree: unknown): FieldNode[] =>
+  nodes(tree).filter((node): node is FieldNode => node.type === "Field" && node.props !== undefined);
 
 describe("VersionsSection", () => {
   const render = (controllerTypes: number[]) => VersionsSection({
@@ -29,31 +42,36 @@ describe("VersionsSection", () => {
     controllerTypes,
   });
 
-  it("renders known Decky metadata and SteamOS version values", () => {
-    const tree = render([]);
-    const content = text(tree);
-    expect(content).toContain("Decky Metadata: 0.3.0");
-    expect(content).toContain("Decky: 3.0");
-    expect(content).toContain("SteamOS: 3.5");
+  it("renders each version value in its own labeled Field", () => {
+    const items = fields(render([]));
+    expect(items.map(({ props }) => props.label)).toEqual([
+      "Decky Metadata:",
+      "Decky:",
+      "SteamOS:",
+      "Controller Types:",
+    ]);
+    expect(items.map(({ props }) => text(props.children))).toEqual([
+      "0.3.0",
+      "3.0",
+      "3.5",
+      "Unknown",
+    ]);
   });
 
-  it("renders deterministic sorted controller types", () => {
-    const output = text(render([102, 4, 1, 102]));
-    expect(output).toContain("Controller Types: Type 1, Steam Deck (4), Legion Go S (102)");
+  it("renders deterministic sorted controller types in the controller Field", () => {
+    expect(text(fields(render([102, 4, 1, 102]))[3].props.children))
+      .toBe("Type 1, Steam Deck (4), Legion Go S (102)");
   });
 
   it("renders known labels for Legion Go S", () => {
-    const output = text(render([102]));
-    expect(output).toContain("Controller Types: Legion Go S (102)");
+    expect(text(fields(render([102]))[3].props.children)).toBe("Legion Go S (102)");
   });
 
   it("renders unknown controller types as numeric labels", () => {
-    const output = text(render([999]));
-    expect(output).toContain("Controller Types: Type 999");
+    expect(text(fields(render([999]))[3].props.children)).toBe("Type 999");
   });
 
   it("renders Unknown when no controller data is available", () => {
-    const output = text(render([]));
-    expect(output).toContain("Controller Types: Unknown");
+    expect(text(fields(render([]))[3].props.children)).toBe("Unknown");
   });
 });

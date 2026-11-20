@@ -440,8 +440,8 @@
     },
     "currentMatch": "Potrivirea curentă",
     "loadFromSteam": "Încarcă din Steam",
-    "loadFromSteamSteamGame": "Încarcă din Steam (indisponibil pentru jocurile Steam)",
-    "loadFromSteamNoMatch": "Încarcă din Steam (nicio potrivire Steam)",
+    "loadFromSteamSteamGame": "Indisponibil pentru jocurile Steam",
+    "loadFromSteamNoMatch": "Nicio potrivire Steam",
     "loadFromSteamBusy": "Încarcă din Steam (se actualizează)",
     "fieldEdited": "Editat",
     "fieldFromSteam": "Din Steam, nesalvat",
@@ -461,7 +461,8 @@
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
     "ign": {
-      "gameName": "Numele jocului"
+      "gameName": "Numele jocului",
+      "noResults": "Nu există rezultate."
     },
     "search": "Caută",
     "searching": "Se caută...",
@@ -496,6 +497,7 @@
     "compatibilityHelp": "„Automat” folosește starea din Steam a jocului asociat. „Folosește valoarea implicită globală” preia această setare pentru jocul curent. „Urmărește Valve” folosește întotdeauna starea stabilită de Valve. Dacă datele Valve nu sunt disponibile, „Urmărește Valve” păstrează starea Steam originală.",
     "compatibilityChoices": "Categoriile manuale și implicite sunt alegerile tale, nu o certificare Valve sau un rezultat de performanță al emulatorului.",
     "hltbGame": "Joc HowLongToBeat",
+    "hltbSearchTitle": "Caută pe HowLongToBeat",
     "hltbHelp": "Caută pe HowLongToBeat sau lipește un număr de joc ori un link către pagina jocului pentru a alege timpii afișați pentru acest joc. Lasă gol pentru potrivire automată.",
     "hltbCurrentChosen": "Jocul curent: {{name}} (ales)",
     "hltbCurrentAutomatic": "Jocul curent: {{name}} (găsit automat)",
@@ -505,9 +507,9 @@
     "steamAppIdApply": "Aplică ID-ul de aplicație Steam",
     "shortcut": {
       "immediateNotice": "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
-      "current": "Curent: {{name}}",
+      "currentLabel": "Numele curent",
       "missingName": "Steam nu a expus un nume nativ pentru scurtătură",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Numele Steam",
       "loadingSteamName": "Se încarcă numele Steam...",
       "noOfficialName": "Steam nu a returnat un nume oficial",
       "managementUnavailable": "Gestionarea numelor scurtăturilor nu este disponibilă",

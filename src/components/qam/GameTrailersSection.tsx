@@ -4,12 +4,11 @@ import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
-import { fontSize } from "../../tokens";
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
 import type { TrailerQuality } from "../../types";
+import { colors } from "../../tokens";
 import { featureConflictNotice } from "../../pluginConflicts";
 
-const viewHeadingStyle = { ...sectionHeadingStyle, fontSize: fontSize.lg } as const;
 
 type GameTrailersSectionProps = {
   initiallyExpanded?: boolean;
@@ -49,6 +48,7 @@ export function GameTrailersSection({
     { data: 2160, label: "2160p" },
   ];
   const disabled = !state.settingsLoaded || state.busy;
+  const dependentDisabled = disabled || !state.settings.enabled;
   const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
   const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
   const display = state.displayWidth && state.displayHeight
@@ -60,7 +60,7 @@ export function GameTrailersSection({
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.enableLabel")}
-          description={t("qam.trailers.enableDescription")}
+          description={`${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`}
           checked={state.settings.enabled}
           disabled={enableDisabled}
           onChange={onEnabledChange}
@@ -74,14 +74,14 @@ export function GameTrailersSection({
         </PanelSectionRow>
       ) : null}
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>{t("qam.trailers.detailHeading")}</div>
+        <div style={sectionHeadingStyle}>{t("qam.trailers.detailHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.detailLabel")}
           description={t("qam.trailers.detailDescription")}
           checked={state.settings.detailEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onDetailEnabledChange}
         />
       </PanelSectionRow>
@@ -95,7 +95,7 @@ export function GameTrailersSection({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={!state.settingsLoaded}
+          disabled={dependentDisabled}
           onChange={onDetailFadeInDelayChange}
         />
       </PanelSectionRow>
@@ -104,7 +104,7 @@ export function GameTrailersSection({
           label={t("qam.trailers.audioLabel")}
           description={t("qam.trailers.audioDescription")}
           checked={state.settings.audioEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onAudioChange}
         />
       </PanelSectionRow>
@@ -113,19 +113,19 @@ export function GameTrailersSection({
           label={t("qam.trailers.hideLogoLabel")}
           description={t("qam.trailers.hideLogoDescription")}
           checked={state.settings.hideLogoDuringTrailer}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onHideLogoChange}
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div style={viewHeadingStyle}>{t("qam.trailers.homeHeading")}</div>
+        <div style={sectionHeadingStyle}>{t("qam.trailers.homeHeading")}</div>
       </PanelSectionRow>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.homeLabel")}
           description={t("qam.trailers.homeDescription")}
           checked={state.settings.homeEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onHomeEnabledChange}
         />
       </PanelSectionRow>
@@ -139,7 +139,7 @@ export function GameTrailersSection({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={!state.settingsLoaded}
+          disabled={dependentDisabled}
           onChange={onHomeFadeInDelayChange}
         />
       </PanelSectionRow>
@@ -151,7 +151,7 @@ export function GameTrailersSection({
             childrenContainerWidth="max"
             rgOptions={qualityOptions}
             selectedOption={state.settings.quality}
-            disabled={disabled}
+            disabled={dependentDisabled}
             onMenuWillOpen={onQualityMenuWillOpen}
             onChange={(option) => { void onQualityChange(option.data); }}
             renderButtonValue={() => (
@@ -172,26 +172,18 @@ export function GameTrailersSection({
           focusable={true}
           highlightOnFocus={true}
         >
-          <div style={{ fontSize: "14px", color: "#cbd5e1" }}>
+          <div style={{ fontSize: "14px", color: colors.textSecondary }}>
             {t("qam.trailers.displayTarget", { display, height: state.targetHeight })}
           </div>
         </Field>
       </PanelSectionRow>
-      <PanelSectionRow>
-        <Field
-          focusable={false}
-          childrenLayout="below"
-          padding="none"
-          bottomSeparator="none"
-        >
-          <div style={{ fontSize: "13px", lineHeight: "1.4", color: "#cbd5e1" }}>
-            {t("qam.trailers.footnote")}
-          </div>
-          {state.settingsError && (
+      {state.settingsError ? (
+        <PanelSectionRow>
+          <Field focusable={false} padding="none" bottomSeparator="none">
             <div style={inlineStatusStyle("error")}>{state.settingsError}</div>
-          )}
-        </Field>
-      </PanelSectionRow>
+          </Field>
+        </PanelSectionRow>
+      ) : null}
     </CollapsibleSection>
   );
 }

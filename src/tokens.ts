@@ -1,14 +1,14 @@
-// Shared semantic style tokens, aligned with beallio/SDH-Ludusavi.
+// Semantic tokens follow Valve's SteamUI palette (steamui-watch VALVE_PALETTE).
 export const colors = {
   accent: "#1a9fff",
-  info: "#60a5fa",
-  success: "#4ade80",
-  warning: "#f59e0b",
-  error: "#f87171",
-  errorIcon: "#ef4444",
-  text: "#f8fafc",
-  textSecondary: "#cbd5e1",
-  surfaceKnockout: "#0b151f",
+  info: "#66c0f4",
+  success: "#5ba32b",
+  warning: "#ffc53d",
+  error: "#ec5d5e",
+  errorIcon: "#ec5d5e",
+  text: "#dcdedf",
+  textSecondary: "#b8bcbf",
+  surfaceKnockout: "#0e141b",
 } as const;
 
 // #1a9fff as rgb components, for CSS that needs alpha (e.g. the overlay).

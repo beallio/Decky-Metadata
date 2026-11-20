@@ -3,7 +3,7 @@ vi.mock("@decky/ui", () => ({ findModuleChild: vi.fn() }));
 vi.mock("@decky/api", () => ({ callable: vi.fn(() => vi.fn()) }));
 import { descriptionOwnerAppId, installMetadataDescriptions, type DescriptionPresentationDependencies } from "./metadataDescriptions";
 
-const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number; hydrateOnSubscribe?: boolean } = {}) => {
+const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number; hydrateOnSubscribe?: boolean; ownerClasses?: string[]; presentOwnerClasses?: string[]; descriptionClass?: string } = {}) => {
   const makeLeaf = () => {
     const values = new Map<string, [string, string]>([["white-space", ["normal", ""]]]);
     const attributes = new Map<string, string>();
@@ -25,22 +25,25 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
   let ownerVisible = true;
   let route = "/library/app/10/tab/GameInfo";
   let eligible = options.allowed ?? true;
+  const ownerClasses = options.ownerClasses ?? ["info"];
+  const presentOwnerClasses = options.presentOwnerClasses ?? ownerClasses;
+  const descriptionClass = options.descriptionClass ?? "description";
   const ownerIds = new Map<HTMLElement, number>();
   const hiddenOwners = new Set<HTMLElement>();
   let outgoing: HTMLElement[] = [];
   let mounted = !options.delayed;
   const initialLeaf = leaf;
-  let owner = { isConnected: true, querySelectorAll: () => [outgoing.length ? initialLeaf : leaf] } as unknown as HTMLElement;
+  let owner = { isConnected: true, querySelectorAll: (classSelector: string) => classSelector === `.${descriptionClass}` ? [outgoing.length ? initialLeaf : leaf] : [] } as unknown as HTMLElement;
   ownerIds.set(owner, appId);
   let revisionListener = () => {};
   const unsubscribeRevision = vi.fn(() => { revisionListener = () => {}; });
   const observers: Array<{ target: Node; callback: () => void; active: boolean }> = [];
   let routeListener = () => {};
   let expire = () => {};
-  const doc = { body: {}, querySelectorAll: () => mounted ? [...outgoing, owner] : [] } as unknown as Document;
+  const doc = { body: {}, querySelectorAll: (classSelector: string) => mounted && presentOwnerClasses.includes(classSelector.slice(1)) ? [...outgoing, owner] : [] } as unknown as Document;
   const dependencies: DescriptionPresentationDependencies = {
     documents: () => [doc],
-    classes: () => ({ owner: "info", description: "description" }),
+    classes: () => ({ owner: ownerClasses, description: descriptionClass }),
     route: () => route,
     eligible: () => eligible,
     ownerAppId: (candidate) => ownerIds.get(candidate) ?? 0,
@@ -66,7 +69,7 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
       const previousOwner = owner;
       const previousLeaf = leaf;
       Object.defineProperty(previousOwner, "isConnected", { value: false });
-      owner = { isConnected: true, querySelectorAll: () => [leaf] } as unknown as HTMLElement;
+      owner = { isConnected: true, querySelectorAll: (classSelector: string) => classSelector === `.${descriptionClass}` ? [leaf] : [] } as unknown as HTMLElement;
       ownerIds.set(owner, appId);
       leaf = makeLeaf();
       observers.filter((o) => o.active).forEach((o) => o.callback());
@@ -82,7 +85,7 @@ const harness = (options: { delayed?: boolean; allowed?: boolean; appId?: number
       appId = id;
       leaf = makeLeaf();
       const nextLeaf = leaf;
-      owner = { isConnected: true, querySelectorAll: () => [nextLeaf] } as unknown as HTMLElement;
+      owner = { isConnected: true, querySelectorAll: (classSelector: string) => classSelector === `.${descriptionClass}` ? [nextLeaf] : [] } as unknown as HTMLElement;
       ownerIds.set(owner, id);
       route = `/library/app/${id}/tab/GameInfo`;
       routeListener();
@@ -100,6 +103,15 @@ describe("native description presentation ownership", () => {
     const owner = { "__reactFiber$test": { return: { return: { memoizedProps: props } } } } as unknown as HTMLElement;
     expect(descriptionOwnerAppId(owner)).toBe(10);
     expect(descriptionOwnerAppId({} as HTMLElement)).toBe(0);
+  });
+  it("uses the beta AppGameInfoContainer when the old owner class is absent", () => {
+    const h = harness({
+      ownerClasses: ["pzBMdSbGpu7XfypZMU6PK", "_4kRDxEI2EMY-"],
+      presentOwnerClasses: ["_4kRDxEI2EMY-"],
+      descriptionClass: "xftA50eui60-",
+    });
+    expect(h.leaf().getAttribute("data-decky-metadata-description")).toBe("10");
+    h.unpatchers.forEach((stop) => stop());
   });
   it("bounds route discovery and stops all discovery on leaving Game Info", () => {
     const h = harness({ delayed: true });
@@ -222,7 +234,7 @@ describe("native description presentation ownership", () => {
     const unpatchers: Array<() => void> = [];
     installMetadataDescriptions(unpatchers, {
       documents: () => [doc],
-      classes: () => classesReady ? { owner: "pzBMdSbGpu7XfypZMU6PK", description: "xftA50eui60-" } : undefined,
+      classes: () => classesReady ? { owner: ["pzBMdSbGpu7XfypZMU6PK"], description: "xftA50eui60-" } : undefined,
       route: () => "/library/app/10/tab/GameInfo",
       eligible: () => true,
       ownerAppId: () => 10,

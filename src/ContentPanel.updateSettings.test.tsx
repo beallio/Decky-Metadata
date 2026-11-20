@@ -235,6 +235,9 @@ const children = (node: any): any[] => {
 const updateSection = (tree: any) =>
   children(tree).find((node) => node.type === "PluginUpdateSection");
 
+const logsSection = (tree: unknown) =>
+  children(tree).find((node) => node.type === "LogsSection");
+
 const versionsSection = (tree: any) =>
   children(tree).find((node) => node.type === "VersionsSection");
 
@@ -544,6 +547,21 @@ describe("Content update settings", () => {
     expect(section.props.settingsLoaded).toBe(true);
     expect(versionsSection(render()).props.controllerTypes).toEqual([4, 102]);
   });
+  it("keeps debug logging disabled until its setting finishes loading", async () => {
+    const loading = deferred<boolean>();
+    backend.getDebugLogging.mockReturnValue(loading.promise);
+
+    render();
+    runEffects();
+    expect(logsSection(render()).props.debugLoggingLoaded).toBe(false);
+
+    loading.resolve(true);
+    await flushPromises();
+    const section = logsSection(render());
+    expect(section.props.debugLoggingLoaded).toBe(true);
+    expect(section.props.debugLogging).toBe(true);
+  });
+
 
   it("rolls both optimistic toggles back after failed or skipped saves", async () => {
     backend.getUpdateSettings.mockResolvedValue({
