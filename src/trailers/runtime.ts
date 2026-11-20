@@ -349,10 +349,36 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
     const normalizeActionText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
     function isLaunchActionElement(target) {
         if (!(target instanceof HTMLElement)) return false;
-        const control = target.closest("button, a, [role='button'], [tabindex], [class*='Button'], [class*='button']");
+        let playButtonClass;
+        let appActionButtonClass;
+        const candidates = [window];
+        try { candidates.push(window.opener); } catch { }
+        try { if (window.parent !== window) candidates.push(window.parent); } catch { }
+        for (const candidate of candidates) {
+            try {
+                const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
+                const playButton = candidate?.DFL?.appActionButtonClasses?.PlayButton;
+                const appActionButton = candidate?.DFL?.basicAppDetailsSectionStylerClasses?.AppActionButton;
+                if (!playButtonClass) {
+                    if (typeof playButton === "string" && playButton) playButtonClass = playButton;
+                    else if (typeof translated?.playButton === "string" && translated.playButton) playButtonClass = translated.playButton;
+                }
+                if (!appActionButtonClass) {
+                    if (typeof appActionButton === "string" && appActionButton) appActionButtonClass = appActionButton;
+                    else if (typeof translated?.appActionButton === "string" && translated.appActionButton) appActionButtonClass = translated.appActionButton;
+                }
+            } catch { }
+        }
+        const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
+        const nativeSelector = [playButtonClass, appActionButtonClass]
+            .map((value) => typeof value === "string" ? escape(value) : "")
+            .filter(Boolean).map((value) => `.${value}`).join(", ");
+        const control = target.closest(nativeSelector || "button, a, [role='button'], [tabindex], [class*='Button'], [class*='button']");
         if (!control) return false;
         const rect = control.getBoundingClientRect();
         if (rect.width < 44 || rect.height < 28 || rect.bottom < 0 || rect.top > window.innerHeight) return false;
+        if (nativeSelector) return true;
         const text = normalizeActionText([control.innerText, control.textContent, control.getAttribute("aria-label"), control.getAttribute("title")].filter(Boolean).join(" "));
         return /\b(play|launch|install|resume|update|stream|gioca|avvia|installa|riprendi|aggiorna|jouer|lancer|installer|reprendre|jugar|iniciar|instalar|reanudar|actualizar|jogar|continuar|spielen|installieren|fortsetzen)\b/.test(text) || ["开始游戏", "开始", "安装", "继续", "更新", "プレイ", "起動", "インストール", "再開"].some((word) => text.includes(word));
     }

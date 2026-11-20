@@ -460,7 +460,8 @@
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
     "searchIgn": "Kërko metadata në IGN",
     "ign": {
-      "gameName": "Emri i lojës"
+      "gameName": "Emri i lojës",
+      "noResults": "Nuk ka rezultate."
     },
     "search": "Kërko",
     "searching": "Po kërkohet...",

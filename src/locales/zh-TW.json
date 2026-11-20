@@ -459,7 +459,8 @@
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
     "searchIgn": "搜尋 IGN 中繼資料",
     "ign": {
-      "gameName": "遊戲名稱"
+      "gameName": "遊戲名稱",
+      "noResults": "沒有結果。"
     },
     "search": "搜尋",
     "searching": "正在搜尋...",

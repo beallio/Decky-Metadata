@@ -459,7 +459,8 @@
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
     "searchIgn": "搜索 IGN 元数据",
     "ign": {
-      "gameName": "游戏名称"
+      "gameName": "游戏名称",
+      "noResults": "没有结果。"
     },
     "search": "搜索",
     "searching": "正在搜索...",

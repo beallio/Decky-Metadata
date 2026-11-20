@@ -461,7 +461,8 @@
     "nonSteamOnly": "Este plugin solo modifica juegos que no son de Steam.",
     "searchIgn": "Buscar metadatos de IGN",
     "ign": {
-      "gameName": "Nombre del juego"
+      "gameName": "Nombre del juego",
+      "noResults": "No hay resultados."
     },
     "search": "Buscar",
     "searching": "Buscando...",

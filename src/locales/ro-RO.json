@@ -461,7 +461,8 @@
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
     "ign": {
-      "gameName": "Numele jocului"
+      "gameName": "Numele jocului",
+      "noResults": "Nu există rezultate."
     },
     "search": "Caută",
     "searching": "Se caută...",

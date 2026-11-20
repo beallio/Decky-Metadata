@@ -51,6 +51,7 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
             className={editorFocusTargetClassName}
             aria-label={t("editor.hltbSearchTitle")}
             value={query}
+            disabled={disabled}
             onChange={(e) => setQuery(e.target.value)}
             style={{ ...fieldStyle, width: "100%" }}
           />

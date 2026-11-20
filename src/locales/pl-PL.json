@@ -462,7 +462,8 @@
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
     "searchIgn": "Szukaj metadanych w IGN",
     "ign": {
-      "gameName": "Nazwa gry"
+      "gameName": "Nazwa gry",
+      "noResults": "Brak wyników."
     },
     "search": "Szukaj",
     "searching": "Wyszukiwanie...",

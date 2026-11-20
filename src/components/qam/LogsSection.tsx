@@ -8,6 +8,7 @@ import { ButtonLabel } from "../../styles";
 type LogsSectionProps = {
   logsBusy: boolean;
   debugLogging: boolean;
+  debugLoggingLoaded: boolean;
   debugLoggingBusy: boolean;
   onViewLogs: () => void;
   onToggleDebugLogging: (enabled: boolean) => void;
@@ -16,6 +17,7 @@ type LogsSectionProps = {
 export function LogsSection({
   logsBusy,
   debugLogging,
+  debugLoggingLoaded,
   debugLoggingBusy,
   onViewLogs,
   onToggleDebugLogging,
@@ -40,8 +42,7 @@ export function LogsSection({
           description={t("qam.logs.debugLoggingDescription")}
           bottomSeparator="none"
           checked={debugLogging}
-          disabled={debugLoggingBusy}
-          onChange={onToggleDebugLogging}
+          disabled={!debugLoggingLoaded || debugLoggingBusy}
         />
       </PanelSectionRow>
     </CollapsibleSection>

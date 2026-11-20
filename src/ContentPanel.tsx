@@ -282,6 +282,7 @@ export const Content = () => {
   const [delistedBusy, setDelistedBusy] = useState(false);
   const [logsBusy, setLogsBusy] = useState(false);
   const [debugLogging, setDebugLoggingState] = useState(false);
+  const [debugLoggingLoaded, setDebugLoggingLoaded] = useState(false);
   const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
   const [deckyVersion, setDeckyVersion] = useState("");
@@ -693,7 +694,10 @@ export const Content = () => {
           log.setVerboseLogging(enabled);
         }
       })
-      .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
+      .catch((error) => log.warn("bridge", "debug logging setting load failed", error))
+      .finally(() => {
+        if (!cancelled) setDebugLoggingLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -1101,6 +1105,7 @@ export const Content = () => {
       <LogsSection
         logsBusy={logsBusy}
         debugLogging={debugLogging}
+        debugLoggingLoaded={debugLoggingLoaded}
         debugLoggingBusy={debugLoggingBusy}
         onViewLogs={() => void viewLogs()}
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}

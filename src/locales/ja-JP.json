@@ -459,7 +459,8 @@
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
     "searchIgn": "IGN メタデータを検索",
     "ign": {
-      "gameName": "ゲーム名"
+      "gameName": "ゲーム名",
+      "noResults": "結果がありません。"
     },
     "search": "検索",
     "searching": "検索中...",

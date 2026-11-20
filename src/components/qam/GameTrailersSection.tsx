@@ -48,6 +48,7 @@ export function GameTrailersSection({
     { data: 2160, label: "2160p" },
   ];
   const disabled = !state.settingsLoaded || state.busy;
+  const dependentDisabled = disabled || !state.settings.enabled;
   const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
   const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
   const display = state.displayWidth && state.displayHeight
@@ -80,7 +81,7 @@ export function GameTrailersSection({
           label={t("qam.trailers.detailLabel")}
           description={t("qam.trailers.detailDescription")}
           checked={state.settings.detailEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onDetailEnabledChange}
         />
       </PanelSectionRow>
@@ -94,7 +95,7 @@ export function GameTrailersSection({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={!state.settingsLoaded}
+          disabled={dependentDisabled}
           onChange={onDetailFadeInDelayChange}
         />
       </PanelSectionRow>
@@ -103,7 +104,7 @@ export function GameTrailersSection({
           label={t("qam.trailers.audioLabel")}
           description={t("qam.trailers.audioDescription")}
           checked={state.settings.audioEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onAudioChange}
         />
       </PanelSectionRow>
@@ -112,7 +113,7 @@ export function GameTrailersSection({
           label={t("qam.trailers.hideLogoLabel")}
           description={t("qam.trailers.hideLogoDescription")}
           checked={state.settings.hideLogoDuringTrailer}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onHideLogoChange}
         />
       </PanelSectionRow>
@@ -124,7 +125,7 @@ export function GameTrailersSection({
           label={t("qam.trailers.homeLabel")}
           description={t("qam.trailers.homeDescription")}
           checked={state.settings.homeEnabled}
-          disabled={disabled}
+          disabled={dependentDisabled}
           onChange={onHomeEnabledChange}
         />
       </PanelSectionRow>
@@ -138,7 +139,7 @@ export function GameTrailersSection({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={!state.settingsLoaded}
+          disabled={dependentDisabled}
           onChange={onHomeFadeInDelayChange}
         />
       </PanelSectionRow>
@@ -150,7 +151,7 @@ export function GameTrailersSection({
             childrenContainerWidth="max"
             rgOptions={qualityOptions}
             selectedOption={state.settings.quality}
-            disabled={disabled}
+            disabled={dependentDisabled}
             onMenuWillOpen={onQualityMenuWillOpen}
             onChange={(option) => { void onQualityChange(option.data); }}
             renderButtonValue={() => (

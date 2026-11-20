@@ -460,7 +460,8 @@
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
     "searchIgn": "IGN-metadata doorzoeken",
     "ign": {
-      "gameName": "Naam van de game"
+      "gameName": "Naam van de game",
+      "noResults": "Geen resultaten."
     },
     "search": "Zoeken",
     "searching": "Zoeken...",

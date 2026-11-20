@@ -460,7 +460,8 @@
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
     "searchIgn": "Hae IGN-metatietoja",
     "ign": {
-      "gameName": "Pelin nimi"
+      "gameName": "Pelin nimi",
+      "noResults": "Ei tuloksia."
     },
     "search": "Hae",
     "searching": "Haetaan...",

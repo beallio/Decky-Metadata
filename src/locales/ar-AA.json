@@ -464,7 +464,8 @@
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
     "searchIgn": "البحث في بيانات IGN الوصفية",
     "ign": {
-      "gameName": "اسم اللعبة"
+      "gameName": "اسم اللعبة",
+      "noResults": "لا نتائج."
     },
     "search": "بحث",
     "searching": "جارٍ البحث...",

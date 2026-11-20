@@ -459,7 +459,8 @@
     "nonSteamOnly": "이 플러그인은 비Steam 게임만 변경합니다.",
     "searchIgn": "IGN 메타데이터 검색",
     "ign": {
-      "gameName": "게임 이름"
+      "gameName": "게임 이름",
+      "noResults": "결과가 없습니다."
     },
     "search": "검색",
     "searching": "검색 중...",

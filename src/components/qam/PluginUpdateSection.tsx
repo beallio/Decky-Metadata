@@ -161,6 +161,7 @@ export function PluginUpdateSection({
           label={t("qam.update.receiveDevelopment")}
           description={t("qam.update.receiveDevelopmentDescription")}
           checked={updateChannel === "development"}
+          disabled={!settingsLoaded}
           onChange={handleToggleChannel}
         />
       </PanelSectionRow>
@@ -170,6 +171,7 @@ export function PluginUpdateSection({
           label={t("qam.update.autoCheck")}
           description={t("qam.update.autoCheckDescription")}
           checked={automaticUpdateChecks}
+          disabled={!settingsLoaded}
           onChange={onToggleAutomaticUpdateChecks}
         />
       </PanelSectionRow>

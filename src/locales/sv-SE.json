@@ -460,7 +460,8 @@
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
     "searchIgn": "Sök IGN-metadata",
     "ign": {
-      "gameName": "Spelets namn"
+      "gameName": "Spelets namn",
+      "noResults": "Inga resultat."
     },
     "search": "Sök",
     "searching": "Söker...",

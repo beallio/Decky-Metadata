@@ -359,7 +359,7 @@ export const MetadataPage = () => {
   const [releaseText, setReleaseText] = useState("");
   const [ratingText, setRatingText] = useState("");
   const [query, setQuery] = useState(appName(appId));
-  const [results, setResults] = useState<MetadataSearchResult[]>([]);
+  const [results, setResults] = useState<MetadataSearchResult[] | null>(null);
   // The operation that owns the shared busy guard; only its control shows busy text.
   const [busy, setBusy] = useState<BusyOperation | false>(false);
   const [steamAppIdText, setSteamAppIdText] = useState("");
@@ -640,7 +640,7 @@ export const MetadataPage = () => {
     steamPreviewedFieldsRef.current.clear();
     // The editor stays mounted across games, so its search belongs to one entry (#43).
     setQuery(appName(appId));
-    setResults([]);
+    setResults(null);
     // An unsaved HLTB draft belongs to the game it was typed on.
     setHltbIdDraft(null);
     setPage("details");
@@ -855,6 +855,7 @@ export const MetadataPage = () => {
           aria-label={t(labelKey)}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          disabled={!nonSteam}
           style={fieldStyle}
         />
       </div>
@@ -1160,13 +1161,13 @@ export const MetadataPage = () => {
 
   const search = async () => {
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry, "ign")) return;
+    if (!query.trim() || !beginBusy(requestedEntry, "ign")) return;
     try {
       const found = await searchMetadata(query, 8);
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setResults(found);
     } catch (error) {
-      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
+      toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
@@ -1174,7 +1175,7 @@ export const MetadataPage = () => {
 
   const applyResult = async (result: MetadataSearchResult) => {
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry, "ign")) return;
+    if (!beginBusy(requestedEntry, "other")) return;
     const baselineMetadata = metadataRef.current;
     const baselineText = formTextSnapshot();
     try {
@@ -1479,7 +1480,7 @@ export const MetadataPage = () => {
                     short_description: e.target.value,
                   }));
                 }}
-                style={descriptionTextareaStyle}
+                disabled={!nonSteam}
               />
             ) : (
               <Focusable
@@ -1490,8 +1491,8 @@ export const MetadataPage = () => {
                 <textarea
                   ref={descriptionRef}
                   className={editorFocusTargetClassName}
-                  tabIndex={0}
                   value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
+                  disabled={!nonSteam}
                   onChange={(e) => {
                     clearPreviewMarker("description");
                     updateMetadata((prev) => ({
@@ -1522,6 +1523,7 @@ export const MetadataPage = () => {
               className={editorFocusTargetClassName}
               aria-label={t("editor.field.releaseDate")}
               value={releaseText}
+              disabled={!nonSteam}
               onChange={(e) => {
                 markFormEdited();
                 clearPreviewMarker("releaseDate");
@@ -1536,6 +1538,7 @@ export const MetadataPage = () => {
               className={editorFocusTargetClassName}
               aria-label={t("editor.field.rating")}
               value={ratingText}
+              disabled={!nonSteam}
               onChange={(e) => {
                 markFormEdited();
                 clearPreviewMarker("rating");
@@ -1625,6 +1628,7 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   aria-label={t("editor.steamAppId")}
                   value={steamAppIdText}
+                  disabled={!nonSteam}
                   onChange={(e) => {
                     markFormEdited();
                     clearPreviewMarker("steamAppId");
@@ -1635,7 +1639,7 @@ export const MetadataPage = () => {
               </div>
               <FocusableButton
                 className={editorFocusTargetClassName}
-                disabled={entryBusy}
+                disabled={entryBusy || !nonSteam}
                 onClick={() => applySteamAppId()}
                 style={editorSearchButtonStyle}
               >
@@ -1666,13 +1670,17 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   aria-label={t("editor.ign.gameName")}
                   value={query}
-                  onChange={(e) => setQuery(e.target.value)}
+                  disabled={!nonSteam}
+                  onChange={(e) => {
+                    setQuery(e.target.value);
+                    setResults(null);
+                  }}
                   style={{ ...fieldStyle, width: "100%" }}
                 />
               </div>
               <FocusableButton
                 className={editorFocusTargetClassName}
-                disabled={entryBusy}
+                disabled={entryBusy || !nonSteam || !query.trim()}
                 onClick={search}
                 style={editorSearchButtonStyle}
               >
@@ -1688,14 +1696,18 @@ export const MetadataPage = () => {
                 bottomSeparator="none"
               />
             ) : null}
-            {!ignBusy && !results.length ? (
+            {!ignBusy && !results?.length ? (
               <Field
                 focusable={false}
-                description={<span aria-live="polite">{t("editor.noResults")}</span>}
+                description={
+                  <span aria-live="polite">
+                    {results === null ? t("editor.noResults") : t("editor.ign.noResults")}
+                  </span>
+                }
                 bottomSeparator="none"
               />
             ) : null}
-            {results.map((result) => (
+            {(results ?? []).map((result) => (
               <Field
                 key={result.slug || result.url}
                 className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
@@ -1733,7 +1745,7 @@ export const MetadataPage = () => {
           <HltbGameSearch
             key={editorEntryToken}
             initialQuery={appName(appId)}
-            disabled={entryBusy}
+            disabled={entryBusy || !nonSteam}
             onApply={(picked) => applyHltbGameId(picked)}
           />
         </div>
@@ -1751,6 +1763,7 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   aria-label={t("editor.hltbGame")}
                   value={hltbIdText}
+                  disabled={!nonSteam}
                   onChange={(e) => {
                     markFormEdited();
                     clearPreviewMarker("hltb");
@@ -1761,7 +1774,7 @@ export const MetadataPage = () => {
               </div>
               <FocusableButton
                 className={editorFocusTargetClassName}
-                disabled={entryBusy}
+                disabled={entryBusy || !nonSteam}
                 onClick={() => applyHltbGameId()}
                 style={editorSearchButtonStyle}
               >
@@ -1831,6 +1844,7 @@ export const MetadataPage = () => {
               label={renderMarkedLabel(categoryChanged ? changedMarker : unchangedMarker, categoryLabel(category, t))}
               checked={formCategories.has(category)}
               onChange={(checked) => toggleCategory(category, checked)}
+              disabled={!nonSteam}
             />
           );
         })}

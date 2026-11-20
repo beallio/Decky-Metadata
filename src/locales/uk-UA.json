@@ -462,7 +462,8 @@
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
     "searchIgn": "Шукати метадані в IGN",
     "ign": {
-      "gameName": "Назва гри"
+      "gameName": "Назва гри",
+      "noResults": "Немає результатів."
     },
     "search": "Шукати",
     "searching": "Пошук...",

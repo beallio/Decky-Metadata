@@ -462,7 +462,8 @@
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
     "searchIgn": "Hledat metadata na IGN",
     "ign": {
-      "gameName": "Název hry"
+      "gameName": "Název hry",
+      "noResults": "Žádné výsledky."
     },
     "search": "Hledat",
     "searching": "Hledání...",

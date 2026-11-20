@@ -460,7 +460,8 @@
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
     "searchIgn": "IGN meta verilerinde ara",
     "ign": {
-      "gameName": "Oyun adı"
+      "gameName": "Oyun adı",
+      "noResults": "Sonuç yok."
     },
     "search": "Ara",
     "searching": "Aranıyor...",

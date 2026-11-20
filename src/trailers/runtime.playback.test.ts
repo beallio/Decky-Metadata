@@ -28,7 +28,7 @@ const end = source.lastIndexOf('\n}') + 2;
 assert.ok(start >= 0 && end > start);
 const factory = source.slice(start, end).replace(/^export\s+/, '').replace(
   'const existing = window[runtimeKey];',
-  'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget }; const existing = window[runtimeKey];'
+  'return { Runtime, AdaptiveSession, readPlaybackDisplaySize, resolveQualityTarget, isLaunchActionElement }; const existing = window[runtimeKey];'
 );
 
 function setup({ width = 1280, height = 800, dpr = 1, quality = 'auto', hideLogoDuringTrailer = false,
@@ -2169,6 +2169,39 @@ test('Play intent stops immediately and holds the page beyond 22 seconds until a
   h.runtime.handleVisibilityChange();
   await Promise.resolve();
   assert.equal(h.runtime.launchHeld, false);
+});
+test('Native Play classes detect localized launch labels and text remains a fallback without them', () => {
+  const h = setup();
+  class Element {
+    constructor(className, text) {
+      this.className = className;
+      this.innerText = text;
+      this.textContent = text;
+    }
+    closest(selector) {
+      if (selector.split(", ").includes(`.${this.className}`) ||
+          selector === "button, a, [role='button'], [tabindex], [class*='Button'], [class*='button']") return this;
+      return null;
+    }
+    getBoundingClientRect() { return { width: 100, height: 30, top: 0, bottom: 30 }; }
+    getAttribute() { return null; }
+  }
+  h.context.HTMLElement = Element;
+  h.window.DFL = {
+    appActionButtonClasses: { PlayButton: "NativePlayButton" },
+    basicAppDetailsSectionStylerClasses: { AppActionButton: "NativeAppActionButton" },
+  };
+  assert.equal(h.api.isLaunchActionElement(new Element("NativePlayButton", "Играть")), true);
+  assert.equal(h.api.isLaunchActionElement(new Element("NativeAppActionButton", "Играть")), true);
+  delete h.window.DFL;
+  h.window.__DECKY_METADATA_NATIVE_CLASSES__ = {
+    playButton: "MirrorPlayButton",
+    appActionButton: "MirrorAppActionButton",
+  };
+  assert.equal(h.api.isLaunchActionElement(new Element("MirrorPlayButton", "Играть")), true);
+  assert.equal(h.api.isLaunchActionElement(new Element("MirrorAppActionButton", "Играть")), true);
+  delete h.window.__DECKY_METADATA_NATIVE_CLASSES__;
+  assert.equal(h.api.isLaunchActionElement(new Element("OtherButton", "Play")), true);
 });
 
 
