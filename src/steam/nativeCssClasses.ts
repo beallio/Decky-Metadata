@@ -9,6 +9,7 @@ export type NativeCssClassKey =
   | "appButtons"
   | "gameInfoQuickLinks"
   | "gameInfoContainer"
+  | "appGameInfoContainer"
   | "topCapsule"
   | "headerBackgroundImage"
   | "fullscreenEnterStart"
@@ -33,6 +34,8 @@ export type NativeCssClassKey =
   | "libraryItemOverlayInnerArea"
   | "recentGamesContainer"
   | "recentGamesBackgroundImages"
+  | "recentGamesBackgroundImage"
+  | "recentGamesBackgroundContainer"
   | "playButton";
 
 const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;

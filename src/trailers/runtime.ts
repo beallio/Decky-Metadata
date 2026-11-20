@@ -814,20 +814,25 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         resolveHomeStyles() {
             if (this.homeStyles) return this.homeStyles;
             const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
-                typeof module?.RecentGamesBackgroundImages === "string" ? module : undefined;
+                (typeof module?.RecentGamesBackgroundImages === "string" ||
+                    typeof module?.RecentGamesBackgroundContainer === "string") ? module : undefined;
             for (const candidate of [window.opener, window, window.parent]) {
                 try {
                     const styles = candidate?.DFL?.findModuleChild?.(predicate);
                     const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
                     const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
                     const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
-                    if (!rawContainer || !rawBackground) continue;
+                    const rawBackgroundFallback = styles?.RecentGamesBackgroundContainer || translated?.recentGamesBackgroundContainer;
+                    if (!rawContainer || (!rawBackground && !rawBackgroundFallback)) continue;
                     const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
                         ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
                     const container = escape(rawContainer);
-                    const background = escape(rawBackground);
-                    if (!container || !background) continue;
-                    this.homeStyles = { container: `.${container}`, background: `.${background}` };
+                    const backgrounds = [rawBackground, rawBackgroundFallback]
+                        .map((value) => value ? escape(value) : "")
+                        .filter(Boolean)
+                        .map((value) => `.${value}`);
+                    if (!container || !backgrounds.length) continue;
+                    this.homeStyles = { container: `.${container}`, backgrounds };
                     return this.homeStyles;
                 } catch { }
             }
@@ -920,9 +925,17 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
         }
         findHomeBackground() {
             const styles = this.resolveHomeStyles();
-            const container = styles && this.homeCard?.closest?.(styles.container);
-            const element = container?.querySelector?.(styles.background);
-            if (!element?.isConnected) return undefined;
+            if (!styles) return undefined;
+            const container = this.homeCard?.closest?.(styles.container);
+            let element;
+            for (const selector of styles.backgrounds) {
+                const candidate = container?.querySelector?.(selector);
+                if (candidate?.isConnected) {
+                    element = candidate;
+                    break;
+                }
+            }
+            if (!element) return undefined;
             const rect = element.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
         }
@@ -1388,10 +1401,17 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
             }
             const footer = document.querySelector("#Footer > div");
             if (!(footer instanceof HTMLElement)) return;
-            const template = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a'],img[src*='shared_button_b']")) ?? Array.from(footer.children).find((element) => element.querySelector("img"));
+            const nativeActions = Array.from(footer.children).filter((element) => element.id !== audioHintId && element.id !== viewHintId);
+            const template = nativeActions.find((element) => /_button_[ab](?=[./?#]|$)/i.test(element.querySelector("img")?.src ?? "")) ?? nativeActions.find((element) => element.querySelector("img"));
             const nativeGlyph = template?.querySelector("img");
+            const nativeGlyphSrc = nativeGlyph?.src ?? "";
+            const nativeButtonToken = /_button_[a-z0-9]+(?=[./?#]|$)/i;
             const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
             if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel) return;
+            if (!nativeButtonToken.test(nativeGlyphSrc)) {
+                this.removeTrailerHints();
+                return;
+            }
             for (const [id, button, labelText] of [
                 [audioHintId, "x", rt(this.trailerAudioEnabled ? "muteTrailer" : "audio")],
                 [viewHintId, "y", rt("expandTrailer")],
@@ -1408,7 +1428,7 @@ export function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settin
                     iconContainer.className = nativeGlyph.parentElement.className;
                     const glyph = document.createElement("img");
                     glyph.className = nativeGlyph.className;
-                    glyph.src = `/steaminputglyphs/shared_button_${button}.svg`;
+                    glyph.src = nativeGlyphSrc.replace(nativeButtonToken, `_button_${button}`);
                     glyph.alt = "";
                     iconContainer.appendChild(glyph);
                     const label = document.createElement("div");

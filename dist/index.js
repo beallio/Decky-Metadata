@@ -21752,10 +21752,31 @@ class HltbController {
     }
 }
 
-// Steam's own Deck Compatibility "Details" button classes, and the game page's
-// menu button classes (as on the ProtonDB button) for the "Clean" styles.
-const detailsClasses = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details) || {};
-const menuButtonClasses = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton) || {};
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache;
+let menuButtonClassesCache;
+const detailsClasses = () => {
+    if (!detailsClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+            if (found && typeof found === "object")
+                detailsClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return detailsClassesCache ?? {};
+};
+const menuButtonClasses = () => {
+    if (!menuButtonClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+            if (found && typeof found === "object")
+                menuButtonClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return menuButtonClassesCache ?? {};
+};
 const css$1 = `
 /* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
 #decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
@@ -21824,10 +21845,12 @@ function HltbStats({ stats, hltbId, settings, launching }) {
         flow ? "decky-metadata-hltb-flow" : "",
     ].filter(Boolean).join(" ");
     const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    const deckVerifiedInfoClass = resolveSteamCssClass(detailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-    const deckVerifiedDetailsClass = resolveSteamCssClass(detailsClasses.Details, "deckVerifiedDetails");
-    const deckVerifiedFocusedClass = resolveSteamCssClass(detailsClasses.Focused, "deckVerifiedFocused");
-    const menuButtonClass = resolveSteamCssClass(menuButtonClasses.MenuButton, "menuButton") ?? "";
+    const nativeDetailsClasses = detailsClasses();
+    const nativeMenuButtonClasses = menuButtonClasses();
+    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
     return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
                                 ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
                                 : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
@@ -26306,9 +26329,12 @@ const resolveClasses = () => {
         const found = inspect(module);
         return found?.GameInfoContainer ? found : undefined;
     });
-    const owner = (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer");
+    const owners = Array.from(new Set([
+        (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer"),
+        getNativeCssClass("appGameInfoContainer"),
+    ].filter((value) => Boolean(value))));
     const description = (typeof descriptions?.GameDescription === "string" && descriptions.GameDescription) || getNativeCssClass("gameDescription");
-    return owner && description ? { owner, description } : undefined;
+    return owners.length && description ? { owner: owners, description } : undefined;
 };
 /** Read one confirmed scalar prop on host ancestors, never enumerate Steam stores. */
 const descriptionOwnerAppId = (owner) => {
@@ -26369,10 +26395,10 @@ const defaultDependencies$1 = () => {
 const installMetadataDescriptions = (unpatchers, dependencies = defaultDependencies$1()) => {
     let classes = dependencies.classes();
     const resolveValidClasses = () => {
-        if (!classes || !selector(classes.owner) || !selector(classes.description)) {
+        if (!classes || !classes.owner.some((value) => selector(value)) || !selector(classes.description)) {
             classes = dependencies.classes();
         }
-        return classes && selector(classes.owner) && selector(classes.description) ? classes : undefined;
+        return classes && classes.owner.some((value) => selector(value)) && selector(classes.description) ? classes : undefined;
     };
     let disposed = false;
     const owners = new Map();
@@ -26440,29 +26466,42 @@ const installMetadataDescriptions = (unpatchers, dependencies = defaultDependenc
         const appId = gameDetailAppIdFromPath(route);
         if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId))
             return;
-        for (const doc of dependencies.documents()) {
-            const matched = Array.from(doc.querySelectorAll(selector(currentClasses.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
-            if (!matched)
+        const descriptionSelector = selector(currentClasses.description);
+        const docs = dependencies.documents();
+        let matched;
+        for (const ownerClass of currentClasses.owner) {
+            const ownerSelector = selector(ownerClass);
+            if (!ownerSelector)
                 continue;
-            stopDiscovery();
-            // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
-            if (!owners.has(matched)) {
-                const record = { appId, stops: [], originals: new Map() };
-                owners.set(matched, record);
-                const refresh = () => {
-                    if (disposed)
-                        return;
-                    refreshOwner(matched, record);
-                    if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId))
-                        reconcile();
-                };
-                record.stops.push(dependencies.observe(matched, refresh));
-                if (dependencies.visibility)
-                    record.stops.push(dependencies.visibility(matched, refresh));
-                refreshOwner(matched, record);
+            for (const doc of docs) {
+                matched = Array.from(doc.querySelectorAll(ownerSelector)).find((candidate) => candidate.querySelectorAll(descriptionSelector).length > 0 &&
+                    dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
+                if (matched)
+                    break;
             }
-            return;
+            if (matched)
+                break;
         }
+        if (!matched)
+            return;
+        stopDiscovery();
+        // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
+        if (!owners.has(matched)) {
+            const record = { appId, stops: [], originals: new Map() };
+            owners.set(matched, record);
+            const refresh = () => {
+                if (disposed)
+                    return;
+                refreshOwner(matched, record);
+                if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId))
+                    reconcile();
+            };
+            record.stops.push(dependencies.observe(matched, refresh));
+            if (dependencies.visibility)
+                record.stops.push(dependencies.visibility(matched, refresh));
+            refreshOwner(matched, record);
+        }
+        return;
     };
     const reconcile = () => {
         if (disposed)
@@ -26634,16 +26673,10 @@ const resolveTargets = (dependencies) => {
     }) ?? dependencies.findModuleBySource([
         "GameCapsule unable to render",
         "#LibraryHome_GameCarousel_ContextMenu",
-        "gamepadgamecapsule",
     ]);
     const homeModule = findChild((module) => typeof module?.Xd?.render === "function" && module.Xd.render.toString().includes("VBC_")
         ? module
-        : undefined) ?? dependencies.findModuleBySource([
-        "VirtualizedBoxCarousel",
-        "VBC_",
-        "fnItemRenderer",
-        "CellRenderer",
-    ]);
+        : undefined) ?? dependencies.findModuleBySource(["VBC_"]);
     const gridModule = findChild((module) => typeof module?.TK?.type === "function" &&
         typeof module?.hF === "function" &&
         typeof module?.Mf === "function" &&
@@ -26659,31 +26692,94 @@ const resolveTargets = (dependencies) => {
         "eForceHWCompatDisplay",
         "bHideCompatIcons",
         "LibraryItemBox",
-        "BIsModOrShortcut",
     ]);
     const homeStyles = findChild((module) => typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined) ?? findOneSourceExport(dependencies.findModulesBySource(["DeckCompat", "GameCapsule"]), (module) => typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string");
     const gridStyles = findChild((module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string" ? module : undefined) ?? findOneSourceExport(dependencies.findModulesBySource(["LibraryItemIcons", "SteamDeckCompatIcon"]), (module) => typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string");
-    const hasWritableCallableMethod = (target, methodName) => typeof target?.[methodName] === "function" &&
-        Object.getOwnPropertyDescriptor(target, methodName)?.writable === true;
+    const hasWritableCallableMethod = (target, methodName) => {
+        if (!target || (typeof target !== "object" && typeof target !== "function"))
+            return false;
+        const descriptor = Object.getOwnPropertyDescriptor(target, methodName);
+        return typeof descriptor?.value === "function" && descriptor.writable === true;
+    };
+    const isWritableExport = (module, key) => {
+        if (!module || (typeof module !== "object" && typeof module !== "function"))
+            return false;
+        const descriptor = Object.getOwnPropertyDescriptor(module, key);
+        return descriptor?.writable === true || typeof descriptor?.set === "function";
+    };
+    const sourceOf = (value) => typeof value === "function" ? value.toString() : "";
+    const sourceOfMethod = (target, methodName) => target && (typeof target === "object" || typeof target === "function")
+        ? sourceOf(Reflect.get(target, methodName))
+        : "";
+    const findOneExport = (module, predicate) => {
+        if (!module || typeof module !== "object" || Array.isArray(module))
+            return undefined;
+        const matches = [];
+        for (const [key, value] of Object.entries(module)) {
+            if (predicate(key, value))
+                matches.push([key, value]);
+        }
+        return matches.length === 1 ? matches[0] : undefined;
+    };
+    const isCarouselRenderer = (value) => {
+        const source = sourceOf(value);
+        return source.includes("GameCapsule unable to render") &&
+            source.includes("#LibraryHome_GameCarousel_ContextMenu");
+    };
+    const carouselByName = typeof carouselModule?._ === "function" && isCarouselRenderer(carouselModule._)
+        ? ["_", carouselModule._]
+        : undefined;
+    const carouselEntry = carouselByName ?? findOneExport(carouselModule, (key, value) => isWritableExport(carouselModule, key) && isCarouselRenderer(value));
+    const isCompatIndicator = (value) => {
+        const source = sourceOf(value);
+        return source.includes("display") &&
+            source.includes("overview") &&
+            source.includes("platforms") &&
+            source.includes("className") &&
+            source.includes("steam_deck_compat_category") &&
+            source.includes("steam_os_compat_category") &&
+            source.includes("steam_machine_compat_category") &&
+            source.includes("steam_frame_compat_category");
+    };
+    const indicator = carouselByName && typeof carouselModule?.g === "function"
+        ? carouselModule.g
+        : findOneExport(carouselModule, (_key, value) => isCompatIndicator(value))?.[1];
+    const homeByName = homeModule?.Xd;
+    const home = hasWritableCallableMethod(homeByName, "render") &&
+        sourceOfMethod(homeByName, "render").includes("VBC_")
+        ? homeByName
+        : findOneExport(homeModule, (_key, value) => hasWritableCallableMethod(value, "render") && sourceOfMethod(value, "render").includes("VBC_"))?.[1];
+    const gridByName = gridModule?.TK;
+    const grid = hasWritableCallableMethod(gridByName, "type")
+        ? gridByName
+        : findOneExport(gridModule, (_key, value) => {
+            const source = sourceOfMethod(value, "type");
+            return hasWritableCallableMethod(value, "type") &&
+                source.includes("eForceHWCompatDisplay") &&
+                source.includes("bHideCompatIcons") &&
+                source.includes("LibraryItemBox");
+        })?.[1];
+    const isElementType = (value) => typeof value === "function";
     const isNonEmptyString = (value) => typeof value === "string" && value.length > 0;
     if (!carouselModule ||
+        !carouselEntry ||
         Array.isArray(homeModule) ||
         Array.isArray(gridModule) ||
         homeModule === gridModule ||
-        !hasWritableCallableMethod(homeModule?.Xd, "render") ||
-        !hasWritableCallableMethod(gridModule?.TK, "type") ||
-        typeof carouselModule._ !== "function" ||
-        typeof carouselModule.g !== "function" ||
+        !hasWritableCallableMethod(home, "render") ||
+        !hasWritableCallableMethod(grid, "type") ||
+        !isWritableExport(carouselModule, carouselEntry[0]) ||
+        !isElementType(indicator) ||
         !isNonEmptyString(homeStyles?.DeckCompat) ||
         !isNonEmptyString(homeStyles?.GameCapsule) ||
         !isNonEmptyString(gridStyles?.LibraryItemIcons) ||
         !isNonEmptyString(gridStyles?.SteamDeckCompatIcon))
         return null;
     return {
-        home: homeModule.Xd,
-        carousel: carouselModule._,
-        grid: gridModule.TK,
-        indicator: carouselModule.g,
+        home,
+        carousel: carouselEntry[1],
+        grid,
+        indicator,
         homeClassName: homeStyles.DeckCompat,
         gridIconsClassName: gridStyles.LibraryItemIcons,
         gridIndicatorClassName: gridStyles.SteamDeckCompatIcon,
@@ -31174,22 +31270,27 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             if (this.homeStyles)
                 return this.homeStyles;
             const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
-                typeof module?.RecentGamesBackgroundImages === "string" ? module : undefined;
+                (typeof module?.RecentGamesBackgroundImages === "string" ||
+                    typeof module?.RecentGamesBackgroundContainer === "string") ? module : undefined;
             for (const candidate of [window.opener, window, window.parent]) {
                 try {
                     const styles = candidate?.DFL?.findModuleChild?.(predicate);
                     const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
                     const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
                     const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
-                    if (!rawContainer || !rawBackground)
+                    const rawBackgroundFallback = styles?.RecentGamesBackgroundContainer || translated?.recentGamesBackgroundContainer;
+                    if (!rawContainer || (!rawBackground && !rawBackgroundFallback))
                         continue;
                     const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
                         ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
                     const container = escape(rawContainer);
-                    const background = escape(rawBackground);
-                    if (!container || !background)
+                    const backgrounds = [rawBackground, rawBackgroundFallback]
+                        .map((value) => value ? escape(value) : "")
+                        .filter(Boolean)
+                        .map((value) => `.${value}`);
+                    if (!container || !backgrounds.length)
                         continue;
-                    this.homeStyles = { container: `.${container}`, background: `.${background}` };
+                    this.homeStyles = { container: `.${container}`, backgrounds };
                     return this.homeStyles;
                 }
                 catch { }
@@ -31292,9 +31393,18 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
         }
         findHomeBackground() {
             const styles = this.resolveHomeStyles();
-            const container = styles && this.homeCard?.closest?.(styles.container);
-            const element = container?.querySelector?.(styles.background);
-            if (!element?.isConnected)
+            if (!styles)
+                return undefined;
+            const container = this.homeCard?.closest?.(styles.container);
+            let element;
+            for (const selector of styles.backgrounds) {
+                const candidate = container?.querySelector?.(selector);
+                if (candidate?.isConnected) {
+                    element = candidate;
+                    break;
+                }
+            }
+            if (!element)
                 return undefined;
             const rect = element.getBoundingClientRect();
             return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
@@ -31825,11 +31935,18 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
             const footer = document.querySelector("#Footer > div");
             if (!(footer instanceof HTMLElement))
                 return;
-            const template = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a'],img[src*='shared_button_b']")) ?? Array.from(footer.children).find((element) => element.querySelector("img"));
+            const nativeActions = Array.from(footer.children).filter((element) => element.id !== audioHintId && element.id !== viewHintId);
+            const template = nativeActions.find((element) => /_button_[ab](?=[./?#]|$)/i.test(element.querySelector("img")?.src ?? "")) ?? nativeActions.find((element) => element.querySelector("img"));
             const nativeGlyph = template?.querySelector("img");
+            const nativeGlyphSrc = nativeGlyph?.src ?? "";
+            const nativeButtonToken = /_button_[a-z0-9]+(?=[./?#]|$)/i;
             const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
             if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel)
                 return;
+            if (!nativeButtonToken.test(nativeGlyphSrc)) {
+                this.removeTrailerHints();
+                return;
+            }
             for (const [id, button, labelText] of [
                 [audioHintId, "x", rt(this.trailerAudioEnabled ? "muteTrailer" : "audio")],
                 [viewHintId, "y", rt("expandTrailer")],
@@ -31846,7 +31963,7 @@ function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevis
                     iconContainer.className = nativeGlyph.parentElement.className;
                     const glyph = document.createElement("img");
                     glyph.className = nativeGlyph.className;
-                    glyph.src = `/steaminputglyphs/shared_button_${button}.svg`;
+                    glyph.src = nativeGlyphSrc.replace(nativeButtonToken, `_button_${button}`);
                     glyph.alt = "";
                     iconContainer.appendChild(glyph);
                     const label = document.createElement("div");
@@ -38245,7 +38362,8 @@ const protonDbCoverSurface = (path) => {
     return null;
 };
 
-// Native mounting boundaries and icon layout are from the local ProtonDB fork.
+// Classic classes are the stable fallback when neither the runtime module nor
+// CSS Loader translations resolve.
 const CLASSIC_BOX_CLASS = "WYgDg9NyCcMIVuMyZ_NBC";
 const CLASSIC_COVER_CLASS = "_1pwP4eeP1zQD7PEgmsep0W";
 const CLASSIC_FOOTER_CLASS = "_3BPFqWN5T-x8njyrRYM1CX";
@@ -38253,12 +38371,29 @@ const CLASSIC_OVERLAY_CLASS = "_2GRcKrPZsMSF6glMPRMZei";
 const HOST_CLASS = "decky-metadata-protondb-cover-host";
 const STYLE_ID = "decky-metadata-protondb-covers-style";
 const APP_ID_FROM_SRC = /\/(?:assets|customimages)\/(\d+)/;
+let libraryClassModule;
+const getLibraryClassModule = () => {
+    if (!libraryClassModule) {
+        try {
+            const found = DFL.findClassModule(module => module.LibraryItemBox && module.LibraryItemIcons);
+            if (found && typeof found === "object")
+                libraryClassModule = found;
+        }
+        catch {
+            // Steam's class registry may not be ready yet; retry on the next build.
+        }
+    }
+    return libraryClassModule;
+};
 const classSelector = (classes) => Array.from(new Set(classes.filter((value) => Boolean(value))))
     .map(value => `.${value}`)
     .join(", ");
 const buildCoverSelectors = () => {
-    const boxClasses = Array.from(new Set([CLASSIC_BOX_CLASS, getNativeCssClass("libraryItemBox")].filter((value) => Boolean(value))));
-    const coverClasses = Array.from(new Set([CLASSIC_COVER_CLASS, getNativeCssClass("libraryItemDraggable")].filter((value) => Boolean(value))));
+    const moduleClasses = getLibraryClassModule();
+    const boxClasses = Array.from(new Set([moduleClasses?.LibraryItemBox, getNativeCssClass("libraryItemBox"), CLASSIC_BOX_CLASS].filter((value) => Boolean(value))));
+    const coverClasses = Array.from(new Set([moduleClasses?.Draggable, getNativeCssClass("libraryItemDraggable"), CLASSIC_COVER_CLASS].filter((value) => Boolean(value))));
+    const footerClasses = [moduleClasses?.LibraryItemIcons, getNativeCssClass("libraryItemIcons"), CLASSIC_FOOTER_CLASS];
+    const overlayClasses = [moduleClasses?.LibraryItemOverlayInnerArea, getNativeCssClass("libraryItemOverlayInnerArea"), CLASSIC_OVERLAY_CLASS];
     const focusRules = [
         ...boxClasses.map(box => `.${box}.gpfocus .decky-metadata-protondb-cover--focus`),
         ...coverClasses.flatMap(cover => [
@@ -38269,8 +38404,8 @@ const buildCoverSelectors = () => {
     ].join(",\n");
     return {
         cover: classSelector(coverClasses),
-        footer: classSelector([CLASSIC_FOOTER_CLASS, getNativeCssClass("libraryItemIcons")]),
-        overlay: classSelector([CLASSIC_OVERLAY_CLASS, getNativeCssClass("libraryItemOverlayInnerArea")]),
+        footer: classSelector(footerClasses),
+        overlay: classSelector(overlayClasses),
         css: `
 .${HOST_CLASS}{display:contents}
 .decky-metadata-protondb-cover{width:20px;height:20px;padding:2px;border-radius:20px;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:1}
@@ -38286,9 +38421,8 @@ const CoverIcon = SP_REACT.memo(function CoverIcon({ appId, sourceId, tier, posi
     const t = useT();
     if (!tier || sourceId === null)
         return null;
-    const color = PROTONDB_COLORS[tier];
     const tierLabel = protonDbTierLabel(tier);
-    return (SP_JSX.jsx("div", { className: `decky-metadata-protondb-cover decky-metadata-protondb-cover--${position}${focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`, "data-appid": appId, "data-protondb-appid": sourceId, "data-protondb-tier": tier, role: "img", "aria-label": t("protondb.coverAriaLabel", { tier: tierLabel }), title: t("protondb.badge", { tier: tierLabel }), children: SP_JSX.jsxs("svg", { viewBox: "0 0 512 512", width: "16", height: "16", "aria-hidden": "true", children: [SP_JSX.jsx("circle", { cx: "256", cy: "256", r: "36", fill: color }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28" }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28", transform: "rotate(60 256 256)" }), SP_JSX.jsx("ellipse", { cx: "256", cy: "256", rx: "220", ry: "88", fill: "none", stroke: color, strokeWidth: "28", transform: "rotate(120 256 256)" })] }) }));
+    return (SP_JSX.jsx("div", { className: `decky-metadata-protondb-cover decky-metadata-protondb-cover--${position}${focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`, "data-appid": appId, "data-protondb-appid": sourceId, "data-protondb-tier": tier, role: "img", "aria-label": t("protondb.coverAriaLabel", { tier: tierLabel }), children: SP_JSX.jsx(ProtonDbIcon, { tier: tier, size: 16 }) }));
 });
 const appIdFromCover = (cover) => {
     const tileId = cover.closest("[data-id]")?.getAttribute("data-id");
@@ -38321,6 +38455,16 @@ const installProtonDbCoverBadges = () => {
     let nextKey = 0;
     let settings = protonDbBadgeController.getSnapshot().settings;
     let selectors = buildCoverSelectors();
+    const refreshSelectors = () => {
+        const next = buildCoverSelectors();
+        if (next.cover === selectors.cover && next.footer === selectors.footer &&
+            next.overlay === selectors.overlay && next.css === selectors.css)
+            return false;
+        selectors = next;
+        if (style)
+            style.textContent = selectors.css;
+        return true;
+    };
     const surfaceEnabled = (surface) => {
         const snapshot = protonDbBadgeController.getSnapshot();
         return snapshot.effectiveEnabled && surface !== null && snapshot.settings[surface];
@@ -38453,6 +38597,7 @@ const installProtonDbCoverBadges = () => {
     const syncDocument = () => {
         if (disposed)
             return;
+        const selectorsChanged = refreshSelectors();
         const snapshot = protonDbBadgeController.getSnapshot();
         // Observe Steam's main document even on Game Info so the next cover mount
         // is handled in the same turn, not by the one-second discovery fallback.
@@ -38460,8 +38605,11 @@ const installProtonDbCoverBadges = () => {
             ? findSteamUiDocumentMatch(candidate => candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(selectors.cover)
                 ? candidate : undefined) ?? null
             : null;
-        if (nextDocument === document)
+        if (nextDocument === document) {
+            if (selectorsChanged)
+                scan();
             return;
+        }
         detachDocument();
         if (!nextDocument?.body)
             return;
@@ -38518,11 +38666,7 @@ const installProtonDbCoverBadges = () => {
     const unsubscribeClasses = subscribeNativeCssClasses(() => {
         if (disposed)
             return;
-        selectors = buildCoverSelectors();
-        if (style)
-            style.textContent = selectors.css;
         syncDocument();
-        scan();
     });
     const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
         if (disposed)

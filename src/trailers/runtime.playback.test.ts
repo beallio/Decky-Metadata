@@ -954,7 +954,7 @@ test('A trailer paused before its reveal resumes and appears after the original 
   glyphContainer.className = 'native-glyph-container';
   const nativeGlyph = makeElement();
   nativeGlyph.tagName = 'IMG';
-  nativeGlyph.src = '/steaminputglyphs/shared_button_a.svg';
+  nativeGlyph.src = '/steaminputglyphs/xbox_button_a.svg';
   nativeGlyph.className = 'native-glyph';
   glyphContainer.appendChild(nativeGlyph);
   const nativeLabel = makeElement();
@@ -996,10 +996,15 @@ test('A trailer paused before its reveal resumes and appears after the original 
   assert.equal(h.classes.has('decky-metadata-trailer-ready'), true);
   const hint = h.document.getElementById('decky-metadata-trailer-audio-hint');
   assert.ok(hint, 'the audio hint appears only after the trailer becomes visible');
-  assert.equal(hint.querySelector('img')?.src, '/steaminputglyphs/shared_button_x.svg');
+  assert.equal(hint.querySelector('img')?.src, '/steaminputglyphs/xbox_button_x.svg');
   const viewHint = h.document.getElementById('decky-metadata-trailer-view-hint');
   assert.ok(viewHint, 'Y is shown in Steam’s native footer when the trailer is ready');
-  assert.equal(viewHint.querySelector('img')?.src, '/steaminputglyphs/shared_button_y.svg');
+  assert.equal(viewHint.querySelector('img')?.src, '/steaminputglyphs/xbox_button_y.svg');
+  nativeGlyph.src = '/steaminputglyphs/unsupported.svg';
+  h.runtime.updateTrailerHints();
+  assert.equal(h.document.getElementById('decky-metadata-trailer-audio-hint'), null);
+  assert.equal(h.document.getElementById('decky-metadata-trailer-view-hint'), null);
+  nativeGlyph.src = '/steaminputglyphs/xbox_button_a.svg';
   // Steam can replace the native Footer after the trailer becomes visible.
   hint.remove();
   assert.equal(h.document.getElementById('decky-metadata-trailer-audio-hint'), null);
@@ -2361,7 +2366,7 @@ test('Home media remains silent even when Detail trailer audio is enabled', asyn
   assert.equal(h.video.volume, 0);
 });
 
-async function homePlaybackFixture({ enabled = true, detailEnabled = false, homeEnabled = true,
+async function homePlaybackFixture({ enabled = true, detailEnabled = false, homeEnabled = true, betaClasses = false,
   pageAppId = 570, sourceAppId = 570, fetchReply } = {}) {
   const clock = fakeClock(10000);
   const h = await readyDirectTrailer({ clock, pageAppId, sourceAppId });
@@ -2383,9 +2388,24 @@ async function homePlaybackFixture({ enabled = true, detailEnabled = false, home
     observe() { this.connected = true; }
     disconnect() { this.connected = false; }
   };
-  const styles = { RecentGamesContainer: 'home-container', RecentGamesBackgroundImages: 'home-background' };
+  const styles = betaClasses
+    ? { RecentGamesContainer: 'home-container' }
+    : { RecentGamesContainer: 'home-container', RecentGamesBackgroundImages: 'home-background' };
   h.window.DFL = { findModuleChild: predicate => predicate(styles) };
-  const container = { querySelector: selector => selector === '.home-background' ? h.hero : null };
+  if (betaClasses) h.window.__DECKY_METADATA_NATIVE_CLASSES__ = {
+    recentGamesContainer: 'home-container',
+    recentGamesBackgroundImages: 'stale-home-background',
+    recentGamesBackgroundContainer: 'beta-home-background',
+  };
+  const backgroundQueries = [];
+  const container = {
+    querySelector: selector => {
+      backgroundQueries.push(selector);
+      return betaClasses
+        ? selector === '.beta-home-background' ? h.hero : null
+        : selector === '.home-background' ? h.hero : null;
+    },
+  };
   const card = {
     appId: pageAppId, isConnected: true,
     closest: selector => selector === '.home-container' ? container : card,
@@ -2415,7 +2435,7 @@ async function homePlaybackFixture({ enabled = true, detailEnabled = false, home
   await h.runtime.scan();
   for (let index = 0; index < 20; index++) await Promise.resolve();
   clock.advance(0);
-  return { ...h, clock, card, focus, fetch, listeners, observers };
+  return { ...h, clock, card, focus, fetch, listeners, observers, backgroundQueries };
 }
 
 test('All eight master and view toggle combinations gate real Home playback', async () => {
@@ -2443,6 +2463,12 @@ test('All eight master and view toggle combinations gate real Home playback', as
       }
     }
   }
+});
+test('Home playback falls back to the beta RecentGamesBackgroundContainer', async () => {
+  const h = await homePlaybackFixture({ betaClasses: true });
+  assert.equal(h.runtime.currentTarget, h.hero);
+  assert.deepEqual(h.backgroundQueries.slice(0, 2), ['.stale-home-background', '.beta-home-background']);
+  h.runtime.destroy();
 });
 
 test('Home selection rejects a late Steam response and keeps the next card isolated', async () => {

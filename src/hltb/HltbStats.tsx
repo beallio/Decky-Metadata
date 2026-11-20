@@ -12,10 +12,27 @@ type HltbStatsProps = {
   launching: boolean;
 };
 
-// Steam's own Deck Compatibility "Details" button classes, and the game page's
-// menu button classes (as on the ProtonDB button) for the "Clean" styles.
-const detailsClasses: Record<string, string> = findClassModule((module) => module.DeckVerifiedInfo && module.Details) || {};
-const menuButtonClasses: Record<string, string> = findClassModule((module) => module.MenuButton && module.ControllerConfigButton) || {};
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache: Record<string, string> | undefined;
+let menuButtonClassesCache: Record<string, string> | undefined;
+const detailsClasses = (): Record<string, string> => {
+  if (!detailsClassesCache) {
+    try {
+      const found = findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+      if (found && typeof found === "object") detailsClassesCache = found as Record<string, string>;
+    } catch { /* Retry on the next render. */ }
+  }
+  return detailsClassesCache ?? {};
+};
+const menuButtonClasses = (): Record<string, string> => {
+  if (!menuButtonClassesCache) {
+    try {
+      const found = findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+      if (found && typeof found === "object") menuButtonClassesCache = found as Record<string, string>;
+    } catch { /* Retry on the next render. */ }
+  }
+  return menuButtonClassesCache ?? {};
+};
 
 const css = `
 /* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
@@ -82,10 +99,12 @@ export function HltbStats({ stats, hltbId, settings, launching }: HltbStatsProps
     flow ? "decky-metadata-hltb-flow" : "",
   ].filter(Boolean).join(" ");
   const openDetails = () => Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-  const deckVerifiedInfoClass = resolveSteamCssClass(detailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-  const deckVerifiedDetailsClass = resolveSteamCssClass(detailsClasses.Details, "deckVerifiedDetails");
-  const deckVerifiedFocusedClass = resolveSteamCssClass(detailsClasses.Focused, "deckVerifiedFocused");
-  const menuButtonClass = resolveSteamCssClass(menuButtonClasses.MenuButton, "menuButton") ?? "";
+  const nativeDetailsClasses = detailsClasses();
+  const nativeMenuButtonClasses = menuButtonClasses();
+  const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+  const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+  const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+  const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
   return <div id="decky-metadata-hltb" className={classes} style={vars as CSSProperties}>
     <style>{css}</style>
     <div className="decky-metadata-hltb-info">

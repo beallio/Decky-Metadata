@@ -62,7 +62,7 @@ type LibraryCompatibilityTargets = {
   home: any;
   carousel: any;
   grid: any;
-  indicator: (props: any) => any;
+  indicator: ElementType;
   homeClassName: string;
   gridIconsClassName: string;
   gridIndicatorClassName: string;
@@ -295,18 +295,12 @@ const resolveTargets = (
   }) ?? dependencies.findModuleBySource([
     "GameCapsule unable to render",
     "#LibraryHome_GameCarousel_ContextMenu",
-    "gamepadgamecapsule",
   ]);
   const homeModule = findChild((module) =>
     typeof module?.Xd?.render === "function" && module.Xd.render.toString().includes("VBC_")
       ? module
       : undefined
-  ) ?? dependencies.findModuleBySource([
-    "VirtualizedBoxCarousel",
-    "VBC_",
-    "fnItemRenderer",
-    "CellRenderer",
-  ]);
+  ) ?? dependencies.findModuleBySource(["VBC_"]);
   const gridModule = findChild((module) =>
     typeof module?.TK?.type === "function" &&
     typeof module?.hF === "function" &&
@@ -324,7 +318,6 @@ const resolveTargets = (
     "eForceHWCompatDisplay",
     "bHideCompatIcons",
     "LibraryItemBox",
-    "BIsModOrShortcut",
   ]);
   const homeStyles = findChild((module) =>
     typeof module?.DeckCompat === "string" && typeof module?.GameCapsule === "string" ? module : undefined
@@ -337,31 +330,96 @@ const resolveTargets = (
     typeof module?.LibraryItemIcons === "string" && typeof module?.SteamDeckCompatIcon === "string"
   );
 
-  const hasWritableCallableMethod = (target: any, methodName: string) =>
-    typeof target?.[methodName] === "function" &&
-    Object.getOwnPropertyDescriptor(target, methodName)?.writable === true;
+  const hasWritableCallableMethod = (target: unknown, methodName: string) => {
+    if (!target || (typeof target !== "object" && typeof target !== "function")) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(target, methodName);
+    return typeof descriptor?.value === "function" && descriptor.writable === true;
+  };
+  const isWritableExport = (module: unknown, key: string) => {
+    if (!module || (typeof module !== "object" && typeof module !== "function")) return false;
+    const descriptor = Object.getOwnPropertyDescriptor(module, key);
+    return descriptor?.writable === true || typeof descriptor?.set === "function";
+  };
+  const sourceOf = (value: unknown) => typeof value === "function" ? value.toString() : "";
+  const sourceOfMethod = (target: unknown, methodName: string) =>
+    target && (typeof target === "object" || typeof target === "function")
+      ? sourceOf(Reflect.get(target, methodName))
+      : "";
+  const findOneExport = (module: unknown, predicate: (key: string, value: unknown) => boolean) => {
+    if (!module || typeof module !== "object" || Array.isArray(module)) return undefined;
+    const matches: Array<[string, unknown]> = [];
+    for (const [key, value] of Object.entries(module)) {
+      if (predicate(key, value)) matches.push([key, value]);
+    }
+    return matches.length === 1 ? matches[0] : undefined;
+  };
+  const isCarouselRenderer = (value: unknown) => {
+    const source = sourceOf(value);
+    return source.includes("GameCapsule unable to render") &&
+      source.includes("#LibraryHome_GameCarousel_ContextMenu");
+  };
+  const carouselByName: [string, unknown] | undefined =
+    typeof carouselModule?._ === "function" && isCarouselRenderer(carouselModule._)
+      ? ["_", carouselModule._]
+      : undefined;
+  const carouselEntry = carouselByName ?? findOneExport(carouselModule, (key, value) =>
+    isWritableExport(carouselModule, key) && isCarouselRenderer(value)
+  );
+  const isCompatIndicator = (value: unknown) => {
+    const source = sourceOf(value);
+    return source.includes("display") &&
+      source.includes("overview") &&
+      source.includes("platforms") &&
+      source.includes("className") &&
+      source.includes("steam_deck_compat_category") &&
+      source.includes("steam_os_compat_category") &&
+      source.includes("steam_machine_compat_category") &&
+      source.includes("steam_frame_compat_category");
+  };
+  const indicator: unknown = carouselByName && typeof carouselModule?.g === "function"
+    ? carouselModule.g
+    : findOneExport(carouselModule, (_key, value) => isCompatIndicator(value))?.[1];
+  const homeByName = homeModule?.Xd;
+  const home: unknown = hasWritableCallableMethod(homeByName, "render") &&
+    sourceOfMethod(homeByName, "render").includes("VBC_")
+    ? homeByName
+    : findOneExport(homeModule, (_key, value) =>
+      hasWritableCallableMethod(value, "render") && sourceOfMethod(value, "render").includes("VBC_")
+    )?.[1];
+  const gridByName = gridModule?.TK;
+  const grid: unknown = hasWritableCallableMethod(gridByName, "type")
+    ? gridByName
+    : findOneExport(gridModule, (_key, value) => {
+      const source = sourceOfMethod(value, "type");
+      return hasWritableCallableMethod(value, "type") &&
+        source.includes("eForceHWCompatDisplay") &&
+        source.includes("bHideCompatIcons") &&
+        source.includes("LibraryItemBox");
+    })?.[1];
+  const isElementType = (value: unknown): value is ElementType => typeof value === "function";
   const isNonEmptyString = (value: unknown): value is string =>
     typeof value === "string" && value.length > 0;
 
   if (
     !carouselModule ||
+    !carouselEntry ||
     Array.isArray(homeModule) ||
     Array.isArray(gridModule) ||
     homeModule === gridModule ||
-    !hasWritableCallableMethod(homeModule?.Xd, "render") ||
-    !hasWritableCallableMethod(gridModule?.TK, "type") ||
-    typeof carouselModule._ !== "function" ||
-    typeof carouselModule.g !== "function" ||
+    !hasWritableCallableMethod(home, "render") ||
+    !hasWritableCallableMethod(grid, "type") ||
+    !isWritableExport(carouselModule, carouselEntry[0]) ||
+    !isElementType(indicator) ||
     !isNonEmptyString(homeStyles?.DeckCompat) ||
     !isNonEmptyString(homeStyles?.GameCapsule) ||
     !isNonEmptyString(gridStyles?.LibraryItemIcons) ||
     !isNonEmptyString(gridStyles?.SteamDeckCompatIcon)
   ) return null;
   return {
-    home: homeModule.Xd,
-    carousel: carouselModule._,
-    grid: gridModule.TK,
-    indicator: carouselModule.g,
+    home,
+    carousel: carouselEntry[1],
+    grid,
+    indicator,
     homeClassName: homeStyles.DeckCompat,
     gridIconsClassName: gridStyles.LibraryItemIcons,
     gridIndicatorClassName: gridStyles.SteamDeckCompatIcon,

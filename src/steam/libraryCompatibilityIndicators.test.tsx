@@ -345,7 +345,7 @@ describe("installLibraryCompatibilityIndicators", () => {
       if (options.enableSourceFallbacks && fragments[0] === "GameCapsule unable to render") {
         return { _: carousel, g: indicator };
       }
-      if (fragments[0] === "VirtualizedBoxCarousel") {
+      if (fragments[0] === "VBC_") {
         if (resolution === "missing") return undefined;
         if (resolution === "ambiguous") return [{ Xd: home }, { Xd: home }];
         return { Xd: home };
@@ -410,6 +410,67 @@ describe("installLibraryCompatibilityIndicators", () => {
         retry.callback();
       },
     };
+  };
+  const makeViteFixture = (options: {
+    missingGridFingerprint?: boolean;
+    nonWritableHome?: boolean;
+    nonWritableGrid?: boolean;
+    nonWritableCarousel?: boolean;
+  } = {}) => {
+    const carousel = function viteCarousel() {
+      /* GameCapsule unable to render #LibraryHome_GameCarousel_ContextMenu */
+      return createElement("div", {}, "art", "in-library", false, "footer");
+    };
+    const indicator = function viteCompatibilityIndicator() {
+      /* display overview platforms className steam_deck_compat_category steam_os_compat_category steam_machine_compat_category steam_frame_compat_category */
+      return null;
+    };
+    const home = {
+      render: function viteHomeRenderer() {
+        /* VBC_ */
+        return null;
+      },
+    };
+    const gridRenderer = options.missingGridFingerprint
+      ? function viteGridRenderer() {
+        /* eForceHWCompatDisplay bHideCompatIcons */
+        return null;
+      }
+      : function viteGridRenderer() {
+        /* eForceHWCompatDisplay bHideCompatIcons LibraryItemBox */
+        return null;
+      };
+    const grid = { type: gridRenderer };
+    if (options.nonWritableHome) {
+      Object.defineProperty(home, "render", { value: home.render, writable: false });
+    }
+    if (options.nonWritableGrid) {
+      Object.defineProperty(grid, "type", { value: grid.type, writable: false });
+    }
+    const carouselExports: Record<string, object> = { MZr: indicator };
+    let carouselExport: unknown = carousel;
+    Object.defineProperty(carouselExports, "AQ", {
+      enumerable: true,
+      configurable: true,
+      get: () => carouselExport,
+      set: options.nonWritableCarousel ? undefined : (value: unknown) => { carouselExport = value; },
+    });
+    const modules: Record<string, object> = {
+      "GameCapsule unable to render": carouselExports,
+      "VBC_": { Qx: home },
+      "eForceHWCompatDisplay": { cP: grid },
+    };
+    return { modules, carousel, indicator, home, grid };
+  };
+
+  const makeViteHarness = (options: Parameters<typeof makeViteFixture>[0] = {}) => {
+    const fixture = makeViteFixture(options);
+    const harness = makeHarness({
+      candidates: [],
+      enableSourceFallbacks: true,
+      findModuleBySource: (fragments) => fixture.modules[fragments[0]],
+    });
+    return { ...harness, ...fixture };
   };
 
   const renderHomeCapsule = (handler: (args: any[], output: any) => any, carousel: any, appid: number) => {
@@ -1491,6 +1552,53 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
+  it("resolves renamed Vite exports by their component fingerprints", () => {
+    const harness = makeViteHarness();
+    expect(harness.patchHomeRenderer).toHaveBeenCalledWith(harness.home, expect.any(Function));
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(harness.grid, expect.any(Function));
+
+    const homeOutput = createElement("div", {
+      fnItemRenderer: (item: { app: typeof nativeShortcut }) => createElement(
+        "section",
+        {},
+        createElement(harness.carousel, { app: item.app }),
+      ),
+    });
+    const patchedHome = harness.homeHandler!([], homeOutput);
+    const capsule = patchedHome.props.fnItemRenderer({ app: nativeShortcut }).props.children;
+    const output = capsule.type(capsule.props);
+    const slot = output.props.children[2];
+    expect(slot.type(slot.props)).toMatchObject({
+      type: harness.indicator,
+      props: { display: 1, overview: nativeShortcut, className: "home-compat" },
+    });
+    harness.unpatchers[0]();
+  });
+
+  it("fails closed when a Vite fingerprint is missing", () => {
+    const harness = makeViteHarness({ missingGridFingerprint: true });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    harness.unpatchers[0]();
+  });
+
+  it("fails closed for Vite render slots that are not writable", () => {
+    const harness = makeViteHarness({ nonWritableHome: true, nonWritableGrid: true });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    harness.unpatchers[0]();
+  });
+
+  it("fails closed when the Vite carousel export is not writable", () => {
+    const harness = makeViteHarness({ nonWritableCarousel: true });
+
+    expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    harness.unpatchers[0]();
+  });
+
   it("uses strict live child exports when the factory scanner is unavailable", () => {
     const harness = makeHarness({
       useLiveChildRendererTargets: true,
@@ -1651,7 +1759,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     ["ambiguous", (home: any) => [{ Xd: home }, { Xd: home }]],
   ])("fails closed when Home target resolution is %s", (_label, homeModule) => {
     const harness = makeHarness({
-      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel"
+      findModuleBySource: (fragments) => fragments[0] === "VBC_"
         ? homeModule({ render: () => null }, Object.assign(() => null, { type: () => null }))
         : { TK: Object.assign(() => null, { type: () => null }) },
     });
@@ -1663,7 +1771,7 @@ describe("installLibraryCompatibilityIndicators", () => {
 
   it("fails closed when the grid target is missing", () => {
     const harness = makeHarness({
-      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel"
+      findModuleBySource: (fragments) => fragments[0] === "VBC_"
         ? { Xd: { render: () => null } }
         : undefined,
     });
@@ -1678,7 +1786,7 @@ describe("installLibraryCompatibilityIndicators", () => {
     ["a non-callable grid type", { render: () => null }, Object.assign(() => null, { type: "not a function" })],
   ])("fails closed for %s", (_label, home, grid) => {
     const harness = makeHarness({
-      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid },
+      findModuleBySource: (fragments) => fragments[0] === "VBC_" ? { Xd: home } : { TK: grid },
     });
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
@@ -1712,12 +1820,17 @@ describe("installLibraryCompatibilityIndicators", () => {
   });
 
   it("requires writable renderer descriptors before patching", () => {
-    const home = {} as { render?: () => void };
-    Object.defineProperty(home, "render", { value: () => undefined, writable: false });
-    const grid = Object.assign(() => null, {} as { type?: () => void });
-    Object.defineProperty(grid, "type", { value: () => undefined, writable: false });
+    const home = {
+      render: function homeRenderer() {
+        /* VBC_ */
+        return undefined;
+      },
+    };
+    Object.defineProperty(home, "render", { value: home.render, writable: false });
+    const grid = { type: () => undefined };
+    Object.defineProperty(grid, "type", { value: grid.type, writable: false });
     const harness = makeHarness({
-      findModuleBySource: (fragments) => fragments[0] === "VirtualizedBoxCarousel" ? { Xd: home } : { TK: grid },
+      findModuleBySource: (fragments) => fragments[0] === "VBC_" ? { Xd: home } : { TK: grid },
     });
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();

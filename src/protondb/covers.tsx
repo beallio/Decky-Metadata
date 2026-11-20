@@ -1,4 +1,4 @@
-import { createModuleMapping, Router } from "@decky/ui";
+import { createModuleMapping, findClassModule, Router } from "@decky/ui";
 import { createElement, memo } from "react";
 import type { ReactNode } from "react";
 import { createPortal, flushSync } from "react-dom";
@@ -9,10 +9,11 @@ import { findSteamUiDocumentMatch } from "../steam/steamUiHost";
 import type { ProtonDbBadgeSettings, ProtonDbTier } from "../types";
 import { protonDbBadgeController } from "./controller";
 import { getResolvedProtonDbAppId, resolveProtonDbAppId } from "./identity";
-import { PROTONDB_COLORS, protonDbTierLabel } from "./Icon";
+import { protonDbTierLabel, ProtonDbIcon } from "./Icon";
 import { protonDbCoverSurface, type CoverSurface } from "./coverSurface";
 
-// Native mounting boundaries and icon layout are from the local ProtonDB fork.
+// Classic classes are the stable fallback when neither the runtime module nor
+// CSS Loader translations resolve.
 const CLASSIC_BOX_CLASS = "WYgDg9NyCcMIVuMyZ_NBC";
 const CLASSIC_COVER_CLASS = "_1pwP4eeP1zQD7PEgmsep0W";
 const CLASSIC_FOOTER_CLASS = "_3BPFqWN5T-x8njyrRYM1CX";
@@ -28,14 +29,37 @@ type CoverSelectors = {
   css: string;
 };
 
+type CoverClassModule = {
+  LibraryItemBox?: string;
+  Draggable?: string;
+  LibraryItemIcons?: string;
+  LibraryItemOverlayInnerArea?: string;
+};
+
+let libraryClassModule: CoverClassModule | undefined;
+const getLibraryClassModule = (): CoverClassModule | undefined => {
+  if (!libraryClassModule) {
+    try {
+      const found = findClassModule(module => module.LibraryItemBox && module.LibraryItemIcons);
+      if (found && typeof found === "object") libraryClassModule = found as CoverClassModule;
+    } catch {
+      // Steam's class registry may not be ready yet; retry on the next build.
+    }
+  }
+  return libraryClassModule;
+};
+
 const classSelector = (classes: Array<string | undefined>): string =>
   Array.from(new Set(classes.filter((value): value is string => Boolean(value))))
     .map(value => `.${value}`)
     .join(", ");
 
-const buildCoverSelectors = (): CoverSelectors => {
-  const boxClasses = Array.from(new Set([CLASSIC_BOX_CLASS, getNativeCssClass("libraryItemBox")].filter((value): value is string => Boolean(value))));
-  const coverClasses = Array.from(new Set([CLASSIC_COVER_CLASS, getNativeCssClass("libraryItemDraggable")].filter((value): value is string => Boolean(value))));
+export const buildCoverSelectors = (): CoverSelectors => {
+  const moduleClasses = getLibraryClassModule();
+  const boxClasses = Array.from(new Set([moduleClasses?.LibraryItemBox, getNativeCssClass("libraryItemBox"), CLASSIC_BOX_CLASS].filter((value): value is string => Boolean(value))));
+  const coverClasses = Array.from(new Set([moduleClasses?.Draggable, getNativeCssClass("libraryItemDraggable"), CLASSIC_COVER_CLASS].filter((value): value is string => Boolean(value))));
+  const footerClasses = [moduleClasses?.LibraryItemIcons, getNativeCssClass("libraryItemIcons"), CLASSIC_FOOTER_CLASS];
+  const overlayClasses = [moduleClasses?.LibraryItemOverlayInnerArea, getNativeCssClass("libraryItemOverlayInnerArea"), CLASSIC_OVERLAY_CLASS];
   const focusRules = [
     ...boxClasses.map(box => `.${box}.gpfocus .decky-metadata-protondb-cover--focus`),
     ...coverClasses.flatMap(cover => [
@@ -46,8 +70,8 @@ const buildCoverSelectors = (): CoverSelectors => {
   ].join(",\n");
   return {
     cover: classSelector(coverClasses),
-    footer: classSelector([CLASSIC_FOOTER_CLASS, getNativeCssClass("libraryItemIcons")]),
-    overlay: classSelector([CLASSIC_OVERLAY_CLASS, getNativeCssClass("libraryItemOverlayInnerArea")]),
+    footer: classSelector(footerClasses),
+    overlay: classSelector(overlayClasses),
     css: `
 .${HOST_CLASS}{display:contents}
 .decky-metadata-protondb-cover{width:20px;height:20px;padding:2px;border-radius:20px;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;pointer-events:none;opacity:1}
@@ -74,18 +98,12 @@ const CoverIcon = memo(function CoverIcon({ appId, sourceId, tier, position, foc
 }) {
   const t = useT();
   if (!tier || sourceId === null) return null;
-  const color = PROTONDB_COLORS[tier];
   const tierLabel = protonDbTierLabel(tier);
   return (
     <div className={`decky-metadata-protondb-cover decky-metadata-protondb-cover--${position}${focusOnly ? " decky-metadata-protondb-cover--focus" : ""}`}
       data-appid={appId} data-protondb-appid={sourceId} data-protondb-tier={tier}
-      role="img" aria-label={t("protondb.coverAriaLabel", { tier: tierLabel })} title={t("protondb.badge", { tier: tierLabel })}>
-      <svg viewBox="0 0 512 512" width="16" height="16" aria-hidden="true">
-        <circle cx="256" cy="256" r="36" fill={color} />
-        <ellipse cx="256" cy="256" rx="220" ry="88" fill="none" stroke={color} strokeWidth="28" />
-        <ellipse cx="256" cy="256" rx="220" ry="88" fill="none" stroke={color} strokeWidth="28" transform="rotate(60 256 256)" />
-        <ellipse cx="256" cy="256" rx="220" ry="88" fill="none" stroke={color} strokeWidth="28" transform="rotate(120 256 256)" />
-      </svg>
+      role="img" aria-label={t("protondb.coverAriaLabel", { tier: tierLabel })}>
+      <ProtonDbIcon tier={tier} size={16} />
     </div>
   );
 });
@@ -124,6 +142,15 @@ export const installProtonDbCoverBadges = (): (() => void) => {
   let nextKey = 0;
   let settings = protonDbBadgeController.getSnapshot().settings;
   let selectors = buildCoverSelectors();
+
+  const refreshSelectors = (): boolean => {
+    const next = buildCoverSelectors();
+    if (next.cover === selectors.cover && next.footer === selectors.footer &&
+        next.overlay === selectors.overlay && next.css === selectors.css) return false;
+    selectors = next;
+    if (style) style.textContent = selectors.css;
+    return true;
+  };
 
   const surfaceEnabled = (surface: CoverSurface | null): boolean => {
     const snapshot = protonDbBadgeController.getSnapshot();
@@ -250,6 +277,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
 
   const syncDocument = (): void => {
     if (disposed) return;
+    const selectorsChanged = refreshSelectors();
     const snapshot = protonDbBadgeController.getSnapshot();
     // Observe Steam's main document even on Game Info so the next cover mount
     // is handled in the same turn, not by the one-second discovery fallback.
@@ -258,7 +286,10 @@ export const installProtonDbCoverBadges = (): (() => void) => {
         candidate.querySelector("title")?.textContent === "Steam Big Picture Mode" || candidate.querySelector(selectors.cover)
           ? candidate as Document : undefined) ?? null
       : null;
-    if (nextDocument === document) return;
+    if (nextDocument === document) {
+      if (selectorsChanged) scan();
+      return;
+    }
     detachDocument();
     if (!nextDocument?.body) return;
     document = nextDocument;
@@ -305,10 +336,7 @@ export const installProtonDbCoverBadges = (): (() => void) => {
   const unsubscribe = protonDbBadgeController.subscribe(refreshSettings);
   const unsubscribeClasses = subscribeNativeCssClasses(() => {
     if (disposed) return;
-    selectors = buildCoverSelectors();
-    if (style) style.textContent = selectors.css;
     syncDocument();
-    scan();
   });
   const unsubscribeMatch = subscribeMetadataMatchChanges(appId => {
     if (disposed) return;
