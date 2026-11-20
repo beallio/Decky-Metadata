@@ -23,6 +23,7 @@ import {
   deckyNativePartnerEventDiscussionUrl,
   installNativeActivityStorePatch,
   refreshDeckyNativeActivityForApp,
+  steamHttpHelperFromModule,
   steamActivityPayloadForApp,
 } from "./activity";
 import {
@@ -462,5 +463,33 @@ describe("native Activity metadata removal", () => {
       unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
       expect(store.GetAppActivity).toBe(originalGetAppActivity);
     }
+  });
+});
+
+describe("steamHttpHelperFromModule", () => {
+  class HttpHelper {
+    AxiosWrapper() { return undefined; }
+    get() { return undefined; }
+    post() { return undefined; }
+  }
+
+  it("finds the helper under any export name, as stable (g) and beta (Ij) name it", () => {
+    const stable = new HttpHelper();
+    const beta = new HttpHelper();
+    expect(steamHttpHelperFromModule({ g: stable })).toBe(stable);
+    expect(steamHttpHelperFromModule({ a: 1, Ij: beta })).toBe(beta);
+  });
+
+  it("still finds a helper whose get/post the plugin already replaced", () => {
+    const helper = new HttpHelper() as any;
+    helper.get = () => "patched";
+    expect(steamHttpHelperFromModule({ g: helper })).toBe(helper);
+  });
+
+  it("ignores plain get/post objects and axios-style clients without AxiosWrapper", () => {
+    const plain = { get: () => undefined, post: () => undefined };
+    const axiosLike = { get: () => undefined, post: () => undefined, request: () => undefined };
+    expect(steamHttpHelperFromModule({ g: plain, v: axiosLike })).toBeUndefined();
+    expect(steamHttpHelperFromModule(null)).toBeUndefined();
   });
 });

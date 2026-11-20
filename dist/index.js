@@ -23758,16 +23758,31 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
         warn("patch", "window history redirect patch skipped", error);
     }
 };
+/**
+ * Steam's HTTP helper: an instance whose class has AxiosWrapper, get and post.
+ * Stable exports it as `g`, Vite (beta) builds as `Ij`, so match the shape, not the name.
+ */
+const steamHttpHelperFromModule = (module) => {
+    if (!module || typeof module !== "object")
+        return undefined;
+    for (const key of Object.keys(module)) {
+        try {
+            const candidate = module[key];
+            const proto = candidate && typeof candidate === "object" ? Object.getPrototypeOf(candidate) : null;
+            if (proto && typeof proto.AxiosWrapper === "function" &&
+                typeof proto.get === "function" && typeof proto.post === "function") {
+                return candidate;
+            }
+        }
+        catch {
+            // A getter on an unrelated export can throw; keep scanning.
+        }
+    }
+    return undefined;
+};
 const installCommunityFeedPatch = (unpatchers) => {
     try {
-        const httpClient = DFL.findModuleChild((module) => {
-            if (!module || typeof module !== "object")
-                return undefined;
-            if (typeof module.g?.get === "function" && typeof module.g?.post === "function") {
-                return module.g;
-            }
-            return undefined;
-        });
+        const httpClient = DFL.findModuleChild(steamHttpHelperFromModule);
         void frontendLog("community", "feed patch install", {
             httpClientFound: Boolean(httpClient),
             hasGet: typeof httpClient?.get === "function",

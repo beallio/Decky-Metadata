@@ -4,7 +4,7 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
-Open Edit Metadata from two menus and use a Steam-style editor
+New Steam-style metadata editor, Game Match, and Steam beta fixes
 
 ### Changed
 
@@ -43,6 +43,21 @@ Open Edit Metadata from two menus and use a Steam-style editor
 - **Automatic compatibility.** The Quick Access Menu default now reads
   **Automatic**. The **Compatibility** page explains the difference between
   **Automatic**, **Use global default**, and **Follow Valve**.
+
+### Fixed
+
+- **Community tab on the Steam beta client.** Non-Steam games show their
+  saved screenshots and the matched game's Community posts again on the Steam
+  Deck Client Beta. The stable client was not affected.
+- **Edit Metadata on the Steam beta client.** The editor opens again instead
+  of showing an error screen, and the **Description** box uses Steam's
+  on-screen keyboard.
+- **Steam beta client support.** The **Edit Metadata...** menu row, the game
+  page's Steam-styled rows, and other patched Steam parts keep working with
+  the newer Steam Deck Client Beta, which renames Steam's internal parts.
+  (#53, #56, #57)
+- **Quick Access Menu focus.** Collapsible sections in the Quick Access Menu
+  show the focus highlight reliably when you move with the D-pad. (#55)
 
 ## [0.6.4] - 2026-11-17
 
