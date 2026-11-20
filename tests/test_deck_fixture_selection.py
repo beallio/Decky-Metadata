@@ -138,6 +138,17 @@ def test_invalid_override_is_rejected():
         select(json.loads(FIXTURE.read_text()), {"listed_match": "30"})
 
 
+def test_metadata_for_a_deleted_shortcut_is_not_a_fixture():
+    deadpool = {"title": "Deadpool", "steam_appid": 224060, "steam_store_state": "delisted"}
+    data = {"metadata": {"3497159354": deadpool, "4107143310": deadpool}}
+    # The orphan sorts first by appid, so only the library filter keeps it out.
+    assert select(data)["fixtures"]["delisted_match"]["appid"] == "3497159354"
+    result = select(data, library={"4107143310"})
+    assert result["fixtures"]["delisted_match"]["appid"] == "4107143310"
+    with pytest.raises(ValueError):
+        select(data, {"delisted_match": "3497159354"}, library={"4107143310"})
+
+
 def test_launcher_without_stored_game_metadata_is_not_a_never_on_steam_fixture():
     result = select(
         {
