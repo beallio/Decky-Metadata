@@ -870,7 +870,7 @@ describe("MetadataPage compatibility status", () => {
     modal.props.onOK();
     await Promise.resolve();
     expect(backend.saveShortcutNameState).toHaveBeenCalledTimes(1);
-    expect(state.values[7]).toBe(true);
+    expect(state.values[7]).toBe("other");
     saveButton(renderPage()).props.onClick();
     await flushAsyncWork();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
@@ -1158,6 +1158,11 @@ describe("MetadataPage compatibility status", () => {
 
     ignSearchInput(openPage("Game Match")).props.onChange({ target: { value: "Old game query" } });
     const searching = action(renderPage(), "Search").props.onClick();
+    // The IGN search owns the busy text; Load from Steam stays disabled without claiming it.
+    const pendingPage = renderPage();
+    expect(text(pendingPage)).toContain("Searching...");
+    expect(action(pendingPage, "Load from Steam (Updating)")).toBeUndefined();
+    expect(action(pendingPage, "Load from Steam").props.disabled).toBe(true);
 
     route.appid = "200";
     effects.callbacks = [];
@@ -2055,8 +2060,8 @@ describe("Steam information toggles", () => {
 
   it("labels each toggle, in StoreCategory order", () => {
     // JS orders numeric keys ascending, so this is the display order too.
-    const labels = walk(openPage("Store Categories"), (node) => node.type === "ToggleField")
-      .map((node) => node.props.label);
+    const labels = walk(openPage("Details"), (node) => node.type === "ToggleField")
+      .map((node) => text(node.props.label));
     expect(labels).toEqual([
       "Multiplayer",
       "Single-player",
@@ -2070,6 +2075,21 @@ describe("Steam information toggles", () => {
       "Online co-op",
       "Local co-op",
     ]);
+  });
+
+  it("marks only the category whose toggle differs from the saved record", () => {
+    configureShortcutPanel();
+    const toggle = (label: string) =>
+      walk(openPage("Details"), (node) => node.type === "ToggleField" && text(node.props.label).startsWith(label))[0];
+    const before = toggle("Co-op").props.checked;
+    toggle("Co-op").props.onChange(!before);
+
+    expect(text(toggle("Co-op").props.label)).toBe("Co-opEdited");
+    expect(toggle("Co-op").props.label.props.style).toMatchObject({ color: "#1a9fff" });
+    expect(text(toggle("MMO").props.label)).toBe("MMO");
+
+    toggle("Co-op").props.onChange(before);
+    expect(text(toggle("Co-op").props.label)).toBe("Co-op");
   });
 });
 
@@ -2163,6 +2183,10 @@ describe("Draft field markers and editor actions", () => {
     const busy = action(renderPage(), "Load from Steam (Updating)");
     expect(busy.props.disabled).toBe(true);
     busy.props.onClick();
+    // A Steam load owns the busy text; the IGN search waits without claiming it.
+    const ignSearch = action(renderPage(), "Search");
+    expect(ignSearch.props.disabled).toBe(true);
+    expect(text(renderPage())).not.toContain("Searching...");
     pending.resolve(makeMetadata({
       steam_appid: 15100,
       steam_store_name: "Steam Name",

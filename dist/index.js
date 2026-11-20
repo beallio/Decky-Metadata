@@ -36117,13 +36117,17 @@ const resolveGamepadTextArea = () => {
                 return false;
             const source = String(moduleExport);
             // Newer clients moved BIsElementValidForInput into a helper; the factory still builds a forwardRef.
+            // That helper also names both, but only returns the split props object.
             return source.includes("virtualKeyboardProps") &&
-                (source.includes("BIsElementValidForInput") || source.includes("forwardRef"));
+                (source.includes("BIsElementValidForInput") || source.includes("forwardRef")) &&
+                !/return\s*\{\s*virtualKeyboardProps\s*:/.test(source);
         });
         if (typeof factory !== "function")
             return null;
         const component = factory("textarea");
-        return typeof component === "function" || (component && typeof component === "object")
+        // React renders only functions and exotic objects (forwardRef/memo); anything else crashes the page.
+        return typeof component === "function" ||
+            (component && typeof component === "object" && "$$typeof" in component)
             ? component
             : null;
     }
@@ -36250,8 +36254,11 @@ const editorRowActionStyle = {
     whiteSpace: "normal",
     overflowWrap: "anywhere",
 };
+// Longhands only: React drops a removed longhand after re-applying a shorthand, which left the bar visible.
 const editorFieldMarkerBaseStyle = {
-    borderLeft: "3px solid transparent",
+    borderLeftWidth: 3,
+    borderLeftStyle: "solid",
+    borderLeftColor: "transparent",
     paddingLeft: 12,
 };
 const editorFieldEditedStyle = {
@@ -36801,7 +36808,6 @@ const EDITOR_PAGE_ORDER = [
     "steam-match",
     "hltb",
     "compatibility",
-    "categories",
     "shortcut-name",
     "advanced",
 ];
@@ -36817,7 +36823,7 @@ const PAGE_OF_FIELD = {
     steamData: "steam-match",
     hltb: "hltb",
     compatibility: "compatibility",
-    categories: "categories",
+    categories: "details",
 };
 /** Pages that hold at least one changed draft field. */
 function dirtyPages(changed) {
@@ -36872,7 +36878,6 @@ const PAGE_LABEL_KEYS = {
     "steam-match": "editor.page.steamMatch",
     hltb: "editor.page.hltb",
     compatibility: "editor.page.compatibility",
-    categories: "editor.page.storeCategories",
     "shortcut-name": "editor.page.shortcutName",
     advanced: "editor.page.advanced",
 };
@@ -36881,7 +36886,6 @@ const PAGE_ICONS = {
     "steam-match": SP_JSX.jsx(FaSteam, { size: 20 }),
     hltb: SP_JSX.jsx(FaClock, { size: 20 }),
     compatibility: SP_JSX.jsx(SiSteamdeck, { size: 20 }),
-    categories: SP_JSX.jsx(FaTags, { size: 20 }),
     "shortcut-name": SP_JSX.jsx(FaPencilAlt, { size: 20 }),
     advanced: SP_JSX.jsx(FaCog, { size: 20 }),
 };
@@ -37053,6 +37057,7 @@ const MetadataPage = () => {
     const [ratingText, setRatingText] = SP_REACT.useState("");
     const [query, setQuery] = SP_REACT.useState(appName(appId));
     const [results, setResults] = SP_REACT.useState([]);
+    // The operation that owns the shared busy guard; only its control shows busy text.
     const [busy, setBusy] = SP_REACT.useState(false);
     const [steamAppIdText, setSteamAppIdText] = SP_REACT.useState("");
     const [shortcutManagement, setShortcutManagement] = SP_REACT.useState(null);
@@ -37093,7 +37098,9 @@ const MetadataPage = () => {
     // A null owner only exists during initial state hydration/tests and remains
     // conservative. A known owner from another editor entry must not block this
     // view or be cleared by its completion callback.
-    const entryBusy = busy && (busyEntryRef.current === null || busyEntryRef.current === editorEntryToken);
+    const entryBusy = busy !== false && (busyEntryRef.current === null || busyEntryRef.current === editorEntryToken);
+    const steamBusy = entryBusy && busy === "steam";
+    const ignBusy = entryBusy && busy === "ign";
     const isCurrentEditorEntry = SP_REACT.useCallback((token) => editorEntryRef.current.token === token, []);
     const setFormMetadata = SP_REACT.useCallback((next) => {
         formRevisionRef.current += 1;
@@ -37184,14 +37191,14 @@ const MetadataPage = () => {
         }
         return reconciled;
     }, []);
-    const beginBusy = SP_REACT.useCallback((entryToken) => {
+    const beginBusy = SP_REACT.useCallback((entryToken, operation = "other") => {
         if (!isCurrentEditorEntry(entryToken))
             return false;
         if (busyRef.current && busyEntryRef.current === entryToken)
             return false;
         busyRef.current = true;
         busyEntryRef.current = entryToken;
-        setBusy(true);
+        setBusy(operation);
         return true;
     }, [isCurrentEditorEntry]);
     const endBusy = SP_REACT.useCallback((entryToken) => {
@@ -37487,15 +37494,13 @@ const MetadataPage = () => {
         };
     };
     // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
-    const markedLabel = (key, labelKey, withBar = true) => {
-        const marker = fieldMarker(key);
-        return (SP_JSX.jsxs("span", { style: {
-                ...(withBar ? marker.container : undefined),
-                ...marker.label,
-                display: "inline-flex",
-                alignItems: "center",
-            }, children: [SP_JSX.jsx("span", { children: t(labelKey) }), marker.tag ? SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: marker.tag }) : null] }));
-    };
+    const renderMarkedLabel = (marker, label, withBar = true) => (SP_JSX.jsxs("span", { style: {
+            ...(withBar ? marker.container : undefined),
+            ...marker.label,
+            display: "inline-flex",
+            alignItems: "center",
+        }, children: [SP_JSX.jsx("span", { children: label }), marker.tag ? SP_JSX.jsx("span", { style: editorFieldMarkerTagStyle, children: marker.tag }) : null] }));
+    const markedLabel = (key, labelKey, withBar = true) => renderMarkedLabel(fieldMarker(key), t(labelKey), withBar);
     // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
     const stackedTextField = (blockStyle, key, labelKey, value, onChange) => (SP_JSX.jsxs("div", { style: blockStyle, children: [SP_JSX.jsx("div", { style: editorNativeInputTitleStyle, children: markedLabel(key, labelKey, false) }), SP_JSX.jsx("div", { style: editorNativeInputRowStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t(labelKey), value: value, onChange: (e) => onChange(e.target.value), style: fieldStyle }) })] }));
     // Undefined means the field is not a usable HLTB game; the user has been told why.
@@ -37576,7 +37581,7 @@ const MetadataPage = () => {
             toastWarn(t("editor.toast.steamAppIdInvalidTitle"), t("editor.toast.steamAppIdInvalidBody"));
             return false;
         }
-        if (!beginBusy(requestedEntry))
+        if (!beginBusy(requestedEntry, "steam"))
             return false;
         try {
             return await previewSteamDraft(requestedEntry, normalizedMetadata, steamAppId, language);
@@ -37706,7 +37711,7 @@ const MetadataPage = () => {
         if (steamAppId === undefined)
             return;
         const parsed = normalizedSteamAppId(steamAppId);
-        if (!beginBusy(requestedEntry))
+        if (!beginBusy(requestedEntry, "steam"))
             return;
         try {
             if (parsed === null) {
@@ -37798,7 +37803,7 @@ const MetadataPage = () => {
     };
     const search = async () => {
         const requestedEntry = editorEntryToken;
-        if (!beginBusy(requestedEntry))
+        if (!beginBusy(requestedEntry, "ign"))
             return;
         try {
             const found = await searchMetadata(query, 8);
@@ -37815,7 +37820,7 @@ const MetadataPage = () => {
     };
     const applyResult = async (result) => {
         const requestedEntry = editorEntryToken;
-        if (!beginBusy(requestedEntry))
+        if (!beginBusy(requestedEntry, "ign"))
             return;
         const baselineMetadata = metadataRef.current;
         const baselineText = formTextSnapshot();
@@ -38046,65 +38051,65 @@ const MetadataPage = () => {
         });
     };
     function renderDetailsPage() {
-        return (SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
-                        clearPreviewMarker("title");
-                        updateMetadata((prev) => ({ ...prev, title: value }));
-                    }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
-                                clearPreviewMarker("description");
-                                updateMetadata((prev) => ({
-                                    ...prev,
-                                    description: e.target.value,
-                                    short_description: e.target.value,
-                                }));
-                            }, style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.nonSteamOnly") }) })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
+                            clearPreviewMarker("title");
+                            updateMetadata((prev) => ({ ...prev, title: value }));
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
                                     clearPreviewMarker("description");
                                     updateMetadata((prev) => ({
                                         ...prev,
                                         description: e.target.value,
                                         short_description: e.target.value,
                                     }));
-                                }, style: descriptionTextareaStyle }) })) }), stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
-                        markFormEdited();
-                        clearPreviewMarker("developers");
-                        developerTextRef.current = value;
-                        setDeveloperText(value);
-                    }), stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
-                        markFormEdited();
-                        clearPreviewMarker("publishers");
-                        publisherTextRef.current = value;
-                        setPublisherText(value);
-                    }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
-                                markFormEdited();
-                                clearPreviewMarker("releaseDate");
-                                releaseTextRef.current = e.target.value;
-                                setReleaseText(e.target.value);
-                            }, style: editorInlineInputStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.rating"), value: ratingText, onChange: (e) => {
-                                markFormEdited();
-                                clearPreviewMarker("rating");
-                                ratingTextRef.current = e.target.value;
-                                setRatingText(e.target.value);
-                            }, style: editorInlineInputStyle }) })] }) }));
+                                }, style: descriptionTextareaStyle })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                                        clearPreviewMarker("description");
+                                        updateMetadata((prev) => ({
+                                            ...prev,
+                                            description: e.target.value,
+                                            short_description: e.target.value,
+                                        }));
+                                    }, style: descriptionTextareaStyle }) })) }), stackedTextField(editorNativeInputSectionStyle, "developers", "editor.field.developers", developerText, (value) => {
+                            markFormEdited();
+                            clearPreviewMarker("developers");
+                            developerTextRef.current = value;
+                            setDeveloperText(value);
+                        }), stackedTextField(editorNativeInputGapStyle, "publishers", "editor.field.publishers", publisherText, (value) => {
+                            markFormEdited();
+                            clearPreviewMarker("publishers");
+                            publisherTextRef.current = value;
+                            setPublisherText(value);
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("releaseDate", "editor.field.releaseDate"), bottomSeparator: "standard", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.releaseDate"), value: releaseText, onChange: (e) => {
+                                    markFormEdited();
+                                    clearPreviewMarker("releaseDate");
+                                    releaseTextRef.current = e.target.value;
+                                    setReleaseText(e.target.value);
+                                }, style: editorInlineInputStyle }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("rating", "editor.field.rating"), bottomSeparator: "none", children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.field.rating"), value: ratingText, onChange: (e) => {
+                                    markFormEdited();
+                                    clearPreviewMarker("rating");
+                                    ratingTextRef.current = e.target.value;
+                                    setRatingText(e.target.value);
+                                }, style: editorInlineInputStyle }) })] }), renderCategoriesSection()] }));
     }
     function renderSteamMatchPage() {
         const loadLabelKey = !nonSteam
             ? "editor.loadFromSteamSteamGame"
             : !hasSteamMatch
                 ? "editor.loadFromSteamNoMatch"
-                : entryBusy
+                : steamBusy
                     ? "editor.loadFromSteamBusy"
                     : "editor.loadFromSteam";
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId);
-                    } }, editorEntryToken), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.currentMatch"), description: formSteamAppId !== null ? t("matchPicker.appId", { appId: formSteamAppId }) : undefined, bottomSeparator: "standard", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: loadLabelKey !== "editor.loadFromSteam", onClick: () => {
+                    } }, editorEntryToken), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.currentMatch"), description: formSteamAppId !== null ? t("matchPicker.appId", { appId: formSteamAppId }) : undefined, bottomSeparator: "standard", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy || loadLabelKey !== "editor.loadFromSteam", onClick: () => {
                                     if (loadLabelKey === "editor.loadFromSteam")
                                         void refreshFromSteam();
                                 }, style: editorRowActionStyle, children: t(loadLabelKey) }) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("steamAppId", "editor.steamAppId"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.steamAppIdHelp") }), changed.includes("steamData") ? (SP_JSX.jsx("div", { style: { ...compactTextStyle, color: colors.warning }, children: t("editor.steamDataChanged") })) : null] }), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: steamLanguageMismatch ? "standard" : "none", children: SP_JSX.jsxs("div", { style: { ...editorAppIdRowStyle, display: "flex" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.steamAppId"), value: steamAppIdText, onChange: (e) => {
                                                 markFormEdited();
                                                 clearPreviewMarker("steamAppId");
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.Field, { label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorRowActionStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: entryBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [entryBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !entryBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => applySteamAppId(), style: { ...editorAppIdButtonStyle, flex: "0 0 auto" }, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(DFL.Field, { label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), bottomSeparator: "none", children: SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), style: editorRowActionStyle, children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: { ...editorSearchRowStyle, display: "flex", alignItems: "center" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto", minWidth: 0 }, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: entryBusy, onClick: search, style: { ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { style: { ...rowStackStyle, ...editorSearchResultsSpacingStyle }, children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.searching") }) })) : null, !ignBusy && !results.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.noResults") }) })) : null, results.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
         return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: markedLabel("hltb", "editor.page.hltb"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: [hltbMatch?.game_name ? (SP_JSX.jsx("div", { style: compactTextStyle, children: hltbMatch.pinned_id_used
@@ -38124,8 +38129,18 @@ const MetadataPage = () => {
                         deck_compat_override: compatibilityStatusValue(option.data),
                     })), renderButtonValue: () => compatibilityStatusDisplay(metadata, compatibilityDefault, compatibilityDefaultScope, t) }), SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityHelp") }), SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.compatibilityChoices") })] })] }));
     }
-    function renderCategoriesPage() {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: markedLabel("categories", "editor.page.storeCategories") }), Object.keys(CATEGORY_LABELS).map((category) => (SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "standard", label: categoryLabel(Number(category), t), checked: (metadata.store_categories || []).includes(Number(category)), onChange: (checked) => toggleCategory(Number(category), checked) }, category)))] }));
+    function renderCategoriesSection() {
+        const saved = savedRecordRef.current;
+        const savedCategories = new Set(saved?.store_categories ?? []);
+        const formCategories = new Set(metadata.store_categories ?? []);
+        const changedMarker = fieldMarker("categories");
+        const unchangedMarker = { container: editorFieldMarkerBaseStyle, label: undefined, tag: null };
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.page.storeCategories") }), Object.keys(CATEGORY_LABELS).map((key) => {
+                    const category = Number(key);
+                    // Mark each toggle whose state differs from the stored record.
+                    const categoryChanged = saved !== null && savedCategories.has(category) !== formCategories.has(category);
+                    return (SP_JSX.jsx(DFL.ToggleField, { bottomSeparator: "standard", label: renderMarkedLabel(categoryChanged ? changedMarker : unchangedMarker, categoryLabel(category, t)), checked: formCategories.has(category), onChange: (checked) => toggleCategory(category, checked) }, key));
+                })] }));
     }
     function renderShortcutNamePage() {
         return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "standard", children: SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.immediateNotice") }) }), SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "standard", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: rowStackStyle, children: [SP_JSX.jsx("div", { style: compactTextStyle, children: t("editor.shortcut.current", {
@@ -38143,7 +38158,6 @@ const MetadataPage = () => {
         "steam-match": renderSteamMatchPage,
         hltb: renderHltbPage,
         compatibility: renderCompatibilityPage,
-        categories: renderCategoriesPage,
         "shortcut-name": renderShortcutNamePage,
         advanced: renderAdvancedPage,
     };

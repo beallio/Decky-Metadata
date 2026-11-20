@@ -25,12 +25,16 @@ const resolveGamepadTextArea = (): ComponentType<GamepadTextAreaProps> | null =>
       if (typeof moduleExport !== "function") return false;
       const source = String(moduleExport);
       // Newer clients moved BIsElementValidForInput into a helper; the factory still builds a forwardRef.
+      // That helper also names both, but only returns the split props object.
       return source.includes("virtualKeyboardProps") &&
-        (source.includes("BIsElementValidForInput") || source.includes("forwardRef"));
+        (source.includes("BIsElementValidForInput") || source.includes("forwardRef")) &&
+        !/return\s*\{\s*virtualKeyboardProps\s*:/.test(source);
     });
     if (typeof factory !== "function") return null;
     const component = factory("textarea");
-    return typeof component === "function" || (component && typeof component === "object")
+    // React renders only functions and exotic objects (forwardRef/memo); anything else crashes the page.
+    return typeof component === "function" ||
+      (component && typeof component === "object" && "$$typeof" in component)
       ? (component as ComponentType<GamepadTextAreaProps>)
       : null;
   } catch (_error) {

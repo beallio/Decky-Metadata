@@ -44,6 +44,10 @@ describe("getGamepadTextArea", () => {
     const newerFactory = () => {
       "n.forwardRef(function(z,p){const{virtualKeyboardProps:C,props:{refKeyboardHandle:k}}=g(z)})";
     };
+    // The newer props-splitting helper names both hooks but returns a plain object, not a component.
+    const propsHelper = () => {
+      "const{BIsElementValidForInput:s,...c}=e;return{virtualKeyboardProps:{BIsElementValidForInput:s},props:c}";
+    };
     // A different factory (e.g. the non-input element factory) lacks them.
     const otherFactory = () => {
       "bDOMElementFocusByDefault forwardRef";
@@ -51,8 +55,26 @@ describe("getGamepadTextArea", () => {
 
     expect(predicate(olderFactory)).toBe(true);
     expect(predicate(newerFactory)).toBe(true);
+    expect(predicate(propsHelper)).toBe(false);
     expect(predicate(otherFactory)).toBe(false);
     expect(predicate("not-a-function")).toBe(false);
+  });
+
+  it("returns null when the factory yields something React cannot render", async () => {
+    mocks.findModuleExport.mockReturnValue(() => ({ virtualKeyboardProps: {}, props: {} }));
+
+    const { getGamepadTextArea } = await loadFresh();
+
+    expect(getGamepadTextArea()).toBeNull();
+  });
+
+  it("accepts a forwardRef component object", async () => {
+    const component = { $$typeof: Symbol.for("react.forward_ref"), render: () => null };
+    mocks.findModuleExport.mockReturnValue(() => component);
+
+    const { getGamepadTextArea } = await loadFresh();
+
+    expect(getGamepadTextArea()).toBe(component);
   });
 
   it("returns null when no matching module is found", async () => {
