@@ -1347,15 +1347,30 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
   }
 };
 
+/**
+ * Steam's HTTP helper: an instance whose class has AxiosWrapper, get and post.
+ * Stable exports it as `g`, Vite (beta) builds as `Ij`, so match the shape, not the name.
+ */
+export const steamHttpHelperFromModule = (module: any): any => {
+  if (!module || typeof module !== "object") return undefined;
+  for (const key of Object.keys(module)) {
+    try {
+      const candidate = module[key];
+      const proto = candidate && typeof candidate === "object" ? Object.getPrototypeOf(candidate) : null;
+      if (proto && typeof proto.AxiosWrapper === "function" &&
+        typeof proto.get === "function" && typeof proto.post === "function") {
+        return candidate;
+      }
+    } catch {
+      // A getter on an unrelated export can throw; keep scanning.
+    }
+  }
+  return undefined;
+};
+
 export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
   try {
-    const httpClient = findModuleChild((module: any) => {
-      if (!module || typeof module !== "object") return undefined;
-      if (typeof module.g?.get === "function" && typeof module.g?.post === "function") {
-        return module.g;
-      }
-      return undefined;
-    });
+    const httpClient = findModuleChild(steamHttpHelperFromModule);
     void frontendLog("community", "feed patch install", {
       httpClientFound: Boolean(httpClient),
       hasGet: typeof httpClient?.get === "function",
