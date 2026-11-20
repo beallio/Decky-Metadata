@@ -10,7 +10,7 @@ import {
 describe("metadata editor native-row contract", () => {
   it("keeps search controls on flexible native rows", () => {
     expect(editorSearchRowStyle.display).toBe("flex");
-    expect(editorSearchButtonStyle).toMatchObject({ minWidth: 112, whiteSpace: "nowrap" });
+    expect(editorSearchButtonStyle).toMatchObject({ width: "auto", minWidth: 112, whiteSpace: "nowrap" });
   });
 
   it("keeps field marker tags readable", () => {

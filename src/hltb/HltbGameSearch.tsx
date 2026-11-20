@@ -45,6 +45,7 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
 
   return (
     <>
+      <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
       <div style={editorSearchRowStyle}>
         <div style={editorSearchInputStyle}>
           <TextField
@@ -65,6 +66,7 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
           {searching ? t("hltb.search.searching") : t("hltb.search.action")}
         </FocusableButton>
       </div>
+      </Field>
         {error ? (
           <Field focusable={false} description={<span aria-live="polite">{error}</span>} bottomSeparator="none" />
         ) : null}

@@ -19020,7 +19020,6 @@ const colors = {
     success: "#5ba32b",
     warning: "#ffc53d",
     error: "#ec5d5e",
-    text: "#dcdedf",
     textSecondary: "#b8bcbf",
     surfaceKnockout: "#0e141b",
 };
@@ -36437,6 +36436,8 @@ const editorSearchInputStyle = {
 };
 const editorSearchButtonStyle = {
     flex: "0 0 auto",
+    // DialogButton is width:100% natively, which squeezed the input to nothing.
+    width: "auto",
     minWidth: 112,
     whiteSpace: "nowrap",
 };
@@ -36700,7 +36701,7 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                 setSearching(false);
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, disabled: disabled, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, disabled: disabled, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }) }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
                     ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
@@ -37039,11 +37040,11 @@ const descriptionTextareaStyle = {
     minHeight: 144,
     boxSizing: "border-box",
     resize: "vertical",
-    borderRadius: 2,
-    padding: "10px 16px",
-    color: colors.text,
-    background: "rgba(255,255,255,0.1)",
-    border: "none",
+    borderRadius: 4,
+    padding: 10,
+    color: "white",
+    background: "rgba(0,0,0,0.28)",
+    border: "1px solid rgba(255,255,255,0.18)",
 };
 const PAGE_LABEL_KEYS = {
     details: "editor.page.details",
@@ -38219,14 +38220,14 @@ const MetadataPage = () => {
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [!nonSteam ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.nonSteamOnly"), bottomSeparator: "none" })) : null, stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
                             clearPreviewMarker("title");
                             updateMetadata((prev) => ({ ...prev, title: value }));
-                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "none", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
+                        }), SP_JSX.jsx(DFL.Field, { label: markedLabel("description", "editor.field.description"), childrenLayout: "below", bottomSeparator: "standard", children: GamepadTextArea ? (SP_JSX.jsx(GamepadTextArea, { className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", onChange: (e) => {
                                     clearPreviewMarker("description");
                                     updateMetadata((prev) => ({
                                         ...prev,
                                         description: e.target.value,
                                         short_description: e.target.value,
                                     }));
-                                }, disabled: !nonSteam })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", disabled: !nonSteam, onChange: (e) => {
+                                }, style: descriptionTextareaStyle, disabled: !nonSteam })) : (SP_JSX.jsx(DFL.Focusable, { className: editorFocusTargetClassName, style: { width: "100%" }, onActivate: focusDescription, children: SP_JSX.jsx("textarea", { ref: descriptionRef, className: editorFocusTargetClassName, tabIndex: 0, value: metadata.short_description?.trim() ? metadata.short_description : metadata.description || "", disabled: !nonSteam, onChange: (e) => {
                                         clearPreviewMarker("description");
                                         updateMetadata((prev) => ({
                                             ...prev,

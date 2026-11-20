@@ -18,6 +18,8 @@ export const editorSearchInputStyle = {
 
 export const editorSearchButtonStyle = {
   flex: "0 0 auto",
+  // DialogButton is width:100% natively, which squeezed the input to nothing.
+  width: "auto",
   minWidth: 112,
   whiteSpace: "nowrap",
 } as const;

@@ -121,11 +121,11 @@ const descriptionTextareaStyle: CSSProperties = {
   minHeight: 144,
   boxSizing: "border-box",
   resize: "vertical",
-  borderRadius: 2,
-  padding: "10px 16px",
-  color: colors.text,
-  background: "rgba(255,255,255,0.1)",
-  border: "none",
+  borderRadius: 4,
+  padding: 10,
+  color: "white",
+  background: "rgba(0,0,0,0.28)",
+  border: "1px solid rgba(255,255,255,0.18)",
 };
 
 type Translate = (key: string, options?: Record<string, unknown>) => string;
@@ -1466,7 +1466,7 @@ export const MetadataPage = () => {
           <Field
             label={markedLabel("description", "editor.field.description")}
             childrenLayout="below"
-            bottomSeparator="none"
+            bottomSeparator="standard"
           >
             {GamepadTextArea ? (
               <GamepadTextArea
@@ -1480,6 +1480,7 @@ export const MetadataPage = () => {
                     short_description: e.target.value,
                   }));
                 }}
+                style={descriptionTextareaStyle}
                 disabled={!nonSteam}
               />
             ) : (
@@ -1491,6 +1492,7 @@ export const MetadataPage = () => {
                 <textarea
                   ref={descriptionRef}
                   className={editorFocusTargetClassName}
+                  tabIndex={0}
                   value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
                   disabled={!nonSteam}
                   onChange={(e) => {
