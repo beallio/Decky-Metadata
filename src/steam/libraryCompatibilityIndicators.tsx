@@ -1339,7 +1339,7 @@ export const installLibraryCompatibilityIndicators = (
         installWhenTargetsResolve("grid");
       }
     }
-    if (active) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
+    if (active && !gridUnpatch) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
   };
 
   try {
@@ -1348,7 +1348,7 @@ export const installLibraryCompatibilityIndicators = (
     lastObservedRoute = "";
   }
   installWhenTargetsResolve();
-  if (lastObservedRoute) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
+  if (!gridUnpatch) routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
 
 };
 type NativeGridDispatcherOptions = {
