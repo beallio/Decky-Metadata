@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Run the full on-device verification suite. Picks test appids from the
-# device's metadata store unless overridden:
+# device's metadata store, limited to shortcuts Steam currently lists, unless
+# overridden:
 #
 #   MATCHED_APPID   matched game WITH a steam_appid (launch + links-row checks)
 #   DELISTED_APPID  matched game whose Steam store entry is delisted
@@ -61,7 +62,12 @@ fixture_args=()
 [[ -z "${MATCHED_APPID:-}" ]] || fixture_args+=(--listed-match "$MATCHED_APPID")
 [[ -z "${DELISTED_APPID:-}" ]] || fixture_args+=(--delisted-match "$DELISTED_APPID")
 [[ -z "${NEVER_APPID:-}" ]] || fixture_args+=(--never-on-steam "$NEVER_APPID")
-"${here}/select_fixtures.py" "$metadata" "${fixture_args[@]}" >"$run_dir/fixtures.json"
+# Saved metadata can outlive a deleted shortcut; only pick apps Steam lists now.
+DECKY_DECK_HOST="$host" "$here/../tunnel.sh" up >/dev/null
+python3 "$here/../cdp.py" eval SharedJSContext \
+  'JSON.stringify([...appStore.m_mapApps.values()].filter((app) => app?.app_type === 1073741824).map((app) => String(app.appid)))' \
+  >"$run_dir/library.json"
+"${here}/select_fixtures.py" "$metadata" --library "$run_dir/library.json" "${fixture_args[@]}" >"$run_dir/fixtures.json"
 read -r auto_matched auto_delisted auto_never < <(python3 - "$run_dir/fixtures.json" <<'PY'
 import json,sys
 f=json.load(open(sys.argv[1]))["fixtures"]
