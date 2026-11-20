@@ -1809,6 +1809,35 @@ describe("installLibraryCompatibilityIndicators", () => {
     harness.unpatchers[0]();
   });
 
+  it("arms grid discovery after a blank startup route and stops polling once the grid installs", () => {
+    const mountedMemo = { type: function mountedTile() { return null; } };
+    const fiber = {
+      type: mountedMemo,
+      elementType: mountedMemo,
+      memoizedProps: { app: nativeShortcut, eForceHWCompatDisplay: undefined },
+      return: null,
+    };
+    const document = browserDocument(() => [{ "__reactFiber$tile": fiber }]);
+    let route = "";
+    const harness = makeViteHarness({
+      missingGridFingerprint: true,
+      gridTarget: mountedMemo,
+      maxResolutionAttempts: 1,
+      getCardDocument: () => document,
+      getCurrentRoute: () => route,
+      findCompatDisplayHook: () => () => [true, 3],
+    });
+
+    expect(harness.patchGridRenderer).not.toHaveBeenCalled();
+    expect(harness.pendingRetries.size).toBe(1);
+    route = "/routes/library/collection/deck-desktop-apps";
+    harness.runNextRetry();
+
+    expect(harness.patchGridRenderer).toHaveBeenCalledWith(mountedMemo, expect.any(Function));
+    expect(harness.pendingRetries.size).toBe(0);
+    harness.unpatchers[0]();
+  });
+
 
 
   it("discovers and decorates the shared Home Recent memo renderer", () => {
@@ -2083,7 +2112,8 @@ describe("installLibraryCompatibilityIndicators", () => {
 
     expect(harness.patchHomeRenderer).not.toHaveBeenCalled();
     expect(harness.patchGridRenderer).not.toHaveBeenCalled();
-    expect(harness.scheduleRetry).toHaveBeenCalledTimes(2);
+    // Home and grid resolution retries, plus the route monitor while the grid is unresolved.
+    expect(harness.scheduleRetry).toHaveBeenCalledTimes(3);
 
     harness.runNextRetry();
 

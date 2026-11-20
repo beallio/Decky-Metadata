@@ -27743,7 +27743,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
                 installWhenTargetsResolve("grid");
             }
         }
-        if (active)
+        if (active && !gridUnpatch)
             routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
     };
     try {
@@ -27753,7 +27753,7 @@ const installLibraryCompatibilityIndicators = (unpatchers, provided = {}) => {
         lastObservedRoute = "";
     }
     installWhenTargetsResolve();
-    if (lastObservedRoute)
+    if (!gridUnpatch)
         routeRetryId = dependencies.scheduleRetry(checkLibraryRoute, dependencies.retryIntervalMs);
 };
 /**
