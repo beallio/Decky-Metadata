@@ -35,6 +35,7 @@
     "trailer_settings_unavailable": "impossibile caricare le impostazioni dei trailer",
     "mini_achievements_settings_unavailable": "impossibile caricare le impostazioni dei mini obiettivi",
     "protondb_settings_unavailable": "impossibile caricare le impostazioni dei badge ProtonDB",
+    "editor_header_settings_unavailable": "impossibile caricare le impostazioni dell'intestazione dell'editor",
     "steam_ui_unavailable": "Interfaccia Steam non disponibile",
     "update_check_failed": "Controllo degli aggiornamenti non riuscito",
     "rate_limited": "Limite di richieste superato",
@@ -216,6 +217,13 @@
       "enableLabel": "Abilita i mini obiettivi",
       "enableDescription": "Mostra la piccola barra di avanzamento degli obiettivi Steam accanto al tempo di gioco nelle pagine dei dettagli. Disattivato per impostazione predefinita.",
       "footnote": "Usa l'avanzamento degli obiettivi di Steam per i giochi Steam; non aggiunge il monitoraggio degli obiettivi ai giochi non Steam."
+    },
+    "contextMenu": {
+      "title": "Menu contestuale",
+      "headerIconLabel": "Icona del gioco nell'intestazione dell'editor",
+      "headerIconDescription": "Mostra l'icona del gioco accanto al nome nella parte superiore della pagina per modificare i metadati. I nomi lunghi scorrono.",
+      "steamIconLabel": "Usa l'icona Steam se manca",
+      "steamIconDescription": "Se il gioco non ha una propria icona, usa quella del gioco Steam abbinato. Se non è disponibile nessuna icona, non ne viene mostrata alcuna."
     },
     "compat": {
       "title": "Stato di compatibilità",

@@ -6,6 +6,14 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 Match Steam's own layout, colours and controls, and fix more Steam beta lookups
 
+### Added
+
+- **Game icon in the editor header.** A new **Context menu** section in the
+  Quick Access Menu can show the game's icon beside its name at the top of
+  **Edit Metadata...**, with long names scrolling as in Steam's own menu. A
+  second option uses the matched Steam game's icon when the game has none;
+  otherwise no icon is shown. Off by default.
+
 ### Changed
 
 - **Steam-style editor pages.** Help text now sits under the setting it

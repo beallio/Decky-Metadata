@@ -35,6 +35,7 @@
     "trailer_settings_unavailable": "les paramètres des bandes-annonces n'ont pas pu être chargés",
     "mini_achievements_settings_unavailable": "les paramètres des mini-succès n'ont pas pu être chargés",
     "protondb_settings_unavailable": "les paramètres des badges ProtonDB n'ont pas pu être chargés",
+    "editor_header_settings_unavailable": "les paramètres de l’en-tête de l’éditeur n’ont pas pu être chargés",
     "steam_ui_unavailable": "Interface Steam indisponible",
     "update_check_failed": "Échec de la recherche de mises à jour",
     "rate_limited": "Limite de requêtes dépassée",
@@ -216,6 +217,13 @@
       "enableLabel": "Activer les mini-succès",
       "enableDescription": "Affiche la petite barre de progression des succès Steam à côté du temps de jeu sur les pages de détails des jeux. Désactivé par défaut.",
       "footnote": "Utilise la progression des succès Steam pour les jeux Steam ; n'ajoute pas le suivi des succès aux jeux non Steam."
+    },
+    "contextMenu": {
+      "title": "Menu contextuel",
+      "headerIconLabel": "Icône du jeu dans l’en-tête de l’éditeur",
+      "headerIconDescription": "Affiche l’icône du jeu à côté de son nom en haut de la page de modification des métadonnées. Les noms longs défilent.",
+      "steamIconLabel": "Utiliser l’icône Steam si elle manque",
+      "steamIconDescription": "Si le jeu n’a pas sa propre icône, utilise celle du jeu Steam correspondant. Si aucune icône n’existe, aucune ne s’affiche."
     },
     "compat": {
       "title": "État de compatibilité",

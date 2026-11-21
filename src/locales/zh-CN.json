@@ -33,6 +33,7 @@
     "trailer_settings_unavailable": "无法加载预告片设置",
     "mini_achievements_settings_unavailable": "无法加载迷你成就设置",
     "protondb_settings_unavailable": "无法加载 ProtonDB 徽章设置",
+    "editor_header_settings_unavailable": "无法加载编辑器标题栏设置",
     "steam_ui_unavailable": "Steam 界面不可用",
     "update_check_failed": "检查更新失败",
     "rate_limited": "超出速率限制",
@@ -214,6 +215,13 @@
       "enableLabel": "启用迷你成就",
       "enableDescription": "在游戏详情页的游戏时间旁显示 Steam 的小型成就进度条。默认关闭。",
       "footnote": "此功能使用 Steam 游戏的 Steam 成就进度；不会为非 Steam 游戏添加成就追踪。"
+    },
+    "contextMenu": {
+      "title": "上下文菜单",
+      "headerIconLabel": "在编辑器标题栏显示游戏图标",
+      "headerIconDescription": "在元数据编辑页面顶部的游戏名称旁显示游戏图标。名称较长时会滚动。",
+      "steamIconLabel": "缺少图标时使用 Steam 图标",
+      "steamIconDescription": "如果游戏没有自己的图标，则使用匹配的 Steam 游戏图标。如果两者都没有，则不显示图标。"
     },
     "compat": {
       "title": "兼容性状态",

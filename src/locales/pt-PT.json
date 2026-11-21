@@ -35,6 +35,7 @@
     "trailer_settings_unavailable": "não foi possível carregar as definições de trailers",
     "mini_achievements_settings_unavailable": "não foi possível carregar as definições de miniconquistas",
     "protondb_settings_unavailable": "não foi possível carregar as definições do selo ProtonDB",
+    "editor_header_settings_unavailable": "não foi possível carregar as definições do cabeçalho do editor",
     "steam_ui_unavailable": "Interface da Steam indisponível",
     "update_check_failed": "Falha ao procurar atualizações",
     "rate_limited": "Limite de pedidos excedido",
@@ -216,6 +217,13 @@
       "enableLabel": "Ativar miniconquistas",
       "enableDescription": "Mostra a pequena barra de progresso de conquistas da Steam ao lado do Tempo de jogo nas páginas de detalhes do jogo. Desativado por predefinição.",
       "footnote": "Isto usa o progresso de conquistas da Steam para jogos da Steam; não adiciona o acompanhamento de conquistas a jogos que não são da Steam."
+    },
+    "contextMenu": {
+      "title": "Menu de contexto",
+      "headerIconLabel": "Ícone do jogo no cabeçalho do editor",
+      "headerIconDescription": "Mostra o ícone do jogo junto ao nome na parte superior da página de edição de metadados. Os nomes longos deslocam-se.",
+      "steamIconLabel": "Usar o ícone da Steam se estiver em falta",
+      "steamIconDescription": "Quando o jogo não tem ícone próprio, usa o ícone do jogo correspondente na Steam. Se nenhum existir, não é apresentado qualquer ícone."
     },
     "compat": {
       "title": "Estado de compatibilidade",

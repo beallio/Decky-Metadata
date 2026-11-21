@@ -110,6 +110,12 @@ export type ProtonDbBadgeSettings = {
   coverPosition: "bottom-left" | "top-left" | "top-right";
 };
 
+/** QAM "Context menu" options for the Edit Metadata page header. */
+export type EditorHeaderSettings = {
+  gameIcon: boolean;
+  steamIconFallback: boolean;
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;
@@ -265,6 +271,7 @@ export type SteamInternals = {
   };
   appStore: {
     GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
+    GetIconURLForApp?: (overview: SteamOverview) => string | null;
     allApps?: SteamOverview[] | Record<string, SteamOverview>;
   };
   appDetailsStore: object;

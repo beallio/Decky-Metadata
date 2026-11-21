@@ -33,6 +33,7 @@
     "trailer_settings_unavailable": "トレーラー設定を読み込めませんでした",
     "mini_achievements_settings_unavailable": "ミニ実績設定を読み込めませんでした",
     "protondb_settings_unavailable": "ProtonDB バッジ設定を読み込めませんでした",
+    "editor_header_settings_unavailable": "エディターのヘッダー設定を読み込めませんでした",
     "steam_ui_unavailable": "Steam UI を利用できません",
     "update_check_failed": "アップデートの確認に失敗しました",
     "rate_limited": "レート制限を超えました",
@@ -214,6 +215,13 @@
       "enableLabel": "ミニ実績を有効化",
       "enableDescription": "ゲームの詳細ページのプレイ時間の横に、Steam の小さな実績進捗バーを表示します。既定ではオフです。",
       "footnote": "これは Steam ゲームの Steam 実績進捗を使用します。Steam 以外のゲームに実績トラッキングを追加するものではありません。"
+    },
+    "contextMenu": {
+      "title": "コンテキストメニュー",
+      "headerIconLabel": "エディターのヘッダーにゲームアイコンを表示",
+      "headerIconDescription": "メタデータ編集ページの上部で、ゲーム名の横にアイコンを表示します。長い名前はスクロールします。",
+      "steamIconLabel": "アイコンがない場合はSteamアイコンを使用",
+      "steamIconDescription": "ゲーム固有のアイコンがない場合、対応するSteamゲームのアイコンを使用します。どちらもない場合、アイコンは表示されません。"
     },
     "compat": {
       "title": "互換性ステータス",

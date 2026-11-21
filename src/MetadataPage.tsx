@@ -2015,6 +2015,8 @@ export const MetadataPage = () => {
       <style>{editorScopedCss}</style>
       <EditorLayout
         title={appName(appId)}
+        appId={appId}
+        steamAppId={normalizedSteamAppId(metadata.steam_appid)}
         pages={pages}
         page={page}
         onPageRequested={setPage}

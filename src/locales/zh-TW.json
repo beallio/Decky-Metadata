@@ -33,6 +33,7 @@
     "trailer_settings_unavailable": "無法載入預告片設定",
     "mini_achievements_settings_unavailable": "無法載入迷你成就設定",
     "protondb_settings_unavailable": "無法載入 ProtonDB 徽章設定",
+    "editor_header_settings_unavailable": "無法載入編輯器標題列設定",
     "steam_ui_unavailable": "Steam 介面無法使用",
     "update_check_failed": "檢查更新失敗",
     "rate_limited": "已超出速率限制",
@@ -214,6 +215,13 @@
       "enableLabel": "啟用迷你成就",
       "enableDescription": "在遊戲詳細資料頁面的遊玩時間旁顯示 Steam 的小型成就進度列。預設為關閉。",
       "footnote": "此功能使用 Steam 遊戲的 Steam 成就進度；不會為非 Steam 遊戲加入成就追蹤。"
+    },
+    "contextMenu": {
+      "title": "內容選單",
+      "headerIconLabel": "在編輯器標題列顯示遊戲圖示",
+      "headerIconDescription": "在中繼資料編輯頁面頂端的遊戲名稱旁顯示遊戲圖示。名稱較長時會捲動。",
+      "steamIconLabel": "缺少圖示時使用 Steam 圖示",
+      "steamIconDescription": "如果遊戲沒有自己的圖示，則使用相符 Steam 遊戲的圖示。如果兩者都不存在，則不會顯示圖示。"
     },
     "compat": {
       "title": "相容性狀態",

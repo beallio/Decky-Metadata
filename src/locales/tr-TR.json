@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "fragman ayarları yüklenemedi",
     "mini_achievements_settings_unavailable": "mini başarım ayarları yüklenemedi",
     "protondb_settings_unavailable": "ProtonDB rozet ayarları yüklenemedi",
+    "editor_header_settings_unavailable": "Düzenleyici başlık ayarları yüklenemedi",
     "steam_ui_unavailable": "Steam arayüzü kullanılamıyor",
     "update_check_failed": "Güncellemeler denetlenemedi",
     "rate_limited": "İstek sınırı aşıldı",
@@ -215,6 +216,13 @@
       "enableLabel": "Mini başarımları etkinleştir",
       "enableDescription": "Oyun ayrıntıları sayfalarında Oynama Süresi'nin yanında Steam'in küçük başarım ilerleme çubuğunu gösterir. Varsayılan olarak kapalıdır.",
       "footnote": "Bu, Steam oyunları için Steam'in başarım ilerlemesini kullanır; Steam dışı oyunlara başarım izleme eklemez."
+    },
+    "contextMenu": {
+      "title": "Bağlam menüsü",
+      "headerIconLabel": "Düzenleyici başlığında oyun simgesi",
+      "headerIconDescription": "Meta verileri düzenleme sayfasının üst kısmında oyun simgesini adının yanında gösterir. Uzun adlar kaydırılır.",
+      "steamIconLabel": "Yoksa Steam simgesini kullan",
+      "steamIconDescription": "Oyunun kendine ait bir simgesi yoksa eşleşen Steam oyununun simgesi kullanılır. İkisi de yoksa simge gösterilmez."
     },
     "compat": {
       "title": "Uyumluluk durumu",

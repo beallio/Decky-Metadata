@@ -33,6 +33,7 @@
     "trailer_settings_unavailable": "트레일러 설정을 불러올 수 없습니다",
     "mini_achievements_settings_unavailable": "미니 도전 과제 설정을 불러올 수 없습니다",
     "protondb_settings_unavailable": "ProtonDB 배지 설정을 불러올 수 없습니다",
+    "editor_header_settings_unavailable": "편집기 헤더 설정을 불러올 수 없습니다",
     "steam_ui_unavailable": "Steam UI를 사용할 수 없습니다",
     "update_check_failed": "업데이트 확인에 실패했습니다",
     "rate_limited": "요청 한도를 초과했습니다",
@@ -214,6 +215,13 @@
       "enableLabel": "미니 도전 과제 사용",
       "enableDescription": "게임 세부 정보 페이지의 플레이 시간 옆에 Steam의 작은 도전 과제 진행률 표시줄을 표시합니다. 기본적으로 꺼져 있습니다.",
       "footnote": "이 기능은 Steam 게임의 Steam 도전 과제 진행률을 사용합니다. 비Steam 게임에 도전 과제 추적을 추가하지는 않습니다."
+    },
+    "contextMenu": {
+      "title": "컨텍스트 메뉴",
+      "headerIconLabel": "편집기 헤더에 게임 아이콘 표시",
+      "headerIconDescription": "메타데이터 편집 페이지 상단에서 게임 이름 옆에 아이콘을 표시합니다. 이름이 길면 스크롤됩니다.",
+      "steamIconLabel": "아이콘이 없으면 Steam 아이콘 사용",
+      "steamIconDescription": "게임 자체 아이콘이 없으면 연결된 Steam 게임의 아이콘을 사용합니다. 둘 다 없으면 아이콘을 표시하지 않습니다."
     },
     "compat": {
       "title": "호환성 상태",

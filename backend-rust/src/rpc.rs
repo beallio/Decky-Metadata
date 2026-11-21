@@ -30,6 +30,8 @@ pub const METHODS: &[&str] = &[
     "set_mini_achievements_enabled",
     "get_protondb_badge_settings",
     "set_protondb_badge_settings",
+    "get_editor_header_settings",
+    "set_editor_header_settings",
     "get_provider_cache",
     "put_protondb_cache",
     "get_hltb_settings",
@@ -327,6 +329,22 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 .set_setting(
                     "mini_achievements_enabled",
                     storage::validate_mini_achievements_enabled(&args[0])?.into(),
+                )
+                .await
+        }
+        "get_editor_header_settings" => {
+            arity(&args, 0, 0)?;
+            Ok(storage::normalize_editor_header_settings(
+                &loaded_store(&state, "editor_header_settings_unavailable").await?.data()["settings"]
+                    ["editor_header"],
+            ))
+        }
+        "set_editor_header_settings" => {
+            arity(&args, 1, 1)?;
+            state
+                .set_setting(
+                    "editor_header",
+                    storage::validate_editor_header_settings(&args[0])?,
                 )
                 .await
         }

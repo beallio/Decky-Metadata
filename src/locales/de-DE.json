@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "Trailer-Einstellungen konnten nicht geladen werden",
     "mini_achievements_settings_unavailable": "Einstellungen für Mini-Errungenschaften konnten nicht geladen werden",
     "protondb_settings_unavailable": "ProtonDB-Abzeichen-Einstellungen konnten nicht geladen werden",
+    "editor_header_settings_unavailable": "Einstellungen für den Editor-Kopfbereich konnten nicht geladen werden",
     "steam_ui_unavailable": "Steam-UI nicht verfügbar",
     "update_check_failed": "Update-Prüfung fehlgeschlagen",
     "rate_limited": "Ratenlimit überschritten",
@@ -215,6 +216,13 @@
       "enableLabel": "Mini-Errungenschaften aktivieren",
       "enableDescription": "Zeigt Steams kleinen Fortschrittsbalken für Errungenschaften neben der Spielzeit auf Spielseiten. Standardmäßig aus.",
       "footnote": "Dies nutzt Steams Errungenschaftsfortschritt für Steam-Spiele; für Nicht-Steam-Spiele wird keine Errungenschaftsverfolgung hinzugefügt."
+    },
+    "contextMenu": {
+      "title": "Kontextmenü",
+      "headerIconLabel": "Spielsymbol im Editor-Kopfbereich",
+      "headerIconDescription": "Zeigt das Spielsymbol neben dem Namen oben auf der Seite zum Bearbeiten der Metadaten an. Lange Namen laufen durch.",
+      "steamIconLabel": "Steam-Symbol verwenden, falls keines vorhanden ist",
+      "steamIconDescription": "Wenn das Spiel kein eigenes Symbol hat, wird das Symbol des zugeordneten Steam-Spiels verwendet. Gibt es keines, wird kein Symbol angezeigt."
     },
     "compat": {
       "title": "Kompatibilitätsstatus",

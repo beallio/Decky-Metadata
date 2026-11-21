@@ -36,6 +36,7 @@
     "trailer_settings_unavailable": "nie udało się wczytać ustawień zwiastunów",
     "mini_achievements_settings_unavailable": "nie udało się wczytać ustawień mini osiągnięć",
     "protondb_settings_unavailable": "nie udało się wczytać ustawień odznak ProtonDB",
+    "editor_header_settings_unavailable": "Nie udało się wczytać ustawień nagłówka edytora",
     "steam_ui_unavailable": "Interfejs Steam jest niedostępny",
     "update_check_failed": "Nie udało się sprawdzić aktualizacji",
     "rate_limited": "Przekroczono limit zapytań",
@@ -217,6 +218,13 @@
       "enableLabel": "Włącz mini osiągnięcia",
       "enableDescription": "Pokazuj mały pasek postępu osiągnięć Steam obok czasu gry na stronach szczegółów. Domyślnie wyłączone.",
       "footnote": "Wykorzystuje postęp osiągnięć Steam dla gier Steam; nie dodaje śledzenia osiągnięć do gier spoza Steam."
+    },
+    "contextMenu": {
+      "title": "Menu kontekstowe",
+      "headerIconLabel": "Ikona gry w nagłówku edytora",
+      "headerIconDescription": "Pokazuje ikonę gry obok jej nazwy u góry strony edycji metadanych. Długie nazwy przewijają się.",
+      "steamIconLabel": "Użyj ikony Steam, jeśli brakuje własnej",
+      "steamIconDescription": "Gdy gra nie ma własnej ikony, używana jest ikona dopasowanej gry Steam. Jeśli nie ma żadnej, ikona nie jest wyświetlana."
     },
     "compat": {
       "title": "Status kompatybilności",

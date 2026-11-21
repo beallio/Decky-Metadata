@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "cilësimet e trailerave nuk mund të ngarkoheshin",
     "mini_achievements_settings_unavailable": "cilësimet e arritjeve mini nuk mund të ngarkoheshin",
     "protondb_settings_unavailable": "cilësimet e distinktivëve ProtonDB nuk mund të ngarkoheshin",
+    "editor_header_settings_unavailable": "Cilësimet e kreut të redaktuesit nuk mund të ngarkoheshin",
     "steam_ui_unavailable": "Ndërfaqja e Steam nuk është e disponueshme",
     "update_check_failed": "Kontrolli për përditësime dështoi",
     "rate_limited": "Limiti i kërkesave u tejkalua",
@@ -215,6 +216,13 @@
       "enableLabel": "Aktivizo arritjet mini",
       "enableDescription": "Shfaq shiritin e vogël të përparimit të arritjeve të Steam pranë Kohës së lojës në faqet e detajeve. I çaktivizuar si parazgjedhje.",
       "footnote": "Kjo përdor përparimin e arritjeve të Steam për lojërat e Steam; nuk shton gjurmim arritjesh për lojërat jo-Steam."
+    },
+    "contextMenu": {
+      "title": "Menuja e kontekstit",
+      "headerIconLabel": "Ikona e lojës në kreun e redaktuesit",
+      "headerIconDescription": "Shfaq ikonën e lojës pranë emrit të saj në krye të faqes së redaktimit të metadatave. Emrat e gjatë lëvizin.",
+      "steamIconLabel": "Përdor ikonën e Steam nëse mungon",
+      "steamIconDescription": "Kur loja nuk ka ikonën e vet, përdoret ikona e lojës përkatëse në Steam. Nëse nuk ekziston asnjë, nuk shfaqet ikonë."
     },
     "compat": {
       "title": "Gjendja e përputhshmërisë",

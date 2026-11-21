@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "trailerinställningarna kunde inte läsas in",
     "mini_achievements_settings_unavailable": "inställningarna för miniprestationer kunde inte läsas in",
     "protondb_settings_unavailable": "ProtonDB-märkesinställningarna kunde inte läsas in",
+    "editor_header_settings_unavailable": "Inställningarna för redigerarens sidhuvud kunde inte läsas in",
     "steam_ui_unavailable": "Steam-gränssnittet är inte tillgängligt",
     "update_check_failed": "Det gick inte att söka efter uppdateringar",
     "rate_limited": "Hastighetsgränsen har överskridits",
@@ -215,6 +216,13 @@
       "enableLabel": "Aktivera miniprestationer",
       "enableDescription": "Visar Steams lilla förloppsrad för prestationer bredvid Speltid på speldetaljsidor. Av som standard.",
       "footnote": "Detta använder Steams prestationsförlopp för Steam-spel; det lägger inte till prestationsspårning för icke-Steam-spel."
+    },
+    "contextMenu": {
+      "title": "Snabbmeny",
+      "headerIconLabel": "Spelikonen i redigerarens sidhuvud",
+      "headerIconDescription": "Visar spelikonen bredvid namnet högst upp på sidan för redigering av metadata. Långa namn rullar.",
+      "steamIconLabel": "Använd Steam-ikonen om den saknas",
+      "steamIconDescription": "Om spelet inte har en egen ikon används ikonen för det matchade Steam-spelet. Om ingen ikon finns visas ingen ikon."
     },
     "compat": {
       "title": "Kompatibilitetsstatus",
