@@ -23,6 +23,9 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
   Steam**, **Current match** and **Search IGN metadata** use Steam's section
   headings. Edited fields show **Edited** in colour without moving the label.
   HowLongToBeat results look like the Steam and IGN results.
+- Editor text boxes stay white while you type with the on-screen keyboard
+  and after you close it, until you move to another control. Steam's own
+  boxes turn gray while the keyboard is open.
 - **Quick Access Menu.** Section headings use Steam's own heading style and
   focus highlight. Help text sits under its control. Metadata scans show a
   progress bar, and the log viewer scrolls with the controller.
