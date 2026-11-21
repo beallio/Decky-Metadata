@@ -35,6 +35,7 @@
     "trailer_settings_unavailable": "setările trailerelor nu au putut fi încărcate",
     "mini_achievements_settings_unavailable": "setările realizărilor mini nu au putut fi încărcate",
     "protondb_settings_unavailable": "setările insignelor ProtonDB nu au putut fi încărcate",
+    "editor_header_settings_unavailable": "Setările antetului editorului nu au putut fi încărcate",
     "steam_ui_unavailable": "Interfața Steam nu este disponibilă",
     "update_check_failed": "Verificarea actualizărilor a eșuat",
     "rate_limited": "Limita de solicitări a fost depășită",
@@ -216,6 +217,13 @@
       "enableLabel": "Activează realizările mini",
       "enableDescription": "Afișează bara mică de progres a realizărilor Steam lângă timpul de joc pe paginile de detalii. Dezactivat implicit.",
       "footnote": "Folosește progresul realizărilor Steam pentru jocurile Steam; nu adaugă urmărirea realizărilor pentru jocurile non-Steam."
+    },
+    "contextMenu": {
+      "title": "Meniu contextual",
+      "headerIconLabel": "Pictograma jocului în antetul editorului",
+      "headerIconDescription": "Afișează pictograma jocului lângă numele său în partea de sus a paginii de editare a metadatelor. Numele lungi derulează.",
+      "steamIconLabel": "Folosește pictograma Steam dacă lipsește",
+      "steamIconDescription": "Dacă jocul nu are propria pictogramă, folosește pictograma jocului Steam asociat. Dacă nu există niciuna, nu se afișează nicio pictogramă."
     },
     "compat": {
       "title": "Starea de compatibilitate",

@@ -381,6 +381,16 @@ export const getOverview = (appId: number): SteamOverview | null => {
   }
 };
 
+/** Steam's own icon URL for an app; null until a shortcut's icon data has loaded. */
+export const getAppIconUrl = (appId: number): string | null => {
+  try {
+    const overview = getOverview(appId);
+    return (overview && appStore?.GetIconURLForApp?.(overview)) || null;
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Resolve an overview by its own AppID without passing through plugin patches.
  * This is required for writes: GetAppOverviewByAppID intentionally aliases a

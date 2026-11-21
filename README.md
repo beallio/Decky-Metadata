@@ -36,7 +36,7 @@ if you need more help.
 Open Decky Metadata from the Quick Access Menu to find games that need details.
 Select a section heading to show its controls. **Versions** starts open;
 **Metadata**, **Compatibility status**, **ProtonDB badges**, **HLTB times**, **Game trailers**,
-**Mini achievements**, **Logs**, and **Updates** start closed. Press A on a
+**Mini achievements**, **Context menu**, **Logs**, and **Updates** start closed. Press A on a
 heading or select it to open or close that section. **Metadata** includes the
 cache and **Delisted Steam games** tools. **Compatibility status** is immediately
 below it.
@@ -181,6 +181,17 @@ See [mini-achievements help](docs/help/updates-and-troubleshooting.md#mini-achie
 for setup, when the row appears, and troubleshooting.
 
 ![Steam's mini achievement progress bar on Brotato](assets/decky-metadata-mini-achievements.png?cacheBuster=20261113)
+
+### Context menu
+
+Open **Context menu** to change how the **Edit Metadata...** page looks. Turn on
+**Game icon in editor header** to show the game's icon beside its name at the
+top of the editor, like Steam's own menu. Long names scroll.
+
+**Use Steam icon if missing** is on by default. When a non-Steam game has no
+icon of its own, the editor shows the icon of the Steam game it is matched to.
+If neither icon exists (for example, a delisted Steam match), the name shows
+without an icon. You can change this option only when the main toggle is on.
 
 ### Community posts and news
 

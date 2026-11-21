@@ -21,6 +21,7 @@ import {
   UpdateSettings,
   TrailerSettings,
   ProtonDbBadgeSettings,
+  EditorHeaderSettings,
   IgnTrailerResult,
   ProtonDbTier,
 } from "./types";
@@ -224,6 +225,13 @@ export const setProtonDbBadgeSettings = callable<
   [settings: ProtonDbBadgeSettings],
   ProtonDbBadgeSettings
 >("set_protondb_badge_settings");
+export const getEditorHeaderSettings = callable<[], EditorHeaderSettings>(
+  "get_editor_header_settings"
+);
+export const setEditorHeaderSettings = callable<
+  [settings: EditorHeaderSettings],
+  EditorHeaderSettings
+>("set_editor_header_settings");
 export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
 export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
 export type HltbTimes = { main: number; plus: number; complete: number; all: number };

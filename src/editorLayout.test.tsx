@@ -19,6 +19,8 @@ vi.mock("./i18n", () => ({
     ? "This Steam version is not supported yet. Update Decky Metadata to edit metadata."
     : key,
 }));
+vi.mock("./backend", () => ({ getEditorHeaderSettings: vi.fn() }));
+vi.mock("./editorHeaderIcon", () => ({ resolveEditorIcon: vi.fn() }));
 // Cache like React does so the test can assert that page descriptors stay stable across edits.
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),
@@ -60,7 +62,7 @@ type NativePagedSettingsProps = {
   pages: NativePageEntry[];
   page: string;
   onPageRequested(identifier: string): void;
-  title: string;
+  title: ReactElement<{ title: string; appId: number; steamAppId: number | null }>;
   showTitle: boolean;
   bottomControls: ReactNode;
 };
@@ -83,6 +85,8 @@ const renderWith = (
 ) => {
   const element = component({
     title: "Deadpool",
+    appId: 4107143310,
+    steamAppId: 224060,
     pages,
     page: "details",
     onPageRequested: vi.fn(),
@@ -162,7 +166,7 @@ describe("EditorLayout", () => {
       typeof entry !== "string" && entry.identifier === "advanced") as Exclude<NativePageEntry, "separator">;
     expect(text(nodes(advancedPage.content).find((node) => node.type === "DialogHeader"))).toBe("Advanced");
     expect(received.page).toBe("advanced");
-    expect(received.title).toBe("Deadpool");
+    expect(received.title.props).toEqual({ title: "Deadpool", appId: 4107143310, steamAppId: 224060 });
     expect(received.showTitle).toBe(true);
     received.onPageRequested("advanced");
     expect(onPageRequested).toHaveBeenCalledExactlyOnceWith("advanced");

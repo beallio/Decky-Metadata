@@ -38,6 +38,7 @@
     "trailer_settings_unavailable": "تعذّر تحميل إعدادات المقاطع الدعائية",
     "mini_achievements_settings_unavailable": "تعذّر تحميل إعدادات الإنجازات المصغّرة",
     "protondb_settings_unavailable": "تعذّر تحميل إعدادات شارات ProtonDB",
+    "editor_header_settings_unavailable": "تعذّر تحميل إعدادات رأس المحرر",
     "steam_ui_unavailable": "واجهة Steam غير متاحة",
     "update_check_failed": "فشل التحقق من التحديثات",
     "rate_limited": "تم تجاوز حد الطلبات",
@@ -219,6 +220,13 @@
       "enableLabel": "تفعيل الإنجازات المصغّرة",
       "enableDescription": "إظهار شريط تقدّم الإنجازات الصغير في Steam بجانب وقت اللعب في صفحات التفاصيل. معطّل افتراضيًا.",
       "footnote": "يستخدم هذا تقدّم الإنجازات في Steam لألعاب Steam؛ ولا يضيف تتبّع إنجازات للألعاب غير التابعة لـ Steam."
+    },
+    "contextMenu": {
+      "title": "قائمة السياق",
+      "headerIconLabel": "أيقونة اللعبة في رأس المحرر",
+      "headerIconDescription": "إظهار أيقونة اللعبة بجانب اسمها أعلى صفحة تحرير البيانات الوصفية. يتم تمرير الأسماء الطويلة.",
+      "steamIconLabel": "استخدام أيقونة Steam عند عدم توفرها",
+      "steamIconDescription": "إذا لم تكن للعبة أيقونة خاصة بها، فاستخدم أيقونة لعبة Steam المطابقة. إذا لم تتوفر أيقونة، فلن يتم عرض أيقونة."
     },
     "compat": {
       "title": "حالة التوافق",

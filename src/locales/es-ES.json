@@ -35,6 +35,7 @@
     "trailer_settings_unavailable": "no se pudieron cargar los ajustes de tráilers",
     "mini_achievements_settings_unavailable": "no se pudieron cargar los ajustes de minilogros",
     "protondb_settings_unavailable": "no se pudieron cargar los ajustes de las insignias de ProtonDB",
+    "editor_header_settings_unavailable": "no se pudieron cargar los ajustes de la cabecera del editor",
     "steam_ui_unavailable": "Interfaz de Steam no disponible",
     "update_check_failed": "Error al buscar actualizaciones",
     "rate_limited": "Se ha superado el límite de solicitudes",
@@ -216,6 +217,13 @@
       "enableLabel": "Activar minilogros",
       "enableDescription": "Muestra la pequeña barra de progreso de logros de Steam junto al tiempo de juego en las páginas de detalles. Desactivado de forma predeterminada.",
       "footnote": "Usa el progreso de logros de Steam para los juegos de Steam; no añade seguimiento de logros a los juegos que no son de Steam."
+    },
+    "contextMenu": {
+      "title": "Menú contextual",
+      "headerIconLabel": "Icono del juego en la cabecera del editor",
+      "headerIconDescription": "Muestra el icono del juego junto a su nombre en la parte superior de la página para editar metadatos. Los nombres largos se desplazan.",
+      "steamIconLabel": "Usar el icono de Steam si falta",
+      "steamIconDescription": "Si el juego no tiene icono propio, se usa el del juego de Steam correspondiente. Si no hay ninguno, no se muestra ningún icono."
     },
     "compat": {
       "title": "Estado de compatibilidad",

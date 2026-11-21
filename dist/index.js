@@ -140,6 +140,8 @@ const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
 const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
 const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
 const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
+const getEditorHeaderSettings = callable("get_editor_header_settings");
+const setEditorHeaderSettings = callable("set_editor_header_settings");
 const getProviderCache = callable("get_provider_cache");
 const putProtonDbCache = callable("put_protondb_cache");
 const getHltbSettings = callable("get_hltb_settings");
@@ -174,6 +176,7 @@ var backend$p = /*#__PURE__*/Object.freeze({
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
+    getEditorHeaderSettings: getEditorHeaderSettings,
     getHltbSettings: getHltbSettings,
     getHltbStats: getHltbStats,
     getLocalShortcuts: getLocalShortcuts,
@@ -211,6 +214,7 @@ var backend$p = /*#__PURE__*/Object.freeze({
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
     setDebugLogging: setDebugLogging,
+    setEditorHeaderSettings: setEditorHeaderSettings,
     setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setProtonDbBadgeSettings: setProtonDbBadgeSettings,
@@ -2971,6 +2975,7 @@ var backend$o = {
 	trailer_settings_unavailable: "تعذّر تحميل إعدادات المقاطع الدعائية",
 	mini_achievements_settings_unavailable: "تعذّر تحميل إعدادات الإنجازات المصغّرة",
 	protondb_settings_unavailable: "تعذّر تحميل إعدادات شارات ProtonDB",
+	editor_header_settings_unavailable: "تعذّر تحميل إعدادات رأس المحرر",
 	steam_ui_unavailable: "واجهة Steam غير متاحة",
 	update_check_failed: "فشل التحقق من التحديثات",
 	rate_limited: "تم تجاوز حد الطلبات",
@@ -3152,6 +3157,13 @@ var qam$o = {
 		enableLabel: "تفعيل الإنجازات المصغّرة",
 		enableDescription: "إظهار شريط تقدّم الإنجازات الصغير في Steam بجانب وقت اللعب في صفحات التفاصيل. معطّل افتراضيًا.",
 		footnote: "يستخدم هذا تقدّم الإنجازات في Steam لألعاب Steam؛ ولا يضيف تتبّع إنجازات للألعاب غير التابعة لـ Steam."
+	},
+	contextMenu: {
+		title: "قائمة السياق",
+		headerIconLabel: "أيقونة اللعبة في رأس المحرر",
+		headerIconDescription: "إظهار أيقونة اللعبة بجانب اسمها أعلى صفحة تحرير البيانات الوصفية. يتم تمرير الأسماء الطويلة.",
+		steamIconLabel: "استخدام أيقونة Steam عند عدم توفرها",
+		steamIconDescription: "إذا لم تكن للعبة أيقونة خاصة بها، فاستخدم أيقونة لعبة Steam المطابقة. إذا لم تتوفر أيقونة، فلن يتم عرض أيقونة."
 	},
 	compat: {
 		title: "حالة التوافق",
@@ -3603,6 +3615,7 @@ var backend$n = {
 	trailer_settings_unavailable: "настройките на трейлърите не можаха да бъдат заредени",
 	mini_achievements_settings_unavailable: "настройките на мини постиженията не можаха да бъдат заредени",
 	protondb_settings_unavailable: "настройките на значките на ProtonDB не можаха да бъдат заредени",
+	editor_header_settings_unavailable: "Настройките за заглавката на редактора не можаха да бъдат заредени",
 	steam_ui_unavailable: "Интерфейсът на Steam не е достъпен",
 	update_check_failed: "Проверката за актуализации е неуспешна",
 	rate_limited: "Лимитът на заявките е надвишен",
@@ -3784,6 +3797,13 @@ var qam$n = {
 		enableLabel: "Активиране на мини постиженията",
 		enableDescription: "Показва малката лента за напредък по постижения на Steam до времето за игра на страниците с подробности. Изключено по подразбиране.",
 		footnote: "Това използва напредъка по постижения на Steam за Steam игри; не добавя проследяване на постижения за не-Steam игри."
+	},
+	contextMenu: {
+		title: "Контекстно меню",
+		headerIconLabel: "Икона на играта в заглавката на редактора",
+		headerIconDescription: "Показва иконата на играта до името ѝ в горната част на страницата за редактиране на метаданни. Дългите имена се превъртат.",
+		steamIconLabel: "Използване на иконата на Steam, ако липсва",
+		steamIconDescription: "Когато играта няма собствена икона, използва иконата на съответстващата игра в Steam. Ако няма нито една, не се показва икона."
 	},
 	compat: {
 		title: "Състояние за съвместимост",
@@ -4237,6 +4257,7 @@ var backend$m = {
 	trailer_settings_unavailable: "nastavení trailerů se nepodařilo načíst",
 	mini_achievements_settings_unavailable: "nastavení mini achievementů se nepodařilo načíst",
 	protondb_settings_unavailable: "nastavení odznaků ProtonDB se nepodařilo načíst",
+	editor_header_settings_unavailable: "Nastavení záhlaví editoru se nepodařilo načíst",
 	steam_ui_unavailable: "Rozhraní Steam není dostupné",
 	update_check_failed: "Kontrola aktualizací se nezdařila",
 	rate_limited: "Překročen limit požadavků",
@@ -4418,6 +4439,13 @@ var qam$m = {
 		enableLabel: "Povolit mini achievementy",
 		enableDescription: "Zobrazovat malý pruh postupu achievementů Steam vedle odehrané doby na stránkách podrobností hry. Ve výchozím nastavení vypnuto.",
 		footnote: "Využívá postup achievementů Steam u her ze Steamu; u her mimo Steam sledování achievementů nepřidává."
+	},
+	contextMenu: {
+		title: "Kontextová nabídka",
+		headerIconLabel: "Ikona hry v záhlaví editoru",
+		headerIconDescription: "Zobrazit ikonu hry vedle jejího názvu v horní části stránky pro úpravu metadat. Dlouhé názvy se posouvají.",
+		steamIconLabel: "Použít ikonu Steamu, pokud chybí",
+		steamIconDescription: "Když hra nemá vlastní ikonu, použije se ikona odpovídající hry na Steamu. Pokud neexistuje ani jedna, nezobrazí se žádná ikona."
 	},
 	compat: {
 		title: "Stav kompatibility",
@@ -4869,6 +4897,7 @@ var backend$l = {
 	trailer_settings_unavailable: "Trailer-Einstellungen konnten nicht geladen werden",
 	mini_achievements_settings_unavailable: "Einstellungen für Mini-Errungenschaften konnten nicht geladen werden",
 	protondb_settings_unavailable: "ProtonDB-Abzeichen-Einstellungen konnten nicht geladen werden",
+	editor_header_settings_unavailable: "Einstellungen für den Editor-Kopfbereich konnten nicht geladen werden",
 	steam_ui_unavailable: "Steam-UI nicht verfügbar",
 	update_check_failed: "Update-Prüfung fehlgeschlagen",
 	rate_limited: "Ratenlimit überschritten",
@@ -5050,6 +5079,13 @@ var qam$l = {
 		enableLabel: "Mini-Errungenschaften aktivieren",
 		enableDescription: "Zeigt Steams kleinen Fortschrittsbalken für Errungenschaften neben der Spielzeit auf Spielseiten. Standardmäßig aus.",
 		footnote: "Dies nutzt Steams Errungenschaftsfortschritt für Steam-Spiele; für Nicht-Steam-Spiele wird keine Errungenschaftsverfolgung hinzugefügt."
+	},
+	contextMenu: {
+		title: "Kontextmenü",
+		headerIconLabel: "Spielsymbol im Editor-Kopfbereich",
+		headerIconDescription: "Zeigt das Spielsymbol neben dem Namen oben auf der Seite zum Bearbeiten der Metadaten an. Lange Namen laufen durch.",
+		steamIconLabel: "Steam-Symbol verwenden, falls keines vorhanden ist",
+		steamIconDescription: "Wenn das Spiel kein eigenes Symbol hat, wird das Symbol des zugeordneten Steam-Spiels verwendet. Gibt es keines, wird kein Symbol angezeigt."
 	},
 	compat: {
 		title: "Kompatibilitätsstatus",
@@ -5501,6 +5537,7 @@ var backend$k = {
 	trailer_settings_unavailable: "δεν ήταν δυνατή η φόρτωση των ρυθμίσεων τρέιλερ",
 	mini_achievements_settings_unavailable: "δεν ήταν δυνατή η φόρτωση των ρυθμίσεων μίνι επιτευγμάτων",
 	protondb_settings_unavailable: "δεν ήταν δυνατή η φόρτωση των ρυθμίσεων σημάτων ProtonDB",
+	editor_header_settings_unavailable: "Δεν ήταν δυνατή η φόρτωση των ρυθμίσεων κεφαλίδας του επεξεργαστή",
 	steam_ui_unavailable: "Το περιβάλλον Steam δεν είναι διαθέσιμο",
 	update_check_failed: "Ο έλεγχος για ενημερώσεις απέτυχε",
 	rate_limited: "Το όριο αιτημάτων ξεπεράστηκε",
@@ -5682,6 +5719,13 @@ var qam$k = {
 		enableLabel: "Ενεργοποίηση μίνι επιτευγμάτων",
 		enableDescription: "Εμφανίζει τη μικρή γραμμή προόδου επιτευγμάτων του Steam δίπλα στον Χρόνο παιχνιδιού στις σελίδες λεπτομερειών. Ανενεργό από προεπιλογή.",
 		footnote: "Χρησιμοποιεί την πρόοδο επιτευγμάτων του Steam για παιχνίδια Steam· δεν προσθέτει παρακολούθηση επιτευγμάτων σε παιχνίδια εκτός Steam."
+	},
+	contextMenu: {
+		title: "Μενού περιβάλλοντος",
+		headerIconLabel: "Εικονίδιο παιχνιδιού στην κεφαλίδα του επεξεργαστή",
+		headerIconDescription: "Εμφανίζει το εικονίδιο του παιχνιδιού δίπλα στο όνομά του στο επάνω μέρος της σελίδας επεξεργασίας μεταδεδομένων. Τα μεγάλα ονόματα κυλούν.",
+		steamIconLabel: "Χρήση εικονιδίου Steam αν λείπει",
+		steamIconDescription: "Όταν το παιχνίδι δεν έχει δικό του εικονίδιο, χρησιμοποιείται το εικονίδιο του αντιστοιχισμένου παιχνιδιού Steam. Αν δεν υπάρχει κανένα, δεν εμφανίζεται εικονίδιο."
 	},
 	compat: {
 		title: "Κατάσταση συμβατότητας",
@@ -6133,6 +6177,7 @@ var backend$j = {
 	trailer_settings_unavailable: "trailer settings could not be loaded",
 	mini_achievements_settings_unavailable: "mini achievements settings could not be loaded",
 	protondb_settings_unavailable: "ProtonDB badge settings could not be loaded",
+	editor_header_settings_unavailable: "editor header settings could not be loaded",
 	steam_ui_unavailable: "Steam UI unavailable",
 	update_check_failed: "Failed to check for updates",
 	rate_limited: "Rate limit exceeded",
@@ -6314,6 +6359,13 @@ var qam$j = {
 		enableLabel: "Enable mini achievements",
 		enableDescription: "Show Steam's small achievement progress bar beside Play Time on game details pages. Off by default.",
 		footnote: "This uses Steam's achievement progress for Steam games; it does not add achievement tracking to non-Steam games."
+	},
+	contextMenu: {
+		title: "Context menu",
+		headerIconLabel: "Game icon in editor header",
+		headerIconDescription: "Show the game's icon beside its name at the top of the Edit Metadata page. Long names scroll.",
+		steamIconLabel: "Use Steam icon if missing",
+		steamIconDescription: "When the game has no icon of its own, use the matched Steam game's icon. If neither exists, no icon is shown."
 	},
 	compat: {
 		title: "Compatibility status",
@@ -6766,6 +6818,7 @@ var backend$i = {
 	trailer_settings_unavailable: "no se pudieron cargar los ajustes de tráilers",
 	mini_achievements_settings_unavailable: "no se pudieron cargar los ajustes de minilogros",
 	protondb_settings_unavailable: "no se pudieron cargar los ajustes de las insignias de ProtonDB",
+	editor_header_settings_unavailable: "no se pudieron cargar los ajustes de la cabecera del editor",
 	steam_ui_unavailable: "Interfaz de Steam no disponible",
 	update_check_failed: "Error al buscar actualizaciones",
 	rate_limited: "Se ha superado el límite de solicitudes",
@@ -6947,6 +7000,13 @@ var qam$i = {
 		enableLabel: "Activar minilogros",
 		enableDescription: "Muestra la pequeña barra de progreso de logros de Steam junto al tiempo de juego en las páginas de detalles. Desactivado de forma predeterminada.",
 		footnote: "Usa el progreso de logros de Steam para los juegos de Steam; no añade seguimiento de logros a los juegos que no son de Steam."
+	},
+	contextMenu: {
+		title: "Menú contextual",
+		headerIconLabel: "Icono del juego en la cabecera del editor",
+		headerIconDescription: "Muestra el icono del juego junto a su nombre en la parte superior de la página para editar metadatos. Los nombres largos se desplazan.",
+		steamIconLabel: "Usar el icono de Steam si falta",
+		steamIconDescription: "Si el juego no tiene icono propio, se usa el del juego de Steam correspondiente. Si no hay ninguno, no se muestra ningún icono."
 	},
 	compat: {
 		title: "Estado de compatibilidad",
@@ -7398,6 +7458,7 @@ var backend$h = {
 	trailer_settings_unavailable: "traileriasetuksia ei voitu ladata",
 	mini_achievements_settings_unavailable: "minisaavutusasetuksia ei voitu ladata",
 	protondb_settings_unavailable: "ProtonDB-tunnusten asetuksia ei voitu ladata",
+	editor_header_settings_unavailable: "Muokkaimen otsakeasetuksia ei voitu ladata",
 	steam_ui_unavailable: "Steam-käyttöliittymä ei ole käytettävissä",
 	update_check_failed: "Päivitysten tarkistus epäonnistui",
 	rate_limited: "Pyyntöraja ylitetty",
@@ -7579,6 +7640,13 @@ var qam$h = {
 		enableLabel: "Ota minisaavutukset käyttöön",
 		enableDescription: "Näyttää Steamin pienen saavutusten edistymispalkin peliajan vieressä pelien tietosivuilla. Oletuksena pois.",
 		footnote: "Tämä käyttää Steamin saavutusten edistymistä Steam-peleille; se ei lisää saavutusten seurantaa Steamin ulkopuolisille peleille."
+	},
+	contextMenu: {
+		title: "Kontekstivalikko",
+		headerIconLabel: "Pelin kuvake muokkaimen otsakkeessa",
+		headerIconDescription: "Näyttää pelin kuvakkeen sen nimen vieressä metatietojen muokkaussivun yläreunassa. Pitkät nimet vierivät.",
+		steamIconLabel: "Käytä Steam-kuvaketta, jos oma puuttuu",
+		steamIconDescription: "Jos pelillä ei ole omaa kuvaketta, käytetään vastaavan Steam-pelin kuvaketta. Jos kumpaakaan ei ole, kuvaketta ei näytetä."
 	},
 	compat: {
 		title: "Yhteensopivuustila",
@@ -8031,6 +8099,7 @@ var backend$g = {
 	trailer_settings_unavailable: "les paramètres des bandes-annonces n'ont pas pu être chargés",
 	mini_achievements_settings_unavailable: "les paramètres des mini-succès n'ont pas pu être chargés",
 	protondb_settings_unavailable: "les paramètres des badges ProtonDB n'ont pas pu être chargés",
+	editor_header_settings_unavailable: "les paramètres de l’en-tête de l’éditeur n’ont pas pu être chargés",
 	steam_ui_unavailable: "Interface Steam indisponible",
 	update_check_failed: "Échec de la recherche de mises à jour",
 	rate_limited: "Limite de requêtes dépassée",
@@ -8212,6 +8281,13 @@ var qam$g = {
 		enableLabel: "Activer les mini-succès",
 		enableDescription: "Affiche la petite barre de progression des succès Steam à côté du temps de jeu sur les pages de détails des jeux. Désactivé par défaut.",
 		footnote: "Utilise la progression des succès Steam pour les jeux Steam ; n'ajoute pas le suivi des succès aux jeux non Steam."
+	},
+	contextMenu: {
+		title: "Menu contextuel",
+		headerIconLabel: "Icône du jeu dans l’en-tête de l’éditeur",
+		headerIconDescription: "Affiche l’icône du jeu à côté de son nom en haut de la page de modification des métadonnées. Les noms longs défilent.",
+		steamIconLabel: "Utiliser l’icône Steam si elle manque",
+		steamIconDescription: "Si le jeu n’a pas sa propre icône, utilise celle du jeu Steam correspondant. Si aucune icône n’existe, aucune ne s’affiche."
 	},
 	compat: {
 		title: "État de compatibilité",
@@ -8664,6 +8740,7 @@ var backend$f = {
 	trailer_settings_unavailable: "impossibile caricare le impostazioni dei trailer",
 	mini_achievements_settings_unavailable: "impossibile caricare le impostazioni dei mini obiettivi",
 	protondb_settings_unavailable: "impossibile caricare le impostazioni dei badge ProtonDB",
+	editor_header_settings_unavailable: "impossibile caricare le impostazioni dell'intestazione dell'editor",
 	steam_ui_unavailable: "Interfaccia Steam non disponibile",
 	update_check_failed: "Controllo degli aggiornamenti non riuscito",
 	rate_limited: "Limite di richieste superato",
@@ -8845,6 +8922,13 @@ var qam$f = {
 		enableLabel: "Abilita i mini obiettivi",
 		enableDescription: "Mostra la piccola barra di avanzamento degli obiettivi Steam accanto al tempo di gioco nelle pagine dei dettagli. Disattivato per impostazione predefinita.",
 		footnote: "Usa l'avanzamento degli obiettivi di Steam per i giochi Steam; non aggiunge il monitoraggio degli obiettivi ai giochi non Steam."
+	},
+	contextMenu: {
+		title: "Menu contestuale",
+		headerIconLabel: "Icona del gioco nell'intestazione dell'editor",
+		headerIconDescription: "Mostra l'icona del gioco accanto al nome nella parte superiore della pagina per modificare i metadati. I nomi lunghi scorrono.",
+		steamIconLabel: "Usa l'icona Steam se manca",
+		steamIconDescription: "Se il gioco non ha una propria icona, usa quella del gioco Steam abbinato. Se non è disponibile nessuna icona, non ne viene mostrata alcuna."
 	},
 	compat: {
 		title: "Stato di compatibilità",
@@ -9295,6 +9379,7 @@ var backend$e = {
 	trailer_settings_unavailable: "トレーラー設定を読み込めませんでした",
 	mini_achievements_settings_unavailable: "ミニ実績設定を読み込めませんでした",
 	protondb_settings_unavailable: "ProtonDB バッジ設定を読み込めませんでした",
+	editor_header_settings_unavailable: "エディターのヘッダー設定を読み込めませんでした",
 	steam_ui_unavailable: "Steam UI を利用できません",
 	update_check_failed: "アップデートの確認に失敗しました",
 	rate_limited: "レート制限を超えました",
@@ -9476,6 +9561,13 @@ var qam$e = {
 		enableLabel: "ミニ実績を有効化",
 		enableDescription: "ゲームの詳細ページのプレイ時間の横に、Steam の小さな実績進捗バーを表示します。既定ではオフです。",
 		footnote: "これは Steam ゲームの Steam 実績進捗を使用します。Steam 以外のゲームに実績トラッキングを追加するものではありません。"
+	},
+	contextMenu: {
+		title: "コンテキストメニュー",
+		headerIconLabel: "エディターのヘッダーにゲームアイコンを表示",
+		headerIconDescription: "メタデータ編集ページの上部で、ゲーム名の横にアイコンを表示します。長い名前はスクロールします。",
+		steamIconLabel: "アイコンがない場合はSteamアイコンを使用",
+		steamIconDescription: "ゲーム固有のアイコンがない場合、対応するSteamゲームのアイコンを使用します。どちらもない場合、アイコンは表示されません。"
 	},
 	compat: {
 		title: "互換性ステータス",
@@ -9927,6 +10019,7 @@ var backend$d = {
 	trailer_settings_unavailable: "ტრეილერის პარამეტრები ვერ ჩაიტვირთა",
 	mini_achievements_settings_unavailable: "მინი მიღწევების პარამეტრები ვერ ჩაიტვირთა",
 	protondb_settings_unavailable: "ProtonDB-ის ნიშნის პარამეტრები ვერ ჩაიტვირთა",
+	editor_header_settings_unavailable: "რედაქტორის სათაურის პარამეტრები ვერ ჩაიტვირთა",
 	steam_ui_unavailable: "Steam-ის ინტერფეისი მიუწვდომელია",
 	update_check_failed: "განახლებების შემოწმება ვერ მოხერხდა",
 	rate_limited: "მოთხოვნების ლიმიტი გადაჭარბდა",
@@ -10108,6 +10201,13 @@ var qam$d = {
 		enableLabel: "მინი მიღწევების ჩართვა",
 		enableDescription: "თამაშის დეტალების გვერდებზე თამაშის დროის გვერდით აჩვენებს Steam-ის პატარა მიღწევების პროგრესის ზოლს. ნაგულისხმევად გამორთულია.",
 		footnote: "ეს იყენებს Steam-ის მიღწევების პროგრესს Steam თამაშებისთვის; ის არ ამატებს მიღწევების თვალთვალს არა-Steam თამაშებს."
+	},
+	contextMenu: {
+		title: "კონტექსტური მენიუ",
+		headerIconLabel: "თამაშის ხატულა რედაქტორის სათაურში",
+		headerIconDescription: "თამაშის ხატულას სახელის გვერდით, მეტამონაცემების რედაქტირების გვერდის ზედა ნაწილში აჩვენებს. გრძელი სახელები გადაიწევა.",
+		steamIconLabel: "Steam-ის ხატულის გამოყენება, თუ საკუთარი არ აქვს",
+		steamIconDescription: "თუ თამაშს საკუთარი ხატულა არ აქვს, გამოიყენება შესაბამისი Steam თამაშის ხატულა. თუ არცერთი არ არსებობს, ხატულა არ გამოჩნდება."
 	},
 	compat: {
 		title: "თავსებადობის სტატუსი",
@@ -10558,6 +10658,7 @@ var backend$c = {
 	trailer_settings_unavailable: "트레일러 설정을 불러올 수 없습니다",
 	mini_achievements_settings_unavailable: "미니 도전 과제 설정을 불러올 수 없습니다",
 	protondb_settings_unavailable: "ProtonDB 배지 설정을 불러올 수 없습니다",
+	editor_header_settings_unavailable: "편집기 헤더 설정을 불러올 수 없습니다",
 	steam_ui_unavailable: "Steam UI를 사용할 수 없습니다",
 	update_check_failed: "업데이트 확인에 실패했습니다",
 	rate_limited: "요청 한도를 초과했습니다",
@@ -10739,6 +10840,13 @@ var qam$c = {
 		enableLabel: "미니 도전 과제 사용",
 		enableDescription: "게임 세부 정보 페이지의 플레이 시간 옆에 Steam의 작은 도전 과제 진행률 표시줄을 표시합니다. 기본적으로 꺼져 있습니다.",
 		footnote: "이 기능은 Steam 게임의 Steam 도전 과제 진행률을 사용합니다. 비Steam 게임에 도전 과제 추적을 추가하지는 않습니다."
+	},
+	contextMenu: {
+		title: "컨텍스트 메뉴",
+		headerIconLabel: "편집기 헤더에 게임 아이콘 표시",
+		headerIconDescription: "메타데이터 편집 페이지 상단에서 게임 이름 옆에 아이콘을 표시합니다. 이름이 길면 스크롤됩니다.",
+		steamIconLabel: "아이콘이 없으면 Steam 아이콘 사용",
+		steamIconDescription: "게임 자체 아이콘이 없으면 연결된 Steam 게임의 아이콘을 사용합니다. 둘 다 없으면 아이콘을 표시하지 않습니다."
 	},
 	compat: {
 		title: "호환성 상태",
@@ -11190,6 +11298,7 @@ var backend$b = {
 	trailer_settings_unavailable: "trailerinstellingen konden niet worden geladen",
 	mini_achievements_settings_unavailable: "mini-prestatie-instellingen konden niet worden geladen",
 	protondb_settings_unavailable: "ProtonDB-badge-instellingen konden niet worden geladen",
+	editor_header_settings_unavailable: "De instellingen voor de editor-kop konden niet worden geladen",
 	steam_ui_unavailable: "Steam-interface niet beschikbaar",
 	update_check_failed: "Controleren op updates mislukt",
 	rate_limited: "Limiet overschreden",
@@ -11371,6 +11480,13 @@ var qam$b = {
 		enableLabel: "Mini-prestaties inschakelen",
 		enableDescription: "Toont Steams kleine voortgangsbalk voor prestaties naast Speeltijd op speldetailpagina's. Standaard uit.",
 		footnote: "Dit gebruikt de prestatievoortgang van Steam voor Steam-games; het voegt geen prestatietracking toe aan niet-Steam-games."
+	},
+	contextMenu: {
+		title: "Contextmenu",
+		headerIconLabel: "Spelicoon in de editorkop",
+		headerIconDescription: "Toont het spelicoon naast de naam bovenaan de pagina voor het bewerken van metadata. Lange namen scrollen.",
+		steamIconLabel: "Steam-icoon gebruiken als het ontbreekt",
+		steamIconDescription: "Als de game geen eigen icoon heeft, wordt het icoon van de gekoppelde Steam-game gebruikt. Als geen van beide bestaat, wordt er geen icoon getoond."
 	},
 	compat: {
 		title: "Compatibiliteitsstatus",
@@ -11824,6 +11940,7 @@ var backend$a = {
 	trailer_settings_unavailable: "nie udało się wczytać ustawień zwiastunów",
 	mini_achievements_settings_unavailable: "nie udało się wczytać ustawień mini osiągnięć",
 	protondb_settings_unavailable: "nie udało się wczytać ustawień odznak ProtonDB",
+	editor_header_settings_unavailable: "Nie udało się wczytać ustawień nagłówka edytora",
 	steam_ui_unavailable: "Interfejs Steam jest niedostępny",
 	update_check_failed: "Nie udało się sprawdzić aktualizacji",
 	rate_limited: "Przekroczono limit zapytań",
@@ -12005,6 +12122,13 @@ var qam$a = {
 		enableLabel: "Włącz mini osiągnięcia",
 		enableDescription: "Pokazuj mały pasek postępu osiągnięć Steam obok czasu gry na stronach szczegółów. Domyślnie wyłączone.",
 		footnote: "Wykorzystuje postęp osiągnięć Steam dla gier Steam; nie dodaje śledzenia osiągnięć do gier spoza Steam."
+	},
+	contextMenu: {
+		title: "Menu kontekstowe",
+		headerIconLabel: "Ikona gry w nagłówku edytora",
+		headerIconDescription: "Pokazuje ikonę gry obok jej nazwy u góry strony edycji metadanych. Długie nazwy przewijają się.",
+		steamIconLabel: "Użyj ikony Steam, jeśli brakuje własnej",
+		steamIconDescription: "Gdy gra nie ma własnej ikony, używana jest ikona dopasowanej gry Steam. Jeśli nie ma żadnej, ikona nie jest wyświetlana."
 	},
 	compat: {
 		title: "Status kompatybilności",
@@ -12457,6 +12581,7 @@ var backend$9 = {
 	trailer_settings_unavailable: "não foi possível carregar as configurações de trailers",
 	mini_achievements_settings_unavailable: "não foi possível carregar as configurações de mini conquistas",
 	protondb_settings_unavailable: "não foi possível carregar as configurações do selo ProtonDB",
+	editor_header_settings_unavailable: "não foi possível carregar as configurações do cabeçalho do editor",
 	steam_ui_unavailable: "Interface da Steam indisponível",
 	update_check_failed: "Falha ao verificar atualizações",
 	rate_limited: "Limite de requisições excedido",
@@ -12638,6 +12763,13 @@ var qam$9 = {
 		enableLabel: "Ativar mini conquistas",
 		enableDescription: "Mostra a pequena barra de progresso de conquistas da Steam ao lado do Tempo de jogo nas páginas de detalhes do jogo. Desativado por padrão.",
 		footnote: "Isso usa o progresso de conquistas da Steam para jogos da Steam; não adiciona rastreamento de conquistas a jogos que não são da Steam."
+	},
+	contextMenu: {
+		title: "Menu de contexto",
+		headerIconLabel: "Ícone do jogo no cabeçalho do editor",
+		headerIconDescription: "Mostra o ícone do jogo ao lado do nome na parte superior da página de edição de metadados. Nomes longos rolam.",
+		steamIconLabel: "Usar ícone da Steam se estiver faltando",
+		steamIconDescription: "Quando o jogo não tem ícone próprio, usa o ícone do jogo correspondente na Steam. Se nenhum dos dois existir, nenhum ícone será exibido."
 	},
 	compat: {
 		title: "Status de compatibilidade",
@@ -13090,6 +13222,7 @@ var backend$8 = {
 	trailer_settings_unavailable: "não foi possível carregar as definições de trailers",
 	mini_achievements_settings_unavailable: "não foi possível carregar as definições de miniconquistas",
 	protondb_settings_unavailable: "não foi possível carregar as definições do selo ProtonDB",
+	editor_header_settings_unavailable: "não foi possível carregar as definições do cabeçalho do editor",
 	steam_ui_unavailable: "Interface da Steam indisponível",
 	update_check_failed: "Falha ao procurar atualizações",
 	rate_limited: "Limite de pedidos excedido",
@@ -13271,6 +13404,13 @@ var qam$8 = {
 		enableLabel: "Ativar miniconquistas",
 		enableDescription: "Mostra a pequena barra de progresso de conquistas da Steam ao lado do Tempo de jogo nas páginas de detalhes do jogo. Desativado por predefinição.",
 		footnote: "Isto usa o progresso de conquistas da Steam para jogos da Steam; não adiciona o acompanhamento de conquistas a jogos que não são da Steam."
+	},
+	contextMenu: {
+		title: "Menu de contexto",
+		headerIconLabel: "Ícone do jogo no cabeçalho do editor",
+		headerIconDescription: "Mostra o ícone do jogo junto ao nome na parte superior da página de edição de metadados. Os nomes longos deslocam-se.",
+		steamIconLabel: "Usar o ícone da Steam se estiver em falta",
+		steamIconDescription: "Quando o jogo não tem ícone próprio, usa o ícone do jogo correspondente na Steam. Se nenhum existir, não é apresentado qualquer ícone."
 	},
 	compat: {
 		title: "Estado de compatibilidade",
@@ -13723,6 +13863,7 @@ var backend$7 = {
 	trailer_settings_unavailable: "setările trailerelor nu au putut fi încărcate",
 	mini_achievements_settings_unavailable: "setările realizărilor mini nu au putut fi încărcate",
 	protondb_settings_unavailable: "setările insignelor ProtonDB nu au putut fi încărcate",
+	editor_header_settings_unavailable: "Setările antetului editorului nu au putut fi încărcate",
 	steam_ui_unavailable: "Interfața Steam nu este disponibilă",
 	update_check_failed: "Verificarea actualizărilor a eșuat",
 	rate_limited: "Limita de solicitări a fost depășită",
@@ -13904,6 +14045,13 @@ var qam$7 = {
 		enableLabel: "Activează realizările mini",
 		enableDescription: "Afișează bara mică de progres a realizărilor Steam lângă timpul de joc pe paginile de detalii. Dezactivat implicit.",
 		footnote: "Folosește progresul realizărilor Steam pentru jocurile Steam; nu adaugă urmărirea realizărilor pentru jocurile non-Steam."
+	},
+	contextMenu: {
+		title: "Meniu contextual",
+		headerIconLabel: "Pictograma jocului în antetul editorului",
+		headerIconDescription: "Afișează pictograma jocului lângă numele său în partea de sus a paginii de editare a metadatelor. Numele lungi derulează.",
+		steamIconLabel: "Folosește pictograma Steam dacă lipsește",
+		steamIconDescription: "Dacă jocul nu are propria pictogramă, folosește pictograma jocului Steam asociat. Dacă nu există niciuna, nu se afișează nicio pictogramă."
 	},
 	compat: {
 		title: "Starea de compatibilitate",
@@ -14358,6 +14506,7 @@ var backend$6 = {
 	mini_achievements_settings_unavailable: "не удалось загрузить настройки мини-достижений",
 	protondb_settings_unavailable: "не удалось загрузить настройки значков ProtonDB",
 	steam_ui_unavailable: "Интерфейс Steam недоступен",
+	editor_header_settings_unavailable: "Не удалось загрузить настройки заголовка редактора",
 	update_check_failed: "Не удалось проверить обновления",
 	rate_limited: "Превышен лимит запросов",
 	rate_limit_cooldown: "Действует пауза из-за лимита запросов",
@@ -14538,6 +14687,13 @@ var qam$6 = {
 		enableLabel: "Включить мини-достижения",
 		enableDescription: "Показывать небольшую панель прогресса достижений Steam рядом со временем игры на страницах сведений. По умолчанию выключено.",
 		footnote: "Используется прогресс достижений Steam для игр Steam; для игр вне Steam отслеживание достижений не добавляется."
+	},
+	contextMenu: {
+		title: "Контекстное меню",
+		headerIconLabel: "Значок игры в заголовке редактора",
+		headerIconDescription: "Показывать значок игры рядом с названием в верхней части страницы редактирования метаданных. Длинные названия прокручиваются.",
+		steamIconLabel: "Использовать значок Steam, если своего нет",
+		steamIconDescription: "Если у игры нет собственного значка, используется значок подходящей игры Steam. Если нет ни одного значка, он не отображается."
 	},
 	compat: {
 		title: "Статус совместимости",
@@ -14989,6 +15145,7 @@ var backend$5 = {
 	trailer_settings_unavailable: "cilësimet e trailerave nuk mund të ngarkoheshin",
 	mini_achievements_settings_unavailable: "cilësimet e arritjeve mini nuk mund të ngarkoheshin",
 	protondb_settings_unavailable: "cilësimet e distinktivëve ProtonDB nuk mund të ngarkoheshin",
+	editor_header_settings_unavailable: "Cilësimet e kreut të redaktuesit nuk mund të ngarkoheshin",
 	steam_ui_unavailable: "Ndërfaqja e Steam nuk është e disponueshme",
 	update_check_failed: "Kontrolli për përditësime dështoi",
 	rate_limited: "Limiti i kërkesave u tejkalua",
@@ -15170,6 +15327,13 @@ var qam$5 = {
 		enableLabel: "Aktivizo arritjet mini",
 		enableDescription: "Shfaq shiritin e vogël të përparimit të arritjeve të Steam pranë Kohës së lojës në faqet e detajeve. I çaktivizuar si parazgjedhje.",
 		footnote: "Kjo përdor përparimin e arritjeve të Steam për lojërat e Steam; nuk shton gjurmim arritjesh për lojërat jo-Steam."
+	},
+	contextMenu: {
+		title: "Menuja e kontekstit",
+		headerIconLabel: "Ikona e lojës në kreun e redaktuesit",
+		headerIconDescription: "Shfaq ikonën e lojës pranë emrit të saj në krye të faqes së redaktimit të metadatave. Emrat e gjatë lëvizin.",
+		steamIconLabel: "Përdor ikonën e Steam nëse mungon",
+		steamIconDescription: "Kur loja nuk ka ikonën e vet, përdoret ikona e lojës përkatëse në Steam. Nëse nuk ekziston asnjë, nuk shfaqet ikonë."
 	},
 	compat: {
 		title: "Gjendja e përputhshmërisë",
@@ -15621,6 +15785,7 @@ var backend$4 = {
 	trailer_settings_unavailable: "trailerinställningarna kunde inte läsas in",
 	mini_achievements_settings_unavailable: "inställningarna för miniprestationer kunde inte läsas in",
 	protondb_settings_unavailable: "ProtonDB-märkesinställningarna kunde inte läsas in",
+	editor_header_settings_unavailable: "Inställningarna för redigerarens sidhuvud kunde inte läsas in",
 	steam_ui_unavailable: "Steam-gränssnittet är inte tillgängligt",
 	update_check_failed: "Det gick inte att söka efter uppdateringar",
 	rate_limited: "Hastighetsgränsen har överskridits",
@@ -15802,6 +15967,13 @@ var qam$4 = {
 		enableLabel: "Aktivera miniprestationer",
 		enableDescription: "Visar Steams lilla förloppsrad för prestationer bredvid Speltid på speldetaljsidor. Av som standard.",
 		footnote: "Detta använder Steams prestationsförlopp för Steam-spel; det lägger inte till prestationsspårning för icke-Steam-spel."
+	},
+	contextMenu: {
+		title: "Snabbmeny",
+		headerIconLabel: "Spelikonen i redigerarens sidhuvud",
+		headerIconDescription: "Visar spelikonen bredvid namnet högst upp på sidan för redigering av metadata. Långa namn rullar.",
+		steamIconLabel: "Använd Steam-ikonen om den saknas",
+		steamIconDescription: "Om spelet inte har en egen ikon används ikonen för det matchade Steam-spelet. Om ingen ikon finns visas ingen ikon."
 	},
 	compat: {
 		title: "Kompatibilitetsstatus",
@@ -16253,6 +16425,7 @@ var backend$3 = {
 	trailer_settings_unavailable: "fragman ayarları yüklenemedi",
 	mini_achievements_settings_unavailable: "mini başarım ayarları yüklenemedi",
 	protondb_settings_unavailable: "ProtonDB rozet ayarları yüklenemedi",
+	editor_header_settings_unavailable: "Düzenleyici başlık ayarları yüklenemedi",
 	steam_ui_unavailable: "Steam arayüzü kullanılamıyor",
 	update_check_failed: "Güncellemeler denetlenemedi",
 	rate_limited: "İstek sınırı aşıldı",
@@ -16434,6 +16607,13 @@ var qam$3 = {
 		enableLabel: "Mini başarımları etkinleştir",
 		enableDescription: "Oyun ayrıntıları sayfalarında Oynama Süresi'nin yanında Steam'in küçük başarım ilerleme çubuğunu gösterir. Varsayılan olarak kapalıdır.",
 		footnote: "Bu, Steam oyunları için Steam'in başarım ilerlemesini kullanır; Steam dışı oyunlara başarım izleme eklemez."
+	},
+	contextMenu: {
+		title: "Bağlam menüsü",
+		headerIconLabel: "Düzenleyici başlığında oyun simgesi",
+		headerIconDescription: "Meta verileri düzenleme sayfasının üst kısmında oyun simgesini adının yanında gösterir. Uzun adlar kaydırılır.",
+		steamIconLabel: "Yoksa Steam simgesini kullan",
+		steamIconDescription: "Oyunun kendine ait bir simgesi yoksa eşleşen Steam oyununun simgesi kullanılır. İkisi de yoksa simge gösterilmez."
 	},
 	compat: {
 		title: "Uyumluluk durumu",
@@ -16887,6 +17067,7 @@ var backend$2 = {
 	trailer_settings_unavailable: "не вдалося завантажити налаштування трейлерів",
 	mini_achievements_settings_unavailable: "не вдалося завантажити налаштування мінідосягнень",
 	protondb_settings_unavailable: "не вдалося завантажити налаштування значків ProtonDB",
+	editor_header_settings_unavailable: "Не вдалося завантажити налаштування заголовка редактора",
 	steam_ui_unavailable: "Інтерфейс Steam недоступний",
 	update_check_failed: "Не вдалося перевірити оновлення",
 	rate_limited: "Перевищено ліміт запитів",
@@ -17068,6 +17249,13 @@ var qam$2 = {
 		enableLabel: "Увімкнути мінідосягнення",
 		enableDescription: "Показувати невелику панель прогресу досягнень Steam поруч із часом у грі на сторінках відомостей. Вимкнено за замовчуванням.",
 		footnote: "Використовується прогрес досягнень Steam для ігор Steam; для ігор поза Steam відстеження досягнень не додається."
+	},
+	contextMenu: {
+		title: "Контекстне меню",
+		headerIconLabel: "Значок гри в заголовку редактора",
+		headerIconDescription: "Показує значок гри поруч із назвою у верхній частині сторінки редагування метаданих. Довгі назви прокручуються.",
+		steamIconLabel: "Використовувати значок Steam, якщо власного немає",
+		steamIconDescription: "Якщо гра не має власного значка, використовується значок відповідної гри Steam. Якщо немає жодного, значок не відображається."
 	},
 	compat: {
 		title: "Статус сумісності",
@@ -17518,6 +17706,7 @@ var backend$1 = {
 	trailer_settings_unavailable: "无法加载预告片设置",
 	mini_achievements_settings_unavailable: "无法加载迷你成就设置",
 	protondb_settings_unavailable: "无法加载 ProtonDB 徽章设置",
+	editor_header_settings_unavailable: "无法加载编辑器标题栏设置",
 	steam_ui_unavailable: "Steam 界面不可用",
 	update_check_failed: "检查更新失败",
 	rate_limited: "超出速率限制",
@@ -17699,6 +17888,13 @@ var qam$1 = {
 		enableLabel: "启用迷你成就",
 		enableDescription: "在游戏详情页的游戏时间旁显示 Steam 的小型成就进度条。默认关闭。",
 		footnote: "此功能使用 Steam 游戏的 Steam 成就进度；不会为非 Steam 游戏添加成就追踪。"
+	},
+	contextMenu: {
+		title: "上下文菜单",
+		headerIconLabel: "在编辑器标题栏显示游戏图标",
+		headerIconDescription: "在元数据编辑页面顶部的游戏名称旁显示游戏图标。名称较长时会滚动。",
+		steamIconLabel: "缺少图标时使用 Steam 图标",
+		steamIconDescription: "如果游戏没有自己的图标，则使用匹配的 Steam 游戏图标。如果两者都没有，则不显示图标。"
 	},
 	compat: {
 		title: "兼容性状态",
@@ -18149,6 +18345,7 @@ var backend = {
 	trailer_settings_unavailable: "無法載入預告片設定",
 	mini_achievements_settings_unavailable: "無法載入迷你成就設定",
 	protondb_settings_unavailable: "無法載入 ProtonDB 徽章設定",
+	editor_header_settings_unavailable: "無法載入編輯器標題列設定",
 	steam_ui_unavailable: "Steam 介面無法使用",
 	update_check_failed: "檢查更新失敗",
 	rate_limited: "已超出速率限制",
@@ -18330,6 +18527,13 @@ var qam = {
 		enableLabel: "啟用迷你成就",
 		enableDescription: "在遊戲詳細資料頁面的遊玩時間旁顯示 Steam 的小型成就進度列。預設為關閉。",
 		footnote: "此功能使用 Steam 遊戲的 Steam 成就進度；不會為非 Steam 遊戲加入成就追蹤。"
+	},
+	contextMenu: {
+		title: "內容選單",
+		headerIconLabel: "在編輯器標題列顯示遊戲圖示",
+		headerIconDescription: "在中繼資料編輯頁面頂端的遊戲名稱旁顯示遊戲圖示。名稱較長時會捲動。",
+		steamIconLabel: "缺少圖示時使用 Steam 圖示",
+		steamIconDescription: "如果遊戲沒有自己的圖示，則使用相符 Steam 遊戲的圖示。如果兩者都不存在，則不會顯示圖示。"
 	},
 	compat: {
 		title: "相容性狀態",
@@ -19127,6 +19331,8 @@ function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"},"child":[]}]})(props);
 }function FaCheckCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
+}function FaBars (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"},"child":[]}]})(props);
 }
 
 const headingClassName = "decky-metadata-qam-section-heading";
@@ -19434,6 +19640,43 @@ function MiniAchievementsSection({ state, onEnabledChange }) {
         (Boolean(state.conflict.pluginName) && !state.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
     return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.miniAchievements.title"), icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), (conflictNotice || state.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })) : null] }));
+}
+
+/** Options for the Edit Metadata page that the game context menu opens. */
+function ContextMenuSection() {
+    const t = useT();
+    const [settings, setSettings] = SP_REACT.useState(null);
+    const [error, setError] = SP_REACT.useState("");
+    // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
+    const latest = SP_REACT.useRef(null);
+    SP_REACT.useEffect(() => {
+        let current = true;
+        getEditorHeaderSettings().then((loaded) => {
+            if (!current)
+                return;
+            latest.current = loaded;
+            setSettings(loaded);
+        }, (loadError) => { if (current)
+            setError(translateBackendError(loadError)); });
+        return () => { current = false; };
+    }, []);
+    const update = (key, value) => {
+        const previous = latest.current;
+        if (!previous)
+            return;
+        const next = { ...previous, [key]: value };
+        latest.current = next;
+        setSettings(next);
+        setError("");
+        setEditorHeaderSettings(next).catch((saveError) => {
+            if (latest.current !== next)
+                return;
+            latest.current = previous;
+            setSettings(previous);
+            setError(translateBackendError(saveError));
+        });
+    };
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.contextMenu.title"), icon: SP_JSX.jsx(FaBars, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => update("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => update("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
 }
 
 function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
@@ -20645,6 +20888,16 @@ const getOverview = (appId) => {
         return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
     }
     catch (_error) {
+        return null;
+    }
+};
+/** Steam's own icon URL for an app; null until a shortcut's icon data has loaded. */
+const getAppIconUrl = (appId) => {
+    try {
+        const overview = getOverview(appId);
+        return (overview && appStore?.GetIconURLForApp?.(overview)) || null;
+    }
+    catch {
         return null;
     }
 };
@@ -36679,7 +36932,7 @@ const Content = () => {
                 }, onQualityMenuWillOpen: () => {
                     requestCompatibilityDropdownReturn("quality");
                     noteCompatibilityDropdownControlUnmounted();
-                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(MiniAchievementsSection, { state: miniAchievementsSnapshot, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingLoaded: debugLoggingLoaded, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(MiniAchievementsSection, { state: miniAchievementsSnapshot, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }), SP_JSX.jsx(ContextMenuSection, {}), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingLoaded: debugLoggingLoaded, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
 };
 
 /*
@@ -37260,6 +37513,56 @@ function changedFormFields(before, after) {
     return DRAFT_FIELD_ORDER.filter((key) => changed[key]);
 }
 
+const OWN_ICON_WAIT_MS = 1000;
+const OWN_ICON_POLL_MS = 100;
+const STORE_ITEMS_URL = "https://api.steampowered.com/IStoreBrowseService/GetItems/v1/";
+const COMMUNITY_ICON_HASH = /^[0-9a-f]{40}$/;
+const steamIconRequests = new Map();
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// Steam loads a shortcut's icon data only after the first request, so a missing icon is not final at once.
+// shortcut: fixed 1 s poll; switch to an overview-change subscription if icons arrive later than that.
+const waitForOwnIcon = async (appId, isCurrent) => {
+    for (let waited = 0;; waited += OWN_ICON_POLL_MS) {
+        const url = getAppIconUrl(appId);
+        if (url || waited >= OWN_ICON_WAIT_MS || !isCurrent())
+            return url;
+        await delay(OWN_ICON_POLL_MS);
+    }
+};
+const fetchSteamIcon = async (steamAppId) => {
+    const input = {
+        ids: [{ appid: steamAppId }],
+        context: { language: "english", country_code: "US" },
+        data_request: { include_assets: true },
+    };
+    const response = await fetchNoCors(`${STORE_ITEMS_URL}?input_json=${encodeURIComponent(JSON.stringify(input))}`, { method: "GET" });
+    if (response.status !== 200)
+        throw new Error(`Steam store items request failed with HTTP ${response.status}`);
+    const payload = await response.json();
+    const hash = payload?.response?.store_items?.[0]?.assets?.community_icon;
+    // Delisted or hidden apps return no assets; then there is no Steam icon to show.
+    return typeof hash === "string" && COMMUNITY_ICON_HASH.test(hash)
+        ? `https://shared.steamstatic.com/community_assets/images/apps/${steamAppId}/${hash}.jpg`
+        : null;
+};
+/** The matched Steam game's community icon, cached per app; failed requests retry on the next call. */
+const steamIconUrl = (steamAppId) => {
+    let request = steamIconRequests.get(steamAppId);
+    if (!request) {
+        request = fetchSteamIcon(steamAppId).catch(() => {
+            steamIconRequests.delete(steamAppId);
+            return null;
+        });
+        steamIconRequests.set(steamAppId, request);
+    }
+    return request;
+};
+/** The game's own icon, else the matched Steam game's icon when `steamAppId` is given, else null. */
+const resolveEditorIcon = async (appId, steamAppId, isCurrent) => {
+    const steamIcon = steamAppId ? steamIconUrl(steamAppId) : null;
+    return (await waitForOwnIcon(appId, isCurrent)) ?? (steamIcon ? await steamIcon : null);
+};
+
 const layout = "decky-metadata-editor-layout";
 const css = `
 .${layout}__tab-title {
@@ -37294,6 +37597,27 @@ const css = `
   margin: auto 24px 22px;
 }
 
+.${layout}__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.${layout}__header-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* Marquee wraps its root in an unstyled div; let that wrapper shrink so long names scroll inside the rail. */
+.${layout}__header > :last-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 `;
 const resolveNativePagedSettings = () => {
     try {
@@ -37315,7 +37639,31 @@ function CurrentPageContent({ id }) {
     const pages = SP_REACT.useContext(PageContentContext);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
-function NativeEditorLayout({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave, }) {
+function EditorTitle({ title, appId, steamAppId }) {
+    const [settings, setSettings] = SP_REACT.useState(null);
+    const [icon, setIcon] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        let current = true;
+        getEditorHeaderSettings().then((loaded) => { if (current)
+            setSettings(loaded); }, (error) => warn("editor", "Header settings could not be loaded", translateBackendError(error)));
+        return () => { current = false; };
+    }, []);
+    const showIcon = settings?.gameIcon === true;
+    const fallbackAppId = settings?.steamIconFallback ? steamAppId : null;
+    SP_REACT.useEffect(() => {
+        setIcon(null);
+        if (!showIcon)
+            return;
+        let current = true;
+        void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current)
+            setIcon(url); });
+        return () => { current = false; };
+    }, [appId, fallbackAppId, showIcon]);
+    if (!showIcon || !DFL.Marquee)
+        return SP_JSX.jsx(SP_JSX.Fragment, { children: title });
+    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon`, src: icon, alt: "" }) : null, SP_JSX.jsx(DFL.Marquee, { children: title })] }));
+}
+function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageRequested, saveLabel, saveDisabled, onSave, }) {
     // Keep descriptors stable as fields edit; context supplies the latest content nodes.
     const pageDependencies = pages.flatMap(({ id, label, icon, dirty, visible, separatorBefore }) => [id, label, icon, dirty, visible, separatorBefore]);
     const nativePages = SP_REACT.useMemo(() => {
@@ -37335,7 +37683,7 @@ function NativeEditorLayout({ title, pages, page, onPageRequested, saveLabel, sa
         }
         return mapped;
     }, pageDependencies);
-    return (SP_JSX.jsxs(PageContentContext.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: title, showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
+    return (SP_JSX.jsxs(PageContentContext.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
 }
 function EditorLayout(props) {
     const t = useT();
@@ -38724,7 +39072,7 @@ const MetadataPage = () => {
     return (SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, onSecondaryButton: () => {
             if (!saveDisabled)
                 void saveCurrent();
-        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(EditorLayout, { title: appName(appId), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
+        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
 const protonDbCoverSurface = (path) => {

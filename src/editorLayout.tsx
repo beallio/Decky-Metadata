@@ -1,8 +1,12 @@
-import { DialogBody, DialogButton, DialogHeader, findModuleExport, Focusable } from "@decky/ui";
-import { createContext, useContext, useMemo, type ComponentType, type ReactNode } from "react";
+import { DialogBody, DialogButton, DialogHeader, findModuleExport, Focusable, Marquee } from "@decky/ui";
+import { createContext, useContext, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { getEditorHeaderSettings } from "./backend";
+import { resolveEditorIcon } from "./editorHeaderIcon";
 import type { EditorPageId } from "./editorPages";
-import { useT } from "./i18n";
+import { translateBackendError, useT } from "./i18n";
+import * as log from "./log";
 import { colors } from "./tokens";
+import type { EditorHeaderSettings } from "./types";
 
 export interface EditorLayoutPage {
   id: EditorPageId;
@@ -16,6 +20,9 @@ export interface EditorLayoutPage {
 
 export interface EditorLayoutProps {
   title: string;
+  appId: number;
+  /** Matched Steam game, used for its icon when the game has none and the setting allows it. */
+  steamAppId: number | null;
   pages: EditorLayoutPage[];
   page: EditorPageId;
   onPageRequested(id: EditorPageId): void;
@@ -59,6 +66,27 @@ const css = `
   margin: auto 24px 22px;
 }
 
+.${layout}__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.${layout}__header-icon {
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  border-radius: 2px;
+  object-fit: cover;
+}
+
+/* Marquee wraps its root in an unstyled div; let that wrapper shrink so long names scroll inside the rail. */
+.${layout}__header > :last-child {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
 `;
 
 type NativePagedSettingsPage = {
@@ -76,7 +104,7 @@ type NativePagedSettingsProps = {
   pages: NativePagedSettingsPageEntry[];
   page: EditorPageId;
   onPageRequested(identifier: string): void;
-  title: string;
+  title: ReactNode;
   showTitle: boolean;
   bottomControls: ReactNode;
 };
@@ -102,8 +130,40 @@ function CurrentPageContent({ id }: { id: EditorPageId }): JSX.Element {
   return <>{pages.find((page) => page.id === id)?.content ?? null}</>;
 }
 
+function EditorTitle({ title, appId, steamAppId }: Pick<EditorLayoutProps, "title" | "appId" | "steamAppId">) {
+  const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
+  const [icon, setIcon] = useState<string | null>(null);
+  useEffect(() => {
+    let current = true;
+    getEditorHeaderSettings().then(
+      (loaded) => { if (current) setSettings(loaded); },
+      (error) => log.warn("editor", "Header settings could not be loaded", translateBackendError(error)),
+    );
+    return () => { current = false; };
+  }, []);
+  const showIcon = settings?.gameIcon === true;
+  const fallbackAppId = settings?.steamIconFallback ? steamAppId : null;
+  useEffect(() => {
+    setIcon(null);
+    if (!showIcon) return;
+    let current = true;
+    void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current) setIcon(url); });
+    return () => { current = false; };
+  }, [appId, fallbackAppId, showIcon]);
+
+  if (!showIcon || !Marquee) return <>{title}</>;
+  return (
+    <div className={`${layout}__header`}>
+      {icon ? <img className={`${layout}__header-icon`} src={icon} alt="" /> : null}
+      <Marquee>{title}</Marquee>
+    </div>
+  );
+}
+
 function NativeEditorLayout({
   title,
+  appId,
+  steamAppId,
   pages,
   page,
   onPageRequested,
@@ -152,7 +212,7 @@ function NativeEditorLayout({
         pages={nativePages}
         page={page}
         onPageRequested={(id) => onPageRequested(id as EditorPageId)}
-        title={title}
+        title={<EditorTitle title={title} appId={appId} steamAppId={steamAppId} />}
         showTitle={true}
         bottomControls={
           <DialogButton

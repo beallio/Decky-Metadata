@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "trailer settings could not be loaded",
     "mini_achievements_settings_unavailable": "mini achievements settings could not be loaded",
     "protondb_settings_unavailable": "ProtonDB badge settings could not be loaded",
+    "editor_header_settings_unavailable": "editor header settings could not be loaded",
     "steam_ui_unavailable": "Steam UI unavailable",
     "update_check_failed": "Failed to check for updates",
     "rate_limited": "Rate limit exceeded",
@@ -215,6 +216,13 @@
       "enableLabel": "Enable mini achievements",
       "enableDescription": "Show Steam's small achievement progress bar beside Play Time on game details pages. Off by default.",
       "footnote": "This uses Steam's achievement progress for Steam games; it does not add achievement tracking to non-Steam games."
+    },
+    "contextMenu": {
+      "title": "Context menu",
+      "headerIconLabel": "Game icon in editor header",
+      "headerIconDescription": "Show the game's icon beside its name at the top of the Edit Metadata page. Long names scroll.",
+      "steamIconLabel": "Use Steam icon if missing",
+      "steamIconDescription": "When the game has no icon of its own, use the matched Steam game's icon. If neither exists, no icon is shown."
     },
     "compat": {
       "title": "Compatibility status",

@@ -34,6 +34,7 @@
     "trailer_settings_unavailable": "traileriasetuksia ei voitu ladata",
     "mini_achievements_settings_unavailable": "minisaavutusasetuksia ei voitu ladata",
     "protondb_settings_unavailable": "ProtonDB-tunnusten asetuksia ei voitu ladata",
+    "editor_header_settings_unavailable": "Muokkaimen otsakeasetuksia ei voitu ladata",
     "steam_ui_unavailable": "Steam-käyttöliittymä ei ole käytettävissä",
     "update_check_failed": "Päivitysten tarkistus epäonnistui",
     "rate_limited": "Pyyntöraja ylitetty",
@@ -215,6 +216,13 @@
       "enableLabel": "Ota minisaavutukset käyttöön",
       "enableDescription": "Näyttää Steamin pienen saavutusten edistymispalkin peliajan vieressä pelien tietosivuilla. Oletuksena pois.",
       "footnote": "Tämä käyttää Steamin saavutusten edistymistä Steam-peleille; se ei lisää saavutusten seurantaa Steamin ulkopuolisille peleille."
+    },
+    "contextMenu": {
+      "title": "Kontekstivalikko",
+      "headerIconLabel": "Pelin kuvake muokkaimen otsakkeessa",
+      "headerIconDescription": "Näyttää pelin kuvakkeen sen nimen vieressä metatietojen muokkaussivun yläreunassa. Pitkät nimet vierivät.",
+      "steamIconLabel": "Käytä Steam-kuvaketta, jos oma puuttuu",
+      "steamIconDescription": "Jos pelillä ei ole omaa kuvaketta, käytetään vastaavan Steam-pelin kuvaketta. Jos kumpaakaan ei ole, kuvaketta ei näytetä."
     },
     "compat": {
       "title": "Yhteensopivuustila",

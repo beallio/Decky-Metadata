@@ -36,6 +36,7 @@
     "trailer_settings_unavailable": "nastavení trailerů se nepodařilo načíst",
     "mini_achievements_settings_unavailable": "nastavení mini achievementů se nepodařilo načíst",
     "protondb_settings_unavailable": "nastavení odznaků ProtonDB se nepodařilo načíst",
+    "editor_header_settings_unavailable": "Nastavení záhlaví editoru se nepodařilo načíst",
     "steam_ui_unavailable": "Rozhraní Steam není dostupné",
     "update_check_failed": "Kontrola aktualizací se nezdařila",
     "rate_limited": "Překročen limit požadavků",
@@ -217,6 +218,13 @@
       "enableLabel": "Povolit mini achievementy",
       "enableDescription": "Zobrazovat malý pruh postupu achievementů Steam vedle odehrané doby na stránkách podrobností hry. Ve výchozím nastavení vypnuto.",
       "footnote": "Využívá postup achievementů Steam u her ze Steamu; u her mimo Steam sledování achievementů nepřidává."
+    },
+    "contextMenu": {
+      "title": "Kontextová nabídka",
+      "headerIconLabel": "Ikona hry v záhlaví editoru",
+      "headerIconDescription": "Zobrazit ikonu hry vedle jejího názvu v horní části stránky pro úpravu metadat. Dlouhé názvy se posouvají.",
+      "steamIconLabel": "Použít ikonu Steamu, pokud chybí",
+      "steamIconDescription": "Když hra nemá vlastní ikonu, použije se ikona odpovídající hry na Steamu. Pokud neexistuje ani jedna, nezobrazí se žádná ikona."
     },
     "compat": {
       "title": "Stav kompatibility",

@@ -29,6 +29,7 @@ import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MiniAchievementsSection } from "./components/qam/MiniAchievementsSection";
+import { ContextMenuSection } from "./components/qam/ContextMenuSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
@@ -1102,6 +1103,7 @@ export const Content = () => {
         state={miniAchievementsSnapshot}
         onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
       />
+      <ContextMenuSection />
       <LogsSection
         logsBusy={logsBusy}
         debugLogging={debugLogging}
