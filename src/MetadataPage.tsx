@@ -88,12 +88,12 @@ import {
   editorNativeInputSectionStyle,
   editorNativeInputTitleStyle,
   editorRootClassName,
-  editorScopedCss,
   editorSearchButtonStyle,
   editorSearchInputStyle,
   editorSearchRowStyle,
 } from "./metadataEditorStyles";
 import { changedDraftFields, changedFormFields } from "./metadataDraft";
+import { EditorScopedStyle } from "./editorScopedStyle";
 import type { DraftFieldKey, DraftFormState } from "./metadataDraft";
 import { EditorLayout } from "./editorLayout";
 import { dirtyPages, EDITOR_PAGE_ORDER, PAGE_OF_FIELD, type EditorPageId } from "./editorPages";
@@ -2012,7 +2012,7 @@ export const MetadataPage = () => {
       onSecondaryActionDescription={saveLabel}
       onCancelButton={requestLeave}
     >
-      <style>{editorScopedCss}</style>
+      <EditorScopedStyle />
       <EditorLayout
         title={appName(appId)}
         appId={appId}

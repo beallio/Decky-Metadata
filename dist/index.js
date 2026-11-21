@@ -37116,6 +37116,12 @@ const editorScopedCss = `
 .decky-metadata-editor .decky-metadata-editor__focus-target {
   scroll-margin-block: 12px;
 }
+
+/* Steam drops its white focus look when the on-screen keyboard takes focus; keep it while the box holds the cursor. */
+.decky-metadata-editor input.DialogInput.decky-metadata-editor__input-active:not(:disabled) {
+  background-color: #fff;
+  color: #000;
+}
 `;
 
 const EMPTY_MATCHES = [];
@@ -37512,6 +37518,49 @@ function changedFormFields(before, after) {
     };
     return DRAFT_FIELD_ORDER.filter((key) => changed[key]);
 }
+
+const editorActiveInputClassName = "decky-metadata-editor__input-active";
+/**
+ * Mark the editor text box that holds the cursor. Steam's focus class and CSS
+ * `:focus` both drop while the on-screen keyboard window has focus, although
+ * the box keeps the cursor and still receives the typed text.
+ */
+const trackActiveEditorInput = (doc, schedule = (callback) => { setTimeout(callback, 0); }) => {
+    let marked = null;
+    let tracking = true;
+    const sync = () => {
+        if (!tracking)
+            return;
+        const active = doc.activeElement;
+        const next = active?.matches?.(".decky-metadata-editor input.DialogInput") ? active : null;
+        if (next === marked)
+            return;
+        marked?.classList.remove(editorActiveInputClassName);
+        next?.classList.add(editorActiveInputClassName);
+        marked = next;
+    };
+    // A window blur also fires focusout, but leaves activeElement on the box; check after it settles.
+    const settle = () => schedule(sync);
+    doc.addEventListener("focusin", sync, true);
+    doc.addEventListener("focusout", settle, true);
+    sync();
+    return () => {
+        tracking = false;
+        doc.removeEventListener("focusin", sync, true);
+        doc.removeEventListener("focusout", settle, true);
+        marked?.classList.remove(editorActiveInputClassName);
+        marked = null;
+    };
+};
+/** The editor's scoped CSS, plus active-box tracking in the document that shows the editor. */
+const EditorScopedStyle = () => {
+    const ref = SP_REACT.useRef(null);
+    SP_REACT.useEffect(() => {
+        const doc = ref.current?.ownerDocument;
+        return doc ? trackActiveEditorInput(doc) : undefined;
+    }, []);
+    return SP_JSX.jsx("style", { ref: ref, children: editorScopedCss });
+};
 
 const OWN_ICON_WAIT_MS = 1000;
 const OWN_ICON_POLL_MS = 100;
@@ -39072,7 +39121,7 @@ const MetadataPage = () => {
     return (SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, onSecondaryButton: () => {
             if (!saveDisabled)
                 void saveCurrent();
-        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx("style", { children: editorScopedCss }), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
+        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
 const protonDbCoverSurface = (path) => {
