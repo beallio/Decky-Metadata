@@ -91,7 +91,7 @@ export const editorScopedCss = `
 }
 
 /* Steam drops its white focus look when the on-screen keyboard takes focus; keep it while the box holds the cursor. */
-.decky-metadata-editor input.DialogInput.decky-metadata-editor__input-active:not(:disabled) {
+.decky-metadata-editor input.DialogInput[data-decky-metadata-active-input]:not(:disabled) {
   background-color: #fff;
   color: #000;
 }

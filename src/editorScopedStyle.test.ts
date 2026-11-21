@@ -1,70 +1,78 @@
 import { describe, expect, it } from "vitest";
-import { editorActiveInputClassName, trackActiveEditorInput } from "./editorScopedStyle";
+import { editorActiveInputAttribute, trackActiveEditorInput } from "./editorScopedStyle";
 
 const element = (editorInput: boolean) => {
-  const classes = new Set<string>();
+  const attributes = new Set<string>();
   return {
     matches: () => editorInput,
-    classList: { add: (name: string) => classes.add(name), remove: (name: string) => classes.delete(name) },
-    marked: () => classes.has(editorActiveInputClassName),
+    setAttribute: (name: string) => attributes.add(name),
+    removeAttribute: (name: string) => attributes.delete(name),
+    marked: () => attributes.has(editorActiveInputAttribute),
   };
 };
 
-const fakeDocument = () => {
+const harness = () => {
   const listeners = new Map<string, () => void>();
   const pending: Array<() => void> = [];
+  let classChanged: (() => void) | undefined;
   const doc = {
     activeElement: null as unknown,
     addEventListener: (type: string, listener: () => void) => listeners.set(type, listener),
     removeEventListener: (type: string) => listeners.delete(type),
   };
+  const root = { contains: () => true };
+  const stop = trackActiveEditorInput(
+    doc as never,
+    root as never,
+    (run) => { pending.push(run); },
+    (_root, callback) => { classChanged = callback; return () => { classChanged = undefined; }; },
+  );
   return {
     doc,
-    fire: (type: string) => listeners.get(type)?.(),
+    stop,
+    // Steam toggles its focus class; no focus event reaches the page.
+    steamFocusMoved: () => { classChanged?.(); pending.splice(0).forEach((run) => run()); },
     flush: () => pending.splice(0).forEach((run) => run()),
-    schedule: (run: () => void) => { pending.push(run); },
+    observing: () => classChanged !== undefined,
+    steamFocusQueued: () => classChanged?.(),
     listenerCount: () => listeners.size,
   };
 };
 
 describe("trackActiveEditorInput", () => {
-  it("keeps the box marked while the on-screen keyboard window has focus, and clears it when focus moves on", () => {
-    const fake = fakeDocument();
+  it("marks the box from Steam's focus-class changes and keeps it while the keyboard has focus", () => {
+    const h = harness();
     const title = element(true);
     const button = element(false);
-    const stop = trackActiveEditorInput(fake.doc as never, fake.schedule);
 
-    fake.doc.activeElement = title;
-    fake.fire("focusin");
+    h.doc.activeElement = title;
+    h.steamFocusMoved();
     expect(title.marked()).toBe(true);
 
-    // Window blur: focusout fires but the box keeps the cursor.
-    fake.fire("focusout");
-    fake.flush();
+    // Keyboard opens: Steam drops its focus class, the box keeps the cursor.
+    h.steamFocusMoved();
     expect(title.marked()).toBe(true);
 
-    fake.fire("focusout");
-    fake.doc.activeElement = button;
-    fake.fire("focusin");
-    fake.flush();
+    h.doc.activeElement = button;
+    h.steamFocusMoved();
     expect(title.marked()).toBe(false);
     expect(button.marked()).toBe(false);
 
-    fake.doc.activeElement = title;
-    fake.fire("focusin");
-    stop();
+    h.doc.activeElement = title;
+    h.steamFocusMoved();
+    h.stop();
     expect(title.marked()).toBe(false);
-    expect(fake.listenerCount()).toBe(0);
+    expect(h.observing()).toBe(false);
+    expect(h.listenerCount()).toBe(0);
   });
 
-  it("ignores a focusout check that settles after the editor closes", () => {
-    const fake = fakeDocument();
+  it("ignores a check that settles after the editor closes", () => {
+    const h = harness();
     const title = element(true);
-    const stop = trackActiveEditorInput(fake.doc as never, fake.schedule);
-    fake.fire("focusout");
-    stop();
-    fake.doc.activeElement = title;
-    fake.flush();
+    h.doc.activeElement = title;
+    h.steamFocusQueued();
+    h.stop();
+    h.flush();
     expect(title.marked()).toBe(false);
   });
 });

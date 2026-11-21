@@ -37118,7 +37118,7 @@ const editorScopedCss = `
 }
 
 /* Steam drops its white focus look when the on-screen keyboard takes focus; keep it while the box holds the cursor. */
-.decky-metadata-editor input.DialogInput.decky-metadata-editor__input-active:not(:disabled) {
+.decky-metadata-editor input.DialogInput[data-decky-metadata-active-input]:not(:disabled) {
   background-color: #fff;
   color: #000;
 }
@@ -37519,36 +37519,48 @@ function changedFormFields(before, after) {
     return DRAFT_FIELD_ORDER.filter((key) => changed[key]);
 }
 
-const editorActiveInputClassName = "decky-metadata-editor__input-active";
+// A data attribute: React rewrites `className` whenever Steam re-renders the input.
+const editorActiveInputAttribute = "data-decky-metadata-active-input";
+const observeClassChanges = (root, callback) => {
+    const View = root.ownerDocument?.defaultView?.MutationObserver;
+    if (!View)
+        return () => undefined;
+    const observer = new View(callback);
+    observer.observe(root, { attributes: true, attributeFilter: ["class"], subtree: true });
+    return () => observer.disconnect();
+};
 /**
- * Mark the editor text box that holds the cursor. Steam's focus class and CSS
- * `:focus` both drop while the on-screen keyboard window has focus, although
- * the box keeps the cursor and still receives the typed text.
+ * Mark the editor text box that holds the cursor. Steam's focus class drops
+ * while the on-screen keyboard has controller focus, although the box keeps
+ * the cursor and still receives the typed text. Focus events are unreliable
+ * when the Steam window lacks system focus, so Steam's own focus-class
+ * changes and typing also trigger a check.
  */
-const trackActiveEditorInput = (doc, schedule = (callback) => { setTimeout(callback, 0); }) => {
+const trackActiveEditorInput = (doc, root, schedule = (callback) => { setTimeout(callback, 0); }, observe = observeClassChanges) => {
     let marked = null;
     let tracking = true;
     const sync = () => {
         if (!tracking)
             return;
         const active = doc.activeElement;
-        const next = active?.matches?.(".decky-metadata-editor input.DialogInput") ? active : null;
+        const next = active && root.contains(active) && active.matches?.("input.DialogInput") ? active : null;
         if (next === marked)
             return;
-        marked?.classList.remove(editorActiveInputClassName);
-        next?.classList.add(editorActiveInputClassName);
+        marked?.removeAttribute(editorActiveInputAttribute);
+        next?.setAttribute(editorActiveInputAttribute, "");
         marked = next;
     };
-    // A window blur also fires focusout, but leaves activeElement on the box; check after it settles.
+    // A window blur fires focusout but leaves activeElement on the box; check after it settles.
     const settle = () => schedule(sync);
-    doc.addEventListener("focusin", sync, true);
-    doc.addEventListener("focusout", settle, true);
+    const events = ["focusin", "focusout", "input"];
+    events.forEach((type) => doc.addEventListener(type, settle, true));
+    const disconnect = observe(root, settle);
     sync();
     return () => {
         tracking = false;
-        doc.removeEventListener("focusin", sync, true);
-        doc.removeEventListener("focusout", settle, true);
-        marked?.classList.remove(editorActiveInputClassName);
+        events.forEach((type) => doc.removeEventListener(type, settle, true));
+        disconnect();
+        marked?.removeAttribute(editorActiveInputAttribute);
         marked = null;
     };
 };
@@ -37556,8 +37568,9 @@ const trackActiveEditorInput = (doc, schedule = (callback) => { setTimeout(callb
 const EditorScopedStyle = () => {
     const ref = SP_REACT.useRef(null);
     SP_REACT.useEffect(() => {
-        const doc = ref.current?.ownerDocument;
-        return doc ? trackActiveEditorInput(doc) : undefined;
+        const style = ref.current;
+        const root = style?.parentElement;
+        return style && root ? trackActiveEditorInput(style.ownerDocument, root) : undefined;
     }, []);
     return SP_JSX.jsx("style", { ref: ref, children: editorScopedCss });
 };
