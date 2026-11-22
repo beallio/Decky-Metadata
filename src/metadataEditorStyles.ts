@@ -86,6 +86,11 @@ export const editorInlineInputStyle = {
 } as const;
 
 export const editorScopedCss = `
+/* Steam's own settings wrapper fills the route host; without this the page stops short of the footer. */
+.decky-metadata-editor {
+  height: 100%;
+}
+
 .decky-metadata-editor .decky-metadata-editor__focus-target {
   scroll-margin-block: 12px;
 }

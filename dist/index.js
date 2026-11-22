@@ -19336,27 +19336,36 @@ function FaSteam (props) {
 }
 
 const headingClassName = "decky-metadata-qam-section-heading";
+// Look lives in CSS, not inline, so Steam's .gpfocus class (set by gamepad focus even when DOM focus lags, #55) can override the colour.
 const headingCss = `
+.${headingClassName} {
+  align-items: center;
+  border-radius: 4px;
+  color: #aeb8c4;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.06em;
+  min-height: 40px;
+  padding: 8px 10px;
+  text-transform: uppercase;
+}
 .${headingClassName}.gpfocus {
-  background: #3d4450;
+  background: rgba(102, 182, 236, 0.18);
   color: #fff;
-  border-radius: 2px;
 }
 `;
-const headingStyle = {
-    alignItems: "center",
-    cursor: "pointer",
-    display: "flex",
-    justifyContent: "space-between",
-};
-const headingTextStyle = {
-    minWidth: 0,
-};
-const headingAccessoriesStyle = {
+const headingLabelStyle = {
     alignItems: "center",
     display: "inline-flex",
-    flexShrink: 0,
     gap: 8,
+    minWidth: 0,
+};
+const headingIconStyle = {
+    display: "inline-flex",
+    flexShrink: 0,
 };
 function CollapsibleSection({ title, icon, children, defaultExpanded = false }) {
     const [expanded, setExpanded] = SP_REACT.useState(defaultExpanded);
@@ -19368,7 +19377,7 @@ function CollapsibleSection({ title, icon, children, defaultExpanded = false }) 
                 heading.scrollIntoView({ block: "nearest", inline: "nearest" });
         });
     };
-    return (SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx("style", { children: headingCss }), SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, className: `${DFL.quickAccessControlsClasses.PanelSectionTitle} ${headingClassName}`, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => handleFocus(event.currentTarget), onGamepadFocus: (event) => handleFocus(event?.currentTarget ?? event?.target), style: headingStyle, children: [SP_JSX.jsx("span", { style: headingTextStyle, children: title }), SP_JSX.jsxs("span", { style: headingAccessoriesStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", children: icon }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 18 }) : SP_JSX.jsx(FaChevronDown, { size: 18 })] })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? children : null })] }));
+    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsx("style", { children: headingCss }), SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, className: headingClassName, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => handleFocus(event.currentTarget), onGamepadFocus: (event) => handleFocus(event?.currentTarget ?? event?.target), children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
 }
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
@@ -37113,6 +37122,11 @@ const editorInlineInputStyle = {
     minWidth: "20vw",
 };
 const editorScopedCss = `
+/* Steam's own settings wrapper fills the route host; without this the page stops short of the footer. */
+.decky-metadata-editor {
+  height: 100%;
+}
+
 .decky-metadata-editor .decky-metadata-editor__focus-target {
   scroll-margin-block: 12px;
 }

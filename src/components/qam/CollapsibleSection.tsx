@@ -1,4 +1,4 @@
-import { Focusable, PanelSection, quickAccessControlsClasses } from "@decky/ui";
+import { Focusable, PanelSection } from "@decky/ui";
 import { useId, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { FaChevronDown, FaChevronUp } from "react-icons/fa";
@@ -11,30 +11,38 @@ type CollapsibleSectionProps = {
 };
 
 const headingClassName = "decky-metadata-qam-section-heading";
+// Look lives in CSS, not inline, so Steam's .gpfocus class (set by gamepad focus even when DOM focus lags, #55) can override the colour.
 const headingCss = `
+.${headingClassName} {
+  align-items: center;
+  border-radius: 4px;
+  color: #aeb8c4;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.06em;
+  min-height: 40px;
+  padding: 8px 10px;
+  text-transform: uppercase;
+}
 .${headingClassName}.gpfocus {
-  background: #3d4450;
+  background: rgba(102, 182, 236, 0.18);
   color: #fff;
-  border-radius: 2px;
 }
 `;
 
-const headingStyle: CSSProperties = {
+const headingLabelStyle: CSSProperties = {
   alignItems: "center",
-  cursor: "pointer",
-  display: "flex",
-  justifyContent: "space-between",
-};
-
-const headingTextStyle: CSSProperties = {
+  display: "inline-flex",
+  gap: 8,
   minWidth: 0,
 };
 
-const headingAccessoriesStyle: CSSProperties = {
-  alignItems: "center",
+const headingIconStyle: CSSProperties = {
   display: "inline-flex",
   flexShrink: 0,
-  gap: 8,
 };
 
 export function CollapsibleSection({ title, icon, children, defaultExpanded = false }: CollapsibleSectionProps) {
@@ -48,28 +56,27 @@ export function CollapsibleSection({ title, icon, children, defaultExpanded = fa
   };
 
   return (
-    <PanelSection>
+    <div style={{ marginTop: 8 }}>
       <style>{headingCss}</style>
       <Focusable
         id={`${id}-heading`}
-        className={`${quickAccessControlsClasses.PanelSectionTitle} ${headingClassName}`}
+        className={headingClassName}
         role="button"
         aria-expanded={expanded}
         aria-controls={id}
         onActivate={() => setExpanded(value => !value)}
         onFocus={(event) => handleFocus(event.currentTarget)}
         onGamepadFocus={(event) => handleFocus(event?.currentTarget ?? event?.target)}
-        style={headingStyle}
       >
-        <span style={headingTextStyle}>{title}</span>
-        <span style={headingAccessoriesStyle}>
-          <span aria-hidden="true">{icon}</span>
-          {expanded ? <FaChevronUp size={18} /> : <FaChevronDown size={18} />}
+        <span style={headingLabelStyle}>
+          <span aria-hidden="true" style={headingIconStyle}>{icon}</span>
+          <span>{title}</span>
         </span>
+        {expanded ? <FaChevronUp size={12} /> : <FaChevronDown size={12} />}
       </Focusable>
       <div id={id} role="region" aria-labelledby={`${id}-heading`}>
-        {expanded ? children : null}
+        {expanded ? <PanelSection>{children}</PanelSection> : null}
       </div>
-    </PanelSection>
+    </div>
   );
 }

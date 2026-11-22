@@ -26,9 +26,10 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
 - Editor text boxes stay white while you type with the on-screen keyboard
   and after you close it, until you move to another control. Steam's own
   boxes turn gray while the keyboard is open.
-- **Quick Access Menu.** Section headings use Steam's own heading style and
-  focus highlight. Help text sits under its control. Metadata scans show a
-  progress bar, and the log viewer scrolls with the controller.
+- **Quick Access Menu.** Help text sits under its control. Metadata scans
+  show a progress bar, and the log viewer scrolls with the controller.
+  Section headings keep their earlier look, with the blue highlight following
+  controller focus.
 - **Colours** follow Valve's Steam Deck palette.
 - Controls that cannot do anything are disabled: editor fields for Steam
   games, update settings before they load, and trailer options while
@@ -37,6 +38,8 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
 ### Fixed
 
 - Trailers stop when you press **Play** in every Steam language.
+- **Edit Metadata...** fills the screen down to the button bar, as Decky
+  Loader's settings do, instead of stopping short and leaving a dark strip.
 - Picking an IGN result no longer shows **Searching...**, an empty IGN search
   is blocked, and a failed search no longer says **Save failed**.
 - On the Steam Deck Client Beta, game descriptions keep their line breaks,
