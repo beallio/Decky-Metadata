@@ -18,8 +18,9 @@ on:
     types: [closed]
     branches: [dev]
 
+# One group per commit: a shared group keeps only one pending run, so rapid merges would cancel releases.
 concurrency:
-  group: dev-release-prerelease
+  group: dev-release-${{ github.event.pull_request.merge_commit_sha || github.event.inputs.commit || github.sha }}
   cancel-in-progress: false
 
 permissions:
