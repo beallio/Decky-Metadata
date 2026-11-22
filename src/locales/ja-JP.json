@@ -467,7 +467,7 @@
       "genres": "ジャンル"
     },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
-    "searchIgn": "IGN メタデータを検索",
+    "searchIgn": "IGN を検索",
     "ign": {
       "gameName": "ゲーム名",
       "noResults": "結果がありません。",
@@ -514,6 +514,11 @@
     "steamAppId": "Steam アプリ ID",
     "steamAppIdHelp": "Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を貼り付けてください。空欄にすると固定した Steam 一致が解除されます。",
     "steamAppIdApply": "Steam アプリ ID を適用",
+    "manualMatch": {
+      "label": "Steam アプリ ID を入力",
+      "help": "検索でゲームが見つからない場合は、Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を使用してください。空欄にすると一致が解除されます。",
+      "button": "ID を入力…"
+    },
     "shortcut": {
       "immediateNotice": "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
       "currentLabel": "現在の名前",

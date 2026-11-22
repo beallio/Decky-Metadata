@@ -468,7 +468,7 @@
       "genres": "Genres"
     },
     "nonSteamOnly": "This plugin only changes non-Steam games.",
-    "searchIgn": "Search IGN metadata",
+    "searchIgn": "Search IGN",
     "ign": {
       "gameName": "Game name",
       "noResults": "No results.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
     "steamAppIdApply": "Apply Steam App ID",
+    "manualMatch": {
+      "label": "Enter a Steam App ID",
+      "help": "Use an ID or a Store, Community or SteamDB URL when search does not find the game. Leave it empty to remove the match.",
+      "button": "Enter ID…"
+    },
     "shortcut": {
       "immediateNotice": "These actions apply now. They do not use Save.",
       "currentLabel": "Current name",

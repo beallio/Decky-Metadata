@@ -468,7 +468,7 @@
       "genres": "Tyylilajit"
     },
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
-    "searchIgn": "Hae IGN-metatietoja",
+    "searchIgn": "Hae IGN:stä",
     "ign": {
       "gameName": "Pelin nimi",
       "noResults": "Ei tuloksia.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam-sovellustunnus",
     "steamAppIdHelp": "Liitä Steam-sovellustunnus, kaupan URL, yhteisön URL tai SteamDB-URL. Jätä tyhjäksi, jos haluat poistaa kiinnitetyn Steam-vastaavuuden.",
     "steamAppIdApply": "Ota Steam-sovellustunnus käyttöön",
+    "manualMatch": {
+      "label": "Syötä Steam-sovellustunnus",
+      "help": "Käytä Steam-sovellustunnusta, kaupan URL-osoitetta, yhteisön URL-osoitetta tai SteamDB-URL-osoitetta, kun haku ei löydä peliä. Jätä tyhjäksi poistaaksesi vastaavuuden.",
+      "button": "Syötä tunnus…"
+    },
     "shortcut": {
       "immediateNotice": "Nämä toiminnot tulevat voimaan heti ilman, että sinun tarvitsee valita ”Tallenna”.",
       "currentLabel": "Nykyinen nimi",

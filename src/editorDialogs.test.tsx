@@ -5,6 +5,7 @@ const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 vi.mock("@decky/ui", () => ({
   ConfirmModal: "ConfirmModal",
   ScrollPanelGroup: "ScrollPanelGroup",
+  TextField: "TextField",
   showModal: ui.showModal,
 }));
 

@@ -470,7 +470,7 @@
       "genres": "Жанры"
     },
     "nonSteamOnly": "Этот плагин изменяет только игры вне Steam.",
-    "searchIgn": "Искать метаданные в IGN",
+    "searchIgn": "Искать в IGN",
     "ign": {
       "gameName": "Название игры",
       "noResults": "Нет результатов.",
@@ -517,6 +517,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставьте Steam App ID, URL магазина, URL сообщества или URL SteamDB. Оставьте пустым, чтобы снять привязанное совпадение Steam.",
     "steamAppIdApply": "Применить Steam App ID",
+    "manualMatch": {
+      "label": "Введите Steam App ID",
+      "help": "Используйте Steam App ID, URL магазина, URL сообщества или URL SteamDB, если поиск не находит игру. Оставьте пустым, чтобы убрать совпадение.",
+      "button": "Ввести ID…"
+    },
     "shortcut": {
       "immediateNotice": "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
       "currentLabel": "Текущее имя",

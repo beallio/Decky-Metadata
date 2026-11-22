@@ -469,7 +469,7 @@
       "genres": "Genuri"
     },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
-    "searchIgn": "Caută metadate IGN",
+    "searchIgn": "Caută în IGN",
     "ign": {
       "gameName": "Numele jocului",
       "noResults": "Nu există rezultate.",
@@ -516,6 +516,11 @@
     "steamAppId": "ID aplicație Steam",
     "steamAppIdHelp": "Lipește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB. Lasă gol pentru a șterge potrivirea Steam fixată.",
     "steamAppIdApply": "Aplică ID-ul de aplicație Steam",
+    "manualMatch": {
+      "label": "Introdu un ID de aplicație Steam",
+      "help": "Folosește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB când căutarea nu găsește jocul. Lasă gol pentru a elimina potrivirea.",
+      "button": "Introdu ID…"
+    },
     "shortcut": {
       "immediateNotice": "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
       "currentLabel": "Numele curent",

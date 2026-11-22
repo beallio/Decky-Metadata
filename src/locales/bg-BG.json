@@ -468,7 +468,7 @@
       "genres": "Жанрове"
     },
     "nonSteamOnly": "Тази приставка променя само не-Steam игри.",
-    "searchIgn": "Търсене на метаданни в IGN",
+    "searchIgn": "Търсене в IGN",
     "ign": {
       "gameName": "Име на играта",
       "noResults": "Няма резултати.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Поставете Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB. Оставете празно, за да изчистите закрепеното съвпадение в Steam.",
     "steamAppIdApply": "Прилагане на Steam App ID",
+    "manualMatch": {
+      "label": "Въведете Steam App ID",
+      "help": "Използвайте Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB, когато търсенето не намери играта. Оставете празно, за да премахнете съвпадението.",
+      "button": "Въведете ID…"
+    },
     "shortcut": {
       "immediateNotice": "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
       "currentLabel": "Текущо име",

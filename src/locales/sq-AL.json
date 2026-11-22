@@ -468,7 +468,7 @@
       "genres": "Zhanret"
     },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
-    "searchIgn": "Kërko metadata në IGN",
+    "searchIgn": "Kërko në IGN",
     "ign": {
       "gameName": "Emri i lojës",
       "noResults": "Nuk ka rezultate.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Ngjit një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB. Lëre bosh për të pastruar përputhjen e fiksuar në Steam.",
     "steamAppIdApply": "Zbato Steam App ID",
+    "manualMatch": {
+      "label": "Fut një Steam App ID",
+      "help": "Përdor një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB kur kërkimi nuk e gjen lojën. Lëre bosh për të hequr përputhjen.",
+      "button": "Fut ID…"
+    },
     "shortcut": {
       "immediateNotice": "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
       "currentLabel": "Emri aktual",

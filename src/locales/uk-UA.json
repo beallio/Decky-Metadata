@@ -470,7 +470,7 @@
       "genres": "Жанри"
     },
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
-    "searchIgn": "Шукати метадані в IGN",
+    "searchIgn": "Шукати в IGN",
     "ign": {
       "gameName": "Назва гри",
       "noResults": "Немає результатів.",
@@ -517,6 +517,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставте Steam App ID, URL крамниці, URL спільноти або URL SteamDB. Залиште порожнім, щоб скасувати прив’язаний збіг Steam.",
     "steamAppIdApply": "Застосувати Steam App ID",
+    "manualMatch": {
+      "label": "Введіть Steam App ID",
+      "help": "Використовуйте Steam App ID, URL крамниці, URL спільноти або URL SteamDB, коли пошук не знаходить гру. Залиште порожнім, щоб прибрати збіг.",
+      "button": "Ввести ID…"
+    },
     "shortcut": {
       "immediateNotice": "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
       "currentLabel": "Поточна назва",

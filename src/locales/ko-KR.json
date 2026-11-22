@@ -467,7 +467,7 @@
       "genres": "장르"
     },
     "nonSteamOnly": "이 플러그인은 비Steam 게임만 변경합니다.",
-    "searchIgn": "IGN 메타데이터 검색",
+    "searchIgn": "IGN 검색",
     "ign": {
       "gameName": "게임 이름",
       "noResults": "결과가 없습니다.",
@@ -514,6 +514,11 @@
     "steamAppId": "Steam 앱 ID",
     "steamAppIdHelp": "Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 붙여 넣으세요. 비워 두면 고정된 Steam 일치가 해제됩니다.",
     "steamAppIdApply": "Steam 앱 ID 적용",
+    "manualMatch": {
+      "label": "Steam 앱 ID 입력",
+      "help": "검색으로 게임을 찾지 못하면 Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 사용하세요. 비워 두면 일치가 해제됩니다.",
+      "button": "ID 입력…"
+    },
     "shortcut": {
       "immediateNotice": "이 작업은 즉시 적용되며, ‘저장’을 누를 필요가 없습니다.",
       "currentLabel": "현재 이름",

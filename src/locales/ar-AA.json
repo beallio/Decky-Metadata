@@ -472,7 +472,7 @@
       "genres": "الأنواع"
     },
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
-    "searchIgn": "البحث في بيانات IGN الوصفية",
+    "searchIgn": "البحث في IGN",
     "ign": {
       "gameName": "اسم اللعبة",
       "noResults": "لا نتائج.",
@@ -519,6 +519,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "الصق Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اتركه فارغًا لمسح مطابقة Steam المثبّتة.",
     "steamAppIdApply": "تطبيق Steam App ID",
+    "manualMatch": {
+      "label": "أدخل Steam App ID",
+      "help": "استخدم Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB عندما لا يجد البحث اللعبة. اتركه فارغًا لإزالة المطابقة.",
+      "button": "أدخل ID…"
+    },
     "shortcut": {
       "immediateNotice": "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
       "currentLabel": "الاسم الحالي",

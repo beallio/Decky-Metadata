@@ -468,7 +468,7 @@
       "genres": "Türler"
     },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
-    "searchIgn": "IGN meta verilerinde ara",
+    "searchIgn": "IGN'de ara",
     "ign": {
       "gameName": "Oyun adı",
       "noResults": "Sonuç yok.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam Uygulama ID'si",
     "steamAppIdHelp": "Bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si yapıştırın. Sabitlenmiş Steam eşleşmesini temizlemek için boş bırakın.",
     "steamAppIdApply": "Steam Uygulama ID'sini uygula",
+    "manualMatch": {
+      "label": "Bir Steam Uygulama ID'si girin",
+      "help": "Arama oyunu bulamadığında bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si kullanın. Eşleşmeyi kaldırmak için boş bırakın.",
+      "button": "ID girin…"
+    },
     "shortcut": {
       "immediateNotice": "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
       "currentLabel": "Geçerli ad",

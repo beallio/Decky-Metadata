@@ -3407,7 +3407,7 @@ var editor$o = {
 		genres: "الأنواع"
 	},
 	nonSteamOnly: "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
-	searchIgn: "البحث في بيانات IGN الوصفية",
+	searchIgn: "البحث في IGN",
 	ign: {
 		gameName: "اسم اللعبة",
 		noResults: "لا نتائج.",
@@ -3454,6 +3454,11 @@ var editor$o = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "الصق Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اتركه فارغًا لمسح مطابقة Steam المثبّتة.",
 	steamAppIdApply: "تطبيق Steam App ID",
+	manualMatch: {
+		label: "أدخل Steam App ID",
+		help: "استخدم Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB عندما لا يجد البحث اللعبة. اتركه فارغًا لإزالة المطابقة.",
+		button: "أدخل ID…"
+	},
 	shortcut: {
 		immediateNotice: "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
 		currentLabel: "الاسم الحالي",
@@ -4038,7 +4043,7 @@ var editor$n = {
 		genres: "Жанрове"
 	},
 	nonSteamOnly: "Тази приставка променя само не-Steam игри.",
-	searchIgn: "Търсене на метаданни в IGN",
+	searchIgn: "Търсене в IGN",
 	ign: {
 		gameName: "Име на играта",
 		noResults: "Няма резултати.",
@@ -4085,6 +4090,11 @@ var editor$n = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Поставете Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB. Оставете празно, за да изчистите закрепеното съвпадение в Steam.",
 	steamAppIdApply: "Прилагане на Steam App ID",
+	manualMatch: {
+		label: "Въведете Steam App ID",
+		help: "Използвайте Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB, когато търсенето не намери играта. Оставете празно, за да премахнете съвпадението.",
+		button: "Въведете ID…"
+	},
 	shortcut: {
 		immediateNotice: "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
 		currentLabel: "Текущо име",
@@ -4671,7 +4681,7 @@ var editor$m = {
 		genres: "Žánry"
 	},
 	nonSteamOnly: "Tento plugin mění pouze hry mimo Steam.",
-	searchIgn: "Hledat metadata na IGN",
+	searchIgn: "Hledat na IGN",
 	ign: {
 		gameName: "Název hry",
 		noResults: "Žádné výsledky.",
@@ -4718,6 +4728,11 @@ var editor$m = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Vložte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB. Nechte prázdné pro zrušení připnuté shody Steam.",
 	steamAppIdApply: "Použít Steam App ID",
+	manualMatch: {
+		label: "Zadejte Steam App ID",
+		help: "Použijte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB, když hledání hru nenajde. Nechte prázdné pro odstranění shody.",
+		button: "Zadat ID…"
+	},
 	shortcut: {
 		immediateNotice: "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
 		currentLabel: "Aktuální název",
@@ -5302,7 +5317,7 @@ var editor$l = {
 		genres: "Genres"
 	},
 	nonSteamOnly: "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
-	searchIgn: "IGN-Metadaten durchsuchen",
+	searchIgn: "IGN durchsuchen",
 	ign: {
 		gameName: "Spielname",
 		noResults: "Keine Ergebnisse.",
@@ -5349,6 +5364,11 @@ var editor$l = {
 	steamAppId: "Steam-App-ID",
 	steamAppIdHelp: "Füge eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL ein. Leer lassen, um die festgelegte Steam-Zuordnung zu entfernen.",
 	steamAppIdApply: "Steam-App-ID anwenden",
+	manualMatch: {
+		label: "Steam-App-ID eingeben",
+		help: "Verwende eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL, wenn die Suche das Spiel nicht findet. Leer lassen, um die Zuordnung zu entfernen.",
+		button: "ID eingeben…"
+	},
 	shortcut: {
 		immediateNotice: "Diese Aktionen werden sofort ausgeführt. „Speichern“ ist nicht nötig.",
 		currentLabel: "Aktueller Name",
@@ -5933,7 +5953,7 @@ var editor$k = {
 		genres: "Είδη"
 	},
 	nonSteamOnly: "Αυτό το πρόσθετο αλλάζει μόνο παιχνίδια εκτός Steam.",
-	searchIgn: "Αναζήτηση μεταδεδομένων IGN",
+	searchIgn: "Αναζήτηση στο IGN",
 	ign: {
 		gameName: "Όνομα παιχνιδιού",
 		noResults: "Δεν υπάρχουν αποτελέσματα.",
@@ -5980,6 +6000,11 @@ var editor$k = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Επικολλήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB. Αφήστε κενό για να διαγράψετε την καρφιτσωμένη αντιστοίχιση Steam.",
 	steamAppIdApply: "Εφαρμογή Steam App ID",
+	manualMatch: {
+		label: "Εισαγάγετε Steam App ID",
+		help: "Χρησιμοποιήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB όταν η αναζήτηση δεν βρίσκει το παιχνίδι. Αφήστε κενό για να αφαιρέσετε την αντιστοίχιση.",
+		button: "Εισαγωγή ID…"
+	},
 	shortcut: {
 		immediateNotice: "Αυτές οι ενέργειες εφαρμόζονται αμέσως, χωρίς να χρειάζεται να επιλέξετε «Αποθήκευση».",
 		currentLabel: "Τρέχον όνομα",
@@ -6564,7 +6589,7 @@ var editor$j = {
 		genres: "Genres"
 	},
 	nonSteamOnly: "This plugin only changes non-Steam games.",
-	searchIgn: "Search IGN metadata",
+	searchIgn: "Search IGN",
 	ign: {
 		gameName: "Game name",
 		noResults: "No results.",
@@ -6611,6 +6636,11 @@ var editor$j = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
 	steamAppIdApply: "Apply Steam App ID",
+	manualMatch: {
+		label: "Enter a Steam App ID",
+		help: "Use an ID or a Store, Community or SteamDB URL when search does not find the game. Leave it empty to remove the match.",
+		button: "Enter ID…"
+	},
 	shortcut: {
 		immediateNotice: "These actions apply now. They do not use Save.",
 		currentLabel: "Current name",
@@ -7196,7 +7226,7 @@ var editor$i = {
 		genres: "Géneros"
 	},
 	nonSteamOnly: "Este plugin solo modifica juegos que no son de Steam.",
-	searchIgn: "Buscar metadatos de IGN",
+	searchIgn: "Buscar en IGN",
 	ign: {
 		gameName: "Nombre del juego",
 		noResults: "No hay resultados.",
@@ -7243,6 +7273,11 @@ var editor$i = {
 	steamAppId: "ID de aplicación de Steam",
 	steamAppIdHelp: "Pega un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB. Déjalo vacío para borrar la coincidencia de Steam fijada.",
 	steamAppIdApply: "Aplicar ID de aplicación de Steam",
+	manualMatch: {
+		label: "Introduce un ID de aplicación de Steam",
+		help: "Usa un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB cuando la búsqueda no encuentre el juego. Déjalo vacío para quitar la coincidencia.",
+		button: "Introducir ID…"
+	},
 	shortcut: {
 		immediateNotice: "Estas acciones se aplican inmediatamente, sin pulsar «Guardar».",
 		currentLabel: "Nombre actual",
@@ -7827,7 +7862,7 @@ var editor$h = {
 		genres: "Tyylilajit"
 	},
 	nonSteamOnly: "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
-	searchIgn: "Hae IGN-metatietoja",
+	searchIgn: "Hae IGN:stä",
 	ign: {
 		gameName: "Pelin nimi",
 		noResults: "Ei tuloksia.",
@@ -7874,6 +7909,11 @@ var editor$h = {
 	steamAppId: "Steam-sovellustunnus",
 	steamAppIdHelp: "Liitä Steam-sovellustunnus, kaupan URL, yhteisön URL tai SteamDB-URL. Jätä tyhjäksi, jos haluat poistaa kiinnitetyn Steam-vastaavuuden.",
 	steamAppIdApply: "Ota Steam-sovellustunnus käyttöön",
+	manualMatch: {
+		label: "Syötä Steam-sovellustunnus",
+		help: "Käytä Steam-sovellustunnusta, kaupan URL-osoitetta, yhteisön URL-osoitetta tai SteamDB-URL-osoitetta, kun haku ei löydä peliä. Jätä tyhjäksi poistaaksesi vastaavuuden.",
+		button: "Syötä tunnus…"
+	},
 	shortcut: {
 		immediateNotice: "Nämä toiminnot tulevat voimaan heti ilman, että sinun tarvitsee valita ”Tallenna”.",
 		currentLabel: "Nykyinen nimi",
@@ -8459,7 +8499,7 @@ var editor$g = {
 		genres: "Genres"
 	},
 	nonSteamOnly: "Ce plugin ne modifie que les jeux non Steam.",
-	searchIgn: "Rechercher des métadonnées IGN",
+	searchIgn: "Rechercher sur IGN",
 	ign: {
 		gameName: "Nom du jeu",
 		noResults: "Aucun résultat.",
@@ -8506,6 +8546,11 @@ var editor$g = {
 	steamAppId: "App ID Steam",
 	steamAppIdHelp: "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
 	steamAppIdApply: "Appliquer l'App ID Steam",
+	manualMatch: {
+		label: "Saisir un App ID Steam",
+		help: "Utilisez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB lorsque la recherche ne trouve pas le jeu. Laissez vide pour supprimer l'association.",
+		button: "Saisir l'ID…"
+	},
 	shortcut: {
 		immediateNotice: "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
 		currentLabel: "Nom actuel",
@@ -9091,7 +9136,7 @@ var editor$f = {
 		genres: "Generi"
 	},
 	nonSteamOnly: "Questo plugin modifica solo i giochi non Steam.",
-	searchIgn: "Cerca i metadati su IGN",
+	searchIgn: "Cerca su IGN",
 	ign: {
 		gameName: "Nome del gioco",
 		noResults: "Nessun risultato.",
@@ -9138,6 +9183,11 @@ var editor$f = {
 	steamAppId: "ID app Steam",
 	steamAppIdHelp: "Incolla un ID app Steam, un URL del Negozio, della Comunità o di SteamDB. Lascia vuoto per cancellare la corrispondenza Steam fissata.",
 	steamAppIdApply: "Applica l'ID app Steam",
+	manualMatch: {
+		label: "Inserisci un ID app Steam",
+		help: "Usa un ID app Steam, un URL del Negozio, della Comunità o di SteamDB quando la ricerca non trova il gioco. Lascia vuoto per rimuovere la corrispondenza.",
+		button: "Inserisci ID…"
+	},
 	shortcut: {
 		immediateNotice: "Queste azioni si applicano subito, senza premere «Salva».",
 		currentLabel: "Nome attuale",
@@ -9721,7 +9771,7 @@ var editor$e = {
 		genres: "ジャンル"
 	},
 	nonSteamOnly: "このプラグインは Steam 以外のゲームのみを変更します。",
-	searchIgn: "IGN メタデータを検索",
+	searchIgn: "IGN を検索",
 	ign: {
 		gameName: "ゲーム名",
 		noResults: "結果がありません。",
@@ -9768,6 +9818,11 @@ var editor$e = {
 	steamAppId: "Steam アプリ ID",
 	steamAppIdHelp: "Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を貼り付けてください。空欄にすると固定した Steam 一致が解除されます。",
 	steamAppIdApply: "Steam アプリ ID を適用",
+	manualMatch: {
+		label: "Steam アプリ ID を入力",
+		help: "検索でゲームが見つからない場合は、Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を使用してください。空欄にすると一致が解除されます。",
+		button: "ID を入力…"
+	},
 	shortcut: {
 		immediateNotice: "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
 		currentLabel: "現在の名前",
@@ -10352,7 +10407,7 @@ var editor$d = {
 		genres: "ჟანრები"
 	},
 	nonSteamOnly: "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
-	searchIgn: "IGN-ის მეტამონაცემებში ძებნა",
+	searchIgn: "ძებნა IGN-ში",
 	ign: {
 		gameName: "თამაშის სახელი",
 		noResults: "შედეგები არ არის.",
@@ -10399,6 +10454,11 @@ var editor$d = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "ჩასვით Steam აპის ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ცარიელი Steam-ის დამაგრებული შესატყვისის გასასუფთავებლად.",
 	steamAppIdApply: "Steam App ID-ის გამოყენება",
+	manualMatch: {
+		label: "შეიყვანეთ Steam App ID",
+		help: "გამოიყენეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL, როცა ძებნა თამაშს ვერ პოულობს. დატოვეთ ცარიელი შესატყვისის მოსაშორებლად.",
+		button: "ID-ის შეყვანა…"
+	},
 	shortcut: {
 		immediateNotice: "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
 		currentLabel: "მიმდინარე სახელი",
@@ -10982,7 +11042,7 @@ var editor$c = {
 		genres: "장르"
 	},
 	nonSteamOnly: "이 플러그인은 비Steam 게임만 변경합니다.",
-	searchIgn: "IGN 메타데이터 검색",
+	searchIgn: "IGN 검색",
 	ign: {
 		gameName: "게임 이름",
 		noResults: "결과가 없습니다.",
@@ -11029,6 +11089,11 @@ var editor$c = {
 	steamAppId: "Steam 앱 ID",
 	steamAppIdHelp: "Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 붙여 넣으세요. 비워 두면 고정된 Steam 일치가 해제됩니다.",
 	steamAppIdApply: "Steam 앱 ID 적용",
+	manualMatch: {
+		label: "Steam 앱 ID 입력",
+		help: "검색으로 게임을 찾지 못하면 Steam 앱 ID, 상점 URL, 커뮤니티 URL 또는 SteamDB URL을 사용하세요. 비워 두면 일치가 해제됩니다.",
+		button: "ID 입력…"
+	},
 	shortcut: {
 		immediateNotice: "이 작업은 즉시 적용되며, ‘저장’을 누를 필요가 없습니다.",
 		currentLabel: "현재 이름",
@@ -11613,7 +11678,7 @@ var editor$b = {
 		genres: "Genres"
 	},
 	nonSteamOnly: "Deze plug-in wijzigt alleen niet-Steam-games.",
-	searchIgn: "IGN-metadata doorzoeken",
+	searchIgn: "IGN doorzoeken",
 	ign: {
 		gameName: "Naam van de game",
 		noResults: "Geen resultaten.",
@@ -11660,6 +11725,11 @@ var editor$b = {
 	steamAppId: "Steam-app-ID",
 	steamAppIdHelp: "Plak een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL. Laat leeg om de vastgezette Steam-match te wissen.",
 	steamAppIdApply: "Steam-app-ID toepassen",
+	manualMatch: {
+		label: "Voer een Steam-app-ID in",
+		help: "Gebruik een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL als de zoekopdracht het spel niet vindt. Laat leeg om de match te verwijderen.",
+		button: "ID invoeren…"
+	},
 	shortcut: {
 		immediateNotice: "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
 		currentLabel: "Huidige naam",
@@ -12246,7 +12316,7 @@ var editor$a = {
 		genres: "Gatunki"
 	},
 	nonSteamOnly: "Ta wtyczka zmienia tylko gry spoza Steam.",
-	searchIgn: "Szukaj metadanych w IGN",
+	searchIgn: "Szukaj w IGN",
 	ign: {
 		gameName: "Nazwa gry",
 		noResults: "Brak wyników.",
@@ -12293,6 +12363,11 @@ var editor$a = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Wklej Steam App ID, adres URL sklepu, adres URL społeczności lub adres URL SteamDB. Pozostaw puste, aby usunąć przypięte dopasowanie Steam.",
 	steamAppIdApply: "Zastosuj Steam App ID",
+	manualMatch: {
+		label: "Wprowadź Steam App ID",
+		help: "Użyj Steam App ID, adresu URL sklepu, adresu URL społeczności lub adresu URL SteamDB, gdy wyszukiwanie nie znajdzie gry. Pozostaw puste, aby usunąć dopasowanie.",
+		button: "Wprowadź ID…"
+	},
 	shortcut: {
 		immediateNotice: "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
 		currentLabel: "Bieżąca nazwa",
@@ -12878,7 +12953,7 @@ var editor$9 = {
 		genres: "Gêneros"
 	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
-	searchIgn: "Pesquisar metadados na IGN",
+	searchIgn: "Pesquisar na IGN",
 	ign: {
 		gameName: "Nome do jogo",
 		noResults: "Nenhum resultado.",
@@ -12925,6 +13000,11 @@ var editor$9 = {
 	steamAppId: "App ID da Steam",
 	steamAppIdHelp: "Cole um App ID da Steam, uma URL da Loja, da Comunidade ou do SteamDB. Deixe em branco para limpar a correspondência fixada da Steam.",
 	steamAppIdApply: "Aplicar App ID da Steam",
+	manualMatch: {
+		label: "Insira um App ID da Steam",
+		help: "Use um App ID da Steam, uma URL da Loja, da Comunidade ou do SteamDB quando a pesquisa não encontrar o jogo. Deixe em branco para remover a correspondência.",
+		button: "Inserir ID…"
+	},
 	shortcut: {
 		immediateNotice: "Essas ações são aplicadas imediatamente, sem precisar selecionar “Salvar”.",
 		currentLabel: "Nome atual",
@@ -13510,7 +13590,7 @@ var editor$8 = {
 		genres: "Géneros"
 	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
-	searchIgn: "Pesquisar metadados na IGN",
+	searchIgn: "Pesquisar na IGN",
 	ign: {
 		gameName: "Nome do jogo",
 		noResults: "Sem resultados.",
@@ -13557,6 +13637,11 @@ var editor$8 = {
 	steamAppId: "App ID da Steam",
 	steamAppIdHelp: "Cole um App ID da Steam, um URL da Loja, da Comunidade ou do SteamDB. Deixe vazio para limpar a correspondência fixada da Steam.",
 	steamAppIdApply: "Aplicar App ID da Steam",
+	manualMatch: {
+		label: "Introduza um App ID da Steam",
+		help: "Use um App ID da Steam, um URL da Loja, da Comunidade ou do SteamDB quando a pesquisa não encontrar o jogo. Deixe vazio para remover a correspondência.",
+		button: "Introduzir ID…"
+	},
 	shortcut: {
 		immediateNotice: "Estas ações são aplicadas de imediato, sem ter de selecionar «Guardar».",
 		currentLabel: "Nome atual",
@@ -14142,7 +14227,7 @@ var editor$7 = {
 		genres: "Genuri"
 	},
 	nonSteamOnly: "Acest plugin modifică doar jocurile non-Steam.",
-	searchIgn: "Caută metadate IGN",
+	searchIgn: "Caută în IGN",
 	ign: {
 		gameName: "Numele jocului",
 		noResults: "Nu există rezultate.",
@@ -14189,6 +14274,11 @@ var editor$7 = {
 	steamAppId: "ID aplicație Steam",
 	steamAppIdHelp: "Lipește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB. Lasă gol pentru a șterge potrivirea Steam fixată.",
 	steamAppIdApply: "Aplică ID-ul de aplicație Steam",
+	manualMatch: {
+		label: "Introdu un ID de aplicație Steam",
+		help: "Folosește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB când căutarea nu găsește jocul. Lasă gol pentru a elimina potrivirea.",
+		button: "Introdu ID…"
+	},
 	shortcut: {
 		immediateNotice: "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
 		currentLabel: "Numele curent",
@@ -14775,7 +14865,7 @@ var editor$6 = {
 		genres: "Жанры"
 	},
 	nonSteamOnly: "Этот плагин изменяет только игры вне Steam.",
-	searchIgn: "Искать метаданные в IGN",
+	searchIgn: "Искать в IGN",
 	ign: {
 		gameName: "Название игры",
 		noResults: "Нет результатов.",
@@ -14822,6 +14912,11 @@ var editor$6 = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Вставьте Steam App ID, URL магазина, URL сообщества или URL SteamDB. Оставьте пустым, чтобы снять привязанное совпадение Steam.",
 	steamAppIdApply: "Применить Steam App ID",
+	manualMatch: {
+		label: "Введите Steam App ID",
+		help: "Используйте Steam App ID, URL магазина, URL сообщества или URL SteamDB, если поиск не находит игру. Оставьте пустым, чтобы убрать совпадение.",
+		button: "Ввести ID…"
+	},
 	shortcut: {
 		immediateNotice: "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
 		currentLabel: "Текущее имя",
@@ -15406,7 +15501,7 @@ var editor$5 = {
 		genres: "Zhanret"
 	},
 	nonSteamOnly: "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
-	searchIgn: "Kërko metadata në IGN",
+	searchIgn: "Kërko në IGN",
 	ign: {
 		gameName: "Emri i lojës",
 		noResults: "Nuk ka rezultate.",
@@ -15453,6 +15548,11 @@ var editor$5 = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Ngjit një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB. Lëre bosh për të pastruar përputhjen e fiksuar në Steam.",
 	steamAppIdApply: "Zbato Steam App ID",
+	manualMatch: {
+		label: "Fut një Steam App ID",
+		help: "Përdor një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB kur kërkimi nuk e gjen lojën. Lëre bosh për të hequr përputhjen.",
+		button: "Fut ID…"
+	},
 	shortcut: {
 		immediateNotice: "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
 		currentLabel: "Emri aktual",
@@ -16037,7 +16137,7 @@ var editor$4 = {
 		genres: "Genrer"
 	},
 	nonSteamOnly: "Det här plugin-programmet ändrar bara icke-Steam-spel.",
-	searchIgn: "Sök IGN-metadata",
+	searchIgn: "Sök på IGN",
 	ign: {
 		gameName: "Spelets namn",
 		noResults: "Inga resultat.",
@@ -16084,6 +16184,11 @@ var editor$4 = {
 	steamAppId: "Steam-app-ID",
 	steamAppIdHelp: "Klistra in ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL. Lämna tomt för att rensa den fästa Steam-matchningen.",
 	steamAppIdApply: "Tillämpa Steam-app-ID",
+	manualMatch: {
+		label: "Ange ett Steam-app-ID",
+		help: "Använd ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL när sökningen inte hittar spelet. Lämna tomt för att ta bort matchningen.",
+		button: "Ange ID…"
+	},
 	shortcut: {
 		immediateNotice: "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
 		currentLabel: "Aktuellt namn",
@@ -16668,7 +16773,7 @@ var editor$3 = {
 		genres: "Türler"
 	},
 	nonSteamOnly: "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
-	searchIgn: "IGN meta verilerinde ara",
+	searchIgn: "IGN'de ara",
 	ign: {
 		gameName: "Oyun adı",
 		noResults: "Sonuç yok.",
@@ -16715,6 +16820,11 @@ var editor$3 = {
 	steamAppId: "Steam Uygulama ID'si",
 	steamAppIdHelp: "Bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si yapıştırın. Sabitlenmiş Steam eşleşmesini temizlemek için boş bırakın.",
 	steamAppIdApply: "Steam Uygulama ID'sini uygula",
+	manualMatch: {
+		label: "Bir Steam Uygulama ID'si girin",
+		help: "Arama oyunu bulamadığında bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si kullanın. Eşleşmeyi kaldırmak için boş bırakın.",
+		button: "ID girin…"
+	},
 	shortcut: {
 		immediateNotice: "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
 		currentLabel: "Geçerli ad",
@@ -17301,7 +17411,7 @@ var editor$2 = {
 		genres: "Жанри"
 	},
 	nonSteamOnly: "Цей плагін змінює лише ігри поза Steam.",
-	searchIgn: "Шукати метадані в IGN",
+	searchIgn: "Шукати в IGN",
 	ign: {
 		gameName: "Назва гри",
 		noResults: "Немає результатів.",
@@ -17348,6 +17458,11 @@ var editor$2 = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "Вставте Steam App ID, URL крамниці, URL спільноти або URL SteamDB. Залиште порожнім, щоб скасувати прив’язаний збіг Steam.",
 	steamAppIdApply: "Застосувати Steam App ID",
+	manualMatch: {
+		label: "Введіть Steam App ID",
+		help: "Використовуйте Steam App ID, URL крамниці, URL спільноти або URL SteamDB, коли пошук не знаходить гру. Залиште порожнім, щоб прибрати збіг.",
+		button: "Ввести ID…"
+	},
 	shortcut: {
 		immediateNotice: "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
 		currentLabel: "Поточна назва",
@@ -17931,7 +18046,7 @@ var editor$1 = {
 		genres: "类型"
 	},
 	nonSteamOnly: "此插件仅修改非 Steam 游戏。",
-	searchIgn: "搜索 IGN 元数据",
+	searchIgn: "搜索 IGN",
 	ign: {
 		gameName: "游戏名称",
 		noResults: "没有结果。",
@@ -17978,6 +18093,11 @@ var editor$1 = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "粘贴 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可清除固定的 Steam 匹配。",
 	steamAppIdApply: "应用 Steam App ID",
+	manualMatch: {
+		label: "输入 Steam App ID",
+		help: "当搜索找不到游戏时，使用 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可移除匹配。",
+		button: "输入 ID…"
+	},
 	shortcut: {
 		immediateNotice: "这些操作立即生效，无需点击“保存”。",
 		currentLabel: "当前名称",
@@ -18561,7 +18681,7 @@ var editor = {
 		genres: "類型"
 	},
 	nonSteamOnly: "此外掛只會變更非 Steam 遊戲。",
-	searchIgn: "搜尋 IGN 中繼資料",
+	searchIgn: "搜尋 IGN",
 	ign: {
 		gameName: "遊戲名稱",
 		noResults: "沒有結果。",
@@ -18608,6 +18728,11 @@ var editor = {
 	steamAppId: "Steam App ID",
 	steamAppIdHelp: "貼上 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可清除固定的 Steam 比對。",
 	steamAppIdApply: "套用 Steam App ID",
+	manualMatch: {
+		label: "輸入 Steam App ID",
+		help: "當搜尋找不到遊戲時，使用 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可移除比對。",
+		button: "輸入 ID…"
+	},
 	shortcut: {
 		immediateNotice: "這些操作會立即生效，不必按「儲存」。",
 		currentLabel: "目前名稱",
@@ -37624,6 +37749,14 @@ function showMetadataReviewModal(opts) {
 function showRemoveMetadataModal(opts) {
     DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { bDestructiveWarning: true, strTitle: t("editor.removeConfirm.title"), strDescription: t("editor.removeConfirm.body", { name: opts.gameName }), strOKButtonText: t("editor.removeMetadata"), strCancelButtonText: t("editor.removeConfirm.cancel"), onOK: opts.onConfirm }));
 }
+// showModal renders this as a component, so it may hold the typed text in state.
+function SteamAppIdModal({ initial, onApply, closeModal }) {
+    const [text, setText] = SP_REACT.useState(initial);
+    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.steamAppId"), strDescription: t("editor.steamAppIdHelp"), strOKButtonText: t("editor.steamAppIdApply"), strCancelButtonText: t("editor.review.cancel"), onOK: () => onApply(text), closeModal: closeModal, children: SP_JSX.jsx(DFL.TextField, { "aria-label": t("editor.steamAppId"), value: text, focusOnMount: true, bShowClearAction: true, onChange: (event) => setText(event.target.value) }) }));
+}
+function showSteamAppIdModal(opts) {
+    DFL.showModal(SP_JSX.jsx(SteamAppIdModal, { initial: opts.initial, onApply: opts.onApply }));
+}
 function saveButtonLabel(t, count) {
     return count > 0 ? t("editor.saveCount", { count }) : t("editor.save");
 }
@@ -38465,7 +38598,8 @@ const MetadataPage = () => {
             },
         });
     };
-    const applySteamAppId = async (explicitSteamAppId, review) => {
+    /** Load a Steam match (null clears it) into the form; picker results also pass review art. */
+    const applySteamAppId = async (steamAppId, review) => {
         if (!nonSteam) {
             toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
             return;
@@ -38475,11 +38609,6 @@ const MetadataPage = () => {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
             return;
         }
-        const steamAppId = explicitSteamAppId === undefined
-            ? checkSteamAppIdText(steamAppIdText)
-            : explicitSteamAppId;
-        if (steamAppId === undefined)
-            return;
         const parsed = normalizedSteamAppId(steamAppId);
         if (!beginBusy(requestedEntry, "steam"))
             return;
@@ -38536,6 +38665,18 @@ const MetadataPage = () => {
         finally {
             endBusy(requestedEntry);
         }
+    };
+    /** Type a Steam App ID or URL in a dialog; an invalid entry warns and changes nothing. */
+    const enterSteamAppId = () => {
+        showSteamAppIdModal({
+            initial: steamAppIdTextRef.current,
+            onApply: (text) => {
+                const steamAppId = checkSteamAppIdText(text);
+                if (steamAppId === undefined)
+                    return;
+                return applySteamAppId(steamAppId);
+            },
+        });
     };
     /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
     const applyHltbGameId = async (picked) => {
@@ -38865,15 +39006,29 @@ const MetadataPage = () => {
                                 }, style: editorInlineInputStyle }) })] }), renderCategoriesSection()] }));
     }
     function renderSteamMatchPage() {
-        const loadDisabledReasonKey = !nonSteam
-            ? "editor.loadFromSteamSteamGame"
-            : !hasSteamMatch
-                ? "editor.loadFromSteamNoMatch"
-                : null;
-        const loadLabelKey = steamBusy && !loadDisabledReasonKey
+        const loadDisabled = !nonSteam || !hasSteamMatch;
+        const loadLabelKey = steamBusy && !loadDisabled
             ? "editor.loadFromSteamBusy"
             : "editor.loadFromSteam";
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, savedSearch: steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null, onSearchChange: (search) => {
+        const matchName = steamStoreName.trim();
+        const matchLabel = !nonSteam
+            ? t("editor.loadFromSteamSteamGame")
+            : formSteamAppId === null
+                ? t("editor.loadFromSteamNoMatch")
+                : matchName || t("matchPicker.appId", { appId: formSteamAppId });
+        const matchAppIdLine = formSteamAppId !== null && matchName
+            ? t("matchPicker.appId", { appId: formSteamAppId })
+            : null;
+        // shortcut: guessed Steam CDN capsule path; apps with hashed asset paths get no art (hidden), use Steam's app assets API if that matters.
+        const matchArtUrl = formSteamAppId !== null
+            ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${formSteamAppId}/capsule_231x87.jpg`
+            : null;
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.currentMatch") }), SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: renderMarkedLabel(fieldMarker("steamAppId"), matchLabel), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [matchAppIdLine, changed.includes("steamData") ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [matchAppIdLine ? SP_JSX.jsx("br", {}) : null, SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.steamDataChanged") })] })) : null] }), icon: matchArtUrl ? (SP_JSX.jsx("img", { src: matchArtUrl, alt: "", style: editorSteamMatchImageStyle, onError: (event) => {
+                                    event.currentTarget.style.visibility = "hidden";
+                                } })) : undefined, layout: "inline", disabled: entryBusy || loadDisabled || steamBusy, onClick: () => {
+                                if (!loadDisabled && !steamBusy)
+                                    void refreshFromSteam();
+                            }, children: t(loadLabelKey) }), SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.manualMatch.label"), description: t("editor.manualMatch.help"), layout: "inline", disabled: entryBusy || !nonSteam, onClick: enterSteamAppId, bottomSeparator: steamLanguageMismatch ? "standard" : "none", children: t("editor.manualMatch.button") }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, savedSearch: steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null, onSearchChange: (search) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         steamSearchRef.current = { entry: editorEntryToken, search };
@@ -38881,21 +39036,12 @@ const MetadataPage = () => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId, { coverUrl });
-                    } }, editorEntryToken), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.currentMatch") }), SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.currentMatch"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [formSteamAppId !== null
-                                        ? t("matchPicker.appId", { appId: formSteamAppId })
-                                        : loadDisabledReasonKey
-                                            ? null
-                                            : t("editor.toast.steamPreviewBody"), loadDisabledReasonKey ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), t(loadDisabledReasonKey)] })) : null] }), layout: "inline", disabled: entryBusy || !!loadDisabledReasonKey || steamBusy, onClick: () => {
-                                if (!loadDisabledReasonKey && !steamBusy)
-                                    void refreshFromSteam();
-                            }, children: t(loadLabelKey) }), SP_JSX.jsx(DFL.Field, { label: markedLabel("steamAppId", "editor.steamAppId"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [t("editor.steamAppIdHelp"), changed.includes("steamData") ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("br", {}), SP_JSX.jsx("span", { style: { color: colors.warning }, children: t("editor.steamDataChanged") })] })) : null] }), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: steamLanguageMismatch ? "standard" : "none", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.steamAppId"), value: steamAppIdText, disabled: !nonSteam, onChange: (e) => {
-                                                markFormEdited();
-                                                clearPreviewMarker("steamAppId");
-                                                setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), description: t("editor.ign.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: entryBusy || !nonSteam, onChange: (e) => {
+                    } }, editorEntryToken), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), description: t("editor.ign.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: entryBusy || !nonSteam, onChange: (e) => {
                                                 setQuery(e.target.value);
                                                 setResults(null);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (
+                                // One wrapper per row, as in the Steam results, so both lists space their rows alike.
+                                SP_JSX.jsx("div", { children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used

@@ -468,7 +468,7 @@
       "genres": "Genres"
     },
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
-    "searchIgn": "IGN-metadata doorzoeken",
+    "searchIgn": "IGN doorzoeken",
     "ign": {
       "gameName": "Naam van de game",
       "noResults": "Geen resultaten.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Plak een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL. Laat leeg om de vastgezette Steam-match te wissen.",
     "steamAppIdApply": "Steam-app-ID toepassen",
+    "manualMatch": {
+      "label": "Voer een Steam-app-ID in",
+      "help": "Gebruik een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL als de zoekopdracht het spel niet vindt. Laat leeg om de match te verwijderen.",
+      "button": "ID invoeren…"
+    },
     "shortcut": {
       "immediateNotice": "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
       "currentLabel": "Huidige naam",

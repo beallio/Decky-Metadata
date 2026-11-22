@@ -468,7 +468,7 @@
       "genres": "Είδη"
     },
     "nonSteamOnly": "Αυτό το πρόσθετο αλλάζει μόνο παιχνίδια εκτός Steam.",
-    "searchIgn": "Αναζήτηση μεταδεδομένων IGN",
+    "searchIgn": "Αναζήτηση στο IGN",
     "ign": {
       "gameName": "Όνομα παιχνιδιού",
       "noResults": "Δεν υπάρχουν αποτελέσματα.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Επικολλήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB. Αφήστε κενό για να διαγράψετε την καρφιτσωμένη αντιστοίχιση Steam.",
     "steamAppIdApply": "Εφαρμογή Steam App ID",
+    "manualMatch": {
+      "label": "Εισαγάγετε Steam App ID",
+      "help": "Χρησιμοποιήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB όταν η αναζήτηση δεν βρίσκει το παιχνίδι. Αφήστε κενό για να αφαιρέσετε την αντιστοίχιση.",
+      "button": "Εισαγωγή ID…"
+    },
     "shortcut": {
       "immediateNotice": "Αυτές οι ενέργειες εφαρμόζονται αμέσως, χωρίς να χρειάζεται να επιλέξετε «Αποθήκευση».",
       "currentLabel": "Τρέχον όνομα",

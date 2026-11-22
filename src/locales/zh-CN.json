@@ -467,7 +467,7 @@
       "genres": "类型"
     },
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
-    "searchIgn": "搜索 IGN 元数据",
+    "searchIgn": "搜索 IGN",
     "ign": {
       "gameName": "游戏名称",
       "noResults": "没有结果。",
@@ -514,6 +514,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "粘贴 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可清除固定的 Steam 匹配。",
     "steamAppIdApply": "应用 Steam App ID",
+    "manualMatch": {
+      "label": "输入 Steam App ID",
+      "help": "当搜索找不到游戏时，使用 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可移除匹配。",
+      "button": "输入 ID…"
+    },
     "shortcut": {
       "immediateNotice": "这些操作立即生效，无需点击“保存”。",
       "currentLabel": "当前名称",

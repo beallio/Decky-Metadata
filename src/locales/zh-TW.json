@@ -467,7 +467,7 @@
       "genres": "類型"
     },
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
-    "searchIgn": "搜尋 IGN 中繼資料",
+    "searchIgn": "搜尋 IGN",
     "ign": {
       "gameName": "遊戲名稱",
       "noResults": "沒有結果。",
@@ -514,6 +514,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "貼上 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可清除固定的 Steam 比對。",
     "steamAppIdApply": "套用 Steam App ID",
+    "manualMatch": {
+      "label": "輸入 Steam App ID",
+      "help": "當搜尋找不到遊戲時，使用 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可移除比對。",
+      "button": "輸入 ID…"
+    },
     "shortcut": {
       "immediateNotice": "這些操作會立即生效，不必按「儲存」。",
       "currentLabel": "目前名稱",

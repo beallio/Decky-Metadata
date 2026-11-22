@@ -470,7 +470,7 @@
       "genres": "Žánry"
     },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
-    "searchIgn": "Hledat metadata na IGN",
+    "searchIgn": "Hledat na IGN",
     "ign": {
       "gameName": "Název hry",
       "noResults": "Žádné výsledky.",
@@ -517,6 +517,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Vložte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB. Nechte prázdné pro zrušení připnuté shody Steam.",
     "steamAppIdApply": "Použít Steam App ID",
+    "manualMatch": {
+      "label": "Zadejte Steam App ID",
+      "help": "Použijte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB, když hledání hru nenajde. Nechte prázdné pro odstranění shody.",
+      "button": "Zadat ID…"
+    },
     "shortcut": {
       "immediateNotice": "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
       "currentLabel": "Aktuální název",

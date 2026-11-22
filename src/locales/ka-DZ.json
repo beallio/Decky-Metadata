@@ -468,7 +468,7 @@
       "genres": "ჟანრები"
     },
     "nonSteamOnly": "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
-    "searchIgn": "IGN-ის მეტამონაცემებში ძებნა",
+    "searchIgn": "ძებნა IGN-ში",
     "ign": {
       "gameName": "თამაშის სახელი",
       "noResults": "შედეგები არ არის.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "ჩასვით Steam აპის ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ცარიელი Steam-ის დამაგრებული შესატყვისის გასასუფთავებლად.",
     "steamAppIdApply": "Steam App ID-ის გამოყენება",
+    "manualMatch": {
+      "label": "შეიყვანეთ Steam App ID",
+      "help": "გამოიყენეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL, როცა ძებნა თამაშს ვერ პოულობს. დატოვეთ ცარიელი შესატყვისის მოსაშორებლად.",
+      "button": "ID-ის შეყვანა…"
+    },
     "shortcut": {
       "immediateNotice": "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
       "currentLabel": "მიმდინარე სახელი",

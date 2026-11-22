@@ -469,7 +469,7 @@
       "genres": "Genres"
     },
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
-    "searchIgn": "Rechercher des métadonnées IGN",
+    "searchIgn": "Rechercher sur IGN",
     "ign": {
       "gameName": "Nom du jeu",
       "noResults": "Aucun résultat.",
@@ -516,6 +516,11 @@
     "steamAppId": "App ID Steam",
     "steamAppIdHelp": "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
     "steamAppIdApply": "Appliquer l'App ID Steam",
+    "manualMatch": {
+      "label": "Saisir un App ID Steam",
+      "help": "Utilisez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB lorsque la recherche ne trouve pas le jeu. Laissez vide pour supprimer l'association.",
+      "button": "Saisir l'ID…"
+    },
     "shortcut": {
       "immediateNotice": "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
       "currentLabel": "Nom actuel",

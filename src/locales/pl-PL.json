@@ -470,7 +470,7 @@
       "genres": "Gatunki"
     },
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
-    "searchIgn": "Szukaj metadanych w IGN",
+    "searchIgn": "Szukaj w IGN",
     "ign": {
       "gameName": "Nazwa gry",
       "noResults": "Brak wyników.",
@@ -517,6 +517,11 @@
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Wklej Steam App ID, adres URL sklepu, adres URL społeczności lub adres URL SteamDB. Pozostaw puste, aby usunąć przypięte dopasowanie Steam.",
     "steamAppIdApply": "Zastosuj Steam App ID",
+    "manualMatch": {
+      "label": "Wprowadź Steam App ID",
+      "help": "Użyj Steam App ID, adresu URL sklepu, adresu URL społeczności lub adresu URL SteamDB, gdy wyszukiwanie nie znajdzie gry. Pozostaw puste, aby usunąć dopasowanie.",
+      "button": "Wprowadź ID…"
+    },
     "shortcut": {
       "immediateNotice": "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
       "currentLabel": "Bieżąca nazwa",

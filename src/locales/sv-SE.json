@@ -468,7 +468,7 @@
       "genres": "Genrer"
     },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
-    "searchIgn": "Sök IGN-metadata",
+    "searchIgn": "Sök på IGN",
     "ign": {
       "gameName": "Spelets namn",
       "noResults": "Inga resultat.",
@@ -515,6 +515,11 @@
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Klistra in ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL. Lämna tomt för att rensa den fästa Steam-matchningen.",
     "steamAppIdApply": "Tillämpa Steam-app-ID",
+    "manualMatch": {
+      "label": "Ange ett Steam-app-ID",
+      "help": "Använd ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL när sökningen inte hittar spelet. Lämna tomt för att ta bort matchningen.",
+      "button": "Ange ID…"
+    },
     "shortcut": {
       "immediateNotice": "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
       "currentLabel": "Aktuellt namn",
