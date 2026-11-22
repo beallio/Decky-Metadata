@@ -4,6 +4,8 @@ const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 
 vi.mock("@decky/ui", () => ({
   ConfirmModal: "ConfirmModal",
+  Focusable: "Focusable",
+  ScrollPanelGroup: "ScrollPanelGroup",
   showModal: ui.showModal,
 }));
 
@@ -152,6 +154,11 @@ describe("showMetadataReviewModal", () => {
     expect(modal.props.strTitle).toBe("Review game details");
     expect(modal.props.strOKButtonText).toBe("Apply");
     expect(modal.props.strCancelButtonText).toBe("Cancel");
+    expect(modal.props.strDescription).toBeUndefined();
+    // The details scroll in a bounded panel so Apply/Cancel stay on screen.
+    const panel = modal.props.children as TestElement;
+    expect(panel.type).toBe("ScrollPanelGroup");
+    expect((panel.props.children as TestElement).props.style).toMatchObject({ maxHeight: "60vh", overflowY: "auto" });
     const texts: string[] = [];
     const images: TestElement[] = [];
     walk(modal.props.children, texts, images);

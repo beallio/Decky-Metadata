@@ -24,10 +24,6 @@
     "invalid_title": "nieprawidłowy tytuł",
     "invalid_search": "nieprawidłowe wyszukiwanie",
     "steam_search_unavailable": "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
-    "steam_details_unavailable": "Szczegóły gry Steam są niedostępne",
-    "steam_title_unavailable": "Tytuł gry Steam jest niedostępny",
-    "invalid_steam_game": "Wybierz prawidłową grę Steam.",
-    "steam_preview_unavailable": "Szczegóły Steam są niedostępne. Nadal możesz użyć tego dopasowania.",
     "settings_unreadable": "plik ustawień metadanych jest nieczytelny; napraw go lub usuń przed zapisaniem zmian",
     "invalid_release_date": "release_date musi być datą kalendarzową w formacie RRRR-MM-DD lub null",
     "hltb_settings_unavailable": "Nie udało się wczytać ustawień HLTB",
@@ -469,7 +465,6 @@
     },
     "review": {
       "title": "Sprawdź szczegóły gry",
-      "body": "Tak będą wyglądać szczegóły gry. Zastosowanie dodaje je do edytora. Nic nie zostanie zapisane, dopóki nie wybierzesz Zapisz.",
       "apply": "Zastosuj",
       "cancel": "Anuluj",
       "genres": "Gatunki"
@@ -587,7 +582,7 @@
     "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
   },
   "matchPicker": {
-    "help": "Wyszukaj grę w Steam, wybierz wynik, aby sprawdzić szczegóły, a następnie wybierz „Użyj tego dopasowania Steam”. Przeglądanie nie zmienia Twojej gry.",
+    "help": "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
     "searchAriaLabel": "Wyszukiwanie gry Steam",
     "search": "Szukaj w Steam",
     "searching": "Wyszukiwanie w Steam...",
@@ -595,18 +590,8 @@
     "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie",
-    "appIdSelected": "Steam App ID: {{appId}} · wybrane",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · bieżące dopasowanie · wybrane",
-    "loadingDetails": "Wczytywanie szczegółów Steam...",
-    "artworkAlt": "Grafika Steam gry {{title}}",
     "developer": "Producent: {{names}}",
-    "developerUnavailable": "Producent niedostępny",
-    "release": "Wydanie: {{date}}",
-    "releaseUnavailable": "Data wydania niedostępna",
-    "steamType": "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
-    "applyHelp": "Użycie tego dopasowania wczytuje jego Steam App ID i szczegóły do tego formularza. Zapiszesz je przyciskiem „Zapisz”. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
-    "apply": "Użyj tego dopasowania Steam",
-    "cancel": "Anuluj wybór"
+    "release": "Wydanie: {{date}}"
   },
   "categories": {
     "singlePlayer": "Jednoosobowa",

@@ -22,10 +22,6 @@
     "invalid_title": "ongeldige titel",
     "invalid_search": "ongeldige zoekopdracht",
     "steam_search_unavailable": "De Steam-zoekfunctie is niet beschikbaar. Probeer het opnieuw.",
-    "steam_details_unavailable": "Steam-spelgegevens zijn niet beschikbaar",
-    "steam_title_unavailable": "Steam-speltitel is niet beschikbaar",
-    "invalid_steam_game": "Selecteer een geldig Steam-spel.",
-    "steam_preview_unavailable": "Steam-gegevens zijn niet beschikbaar. Je kunt deze match nog steeds gebruiken.",
     "settings_unreadable": "metadata-instellingenbestand is onleesbaar; herstel of verwijder het voordat je wijzigingen opslaat",
     "invalid_release_date": "release_date moet een kalenderdatum in de vorm YYYY-MM-DD of null zijn",
     "hltb_settings_unavailable": "HLTB-instellingen konden niet worden geladen",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Spelgegevens controleren",
-      "body": "Zo worden de spelgegevens weergegeven. Door ze toe te passen, worden ze aan de editor toegevoegd. Er wordt niets opgeslagen totdat je Opslaan kiest.",
       "apply": "Toepassen",
       "cancel": "Annuleren",
       "genres": "Genres"
@@ -585,7 +580,7 @@
     "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd."
   },
   "matchPicker": {
-    "help": "Doorzoek Steam, selecteer een resultaat om de details te bekijken en kies dan Deze Steam-match gebruiken. Door te bladeren wordt je game niet gewijzigd.",
+    "help": "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
     "searchAriaLabel": "Steam-games zoeken",
     "search": "Steam doorzoeken",
     "searching": "Steam doorzoeken...",
@@ -593,18 +588,8 @@
     "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
     "appId": "Steam-app-ID: {{appId}}",
     "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match",
-    "appIdSelected": "Steam-app-ID: {{appId}} · Geselecteerd",
-    "appIdCurrentSelected": "Steam-app-ID: {{appId}} · Huidige match · Geselecteerd",
-    "loadingDetails": "Steam-gegevens laden...",
-    "artworkAlt": "Steam-illustratie van {{title}}",
     "developer": "Ontwikkelaar: {{names}}",
-    "developerUnavailable": "Ontwikkelaar niet beschikbaar",
-    "release": "Release: {{date}}",
-    "releaseUnavailable": "Releasedatum niet beschikbaar",
-    "steamType": "Steam-type: {{type}}. Controleer of dit de game of editie is die je wilt.",
-    "applyHelp": "Als je deze match gebruikt, worden de Steam-app-ID en details in dit formulier geladen. Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
-    "apply": "Deze Steam-match gebruiken",
-    "cancel": "Selectie annuleren"
+    "release": "Release: {{date}}"
   },
   "categories": {
     "singlePlayer": "Singleplayer",

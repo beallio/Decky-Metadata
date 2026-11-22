@@ -21,10 +21,6 @@
     "invalid_title": "無効なタイトル",
     "invalid_search": "無効な検索",
     "steam_search_unavailable": "Steam 検索を利用できません。再試行してください。",
-    "steam_details_unavailable": "Steam のゲーム詳細を取得できません",
-    "steam_title_unavailable": "Steam のゲームタイトルを取得できません",
-    "invalid_steam_game": "有効な Steam ゲームを選択してください。",
-    "steam_preview_unavailable": "Steam の詳細を取得できません。この一致は引き続き使用できます。",
     "settings_unreadable": "メタデータ設定ファイルを読み取れません。変更を保存する前に修正するか削除してください",
     "invalid_release_date": "release_date は YYYY-MM-DD 形式の日付または null である必要があります",
     "hltb_settings_unavailable": "HLTB 設定を読み込めませんでした",
@@ -466,7 +462,6 @@
     },
     "review": {
       "title": "ゲームの詳細を確認",
-      "body": "ゲームの詳細はこのように表示されます。適用するとエディターに反映されます。「保存」を選択するまで保存されません。",
       "apply": "適用",
       "cancel": "キャンセル",
       "genres": "ジャンル"
@@ -584,7 +579,7 @@
     "steamTextUnavailable": "Steam はこのゲームのテキストを返しませんでした。"
   },
   "matchPicker": {
-    "help": "Steam を検索し、結果を選択して詳細を確認してから「この Steam 一致を使用」を選んでください。閲覧してもゲームは変更されません。",
+    "help": "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
     "searchAriaLabel": "Steam ゲーム検索",
     "search": "Steam を検索",
     "searching": "Steam を検索中...",
@@ -592,18 +587,8 @@
     "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
     "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致",
-    "appIdSelected": "Steam アプリ ID: {{appId}} · 選択済み",
-    "appIdCurrentSelected": "Steam アプリ ID: {{appId}} · 現在の一致 · 選択済み",
-    "loadingDetails": "Steam の詳細を読み込み中...",
-    "artworkAlt": "{{title}} の Steam アートワーク",
     "developer": "開発元: {{names}}",
-    "developerUnavailable": "開発元を取得できません",
-    "release": "リリース: {{date}}",
-    "releaseUnavailable": "リリース日を取得できません",
-    "steamType": "Steam タイプ: {{type}}。目的のゲームまたはエディションか確認してください。",
-    "applyHelp": "この一致を使用すると、その Steam アプリ ID と詳細がこのフォームに読み込まれます。「保存」を押すと保存されます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
-    "apply": "この Steam 一致を使用",
-    "cancel": "選択をキャンセル"
+    "release": "リリース: {{date}}"
   },
   "categories": {
     "singlePlayer": "シングルプレイヤー",

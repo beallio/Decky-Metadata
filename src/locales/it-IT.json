@@ -23,10 +23,6 @@
     "invalid_title": "titolo non valido",
     "invalid_search": "ricerca non valida",
     "steam_search_unavailable": "La ricerca su Steam non è disponibile. Riprova.",
-    "steam_details_unavailable": "I dettagli del gioco su Steam non sono disponibili",
-    "steam_title_unavailable": "Il titolo del gioco su Steam non è disponibile",
-    "invalid_steam_game": "Seleziona un gioco Steam valido.",
-    "steam_preview_unavailable": "I dettagli Steam non sono disponibili. Puoi comunque usare questa corrispondenza.",
     "settings_unreadable": "il file delle impostazioni dei metadati non è leggibile; correggilo o rimuovilo prima di salvare le modifiche",
     "invalid_release_date": "release_date deve essere una data di calendario AAAA-MM-GG oppure null",
     "hltb_settings_unavailable": "Impossibile caricare le impostazioni HLTB",
@@ -468,7 +464,6 @@
     },
     "review": {
       "title": "Controlla i dettagli del gioco",
-      "body": "Ecco come appariranno i dettagli del gioco. Applicandoli, verranno aggiunti all’editor. Nulla viene salvato finché non selezioni Salva.",
       "apply": "Applica",
       "cancel": "Annulla",
       "genres": "Generi"
@@ -586,7 +581,7 @@
     "steamTextUnavailable": "Steam non ha restituito testo per questo gioco."
   },
   "matchPicker": {
-    "help": "Cerca su Steam, seleziona un risultato per controllarne i dettagli, quindi scegli Usa questa corrispondenza Steam. La navigazione non modifica il tuo gioco.",
+    "help": "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
     "searchAriaLabel": "Ricerca giochi Steam",
     "search": "Cerca su Steam",
     "searching": "Ricerca su Steam...",
@@ -594,18 +589,8 @@
     "empty": "Nessuna corrispondenza Steam trovata. Prova un altro nome o usa il campo ID app Steam qui sotto.",
     "appId": "ID app Steam: {{appId}}",
     "appIdCurrent": "ID app Steam: {{appId}} · Corrispondenza attuale",
-    "appIdSelected": "ID app Steam: {{appId}} · Selezionato",
-    "appIdCurrentSelected": "ID app Steam: {{appId}} · Corrispondenza attuale · Selezionato",
-    "loadingDetails": "Caricamento dei dettagli Steam...",
-    "artworkAlt": "Immagine Steam di {{title}}",
     "developer": "Sviluppatore: {{names}}",
-    "developerUnavailable": "Sviluppatore non disponibile",
-    "release": "Uscita: {{date}}",
-    "releaseUnavailable": "Data di uscita non disponibile",
-    "steamType": "Tipo Steam: {{type}}. Verifica che sia il gioco o l'edizione che vuoi.",
-    "applyHelp": "Usare questa corrispondenza carica l'ID app Steam e i relativi dettagli in questo modulo. Salva per conservarli. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
-    "apply": "Usa questa corrispondenza Steam",
-    "cancel": "Annulla la selezione"
+    "release": "Uscita: {{date}}"
   },
   "categories": {
     "singlePlayer": "Giocatore singolo",

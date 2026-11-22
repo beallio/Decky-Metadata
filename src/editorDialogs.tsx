@@ -1,5 +1,4 @@
-import { ConfirmModal, showModal } from "@decky/ui";
-import type { CSSProperties } from "react";
+import { ConfirmModal, Focusable, ScrollPanelGroup, showModal } from "@decky/ui";
 
 import { t } from "./i18n";
 import { personsToText } from "./metadataForm";
@@ -35,14 +34,16 @@ const reviewCoverStyle = {
   borderRadius: 4,
 } as const;
 
-const reviewDescriptionStyle: CSSProperties = {
+const reviewDescriptionStyle = {
   marginTop: 12,
   whiteSpace: "pre-line",
-  display: "-webkit-box",
-  WebkitBoxOrient: "vertical",
-  WebkitLineClamp: 6,
-  overflow: "hidden",
-};
+} as const;
+
+// Long details scroll inside the modal instead of pushing Apply/Cancel off screen (same bound as PluginLogModal).
+const reviewBodyStyle = {
+  maxHeight: "60vh",
+  overflowY: "auto",
+} as const;
 
 const reviewScreenshotStyle = {
   width: 160,
@@ -139,36 +140,37 @@ export function showMetadataReviewModal(opts: {
     : metadata.description || "";
   const screenshots = (metadata.screenshots ?? []).slice(0, 3);
   const content = (
-    <>
-      <div style={reviewHeaderStyle}>
-        {coverUrl ? <img src={coverUrl} alt="" style={reviewCoverStyle} /> : null}
-        <div>
-          <div style={reviewTitleStyle}>{metadata.title}</div>
-          <div style={reviewFactsStyle}>
-            {facts.map(([label, value]) => (
-              <div key={label} style={reviewFactRowStyle}>
-                <div style={reviewFactLabelStyle}>{label}</div>
-                <div>{value}</div>
-              </div>
-            ))}
+    <ScrollPanelGroup>
+      <Focusable noFocusRing style={reviewBodyStyle}>
+        <div style={reviewHeaderStyle}>
+          {coverUrl ? <img src={coverUrl} alt="" style={reviewCoverStyle} /> : null}
+          <div>
+            <div style={reviewTitleStyle}>{metadata.title}</div>
+            <div style={reviewFactsStyle}>
+              {facts.map(([label, value]) => (
+                <div key={label} style={reviewFactRowStyle}>
+                  <div style={reviewFactLabelStyle}>{label}</div>
+                  <div>{value}</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-      {description ? <div style={reviewDescriptionStyle}>{description}</div> : null}
-      {screenshots.length > 0 ? (
-        <div style={reviewScreenshotsStyle}>
-          {screenshots.map((shot) => (
-            <img key={shot.url} src={shot.url} alt="" style={reviewScreenshotStyle} />
-          ))}
-        </div>
-      ) : null}
-    </>
+        {description ? <div style={reviewDescriptionStyle}>{description}</div> : null}
+        {screenshots.length > 0 ? (
+          <div style={reviewScreenshotsStyle}>
+            {screenshots.map((shot) => (
+              <img key={shot.url} src={shot.url} alt="" style={reviewScreenshotStyle} />
+            ))}
+          </div>
+        ) : null}
+      </Focusable>
+    </ScrollPanelGroup>
   );
   return new Promise<boolean>((resolve) => {
     showModal(
       <ConfirmModal
         strTitle={t("editor.review.title")}
-        strDescription={t("editor.review.body")}
         strOKButtonText={t("editor.review.apply")}
         strCancelButtonText={t("editor.review.cancel")}
         onOK={() => resolve(true)}

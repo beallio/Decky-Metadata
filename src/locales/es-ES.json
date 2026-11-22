@@ -23,10 +23,6 @@
     "invalid_title": "título no válido",
     "invalid_search": "búsqueda no válida",
     "steam_search_unavailable": "La búsqueda de Steam no está disponible. Inténtalo de nuevo.",
-    "steam_details_unavailable": "Los detalles del juego de Steam no están disponibles",
-    "steam_title_unavailable": "El título del juego de Steam no está disponible",
-    "invalid_steam_game": "Selecciona un juego de Steam válido.",
-    "steam_preview_unavailable": "Los detalles de Steam no están disponibles. Aun así puedes usar esta coincidencia.",
     "settings_unreadable": "el archivo de ajustes de metadatos no se puede leer; corrígelo o elimínalo antes de guardar los cambios",
     "invalid_release_date": "release_date debe ser una fecha de calendario AAAA-MM-DD o null",
     "hltb_settings_unavailable": "No se pudieron cargar los ajustes de HLTB",
@@ -468,7 +464,6 @@
     },
     "review": {
       "title": "Revisar los detalles del juego",
-      "body": "Así se verán los detalles del juego. Al aplicar, se añaden al editor. No se guarda nada hasta que selecciones Guardar.",
       "apply": "Aplicar",
       "cancel": "Cancelar",
       "genres": "Géneros"
@@ -586,7 +581,7 @@
     "steamTextUnavailable": "Steam no devolvió texto para este juego."
   },
   "matchPicker": {
-    "help": "Busca en Steam, selecciona un resultado para comprobar sus detalles y luego elige «Usar esta coincidencia de Steam». Navegar no cambia tu juego.",
+    "help": "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
     "searchAriaLabel": "Búsqueda de juegos de Steam",
     "search": "Buscar en Steam",
     "searching": "Buscando en Steam...",
@@ -594,18 +589,8 @@
     "empty": "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
     "appId": "ID de aplicación de Steam: {{appId}}",
     "appIdCurrent": "ID de aplicación de Steam: {{appId}} · Coincidencia actual",
-    "appIdSelected": "ID de aplicación de Steam: {{appId}} · Seleccionado",
-    "appIdCurrentSelected": "ID de aplicación de Steam: {{appId}} · Coincidencia actual · Seleccionado",
-    "loadingDetails": "Cargando los detalles de Steam...",
-    "artworkAlt": "Ilustración de Steam de {{title}}",
     "developer": "Desarrollador: {{names}}",
-    "developerUnavailable": "Desarrollador no disponible",
-    "release": "Lanzamiento: {{date}}",
-    "releaseUnavailable": "Fecha de lanzamiento no disponible",
-    "steamType": "Tipo de Steam: {{type}}. Comprueba que sea el juego o la edición que quieres.",
-    "applyHelp": "Usar esta coincidencia carga el ID de aplicación de Steam y sus detalles en este formulario. Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
-    "apply": "Usar esta coincidencia de Steam",
-    "cancel": "Cancelar selección"
+    "release": "Lanzamiento: {{date}}"
   },
   "categories": {
     "singlePlayer": "Un jugador",

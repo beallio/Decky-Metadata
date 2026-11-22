@@ -23,10 +23,6 @@
     "invalid_title": "titlu nevalid",
     "invalid_search": "căutare nevalidă",
     "steam_search_unavailable": "Căutarea Steam nu este disponibilă. Încearcă din nou.",
-    "steam_details_unavailable": "Detaliile jocului Steam nu sunt disponibile",
-    "steam_title_unavailable": "Titlul jocului Steam nu este disponibil",
-    "invalid_steam_game": "Selectează un joc Steam valid.",
-    "steam_preview_unavailable": "Detaliile Steam nu sunt disponibile. Poți totuși folosi această potrivire.",
     "settings_unreadable": "fișierul de setări pentru metadate nu poate fi citit; corectează-l sau elimină-l înainte de a salva modificările",
     "invalid_release_date": "release_date trebuie să fie o dată calendaristică AAAA-LL-ZZ sau null",
     "hltb_settings_unavailable": "Setările HLTB nu au putut fi încărcate",
@@ -468,7 +464,6 @@
     },
     "review": {
       "title": "Verifică detaliile jocului",
-      "body": "Așa vor arăta detaliile jocului. Aplicarea le adaugă în editor. Nimic nu este salvat până când nu selectezi Salvează.",
       "apply": "Aplică",
       "cancel": "Anulează",
       "genres": "Genuri"
@@ -586,7 +581,7 @@
     "steamTextUnavailable": "Steam nu a returnat text pentru acest joc."
   },
   "matchPicker": {
-    "help": "Caută pe Steam, selectează un rezultat pentru a-i verifica detaliile, apoi alege Folosește această potrivire Steam. Navigarea nu îți modifică jocul.",
+    "help": "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
     "searchAriaLabel": "Căutare jocuri Steam",
     "search": "Caută pe Steam",
     "searching": "Se caută pe Steam...",
@@ -594,18 +589,8 @@
     "empty": "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește câmpul ID aplicație Steam de mai jos.",
     "appId": "ID aplicație Steam: {{appId}}",
     "appIdCurrent": "ID aplicație Steam: {{appId}} · Potrivirea curentă",
-    "appIdSelected": "ID aplicație Steam: {{appId}} · Selectat",
-    "appIdCurrentSelected": "ID aplicație Steam: {{appId}} · Potrivirea curentă · Selectat",
-    "loadingDetails": "Se încarcă detaliile Steam...",
-    "artworkAlt": "Imaginea Steam pentru {{title}}",
     "developer": "Dezvoltator: {{names}}",
-    "developerUnavailable": "Dezvoltator indisponibil",
-    "release": "Lansare: {{date}}",
-    "releaseUnavailable": "Data lansării indisponibilă",
-    "steamType": "Tip Steam: {{type}}. Verifică dacă acesta este jocul sau ediția dorită.",
-    "applyHelp": "Folosirea acestei potriviri încarcă ID-ul aplicației Steam și detaliile sale în acest formular. Salvarea le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
-    "apply": "Folosește această potrivire Steam",
-    "cancel": "Anulează selecția"
+    "release": "Lansare: {{date}}"
   },
   "categories": {
     "singlePlayer": "Un singur jucător",

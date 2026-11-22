@@ -22,10 +22,6 @@
     "invalid_title": "geçersiz başlık",
     "invalid_search": "geçersiz arama",
     "steam_search_unavailable": "Steam araması kullanılamıyor. Tekrar deneyin.",
-    "steam_details_unavailable": "Steam oyun ayrıntıları kullanılamıyor",
-    "steam_title_unavailable": "Steam oyun başlığı kullanılamıyor",
-    "invalid_steam_game": "Geçerli bir Steam oyunu seçin.",
-    "steam_preview_unavailable": "Steam ayrıntıları kullanılamıyor. Bu eşleşmeyi yine de kullanabilirsiniz.",
     "settings_unreadable": "meta veri ayarları dosyası okunamıyor; değişiklikleri kaydetmeden önce düzeltin veya kaldırın",
     "invalid_release_date": "release_date, YYYY-MM-DD biçiminde bir takvim tarihi veya null olmalıdır",
     "hltb_settings_unavailable": "HLTB ayarları yüklenemedi",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Oyun ayrıntılarını gözden geçir",
-      "body": "Oyun ayrıntıları böyle görünecek. Uygula, ayrıntıları düzenleyiciye ekler. Kaydet'i seçene kadar hiçbir şey kaydedilmez.",
       "apply": "Uygula",
       "cancel": "İptal",
       "genres": "Türler"
@@ -585,7 +580,7 @@
     "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
   },
   "matchPicker": {
-    "help": "Steam'de arayın, ayrıntılarını incelemek için bir sonuç seçin ve ardından Bu Steam eşleşmesini kullan öğesini seçin. Gezinmek oyununuzu değiştirmez.",
+    "help": "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
     "searchAriaLabel": "Steam oyun araması",
     "search": "Steam'de ara",
     "searching": "Steam'de aranıyor...",
@@ -593,18 +588,8 @@
     "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
     "appId": "Steam Uygulama ID'si: {{appId}}",
     "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme",
-    "appIdSelected": "Steam Uygulama ID'si: {{appId}} · Seçildi",
-    "appIdCurrentSelected": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme · Seçildi",
-    "loadingDetails": "Steam ayrıntıları yükleniyor...",
-    "artworkAlt": "{{title}} Steam görseli",
     "developer": "Geliştirici: {{names}}",
-    "developerUnavailable": "Geliştirici kullanılamıyor",
-    "release": "Çıkış: {{date}}",
-    "releaseUnavailable": "Çıkış tarihi kullanılamıyor",
-    "steamType": "Steam türü: {{type}}. Bunun istediğiniz oyun veya sürüm olduğunu doğrulayın.",
-    "applyHelp": "Bu eşleşmeyi kullanmak, Steam Uygulama ID'sini ve ayrıntılarını bu forma yükler. Kaydet düğmesiyle saklanır. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
-    "apply": "Bu Steam eşleşmesini kullan",
-    "cancel": "Seçimi iptal et"
+    "release": "Çıkış: {{date}}"
   },
   "categories": {
     "singlePlayer": "Tek oyunculu",

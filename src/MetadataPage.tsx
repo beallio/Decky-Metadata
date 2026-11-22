@@ -63,7 +63,7 @@ import {
 } from "./types";
 import { currentLocale, currentSteamLanguage, refreshLanguage, translateBackendError, useT } from "./i18n";
 import { toastError, toastSuccess, toastWarn } from "./toast";
-import { SteamMatchPicker } from "./SteamMatchPicker";
+import { SteamMatchPicker, type SteamSearchSnapshot } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
 import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { useHltbMatch, useHltbSnapshot } from "./hltb/gameView";
@@ -797,6 +797,8 @@ export const MetadataPage = () => {
     [],
   );
   const [page, setPage] = useState<EditorPageId>("details");
+  // Steam search results outlive the Game Match page, as IGN results do.
+  const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
   const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
   // The visible fields whose value differs from the stored record.
   const changed = changedDraftFields(savedRecordRef.current, {
@@ -1582,6 +1584,10 @@ export const MetadataPage = () => {
           initialQuery={appName(appId)}
           matchedSteamAppId={savedSteamAppId}
           disabled={entryBusy || !nonSteam}
+          savedSearch={steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null}
+          onSearchChange={(search) => {
+            steamSearchRef.current = { entry: editorEntryToken, search };
+          }}
           onApply={async (steamAppId, coverUrl) => {
             if (!isCurrentEditorEntry(editorEntryToken)) return;
             await applySteamAppId(steamAppId, { coverUrl });

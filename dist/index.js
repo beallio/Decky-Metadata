@@ -101,7 +101,6 @@ const getDelistedIndexStatus = callable("get_delisted_index_status");
 const frontendLog = callable("frontend_log");
 const searchMetadata = callable("search_metadata");
 const searchSteamMatches = callable("search_steam_matches");
-const getSteamMatchPreview = callable("get_steam_match_preview");
 const fetchMetadata = callable("fetch_metadata");
 const applyFetchedMetadata = callable("apply_fetched_metadata");
 const previewFetchedMetadata = callable("preview_fetched_metadata");
@@ -190,7 +189,6 @@ var backend$p = /*#__PURE__*/Object.freeze({
     getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
-    getSteamMatchPreview: getSteamMatchPreview,
     getSystemVersions: getSystemVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
@@ -2963,10 +2961,6 @@ var backend$o = {
 	invalid_title: "عنوان غير صالح",
 	invalid_search: "بحث غير صالح",
 	steam_search_unavailable: "بحث Steam غير متاح. أعد المحاولة.",
-	steam_details_unavailable: "تفاصيل لعبة Steam غير متاحة",
-	steam_title_unavailable: "عنوان لعبة Steam غير متاح",
-	invalid_steam_game: "اختر لعبة Steam صالحة.",
-	steam_preview_unavailable: "تفاصيل Steam غير متاحة. يمكنك استخدام هذه المطابقة رغم ذلك.",
 	settings_unreadable: "ملف إعدادات البيانات الوصفية غير قابل للقراءة؛ أصلحه أو احذفه قبل حفظ التغييرات",
 	invalid_release_date: "يجب أن يكون release_date تاريخًا تقويميًا بصيغة YYYY-MM-DD أو null",
 	hltb_settings_unavailable: "تعذّر تحميل إعدادات HLTB",
@@ -3408,7 +3402,6 @@ var editor$o = {
 	},
 	review: {
 		title: "مراجعة تفاصيل اللعبة",
-		body: "هذه هي الطريقة التي ستظهر بها تفاصيل اللعبة. يضيف تطبيق التفاصيل إلى المحرر. لا يتم الحفظ حتى تختار حفظ.",
 		apply: "تطبيق",
 		cancel: "إلغاء",
 		genres: "الأنواع"
@@ -3526,7 +3519,7 @@ var editor$o = {
 	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة."
 };
 var matchPicker$o = {
-	help: "ابحث في Steam، واختر نتيجة لفحص تفاصيلها، ثم اختر «استخدام مطابقة Steam هذه». التصفح لا يغيّر لعبتك.",
+	help: "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
 	searchAriaLabel: "بحث ألعاب Steam",
 	search: "البحث في Steam",
 	searching: "جارٍ البحث في Steam...",
@@ -3534,18 +3527,8 @@ var matchPicker$o = {
 	empty: "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · المطابقة الحالية",
-	appIdSelected: "Steam App ID: {{appId}} · محدد",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · المطابقة الحالية · محدد",
-	loadingDetails: "جارٍ تحميل تفاصيل Steam...",
-	artworkAlt: "رسومات Steam لـ {{title}}",
 	developer: "المطوّر: {{names}}",
-	developerUnavailable: "المطوّر غير متاح",
-	release: "الإصدار: {{date}}",
-	releaseUnavailable: "تاريخ الإصدار غير متاح",
-	steamType: "نوع Steam: {{type}}. تحقق من أن هذه هي اللعبة أو الإصدار الذي تريده.",
-	applyHelp: "استخدام هذه المطابقة يحمّل Steam App ID الخاص بها وتفاصيلها في هذا النموذج. يحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
-	apply: "استخدام مطابقة Steam هذه",
-	cancel: "إلغاء التحديد"
+	release: "الإصدار: {{date}}"
 };
 var categories$o = {
 	singlePlayer: "لاعب واحد",
@@ -3610,10 +3593,6 @@ var backend$n = {
 	invalid_title: "невалидно заглавие",
 	invalid_search: "невалидно търсене",
 	steam_search_unavailable: "Търсенето в Steam не е достъпно. Опитайте отново.",
-	steam_details_unavailable: "Подробностите за играта в Steam не са достъпни",
-	steam_title_unavailable: "Заглавието на играта в Steam не е достъпно",
-	invalid_steam_game: "Изберете валидна игра от Steam.",
-	steam_preview_unavailable: "Подробностите от Steam не са достъпни. Все пак можете да използвате това съвпадение.",
 	settings_unreadable: "файлът с настройки на метаданните не може да бъде прочетен; коригирайте го или го премахнете, преди да запазите промени",
 	invalid_release_date: "release_date трябва да е календарна дата във формат ГГГГ-ММ-ДД или null",
 	hltb_settings_unavailable: "Настройките на HLTB не можаха да бъдат заредени",
@@ -4055,7 +4034,6 @@ var editor$n = {
 	},
 	review: {
 		title: "Преглед на подробностите за играта",
-		body: "Ето как ще изглеждат подробностите за играта. Прилагането им ги добавя в редактора. Нищо не се запазва, докато не изберете Запазване.",
 		apply: "Прилагане",
 		cancel: "Отказ",
 		genres: "Жанрове"
@@ -4173,7 +4151,7 @@ var editor$n = {
 	steamTextUnavailable: "Steam не върна текст за тази игра."
 };
 var matchPicker$n = {
-	help: "Потърсете в Steam, изберете резултат, за да проверите подробностите, след което изберете „Използване на това съвпадение в Steam“. Разглеждането не променя играта ви.",
+	help: "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",
 	searchAriaLabel: "Търсене на игра в Steam",
 	search: "Търсене в Steam",
 	searching: "Търсене в Steam...",
@@ -4181,18 +4159,8 @@ var matchPicker$n = {
 	empty: "Не са намерени съвпадения в Steam. Опитайте с друго име или използвайте полето Steam App ID по-долу.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · Текущо съвпадение",
-	appIdSelected: "Steam App ID: {{appId}} · Избрано",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · Текущо съвпадение · Избрано",
-	loadingDetails: "Зареждане на подробности от Steam...",
-	artworkAlt: "Изображение от Steam за {{title}}",
 	developer: "Разработчик: {{names}}",
-	developerUnavailable: "Разработчикът не е достъпен",
-	release: "Издаване: {{date}}",
-	releaseUnavailable: "Датата на излизане не е достъпна",
-	steamType: "Тип в Steam: {{type}}. Проверете дали това е играта или изданието, което искате.",
-	applyHelp: "Използването на това съвпадение зарежда неговия Steam App ID и подробностите му в този формуляр. Натиснете „Запази“, за да ги запазите. То не преименува прекия път и не заменя персонализираното ви изображение.",
-	apply: "Използване на това съвпадение в Steam",
-	cancel: "Отказ от избора"
+	release: "Издаване: {{date}}"
 };
 var categories$n = {
 	singlePlayer: "Самостоятелна игра",
@@ -4259,10 +4227,6 @@ var backend$m = {
 	invalid_title: "neplatný název",
 	invalid_search: "neplatné hledání",
 	steam_search_unavailable: "Vyhledávání ve Steamu není dostupné. Zkuste to znovu.",
-	steam_details_unavailable: "Podrobnosti hry ze Steamu nejsou dostupné",
-	steam_title_unavailable: "Název hry ze Steamu není dostupný",
-	invalid_steam_game: "Vyberte platnou hru ze Steamu.",
-	steam_preview_unavailable: "Podrobnosti ze Steamu nejsou dostupné. Tuto shodu můžete přesto použít.",
 	settings_unreadable: "soubor nastavení metadat je nečitelný; před uložením změn ho opravte nebo odstraňte",
 	invalid_release_date: "release_date musí být kalendářní datum ve formátu RRRR-MM-DD nebo null",
 	hltb_settings_unavailable: "Nastavení HLTB se nepodařilo načíst",
@@ -4704,7 +4668,6 @@ var editor$m = {
 	},
 	review: {
 		title: "Kontrola podrobností hry",
-		body: "Takto budou podrobnosti o hře vypadat. Použitím je přidáte do editoru. Nic se neuloží, dokud nevyberete Uložit.",
 		apply: "Použít",
 		cancel: "Zrušit",
 		genres: "Žánry"
@@ -4822,7 +4785,7 @@ var editor$m = {
 	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text."
 };
 var matchPicker$m = {
-	help: "Vyhledejte hru ve Steamu, vyberte výsledek pro kontrolu podrobností a potom zvolte „Použít tuto shodu Steam“. Procházení vaši hru nezmění.",
+	help: "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
 	searchAriaLabel: "Vyhledávání her Steam",
 	search: "Hledat ve Steamu",
 	searching: "Hledání ve Steamu...",
@@ -4830,18 +4793,8 @@ var matchPicker$m = {
 	empty: "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · aktuální shoda",
-	appIdSelected: "Steam App ID: {{appId}} · vybráno",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · aktuální shoda · vybráno",
-	loadingDetails: "Načítání podrobností ze Steamu...",
-	artworkAlt: "Grafika Steam hry {{title}}",
 	developer: "Vývojář: {{names}}",
-	developerUnavailable: "Vývojář není dostupný",
-	release: "Vydání: {{date}}",
-	releaseUnavailable: "Datum vydání není dostupné",
-	steamType: "Typ Steam: {{type}}. Zkontrolujte, zda je to hra nebo edice, kterou chcete.",
-	applyHelp: "Použitím této shody se do tohoto formuláře načte její Steam App ID a podrobnosti. Uložíte je tlačítkem „Uložit“. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
-	apply: "Použít tuto shodu Steam",
-	cancel: "Zrušit výběr"
+	release: "Vydání: {{date}}"
 };
 var categories$m = {
 	singlePlayer: "Pro jednoho hráče",
@@ -4906,10 +4859,6 @@ var backend$l = {
 	invalid_title: "ungültiger Titel",
 	invalid_search: "ungültige Suche",
 	steam_search_unavailable: "Steam-Suche ist nicht verfügbar. Versuche es erneut.",
-	steam_details_unavailable: "Steam-Spieldetails sind nicht verfügbar",
-	steam_title_unavailable: "Steam-Spieltitel ist nicht verfügbar",
-	invalid_steam_game: "Wähle ein gültiges Steam-Spiel.",
-	steam_preview_unavailable: "Steam-Details sind nicht verfügbar. Du kannst diese Zuordnung trotzdem verwenden.",
 	settings_unreadable: "Metadaten-Einstellungsdatei ist nicht lesbar; repariere oder entferne sie, bevor du Änderungen speicherst",
 	invalid_release_date: "release_date muss ein Kalenderdatum im Format YYYY-MM-DD oder null sein",
 	hltb_settings_unavailable: "HLTB-Einstellungen konnten nicht geladen werden",
@@ -5351,7 +5300,6 @@ var editor$l = {
 	},
 	review: {
 		title: "Spieldetails überprüfen",
-		body: "So werden die Spieldetails aussehen. Mit Anwenden werden sie in den Editor übernommen. Es wird nichts gespeichert, bis du Speichern auswählst.",
 		apply: "Anwenden",
 		cancel: "Abbrechen",
 		genres: "Genres"
@@ -5469,7 +5417,7 @@ var editor$l = {
 	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben."
 };
 var matchPicker$l = {
-	help: "Durchsuche Steam, wähle ein Ergebnis, um die Details zu prüfen, und wähle dann „Diese Steam-Zuordnung verwenden“. Das Durchsuchen ändert dein Spiel nicht.",
+	help: "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
 	searchAriaLabel: "Steam-Spielsuche",
 	search: "Steam durchsuchen",
 	searching: "Steam wird durchsucht...",
@@ -5477,18 +5425,8 @@ var matchPicker$l = {
 	empty: "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
 	appId: "Steam-App-ID: {{appId}}",
 	appIdCurrent: "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
-	appIdSelected: "Steam-App-ID: {{appId}} · Ausgewählt",
-	appIdCurrentSelected: "Steam-App-ID: {{appId}} · Aktuelle Zuordnung · Ausgewählt",
-	loadingDetails: "Steam-Details werden geladen...",
-	artworkAlt: "Steam-Artwork für {{title}}",
 	developer: "Entwickler: {{names}}",
-	developerUnavailable: "Entwickler nicht verfügbar",
-	release: "Veröffentlichung: {{date}}",
-	releaseUnavailable: "Veröffentlichungsdatum nicht verfügbar",
-	steamType: "Steam-Typ: {{type}}. Prüfe, ob dies das gewünschte Spiel bzw. die gewünschte Edition ist.",
-	applyHelp: "Diese Zuordnung lädt ihre Steam-App-ID und Details in dieses Formular. Speichern übernimmt sie. Sie benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
-	apply: "Diese Steam-Zuordnung verwenden",
-	cancel: "Auswahl abbrechen"
+	release: "Veröffentlichung: {{date}}"
 };
 var categories$l = {
 	singlePlayer: "Einzelspieler",
@@ -5553,10 +5491,6 @@ var backend$k = {
 	invalid_title: "μη έγκυρος τίτλος",
 	invalid_search: "μη έγκυρη αναζήτηση",
 	steam_search_unavailable: "Η αναζήτηση Steam δεν είναι διαθέσιμη. Δοκιμάστε ξανά.",
-	steam_details_unavailable: "Οι λεπτομέρειες του παιχνιδιού στο Steam δεν είναι διαθέσιμες",
-	steam_title_unavailable: "Ο τίτλος του παιχνιδιού στο Steam δεν είναι διαθέσιμος",
-	invalid_steam_game: "Επιλέξτε ένα έγκυρο παιχνίδι Steam.",
-	steam_preview_unavailable: "Οι λεπτομέρειες Steam δεν είναι διαθέσιμες. Μπορείτε ακόμη να χρησιμοποιήσετε αυτή την αντιστοίχιση.",
 	settings_unreadable: "το αρχείο ρυθμίσεων μεταδεδομένων δεν είναι αναγνώσιμο· διορθώστε το ή αφαιρέστε το πριν αποθηκεύσετε αλλαγές",
 	invalid_release_date: "Το release_date πρέπει να είναι ημερομηνία ημερολογίου ΕΕΕΕ-ΜΜ-ΗΗ ή null",
 	hltb_settings_unavailable: "Δεν ήταν δυνατή η φόρτωση των ρυθμίσεων HLTB",
@@ -5998,7 +5932,6 @@ var editor$k = {
 	},
 	review: {
 		title: "Έλεγχος λεπτομερειών παιχνιδιού",
-		body: "Έτσι θα εμφανίζονται οι λεπτομέρειες του παιχνιδιού. Με την εφαρμογή τους προστίθενται στον επεξεργαστή. Δεν αποθηκεύεται τίποτα μέχρι να επιλέξετε Αποθήκευση.",
 		apply: "Εφαρμογή",
 		cancel: "Ακύρωση",
 		genres: "Είδη"
@@ -6116,7 +6049,7 @@ var editor$k = {
 	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
 };
 var matchPicker$k = {
-	help: "Αναζητήστε στο Steam, επιλέξτε ένα αποτέλεσμα για να δείτε τις λεπτομέρειες και μετά επιλέξτε «Χρήση αυτής της αντιστοίχισης Steam». Η περιήγηση δεν αλλάζει το παιχνίδι σας.",
+	help: "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
 	searchAriaLabel: "Αναζήτηση παιχνιδιού Steam",
 	search: "Αναζήτηση στο Steam",
 	searching: "Αναζήτηση στο Steam...",
@@ -6124,18 +6057,8 @@ var matchPicker$k = {
 	empty: "Δεν βρέθηκαν αντιστοιχίσεις Steam. Δοκιμάστε άλλο όνομα ή χρησιμοποιήστε το πεδίο Steam App ID παρακάτω.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση",
-	appIdSelected: "Steam App ID: {{appId}} · Επιλεγμένο",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση · Επιλεγμένο",
-	loadingDetails: "Φόρτωση λεπτομερειών Steam...",
-	artworkAlt: "Γραφικά Steam του {{title}}",
 	developer: "Δημιουργός: {{names}}",
-	developerUnavailable: "Ο δημιουργός δεν είναι διαθέσιμος",
-	release: "Κυκλοφορία: {{date}}",
-	releaseUnavailable: "Η ημερομηνία κυκλοφορίας δεν είναι διαθέσιμη",
-	steamType: "Τύπος Steam: {{type}}. Βεβαιωθείτε ότι αυτό είναι το παιχνίδι ή η έκδοση που θέλετε.",
-	applyHelp: "Η χρήση αυτής της αντιστοίχισης φορτώνει το Steam App ID και τα στοιχεία της σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
-	apply: "Χρήση αυτής της αντιστοίχισης Steam",
-	cancel: "Ακύρωση επιλογής"
+	release: "Κυκλοφορία: {{date}}"
 };
 var categories$k = {
 	singlePlayer: "Ένας παίκτης",
@@ -6200,10 +6123,6 @@ var backend$j = {
 	invalid_title: "invalid title",
 	invalid_search: "invalid search",
 	steam_search_unavailable: "Steam search is unavailable. Try again.",
-	steam_details_unavailable: "Steam game details are unavailable",
-	steam_title_unavailable: "Steam game title is unavailable",
-	invalid_steam_game: "Select a valid Steam game.",
-	steam_preview_unavailable: "Steam details are unavailable. You can still use this match.",
 	settings_unreadable: "metadata settings file is unreadable; fix or remove it before saving changes",
 	invalid_release_date: "release_date must be a YYYY-MM-DD calendar date or null",
 	hltb_settings_unavailable: "HLTB settings could not be loaded",
@@ -6645,7 +6564,6 @@ var editor$j = {
 	},
 	review: {
 		title: "Review game details",
-		body: "This is how the game details will look. Apply puts them in the editor. Nothing is saved until you select Save.",
 		apply: "Apply",
 		cancel: "Cancel",
 		genres: "Genres"
@@ -6763,7 +6681,7 @@ var editor$j = {
 	steamTextUnavailable: "Steam did not return text for this game."
 };
 var matchPicker$j = {
-	help: "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game.",
+	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
 	searchAriaLabel: "Steam game search",
 	search: "Search Steam",
 	searching: "Searching Steam...",
@@ -6771,18 +6689,8 @@ var matchPicker$j = {
 	empty: "No Steam matches found. Try another name or use the Steam App ID field below.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · Current match",
-	appIdSelected: "Steam App ID: {{appId}} · Selected",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · Current match · Selected",
-	loadingDetails: "Loading Steam details...",
-	artworkAlt: "{{title}} Steam artwork",
 	developer: "Developer: {{names}}",
-	developerUnavailable: "Developer unavailable",
-	release: "Release: {{date}}",
-	releaseUnavailable: "Release date unavailable",
-	steamType: "Steam type: {{type}}. Check that this is the game or edition you want.",
-	applyHelp: "Using this match loads its Steam App ID and details into this form. Save stores them. It does not rename your shortcut or replace your custom artwork.",
-	apply: "Use this Steam match",
-	cancel: "Cancel selection"
+	release: "Release: {{date}}"
 };
 var categories$j = {
 	singlePlayer: "Single-player",
@@ -6848,10 +6756,6 @@ var backend$i = {
 	invalid_title: "título no válido",
 	invalid_search: "búsqueda no válida",
 	steam_search_unavailable: "La búsqueda de Steam no está disponible. Inténtalo de nuevo.",
-	steam_details_unavailable: "Los detalles del juego de Steam no están disponibles",
-	steam_title_unavailable: "El título del juego de Steam no está disponible",
-	invalid_steam_game: "Selecciona un juego de Steam válido.",
-	steam_preview_unavailable: "Los detalles de Steam no están disponibles. Aun así puedes usar esta coincidencia.",
 	settings_unreadable: "el archivo de ajustes de metadatos no se puede leer; corrígelo o elimínalo antes de guardar los cambios",
 	invalid_release_date: "release_date debe ser una fecha de calendario AAAA-MM-DD o null",
 	hltb_settings_unavailable: "No se pudieron cargar los ajustes de HLTB",
@@ -7293,7 +7197,6 @@ var editor$i = {
 	},
 	review: {
 		title: "Revisar los detalles del juego",
-		body: "Así se verán los detalles del juego. Al aplicar, se añaden al editor. No se guarda nada hasta que selecciones Guardar.",
 		apply: "Aplicar",
 		cancel: "Cancelar",
 		genres: "Géneros"
@@ -7411,7 +7314,7 @@ var editor$i = {
 	steamTextUnavailable: "Steam no devolvió texto para este juego."
 };
 var matchPicker$i = {
-	help: "Busca en Steam, selecciona un resultado para comprobar sus detalles y luego elige «Usar esta coincidencia de Steam». Navegar no cambia tu juego.",
+	help: "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
 	searchAriaLabel: "Búsqueda de juegos de Steam",
 	search: "Buscar en Steam",
 	searching: "Buscando en Steam...",
@@ -7419,18 +7322,8 @@ var matchPicker$i = {
 	empty: "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
 	appId: "ID de aplicación de Steam: {{appId}}",
 	appIdCurrent: "ID de aplicación de Steam: {{appId}} · Coincidencia actual",
-	appIdSelected: "ID de aplicación de Steam: {{appId}} · Seleccionado",
-	appIdCurrentSelected: "ID de aplicación de Steam: {{appId}} · Coincidencia actual · Seleccionado",
-	loadingDetails: "Cargando los detalles de Steam...",
-	artworkAlt: "Ilustración de Steam de {{title}}",
 	developer: "Desarrollador: {{names}}",
-	developerUnavailable: "Desarrollador no disponible",
-	release: "Lanzamiento: {{date}}",
-	releaseUnavailable: "Fecha de lanzamiento no disponible",
-	steamType: "Tipo de Steam: {{type}}. Comprueba que sea el juego o la edición que quieres.",
-	applyHelp: "Usar esta coincidencia carga el ID de aplicación de Steam y sus detalles en este formulario. Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
-	apply: "Usar esta coincidencia de Steam",
-	cancel: "Cancelar selección"
+	release: "Lanzamiento: {{date}}"
 };
 var categories$i = {
 	singlePlayer: "Un jugador",
@@ -7495,10 +7388,6 @@ var backend$h = {
 	invalid_title: "virheellinen nimi",
 	invalid_search: "virheellinen haku",
 	steam_search_unavailable: "Steam-haku ei ole käytettävissä. Yritä uudelleen.",
-	steam_details_unavailable: "Steam-pelin tiedot eivät ole käytettävissä",
-	steam_title_unavailable: "Steam-pelin nimi ei ole käytettävissä",
-	invalid_steam_game: "Valitse kelvollinen Steam-peli.",
-	steam_preview_unavailable: "Steam-tiedot eivät ole käytettävissä. Voit silti käyttää tätä vastaavuutta.",
 	settings_unreadable: "metatietojen asetustiedostoa ei voi lukea; korjaa tai poista se ennen muutosten tallentamista",
 	invalid_release_date: "release_date:n on oltava muotoa YYYY-MM-DD oleva kalenteripäivä tai null",
 	hltb_settings_unavailable: "HLTB-asetuksia ei voitu ladata",
@@ -7940,7 +7829,6 @@ var editor$h = {
 	},
 	review: {
 		title: "Tarkista pelin tiedot",
-		body: "Tältä pelin tiedot näyttävät. Käyttämällä niitä lisäät ne editoriin. Mitään ei tallenneta ennen kuin valitset Tallenna.",
 		apply: "Käytä",
 		cancel: "Peruuta",
 		genres: "Tyylilajit"
@@ -8058,7 +7946,7 @@ var editor$h = {
 	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille."
 };
 var matchPicker$h = {
-	help: "Hae Steamista, valitse tulos tarkistaaksesi sen tiedot ja valitse sitten Käytä tätä Steam-vastaavuutta. Selailu ei muuta peliäsi.",
+	help: "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
 	searchAriaLabel: "Steam-pelihaku",
 	search: "Hae Steamista",
 	searching: "Haetaan Steamista...",
@@ -8066,18 +7954,8 @@ var matchPicker$h = {
 	empty: "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä alla olevaa Steam-sovellustunnus-kenttää.",
 	appId: "Steam-sovellustunnus: {{appId}}",
 	appIdCurrent: "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus",
-	appIdSelected: "Steam-sovellustunnus: {{appId}} · Valittu",
-	appIdCurrentSelected: "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus · Valittu",
-	loadingDetails: "Ladataan Steam-tietoja...",
-	artworkAlt: "Kohteen {{title}} Steam-kuvitus",
 	developer: "Kehittäjä: {{names}}",
-	developerUnavailable: "Kehittäjä ei ole käytettävissä",
-	release: "Julkaisu: {{date}}",
-	releaseUnavailable: "Julkaisupäivä ei ole käytettävissä",
-	steamType: "Steam-tyyppi: {{type}}. Varmista, että tämä on haluamasi peli tai versio.",
-	applyHelp: "Tämän vastaavuuden käyttäminen lataa sen Steam-sovellustunnuksen ja tiedot tähän lomakkeeseen. Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
-	apply: "Käytä tätä Steam-vastaavuutta",
-	cancel: "Peruuta valinta"
+	release: "Julkaisu: {{date}}"
 };
 var categories$h = {
 	singlePlayer: "Yksinpeli",
@@ -8143,10 +8021,6 @@ var backend$g = {
 	invalid_title: "titre invalide",
 	invalid_search: "recherche invalide",
 	steam_search_unavailable: "La recherche Steam est indisponible. Réessayez.",
-	steam_details_unavailable: "Les détails du jeu Steam sont indisponibles",
-	steam_title_unavailable: "Le titre du jeu Steam est indisponible",
-	invalid_steam_game: "Sélectionnez un jeu Steam valide.",
-	steam_preview_unavailable: "Les détails Steam sont indisponibles. Vous pouvez tout de même utiliser cette correspondance.",
 	settings_unreadable: "le fichier de paramètres des métadonnées est illisible ; corrigez-le ou supprimez-le avant d'enregistrer des modifications",
 	invalid_release_date: "release_date doit être une date calendaire AAAA-MM-JJ ou null",
 	hltb_settings_unavailable: "Les paramètres HLTB n'ont pas pu être chargés",
@@ -8588,7 +8462,6 @@ var editor$g = {
 	},
 	review: {
 		title: "Vérifier les détails du jeu",
-		body: "Voici à quoi ressembleront les détails du jeu. Les appliquer les ajoute à l’éditeur. Rien n’est enregistré tant que vous ne choisissez pas Enregistrer.",
 		apply: "Appliquer",
 		cancel: "Annuler",
 		genres: "Genres"
@@ -8706,7 +8579,7 @@ var editor$g = {
 	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu."
 };
 var matchPicker$g = {
-	help: "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez « Utiliser cette correspondance Steam ». La navigation ne modifie pas votre jeu.",
+	help: "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
 	searchAriaLabel: "Recherche de jeu Steam",
 	search: "Rechercher sur Steam",
 	searching: "Recherche sur Steam...",
@@ -8714,18 +8587,8 @@ var matchPicker$g = {
 	empty: "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
 	appId: "App ID Steam : {{appId}}",
 	appIdCurrent: "App ID Steam : {{appId}} · Correspondance actuelle",
-	appIdSelected: "App ID Steam : {{appId}} · Sélectionné",
-	appIdCurrentSelected: "App ID Steam : {{appId}} · Correspondance actuelle · Sélectionné",
-	loadingDetails: "Chargement des détails Steam...",
-	artworkAlt: "Jaquette Steam de {{title}}",
 	developer: "Développeur : {{names}}",
-	developerUnavailable: "Développeur indisponible",
-	release: "Sortie : {{date}}",
-	releaseUnavailable: "Date de sortie indisponible",
-	steamType: "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
-	applyHelp: "Utiliser cette correspondance charge l'App ID Steam et ses détails dans ce formulaire. Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
-	apply: "Utiliser cette correspondance Steam",
-	cancel: "Annuler la sélection"
+	release: "Sortie : {{date}}"
 };
 var categories$g = {
 	singlePlayer: "Solo",
@@ -8791,10 +8654,6 @@ var backend$f = {
 	invalid_title: "titolo non valido",
 	invalid_search: "ricerca non valida",
 	steam_search_unavailable: "La ricerca su Steam non è disponibile. Riprova.",
-	steam_details_unavailable: "I dettagli del gioco su Steam non sono disponibili",
-	steam_title_unavailable: "Il titolo del gioco su Steam non è disponibile",
-	invalid_steam_game: "Seleziona un gioco Steam valido.",
-	steam_preview_unavailable: "I dettagli Steam non sono disponibili. Puoi comunque usare questa corrispondenza.",
 	settings_unreadable: "il file delle impostazioni dei metadati non è leggibile; correggilo o rimuovilo prima di salvare le modifiche",
 	invalid_release_date: "release_date deve essere una data di calendario AAAA-MM-GG oppure null",
 	hltb_settings_unavailable: "Impossibile caricare le impostazioni HLTB",
@@ -9236,7 +9095,6 @@ var editor$f = {
 	},
 	review: {
 		title: "Controlla i dettagli del gioco",
-		body: "Ecco come appariranno i dettagli del gioco. Applicandoli, verranno aggiunti all’editor. Nulla viene salvato finché non selezioni Salva.",
 		apply: "Applica",
 		cancel: "Annulla",
 		genres: "Generi"
@@ -9354,7 +9212,7 @@ var editor$f = {
 	steamTextUnavailable: "Steam non ha restituito testo per questo gioco."
 };
 var matchPicker$f = {
-	help: "Cerca su Steam, seleziona un risultato per controllarne i dettagli, quindi scegli Usa questa corrispondenza Steam. La navigazione non modifica il tuo gioco.",
+	help: "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
 	searchAriaLabel: "Ricerca giochi Steam",
 	search: "Cerca su Steam",
 	searching: "Ricerca su Steam...",
@@ -9362,18 +9220,8 @@ var matchPicker$f = {
 	empty: "Nessuna corrispondenza Steam trovata. Prova un altro nome o usa il campo ID app Steam qui sotto.",
 	appId: "ID app Steam: {{appId}}",
 	appIdCurrent: "ID app Steam: {{appId}} · Corrispondenza attuale",
-	appIdSelected: "ID app Steam: {{appId}} · Selezionato",
-	appIdCurrentSelected: "ID app Steam: {{appId}} · Corrispondenza attuale · Selezionato",
-	loadingDetails: "Caricamento dei dettagli Steam...",
-	artworkAlt: "Immagine Steam di {{title}}",
 	developer: "Sviluppatore: {{names}}",
-	developerUnavailable: "Sviluppatore non disponibile",
-	release: "Uscita: {{date}}",
-	releaseUnavailable: "Data di uscita non disponibile",
-	steamType: "Tipo Steam: {{type}}. Verifica che sia il gioco o l'edizione che vuoi.",
-	applyHelp: "Usare questa corrispondenza carica l'ID app Steam e i relativi dettagli in questo modulo. Salva per conservarli. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
-	apply: "Usa questa corrispondenza Steam",
-	cancel: "Annulla la selezione"
+	release: "Uscita: {{date}}"
 };
 var categories$f = {
 	singlePlayer: "Giocatore singolo",
@@ -9437,10 +9285,6 @@ var backend$e = {
 	invalid_title: "無効なタイトル",
 	invalid_search: "無効な検索",
 	steam_search_unavailable: "Steam 検索を利用できません。再試行してください。",
-	steam_details_unavailable: "Steam のゲーム詳細を取得できません",
-	steam_title_unavailable: "Steam のゲームタイトルを取得できません",
-	invalid_steam_game: "有効な Steam ゲームを選択してください。",
-	steam_preview_unavailable: "Steam の詳細を取得できません。この一致は引き続き使用できます。",
 	settings_unreadable: "メタデータ設定ファイルを読み取れません。変更を保存する前に修正するか削除してください",
 	invalid_release_date: "release_date は YYYY-MM-DD 形式の日付または null である必要があります",
 	hltb_settings_unavailable: "HLTB 設定を読み込めませんでした",
@@ -9882,7 +9726,6 @@ var editor$e = {
 	},
 	review: {
 		title: "ゲームの詳細を確認",
-		body: "ゲームの詳細はこのように表示されます。適用するとエディターに反映されます。「保存」を選択するまで保存されません。",
 		apply: "適用",
 		cancel: "キャンセル",
 		genres: "ジャンル"
@@ -10000,7 +9843,7 @@ var editor$e = {
 	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。"
 };
 var matchPicker$e = {
-	help: "Steam を検索し、結果を選択して詳細を確認してから「この Steam 一致を使用」を選んでください。閲覧してもゲームは変更されません。",
+	help: "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
 	searchAriaLabel: "Steam ゲーム検索",
 	search: "Steam を検索",
 	searching: "Steam を検索中...",
@@ -10008,18 +9851,8 @@ var matchPicker$e = {
 	empty: "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
 	appId: "Steam アプリ ID: {{appId}}",
 	appIdCurrent: "Steam アプリ ID: {{appId}} · 現在の一致",
-	appIdSelected: "Steam アプリ ID: {{appId}} · 選択済み",
-	appIdCurrentSelected: "Steam アプリ ID: {{appId}} · 現在の一致 · 選択済み",
-	loadingDetails: "Steam の詳細を読み込み中...",
-	artworkAlt: "{{title}} の Steam アートワーク",
 	developer: "開発元: {{names}}",
-	developerUnavailable: "開発元を取得できません",
-	release: "リリース: {{date}}",
-	releaseUnavailable: "リリース日を取得できません",
-	steamType: "Steam タイプ: {{type}}。目的のゲームまたはエディションか確認してください。",
-	applyHelp: "この一致を使用すると、その Steam アプリ ID と詳細がこのフォームに読み込まれます。「保存」を押すと保存されます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
-	apply: "この Steam 一致を使用",
-	cancel: "選択をキャンセル"
+	release: "リリース: {{date}}"
 };
 var categories$e = {
 	singlePlayer: "シングルプレイヤー",
@@ -10084,10 +9917,6 @@ var backend$d = {
 	invalid_title: "არასწორი სათაური",
 	invalid_search: "არასწორი ძებნა",
 	steam_search_unavailable: "Steam-ის ძებნა მიუწვდომელია. სცადეთ ხელახლა.",
-	steam_details_unavailable: "Steam-ის თამაშის დეტალები მიუწვდომელია",
-	steam_title_unavailable: "Steam-ის თამაშის სათაური მიუწვდომელია",
-	invalid_steam_game: "აირჩიეთ სწორი Steam თამაში.",
-	steam_preview_unavailable: "Steam-ის დეტალები მიუწვდომელია. ეს შესატყვისი მაინც შეგიძლიათ გამოიყენოთ.",
 	settings_unreadable: "მეტამონაცემების პარამეტრების ფაილი არ იკითხება; ცვლილებების შენახვამდე გამოასწორეთ ან წაშალეთ იგი",
 	invalid_release_date: "release_date უნდა იყოს YYYY-MM-DD ფორმატის თარიღი ან null",
 	hltb_settings_unavailable: "HLTB-ის პარამეტრები ვერ ჩაიტვირთა",
@@ -10529,7 +10358,6 @@ var editor$d = {
 	},
 	review: {
 		title: "თამაშის დეტალების გადახედვა",
-		body: "ასე გამოჩნდება თამაშის დეტალები. გამოყენება მათ რედაქტორში გადაიტანს. არაფერი შეინახება, სანამ შენახვას არ აირჩევთ.",
 		apply: "გამოყენება",
 		cancel: "გაუქმება",
 		genres: "ჟანრები"
@@ -10647,7 +10475,7 @@ var editor$d = {
 	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
 };
 var matchPicker$d = {
-	help: "მოძებნეთ Steam-ში, აირჩიეთ შედეგი დეტალების შესამოწმებლად და შემდეგ აირჩიეთ „Steam-ის ამ შესატყვისის გამოყენება“. დათვალიერება თქვენს თამაშს არ ცვლის.",
+	help: "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
 	searchAriaLabel: "Steam-ის თამაშის ძებნა",
 	search: "Steam-ში ძებნა",
 	searching: "Steam-ში მიმდინარეობს ძებნა...",
@@ -10655,18 +10483,8 @@ var matchPicker$d = {
 	empty: "Steam-ის შესატყვისი ვერ მოიძებნა. სცადეთ სხვა სახელი ან გამოიყენეთ ქვემოთ მოცემული Steam App ID ველი.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · მიმდინარე შესატყვისი",
-	appIdSelected: "Steam App ID: {{appId}} · არჩეული",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · მიმდინარე შესატყვისი · არჩეული",
-	loadingDetails: "Steam-ის დეტალები იტვირთება...",
-	artworkAlt: "{{title}} Steam-ის არტი",
 	developer: "შემქმნელი: {{names}}",
-	developerUnavailable: "შემქმნელი მიუწვდომელია",
-	release: "გამოშვება: {{date}}",
-	releaseUnavailable: "გამოშვების თარიღი მიუწვდომელია",
-	steamType: "Steam-ის ტიპი: {{type}}. შეამოწმეთ, რომ ეს არის სასურველი თამაში ან გამოცემა.",
-	applyHelp: "ამ შესატყვისის გამოყენება ტვირთავს მის Steam App ID-სა და დეტალებს ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
-	apply: "Steam-ის ამ შესატყვისის გამოყენება",
-	cancel: "არჩევანის გაუქმება"
+	release: "გამოშვება: {{date}}"
 };
 var categories$d = {
 	singlePlayer: "ერთმოთამაშიანი",
@@ -10730,10 +10548,6 @@ var backend$c = {
 	invalid_title: "잘못된 제목",
 	invalid_search: "잘못된 검색",
 	steam_search_unavailable: "Steam 검색을 사용할 수 없습니다. 다시 시도하세요.",
-	steam_details_unavailable: "Steam 게임 정보를 사용할 수 없습니다",
-	steam_title_unavailable: "Steam 게임 제목을 사용할 수 없습니다",
-	invalid_steam_game: "유효한 Steam 게임을 선택하세요.",
-	steam_preview_unavailable: "Steam 정보를 사용할 수 없습니다. 그래도 이 일치 항목을 사용할 수 있습니다.",
 	settings_unreadable: "메타데이터 설정 파일을 읽을 수 없습니다. 변경 사항을 저장하기 전에 수정하거나 삭제하세요",
 	invalid_release_date: "release_date는 YYYY-MM-DD 형식의 날짜 또는 null이어야 합니다",
 	hltb_settings_unavailable: "HLTB 설정을 불러올 수 없습니다",
@@ -11175,7 +10989,6 @@ var editor$c = {
 	},
 	review: {
 		title: "게임 정보 검토",
-		body: "게임 정보가 이렇게 표시됩니다. 적용하면 편집기에 반영됩니다. 저장을 선택하기 전까지는 저장되지 않습니다.",
 		apply: "적용",
 		cancel: "취소",
 		genres: "장르"
@@ -11293,7 +11106,7 @@ var editor$c = {
 	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
 };
 var matchPicker$c = {
-	help: "Steam을 검색하고 결과를 선택해 세부 정보를 확인한 다음 '이 Steam 일치 항목 사용'을 선택하세요. 둘러보기만으로는 게임이 변경되지 않습니다.",
+	help: "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
 	searchAriaLabel: "Steam 게임 검색",
 	search: "Steam 검색",
 	searching: "Steam 검색 중...",
@@ -11301,18 +11114,8 @@ var matchPicker$c = {
 	empty: "Steam 일치 항목을 찾을 수 없습니다. 다른 이름으로 시도하거나 아래의 Steam 앱 ID 필드를 사용하세요.",
 	appId: "Steam 앱 ID: {{appId}}",
 	appIdCurrent: "Steam 앱 ID: {{appId}} · 현재 일치 항목",
-	appIdSelected: "Steam 앱 ID: {{appId}} · 선택됨",
-	appIdCurrentSelected: "Steam 앱 ID: {{appId}} · 현재 일치 항목 · 선택됨",
-	loadingDetails: "Steam 세부 정보 불러오는 중...",
-	artworkAlt: "{{title}} Steam 아트워크",
 	developer: "개발자: {{names}}",
-	developerUnavailable: "개발자 정보 없음",
-	release: "출시: {{date}}",
-	releaseUnavailable: "출시일 정보 없음",
-	steamType: "Steam 유형: {{type}}. 원하는 게임 또는 에디션인지 확인하세요.",
-	applyHelp: "이 일치 항목을 사용하면 해당 Steam 앱 ID와 세부 정보가 이 양식에 로드됩니다. '저장'을 누르면 저장됩니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
-	apply: "이 Steam 일치 항목 사용",
-	cancel: "선택 취소"
+	release: "출시: {{date}}"
 };
 var categories$c = {
 	singlePlayer: "싱글 플레이어",
@@ -11377,10 +11180,6 @@ var backend$b = {
 	invalid_title: "ongeldige titel",
 	invalid_search: "ongeldige zoekopdracht",
 	steam_search_unavailable: "De Steam-zoekfunctie is niet beschikbaar. Probeer het opnieuw.",
-	steam_details_unavailable: "Steam-spelgegevens zijn niet beschikbaar",
-	steam_title_unavailable: "Steam-speltitel is niet beschikbaar",
-	invalid_steam_game: "Selecteer een geldig Steam-spel.",
-	steam_preview_unavailable: "Steam-gegevens zijn niet beschikbaar. Je kunt deze match nog steeds gebruiken.",
 	settings_unreadable: "metadata-instellingenbestand is onleesbaar; herstel of verwijder het voordat je wijzigingen opslaat",
 	invalid_release_date: "release_date moet een kalenderdatum in de vorm YYYY-MM-DD of null zijn",
 	hltb_settings_unavailable: "HLTB-instellingen konden niet worden geladen",
@@ -11822,7 +11621,6 @@ var editor$b = {
 	},
 	review: {
 		title: "Spelgegevens controleren",
-		body: "Zo worden de spelgegevens weergegeven. Door ze toe te passen, worden ze aan de editor toegevoegd. Er wordt niets opgeslagen totdat je Opslaan kiest.",
 		apply: "Toepassen",
 		cancel: "Annuleren",
 		genres: "Genres"
@@ -11940,7 +11738,7 @@ var editor$b = {
 	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd."
 };
 var matchPicker$b = {
-	help: "Doorzoek Steam, selecteer een resultaat om de details te bekijken en kies dan Deze Steam-match gebruiken. Door te bladeren wordt je game niet gewijzigd.",
+	help: "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
 	searchAriaLabel: "Steam-games zoeken",
 	search: "Steam doorzoeken",
 	searching: "Steam doorzoeken...",
@@ -11948,18 +11746,8 @@ var matchPicker$b = {
 	empty: "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
 	appId: "Steam-app-ID: {{appId}}",
 	appIdCurrent: "Steam-app-ID: {{appId}} · Huidige match",
-	appIdSelected: "Steam-app-ID: {{appId}} · Geselecteerd",
-	appIdCurrentSelected: "Steam-app-ID: {{appId}} · Huidige match · Geselecteerd",
-	loadingDetails: "Steam-gegevens laden...",
-	artworkAlt: "Steam-illustratie van {{title}}",
 	developer: "Ontwikkelaar: {{names}}",
-	developerUnavailable: "Ontwikkelaar niet beschikbaar",
-	release: "Release: {{date}}",
-	releaseUnavailable: "Releasedatum niet beschikbaar",
-	steamType: "Steam-type: {{type}}. Controleer of dit de game of editie is die je wilt.",
-	applyHelp: "Als je deze match gebruikt, worden de Steam-app-ID en details in dit formulier geladen. Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
-	apply: "Deze Steam-match gebruiken",
-	cancel: "Selectie annuleren"
+	release: "Release: {{date}}"
 };
 var categories$b = {
 	singlePlayer: "Singleplayer",
@@ -12026,10 +11814,6 @@ var backend$a = {
 	invalid_title: "nieprawidłowy tytuł",
 	invalid_search: "nieprawidłowe wyszukiwanie",
 	steam_search_unavailable: "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
-	steam_details_unavailable: "Szczegóły gry Steam są niedostępne",
-	steam_title_unavailable: "Tytuł gry Steam jest niedostępny",
-	invalid_steam_game: "Wybierz prawidłową grę Steam.",
-	steam_preview_unavailable: "Szczegóły Steam są niedostępne. Nadal możesz użyć tego dopasowania.",
 	settings_unreadable: "plik ustawień metadanych jest nieczytelny; napraw go lub usuń przed zapisaniem zmian",
 	invalid_release_date: "release_date musi być datą kalendarzową w formacie RRRR-MM-DD lub null",
 	hltb_settings_unavailable: "Nie udało się wczytać ustawień HLTB",
@@ -12471,7 +12255,6 @@ var editor$a = {
 	},
 	review: {
 		title: "Sprawdź szczegóły gry",
-		body: "Tak będą wyglądać szczegóły gry. Zastosowanie dodaje je do edytora. Nic nie zostanie zapisane, dopóki nie wybierzesz Zapisz.",
 		apply: "Zastosuj",
 		cancel: "Anuluj",
 		genres: "Gatunki"
@@ -12589,7 +12372,7 @@ var editor$a = {
 	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry."
 };
 var matchPicker$a = {
-	help: "Wyszukaj grę w Steam, wybierz wynik, aby sprawdzić szczegóły, a następnie wybierz „Użyj tego dopasowania Steam”. Przeglądanie nie zmienia Twojej gry.",
+	help: "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
 	searchAriaLabel: "Wyszukiwanie gry Steam",
 	search: "Szukaj w Steam",
 	searching: "Wyszukiwanie w Steam...",
@@ -12597,18 +12380,8 @@ var matchPicker$a = {
 	empty: "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · bieżące dopasowanie",
-	appIdSelected: "Steam App ID: {{appId}} · wybrane",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · bieżące dopasowanie · wybrane",
-	loadingDetails: "Wczytywanie szczegółów Steam...",
-	artworkAlt: "Grafika Steam gry {{title}}",
 	developer: "Producent: {{names}}",
-	developerUnavailable: "Producent niedostępny",
-	release: "Wydanie: {{date}}",
-	releaseUnavailable: "Data wydania niedostępna",
-	steamType: "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
-	applyHelp: "Użycie tego dopasowania wczytuje jego Steam App ID i szczegóły do tego formularza. Zapiszesz je przyciskiem „Zapisz”. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
-	apply: "Użyj tego dopasowania Steam",
-	cancel: "Anuluj wybór"
+	release: "Wydanie: {{date}}"
 };
 var categories$a = {
 	singlePlayer: "Jednoosobowa",
@@ -12674,10 +12447,6 @@ var backend$9 = {
 	invalid_title: "título inválido",
 	invalid_search: "busca inválida",
 	steam_search_unavailable: "A busca da Steam está indisponível. Tente novamente.",
-	steam_details_unavailable: "Os detalhes do jogo na Steam estão indisponíveis",
-	steam_title_unavailable: "O título do jogo na Steam está indisponível",
-	invalid_steam_game: "Selecione um jogo da Steam válido.",
-	steam_preview_unavailable: "Os detalhes da Steam estão indisponíveis. Você ainda pode usar esta correspondência.",
 	settings_unreadable: "o arquivo de configurações de metadados está ilegível; corrija-o ou remova-o antes de salvar as alterações",
 	invalid_release_date: "release_date deve ser uma data de calendário AAAA-MM-DD ou null",
 	hltb_settings_unavailable: "Não foi possível carregar as configurações do HLTB",
@@ -13119,7 +12888,6 @@ var editor$9 = {
 	},
 	review: {
 		title: "Revisar detalhes do jogo",
-		body: "É assim que os detalhes do jogo serão exibidos. Ao aplicar, eles são adicionados ao editor. Nada é salvo até você selecionar Salvar.",
 		apply: "Aplicar",
 		cancel: "Cancelar",
 		genres: "Gêneros"
@@ -13237,7 +13005,7 @@ var editor$9 = {
 	steamTextUnavailable: "A Steam não retornou texto para este jogo."
 };
 var matchPicker$9 = {
-	help: "Pesquise na Steam, selecione um resultado para conferir seus detalhes e depois escolha Usar esta correspondência da Steam. Navegar não altera seu jogo.",
+	help: "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
 	searchAriaLabel: "Busca de jogos na Steam",
 	search: "Pesquisar na Steam",
 	searching: "Pesquisando na Steam...",
@@ -13245,18 +13013,8 @@ var matchPicker$9 = {
 	empty: "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
 	appId: "App ID da Steam: {{appId}}",
 	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual",
-	appIdSelected: "App ID da Steam: {{appId}} · Selecionado",
-	appIdCurrentSelected: "App ID da Steam: {{appId}} · Correspondência atual · Selecionado",
-	loadingDetails: "Carregando detalhes da Steam...",
-	artworkAlt: "Arte de {{title}} na Steam",
 	developer: "Desenvolvedora: {{names}}",
-	developerUnavailable: "Desenvolvedora indisponível",
-	release: "Lançamento: {{date}}",
-	releaseUnavailable: "Data de lançamento indisponível",
-	steamType: "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que você quer.",
-	applyHelp: "Usar esta correspondência carrega o App ID da Steam e seus detalhes neste formulário. Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
-	apply: "Usar esta correspondência da Steam",
-	cancel: "Cancelar seleção"
+	release: "Lançamento: {{date}}"
 };
 var categories$9 = {
 	singlePlayer: "Um jogador",
@@ -13322,10 +13080,6 @@ var backend$8 = {
 	invalid_title: "título inválido",
 	invalid_search: "pesquisa inválida",
 	steam_search_unavailable: "A pesquisa na Steam está indisponível. Tente novamente.",
-	steam_details_unavailable: "Os detalhes do jogo na Steam estão indisponíveis",
-	steam_title_unavailable: "O título do jogo na Steam está indisponível",
-	invalid_steam_game: "Selecione um jogo da Steam válido.",
-	steam_preview_unavailable: "Os detalhes da Steam estão indisponíveis. Ainda pode usar esta correspondência.",
 	settings_unreadable: "o ficheiro de definições de metadados está ilegível; corrija-o ou remova-o antes de guardar as alterações",
 	invalid_release_date: "release_date tem de ser uma data de calendário AAAA-MM-DD ou null",
 	hltb_settings_unavailable: "não foi possível carregar as definições do HLTB",
@@ -13767,7 +13521,6 @@ var editor$8 = {
 	},
 	review: {
 		title: "Rever detalhes do jogo",
-		body: "É assim que os detalhes do jogo serão apresentados. Ao aplicar, são adicionados ao editor. Nada é guardado até selecionar Guardar.",
 		apply: "Aplicar",
 		cancel: "Cancelar",
 		genres: "Géneros"
@@ -13885,7 +13638,7 @@ var editor$8 = {
 	steamTextUnavailable: "A Steam não devolveu texto para este jogo."
 };
 var matchPicker$8 = {
-	help: "Pesquise na Steam, selecione um resultado para ver os detalhes e depois escolha Usar esta correspondência da Steam. Navegar não altera o seu jogo.",
+	help: "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
 	searchAriaLabel: "Pesquisa de jogos na Steam",
 	search: "Pesquisar na Steam",
 	searching: "A pesquisar na Steam...",
@@ -13893,18 +13646,8 @@ var matchPicker$8 = {
 	empty: "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
 	appId: "App ID da Steam: {{appId}}",
 	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual",
-	appIdSelected: "App ID da Steam: {{appId}} · Selecionado",
-	appIdCurrentSelected: "App ID da Steam: {{appId}} · Correspondência atual · Selecionado",
-	loadingDetails: "A carregar detalhes da Steam...",
-	artworkAlt: "Arte de {{title}} na Steam",
 	developer: "Programador: {{names}}",
-	developerUnavailable: "Programador indisponível",
-	release: "Lançamento: {{date}}",
-	releaseUnavailable: "Data de lançamento indisponível",
-	steamType: "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que quer.",
-	applyHelp: "Usar esta correspondência carrega o App ID da Steam e os respetivos detalhes neste formulário. Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
-	apply: "Usar esta correspondência da Steam",
-	cancel: "Cancelar seleção"
+	release: "Lançamento: {{date}}"
 };
 var categories$8 = {
 	singlePlayer: "Um jogador",
@@ -13970,10 +13713,6 @@ var backend$7 = {
 	invalid_title: "titlu nevalid",
 	invalid_search: "căutare nevalidă",
 	steam_search_unavailable: "Căutarea Steam nu este disponibilă. Încearcă din nou.",
-	steam_details_unavailable: "Detaliile jocului Steam nu sunt disponibile",
-	steam_title_unavailable: "Titlul jocului Steam nu este disponibil",
-	invalid_steam_game: "Selectează un joc Steam valid.",
-	steam_preview_unavailable: "Detaliile Steam nu sunt disponibile. Poți totuși folosi această potrivire.",
 	settings_unreadable: "fișierul de setări pentru metadate nu poate fi citit; corectează-l sau elimină-l înainte de a salva modificările",
 	invalid_release_date: "release_date trebuie să fie o dată calendaristică AAAA-LL-ZZ sau null",
 	hltb_settings_unavailable: "Setările HLTB nu au putut fi încărcate",
@@ -14415,7 +14154,6 @@ var editor$7 = {
 	},
 	review: {
 		title: "Verifică detaliile jocului",
-		body: "Așa vor arăta detaliile jocului. Aplicarea le adaugă în editor. Nimic nu este salvat până când nu selectezi Salvează.",
 		apply: "Aplică",
 		cancel: "Anulează",
 		genres: "Genuri"
@@ -14533,7 +14271,7 @@ var editor$7 = {
 	steamTextUnavailable: "Steam nu a returnat text pentru acest joc."
 };
 var matchPicker$7 = {
-	help: "Caută pe Steam, selectează un rezultat pentru a-i verifica detaliile, apoi alege Folosește această potrivire Steam. Navigarea nu îți modifică jocul.",
+	help: "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
 	searchAriaLabel: "Căutare jocuri Steam",
 	search: "Caută pe Steam",
 	searching: "Se caută pe Steam...",
@@ -14541,18 +14279,8 @@ var matchPicker$7 = {
 	empty: "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește câmpul ID aplicație Steam de mai jos.",
 	appId: "ID aplicație Steam: {{appId}}",
 	appIdCurrent: "ID aplicație Steam: {{appId}} · Potrivirea curentă",
-	appIdSelected: "ID aplicație Steam: {{appId}} · Selectat",
-	appIdCurrentSelected: "ID aplicație Steam: {{appId}} · Potrivirea curentă · Selectat",
-	loadingDetails: "Se încarcă detaliile Steam...",
-	artworkAlt: "Imaginea Steam pentru {{title}}",
 	developer: "Dezvoltator: {{names}}",
-	developerUnavailable: "Dezvoltator indisponibil",
-	release: "Lansare: {{date}}",
-	releaseUnavailable: "Data lansării indisponibilă",
-	steamType: "Tip Steam: {{type}}. Verifică dacă acesta este jocul sau ediția dorită.",
-	applyHelp: "Folosirea acestei potriviri încarcă ID-ul aplicației Steam și detaliile sale în acest formular. Salvarea le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
-	apply: "Folosește această potrivire Steam",
-	cancel: "Anulează selecția"
+	release: "Lansare: {{date}}"
 };
 var categories$7 = {
 	singlePlayer: "Un singur jucător",
@@ -14619,10 +14347,6 @@ var backend$6 = {
 	invalid_title: "недопустимое название",
 	invalid_search: "недопустимый запрос",
 	steam_search_unavailable: "Поиск в Steam недоступен. Повторите попытку.",
-	steam_details_unavailable: "Сведения об игре Steam недоступны",
-	steam_title_unavailable: "Название игры Steam недоступно",
-	invalid_steam_game: "Выберите корректную игру Steam.",
-	steam_preview_unavailable: "Сведения Steam недоступны. Это совпадение всё равно можно использовать.",
 	settings_unreadable: "файл настроек метаданных не читается; исправьте или удалите его перед сохранением изменений",
 	invalid_release_date: "release_date должен быть календарной датой в формате ГГГГ-ММ-ДД или null",
 	hltb_settings_unavailable: "Не удалось загрузить настройки HLTB",
@@ -15064,7 +14788,6 @@ var editor$6 = {
 	},
 	review: {
 		title: "Проверка сведений об игре",
-		body: "Так будут выглядеть сведения об игре. Применение добавит их в редактор. Ничего не будет сохранено, пока вы не выберете «Сохранить».",
 		apply: "Применить",
 		cancel: "Отмена",
 		genres: "Жанры"
@@ -15182,7 +14905,7 @@ var editor$6 = {
 	steamTextUnavailable: "Steam не вернул текст для этой игры."
 };
 var matchPicker$6 = {
-	help: "Найдите игру в Steam, выберите результат для проверки сведений, затем нажмите «Использовать это совпадение Steam». Просмотр не меняет вашу игру.",
+	help: "Найдите игру в Steam, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет. Оно не переименовывает ярлык и не заменяет ваш арт.",
 	searchAriaLabel: "Поиск игры в Steam",
 	search: "Искать в Steam",
 	searching: "Поиск в Steam...",
@@ -15190,18 +14913,8 @@ var matchPicker$6 = {
 	empty: "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · текущее совпадение",
-	appIdSelected: "Steam App ID: {{appId}} · выбрано",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · текущее совпадение · выбрано",
-	loadingDetails: "Загрузка сведений Steam...",
-	artworkAlt: "Арт Steam для {{title}}",
 	developer: "Разработчик: {{names}}",
-	developerUnavailable: "Разработчик недоступен",
-	release: "Дата выхода: {{date}}",
-	releaseUnavailable: "Дата выхода недоступна",
-	steamType: "Тип Steam: {{type}}. Убедитесь, что это нужная игра или издание.",
-	applyHelp: "Использование этого совпадения загружает его Steam App ID и сведения в эту форму. Нажмите «Сохранить», чтобы их записать. Оно не переименовывает ярлык и не заменяет ваш арт.",
-	apply: "Использовать это совпадение Steam",
-	cancel: "Отменить выбор"
+	release: "Дата выхода: {{date}}"
 };
 var categories$6 = {
 	singlePlayer: "Для одного игрока",
@@ -15266,10 +14979,6 @@ var backend$5 = {
 	invalid_title: "titull i pavlefshëm",
 	invalid_search: "kërkim i pavlefshëm",
 	steam_search_unavailable: "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",
-	steam_details_unavailable: "Detajet e lojës në Steam nuk janë të disponueshme",
-	steam_title_unavailable: "Titulli i lojës në Steam nuk është i disponueshëm",
-	invalid_steam_game: "Zgjidh një lojë të vlefshme në Steam.",
-	steam_preview_unavailable: "Detajet nga Steam nuk janë të disponueshme. Mund ta përdorësh gjithsesi këtë përputhje.",
 	settings_unreadable: "skedari i cilësimeve të metadatave nuk mund të lexohet; rregulloje ose hiqe përpara se të ruash ndryshimet",
 	invalid_release_date: "release_date duhet të jetë datë kalendarike VVVV-MM-DD ose null",
 	hltb_settings_unavailable: "cilësimet e HLTB nuk mund të ngarkoheshin",
@@ -15711,7 +15420,6 @@ var editor$5 = {
 	},
 	review: {
 		title: "Shqyrto detajet e lojës",
-		body: "Kështu do të duken detajet e lojës. Zbatimi i shton ato në redaktues. Asgjë nuk ruhet derisa të zgjedhësh Ruaj.",
 		apply: "Zbato",
 		cancel: "Anulo",
 		genres: "Zhanret"
@@ -15829,7 +15537,7 @@ var editor$5 = {
 	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë."
 };
 var matchPicker$5 = {
-	help: "Kërko në Steam, zgjidh një rezultat për të kontrolluar detajet dhe pastaj zgjidh „Përdor këtë përputhje në Steam“. Shfletimi nuk e ndryshon lojën tënde.",
+	help: "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
 	searchAriaLabel: "Kërkimi i lojërave në Steam",
 	search: "Kërko në Steam",
 	searching: "Po kërkohet në Steam...",
@@ -15837,18 +15545,8 @@ var matchPicker$5 = {
 	empty: "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · Përputhja aktuale",
-	appIdSelected: "Steam App ID: {{appId}} · I zgjedhur",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · Përputhja aktuale · I zgjedhur",
-	loadingDetails: "Po ngarkohen detajet nga Steam...",
-	artworkAlt: "Arti i Steam për {{title}}",
 	developer: "Zhvilluesi: {{names}}",
-	developerUnavailable: "Zhvilluesi i padisponueshëm",
-	release: "Publikimi: {{date}}",
-	releaseUnavailable: "Data e publikimit e padisponueshme",
-	steamType: "Lloji në Steam: {{type}}. Kontrollo që kjo është loja ose botimi që dëshiron.",
-	applyHelp: "Përdorimi i kësaj përputhjeje ngarkon Steam App ID dhe detajet e tij në këtë formular. Ruajtja i ruan ato. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
-	apply: "Përdor këtë përputhje në Steam",
-	cancel: "Anulo zgjedhjen"
+	release: "Publikimi: {{date}}"
 };
 var categories$5 = {
 	singlePlayer: "Një lojtar",
@@ -15913,10 +15611,6 @@ var backend$4 = {
 	invalid_title: "ogiltig titel",
 	invalid_search: "ogiltig sökning",
 	steam_search_unavailable: "Steamsökningen är inte tillgänglig. Försök igen.",
-	steam_details_unavailable: "Steam-speldetaljer är inte tillgängliga",
-	steam_title_unavailable: "Steam-speltiteln är inte tillgänglig",
-	invalid_steam_game: "Välj ett giltigt Steam-spel.",
-	steam_preview_unavailable: "Steam-detaljer är inte tillgängliga. Du kan fortfarande använda den här matchningen.",
 	settings_unreadable: "metadata-inställningsfilen kan inte läsas; åtgärda eller ta bort den innan du sparar ändringar",
 	invalid_release_date: "release_date måste vara ett kalenderdatum i formatet YYYY-MM-DD eller null",
 	hltb_settings_unavailable: "HLTB-inställningarna kunde inte läsas in",
@@ -16358,7 +16052,6 @@ var editor$4 = {
 	},
 	review: {
 		title: "Granska speluppgifter",
-		body: "Så här kommer speluppgifterna att se ut. Om du använder dem läggs de till i redigeraren. Inget sparas förrän du väljer Spara.",
 		apply: "Använd",
 		cancel: "Avbryt",
 		genres: "Genrer"
@@ -16476,7 +16169,7 @@ var editor$4 = {
 	steamTextUnavailable: "Steam returnerade ingen text för det här spelet."
 };
 var matchPicker$4 = {
-	help: "Sök på Steam, välj ett resultat för att kontrollera detaljerna och välj sedan Använd den här Steam-matchningen. Bläddring ändrar inte ditt spel.",
+	help: "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
 	searchAriaLabel: "Steam-spelsökning",
 	search: "Sök på Steam",
 	searching: "Söker på Steam...",
@@ -16484,18 +16177,8 @@ var matchPicker$4 = {
 	empty: "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
 	appId: "Steam-app-ID: {{appId}}",
 	appIdCurrent: "Steam-app-ID: {{appId}} · Aktuell matchning",
-	appIdSelected: "Steam-app-ID: {{appId}} · Valt",
-	appIdCurrentSelected: "Steam-app-ID: {{appId}} · Aktuell matchning · Valt",
-	loadingDetails: "Läser in Steam-detaljer...",
-	artworkAlt: "Steam-grafik för {{title}}",
 	developer: "Utvecklare: {{names}}",
-	developerUnavailable: "Utvecklare inte tillgänglig",
-	release: "Utgivningsdatum: {{date}}",
-	releaseUnavailable: "Utgivningsdatum inte tillgängligt",
-	steamType: "Steam-typ: {{type}}. Kontrollera att det är spelet eller utgåvan du vill ha.",
-	applyHelp: "Om du använder den här matchningen läses Steam-app-ID:t och detaljerna in i det här formuläret. Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
-	apply: "Använd den här Steam-matchningen",
-	cancel: "Avbryt val"
+	release: "Utgivningsdatum: {{date}}"
 };
 var categories$4 = {
 	singlePlayer: "Enspelarläge",
@@ -16560,10 +16243,6 @@ var backend$3 = {
 	invalid_title: "geçersiz başlık",
 	invalid_search: "geçersiz arama",
 	steam_search_unavailable: "Steam araması kullanılamıyor. Tekrar deneyin.",
-	steam_details_unavailable: "Steam oyun ayrıntıları kullanılamıyor",
-	steam_title_unavailable: "Steam oyun başlığı kullanılamıyor",
-	invalid_steam_game: "Geçerli bir Steam oyunu seçin.",
-	steam_preview_unavailable: "Steam ayrıntıları kullanılamıyor. Bu eşleşmeyi yine de kullanabilirsiniz.",
 	settings_unreadable: "meta veri ayarları dosyası okunamıyor; değişiklikleri kaydetmeden önce düzeltin veya kaldırın",
 	invalid_release_date: "release_date, YYYY-MM-DD biçiminde bir takvim tarihi veya null olmalıdır",
 	hltb_settings_unavailable: "HLTB ayarları yüklenemedi",
@@ -17005,7 +16684,6 @@ var editor$3 = {
 	},
 	review: {
 		title: "Oyun ayrıntılarını gözden geçir",
-		body: "Oyun ayrıntıları böyle görünecek. Uygula, ayrıntıları düzenleyiciye ekler. Kaydet'i seçene kadar hiçbir şey kaydedilmez.",
 		apply: "Uygula",
 		cancel: "İptal",
 		genres: "Türler"
@@ -17123,7 +16801,7 @@ var editor$3 = {
 	steamTextUnavailable: "Steam bu oyun için metin döndürmedi."
 };
 var matchPicker$3 = {
-	help: "Steam'de arayın, ayrıntılarını incelemek için bir sonuç seçin ve ardından Bu Steam eşleşmesini kullan öğesini seçin. Gezinmek oyununuzu değiştirmez.",
+	help: "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
 	searchAriaLabel: "Steam oyun araması",
 	search: "Steam'de ara",
 	searching: "Steam'de aranıyor...",
@@ -17131,18 +16809,8 @@ var matchPicker$3 = {
 	empty: "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
 	appId: "Steam Uygulama ID'si: {{appId}}",
 	appIdCurrent: "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme",
-	appIdSelected: "Steam Uygulama ID'si: {{appId}} · Seçildi",
-	appIdCurrentSelected: "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme · Seçildi",
-	loadingDetails: "Steam ayrıntıları yükleniyor...",
-	artworkAlt: "{{title}} Steam görseli",
 	developer: "Geliştirici: {{names}}",
-	developerUnavailable: "Geliştirici kullanılamıyor",
-	release: "Çıkış: {{date}}",
-	releaseUnavailable: "Çıkış tarihi kullanılamıyor",
-	steamType: "Steam türü: {{type}}. Bunun istediğiniz oyun veya sürüm olduğunu doğrulayın.",
-	applyHelp: "Bu eşleşmeyi kullanmak, Steam Uygulama ID'sini ve ayrıntılarını bu forma yükler. Kaydet düğmesiyle saklanır. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
-	apply: "Bu Steam eşleşmesini kullan",
-	cancel: "Seçimi iptal et"
+	release: "Çıkış: {{date}}"
 };
 var categories$3 = {
 	singlePlayer: "Tek oyunculu",
@@ -17209,10 +16877,6 @@ var backend$2 = {
 	invalid_title: "неприпустима назва",
 	invalid_search: "неприпустимий запит",
 	steam_search_unavailable: "Пошук у Steam недоступний. Спробуйте ще раз.",
-	steam_details_unavailable: "Відомості про гру Steam недоступні",
-	steam_title_unavailable: "Назва гри Steam недоступна",
-	invalid_steam_game: "Виберіть дійсну гру Steam.",
-	steam_preview_unavailable: "Відомості Steam недоступні. Цей збіг усе одно можна використати.",
 	settings_unreadable: "файл налаштувань метаданих не читається; виправте або видаліть його перед збереженням змін",
 	invalid_release_date: "release_date має бути календарною датою у форматі РРРР-ММ-ДД або null",
 	hltb_settings_unavailable: "Не вдалося завантажити налаштування HLTB",
@@ -17654,7 +17318,6 @@ var editor$2 = {
 	},
 	review: {
 		title: "Перегляд відомостей про гру",
-		body: "Так виглядатимуть відомості про гру. Застосування додасть їх до редактора. Нічого не буде збережено, доки ви не виберете «Зберегти».",
 		apply: "Застосувати",
 		cancel: "Скасувати",
 		genres: "Жанри"
@@ -17772,7 +17435,7 @@ var editor$2 = {
 	steamTextUnavailable: "Steam не повернув текст для цієї гри."
 };
 var matchPicker$2 = {
-	help: "Знайдіть гру в Steam, виберіть результат, щоб перевірити відомості, потім виберіть «Використати цей збіг Steam». Перегляд не змінює вашу гру.",
+	help: "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",
 	searchAriaLabel: "Пошук гри в Steam",
 	search: "Шукати в Steam",
 	searching: "Пошук у Steam...",
@@ -17780,18 +17443,8 @@ var matchPicker$2 = {
 	empty: "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
 	appId: "Steam App ID: {{appId}}",
 	appIdCurrent: "Steam App ID: {{appId}} · поточний збіг",
-	appIdSelected: "Steam App ID: {{appId}} · вибрано",
-	appIdCurrentSelected: "Steam App ID: {{appId}} · поточний збіг · вибрано",
-	loadingDetails: "Завантаження відомостей Steam...",
-	artworkAlt: "Арт Steam для {{title}}",
 	developer: "Розробник: {{names}}",
-	developerUnavailable: "Розробник недоступний",
-	release: "Дата виходу: {{date}}",
-	releaseUnavailable: "Дата виходу недоступна",
-	steamType: "Тип Steam: {{type}}. Переконайтеся, що це потрібна гра або видання.",
-	applyHelp: "Використання цього збігу завантажує його Steam App ID і відомості в цю форму. Натисніть «Зберегти», щоб їх записати. Воно не перейменовує ярлик і не замінює ваш арт.",
-	apply: "Використати цей збіг Steam",
-	cancel: "Скасувати вибір"
+	release: "Дата виходу: {{date}}"
 };
 var categories$2 = {
 	singlePlayer: "Для одного гравця",
@@ -17855,10 +17508,6 @@ var backend$1 = {
 	invalid_title: "标题无效",
 	invalid_search: "搜索无效",
 	steam_search_unavailable: "Steam 搜索不可用，请重试。",
-	steam_details_unavailable: "Steam 游戏详情不可用",
-	steam_title_unavailable: "Steam 游戏名称不可用",
-	invalid_steam_game: "请选择有效的 Steam 游戏。",
-	steam_preview_unavailable: "Steam 详情不可用，但仍可使用此匹配。",
 	settings_unreadable: "元数据设置文件无法读取；请在保存更改前修复或删除该文件",
 	invalid_release_date: "release_date 必须是 YYYY-MM-DD 格式的日历日期或 null",
 	hltb_settings_unavailable: "无法加载 HLTB 设置",
@@ -18300,7 +17949,6 @@ var editor$1 = {
 	},
 	review: {
 		title: "查看游戏详情",
-		body: "游戏详情将如下所示。应用后会将其添加到编辑器。选择“保存”之前不会保存任何内容。",
 		apply: "应用",
 		cancel: "取消",
 		genres: "类型"
@@ -18418,7 +18066,7 @@ var editor$1 = {
 	steamTextUnavailable: "Steam 未返回此游戏的文本。"
 };
 var matchPicker$1 = {
-	help: "搜索 Steam，选择一个结果查看详情，然后选择“使用此 Steam 匹配”。浏览不会更改你的游戏。",
+	help: "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
 	searchAriaLabel: "Steam 游戏搜索",
 	search: "搜索 Steam",
 	searching: "正在搜索 Steam...",
@@ -18426,18 +18074,8 @@ var matchPicker$1 = {
 	empty: "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
 	appId: "Steam App ID：{{appId}}",
 	appIdCurrent: "Steam App ID：{{appId}} · 当前匹配",
-	appIdSelected: "Steam App ID：{{appId}} · 已选择",
-	appIdCurrentSelected: "Steam App ID：{{appId}} · 当前匹配 · 已选择",
-	loadingDetails: "正在加载 Steam 详情...",
-	artworkAlt: "{{title}} 的 Steam 艺术图",
 	developer: "开发商：{{names}}",
-	developerUnavailable: "开发商不可用",
-	release: "发行：{{date}}",
-	releaseUnavailable: "发行日期不可用",
-	steamType: "Steam 类型：{{type}}。请确认这是你想要的游戏或版本。",
-	applyHelp: "使用此匹配会将其 Steam App ID 和详情加载到此表单中，点击保存后才会存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
-	apply: "使用此 Steam 匹配",
-	cancel: "取消选择"
+	release: "发行：{{date}}"
 };
 var categories$1 = {
 	singlePlayer: "单人",
@@ -18501,10 +18139,6 @@ var backend = {
 	invalid_title: "標題無效",
 	invalid_search: "搜尋無效",
 	steam_search_unavailable: "Steam 搜尋無法使用，請再試一次。",
-	steam_details_unavailable: "Steam 遊戲詳細資料無法使用",
-	steam_title_unavailable: "Steam 遊戲名稱無法使用",
-	invalid_steam_game: "請選擇有效的 Steam 遊戲。",
-	steam_preview_unavailable: "Steam 詳細資料無法使用，但你仍可使用此比對。",
 	settings_unreadable: "中繼資料設定檔無法讀取；請在儲存變更前修正或移除該檔案",
 	invalid_release_date: "release_date 必須是 YYYY-MM-DD 格式的日曆日期或 null",
 	hltb_settings_unavailable: "無法載入 HLTB 設定",
@@ -18946,7 +18580,6 @@ var editor = {
 	},
 	review: {
 		title: "檢視遊戲詳細資料",
-		body: "遊戲詳細資料會以此方式呈現。套用後會加入編輯器。選擇「儲存」前不會儲存任何內容。",
 		apply: "套用",
 		cancel: "取消",
 		genres: "類型"
@@ -19064,7 +18697,7 @@ var editor = {
 	steamTextUnavailable: "Steam 未傳回此遊戲的文字。"
 };
 var matchPicker = {
-	help: "搜尋 Steam，選取結果以查看詳細資料，然後選擇「使用此 Steam 比對」。瀏覽並不會變更你的遊戲。",
+	help: "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
 	searchAriaLabel: "Steam 遊戲搜尋",
 	search: "搜尋 Steam",
 	searching: "正在搜尋 Steam...",
@@ -19072,18 +18705,8 @@ var matchPicker = {
 	empty: "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
 	appId: "Steam App ID：{{appId}}",
 	appIdCurrent: "Steam App ID：{{appId}} · 目前比對",
-	appIdSelected: "Steam App ID：{{appId}} · 已選取",
-	appIdCurrentSelected: "Steam App ID：{{appId}} · 目前比對 · 已選取",
-	loadingDetails: "正在載入 Steam 詳細資料...",
-	artworkAlt: "{{title}} 的 Steam 美術圖",
 	developer: "開發人員：{{names}}",
-	developerUnavailable: "開發人員無法使用",
-	release: "發行：{{date}}",
-	releaseUnavailable: "發行日期無法使用",
-	steamType: "Steam 類型：{{type}}。請確認這是你想要的遊戲或版本。",
-	applyHelp: "使用此比對會將其 Steam App ID 和詳細資料載入此表單中，按下「儲存」後才會儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
-	apply: "使用此 Steam 比對",
-	cancel: "取消選取"
+	release: "發行：{{date}}"
 };
 var categories = {
 	singlePlayer: "單人",
@@ -19425,15 +19048,6 @@ const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: !p
 const qamPanelStyle = {
     width: "100%",
     fontFamily,
-};
-const rowStackStyle = {
-    display: "flex",
-    flexDirection: "column",
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-    gap: space.md,
 };
 const fieldStyle = {
     width: "100%",
@@ -37321,46 +36935,23 @@ const editorScopedCss = `
 `;
 
 const EMPTY_MATCHES = [];
-// The ID line carries up to two independent markers; each combination is one sentence.
-const candidateTitleLine = (candidate, matchedSteamAppId, selected, t) => {
-    const isCurrentMatch = candidate.steam_appid === matchedSteamAppId;
-    const isSelected = candidate.steam_appid === selected?.steam_appid;
-    if (isCurrentMatch && isSelected) {
-        return t("matchPicker.appIdCurrentSelected", { appId: candidate.steam_appid });
-    }
-    if (isCurrentMatch) {
-        return t("matchPicker.appIdCurrent", { appId: candidate.steam_appid });
-    }
-    if (isSelected) {
-        return t("matchPicker.appIdSelected", { appId: candidate.steam_appid });
-    }
-    return t("matchPicker.appId", { appId: candidate.steam_appid });
-};
-const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }) => {
+const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, savedSearch, onSearchChange, onApply, }) => {
     const t = useT();
-    const [query, setQuery] = SP_REACT.useState(initialQuery);
-    const [items, setItems] = SP_REACT.useState(EMPTY_MATCHES);
-    const [status, setStatus] = SP_REACT.useState("idle");
-    const [searchError, setSearchError] = SP_REACT.useState(null);
-    const [selected, setSelected] = SP_REACT.useState(null);
-    const [preview, setPreview] = SP_REACT.useState(null);
-    const [previewLoading, setPreviewLoading] = SP_REACT.useState(false);
-    const [previewError, setPreviewError] = SP_REACT.useState(null);
-    const queryRef = SP_REACT.useRef(initialQuery);
+    const [query, setQuery] = SP_REACT.useState(savedSearch?.query ?? initialQuery);
+    const [items, setItems] = SP_REACT.useState(savedSearch?.items ?? EMPTY_MATCHES);
+    const [status, setStatus] = SP_REACT.useState(savedSearch?.status ?? "idle");
+    const [searchError, setSearchError] = SP_REACT.useState(savedSearch?.error ?? null);
+    const queryRef = SP_REACT.useRef(savedSearch?.query ?? initialQuery);
     const searchRequestRef = SP_REACT.useRef(0);
-    const previewRequestRef = SP_REACT.useRef(0);
     const lifetimeRef = SP_REACT.useRef(0);
     const mountedRef = SP_REACT.useRef(true);
-    const itemsRef = SP_REACT.useRef(EMPTY_MATCHES);
-    const selectedRef = SP_REACT.useRef(null);
+    const itemsRef = SP_REACT.useRef(savedSearch?.items ?? EMPTY_MATCHES);
     const pendingQueryRef = SP_REACT.useRef(null);
     const resultsRootRef = SP_REACT.useRef(null);
     const disabledRef = SP_REACT.useRef(disabled);
     const onApplyRef = SP_REACT.useRef(onApply);
     disabledRef.current = disabled;
     onApplyRef.current = onApply;
-    // A row can be selected again; identity alone does not retire its old button.
-    const confirmationRequest = previewRequestRef.current;
     SP_REACT.useEffect(() => {
         mountedRef.current = true;
         return () => {
@@ -37368,26 +36959,6 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
             lifetimeRef.current += 1;
         };
     }, []);
-    const clearSelection = () => {
-        previewRequestRef.current += 1;
-        selectedRef.current = null;
-        setSelected(null);
-        setPreview(null);
-        setPreviewLoading(false);
-        setPreviewError(null);
-    };
-    const cancelSelection = () => {
-        const appId = selectedRef.current?.steam_appid;
-        clearSelection();
-        const request = previewRequestRef.current;
-        requestAnimationFrame(() => {
-            if (!mountedRef.current || previewRequestRef.current !== request || appId === undefined)
-                return;
-            resultsRootRef.current
-                ?.querySelector(`[data-steam-match-appid="${appId}"] .decky-metadata-editor__result`)
-                ?.focus();
-        });
-    };
     const changeQuery = (value) => {
         queryRef.current = value;
         searchRequestRef.current += 1;
@@ -37397,7 +36968,7 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
         setItems(EMPTY_MATCHES);
         setStatus("idle");
         setSearchError(null);
-        clearSelection();
+        onSearchChange({ query: value, items: [], status: "idle", error: null });
     };
     const search = async () => {
         const requestedQuery = queryRef.current.trim();
@@ -37406,7 +36977,6 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
         const request = ++searchRequestRef.current;
         const lifetime = lifetimeRef.current;
         pendingQueryRef.current = requestedQuery;
-        clearSelection();
         itemsRef.current = EMPTY_MATCHES;
         setItems(EMPTY_MATCHES);
         setStatus("loading");
@@ -37419,11 +36989,18 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
             if (response.error) {
                 setSearchError(response.error);
                 setStatus("error");
+                onSearchChange({ query: queryRef.current, items: [], status: "error", error: response.error });
             }
             else {
                 itemsRef.current = response.items;
                 setItems(response.items);
                 setStatus(response.items.length ? "results" : "empty");
+                onSearchChange({
+                    query: queryRef.current,
+                    items: response.items,
+                    status: response.items.length ? "results" : "empty",
+                    error: null,
+                });
             }
         }
         catch {
@@ -37431,53 +37008,31 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
                 return;
             setSearchError("steam_search_unavailable");
             setStatus("error");
+            onSearchChange({ query: queryRef.current, items: [], status: "error", error: "steam_search_unavailable" });
         }
         finally {
             if (isCurrent())
                 pendingQueryRef.current = null;
         }
     };
-    const select = async (candidate) => {
-        if (!mountedRef.current || disabled || !itemsRef.current.includes(candidate))
+    /** Load the candidate into the editor; the review modal opens before anything merges. */
+    const apply = async (candidate) => {
+        if (!mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate))
             return;
-        if (selectedRef.current === candidate && (previewLoading || preview))
+        await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
+        if (!mountedRef.current)
             return;
-        const request = ++previewRequestRef.current;
-        const lifetime = lifetimeRef.current;
-        selectedRef.current = candidate;
-        setSelected(candidate);
-        setPreview(null);
-        setPreviewLoading(true);
-        setPreviewError(null);
-        const isCurrent = () => lifetimeRef.current === lifetime && previewRequestRef.current === request;
-        try {
-            const response = await getSteamMatchPreview(candidate.steam_appid);
-            if (!isCurrent())
+        requestAnimationFrame(() => {
+            if (!mountedRef.current)
                 return;
-            setPreview(response.preview);
-            setPreviewError(response.error);
-        }
-        catch {
-            if (!isCurrent())
-                return;
-            setPreviewError("steam_preview_unavailable");
-        }
-        finally {
-            if (isCurrent())
-                setPreviewLoading(false);
-        }
+            resultsRootRef.current
+                ?.querySelector(`[data-steam-match-appid="${candidate.steam_appid}"] .decky-metadata-editor__result`)
+                ?.focus();
+        });
     };
-    const apply = async () => {
-        if (!mountedRef.current || disabledRef.current || previewLoading ||
-            previewRequestRef.current !== confirmationRequest ||
-            !selected || selectedRef.current !== selected)
-            return;
-        await onApplyRef.current(selected.steam_appid, preview?.cover_url ?? selected.cover_url);
-        // The review modal closed with Apply or Cancel; return to the results with this row focused.
-        if (mountedRef.current)
-            cancelSelection();
-    };
-    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, children: [SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void select(candidate), onClick: () => void select(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidateTitleLine(candidate, matchedSteamAppId, selected, t) }) }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: rowStackStyle, children: [previewLoading ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("matchPicker.loadingDetails") }), bottomSeparator: "none" })) : null, previewError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { role: "status", children: translateBackendError(previewError) }), bottomSeparator: "none" })) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? (SP_JSX.jsx("div", { children: SP_JSX.jsx("img", { src: preview.cover_url, alt: t("matchPicker.artworkAlt", { title: preview.title }), style: { ...editorSteamMatchImageStyle, objectFit: "contain" } }) })) : null, preview.developers.length ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.developers"), focusable: false, bottomSeparator: "standard", children: preview.developers.join(", ") })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.developerUnavailable"), bottomSeparator: "none" })), preview.release_date_label ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.releaseDate"), focusable: false, bottomSeparator: "standard", children: preview.release_date_label })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.releaseUnavailable"), bottomSeparator: "none" })), preview.app_type && preview.app_type !== "game" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.steamType", { type: preview.app_type }), bottomSeparator: "none" })) : null] })) : null, SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.applyHelp"), bottomSeparator: "none" }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || previewLoading, onClick: () => void apply(), style: { flex: 1 }, children: t("matchPicker.apply") }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled, onClick: cancelSelection, style: { flex: 1 }, children: t("matchPicker.cancel") })] })] })) : null] }, candidate.steam_appid)))] })] }));
+    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsx("div", { "data-steam-match-appid": candidate.steam_appid, children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void apply(candidate), onClick: () => void apply(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidate.steam_appid === matchedSteamAppId
+                                    ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
+                                    : t("matchPicker.appId", { appId: candidate.steam_appid }) }) }) }, candidate.steam_appid)))] })] }));
 };
 
 function parseHltbGameId(input) {
@@ -38009,10 +37564,11 @@ const reviewCoverStyle = {
 const reviewDescriptionStyle = {
     marginTop: 12,
     whiteSpace: "pre-line",
-    display: "-webkit-box",
-    WebkitBoxOrient: "vertical",
-    WebkitLineClamp: 6,
-    overflow: "hidden",
+};
+// Long details scroll inside the modal instead of pushing Apply/Cancel off screen (same bound as PluginLogModal).
+const reviewBodyStyle = {
+    maxHeight: "60vh",
+    overflowY: "auto",
 };
 const reviewScreenshotStyle = {
     width: 160,
@@ -38070,9 +37626,9 @@ function showMetadataReviewModal(opts) {
         ? metadata.short_description
         : metadata.description || "";
     const screenshots = (metadata.screenshots ?? []).slice(0, 3);
-    const content = (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { style: reviewHeaderStyle, children: [coverUrl ? SP_JSX.jsx("img", { src: coverUrl, alt: "", style: reviewCoverStyle }) : null, SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { style: reviewTitleStyle, children: metadata.title }), SP_JSX.jsx("div", { style: reviewFactsStyle, children: facts.map(([label, value]) => (SP_JSX.jsxs("div", { style: reviewFactRowStyle, children: [SP_JSX.jsx("div", { style: reviewFactLabelStyle, children: label }), SP_JSX.jsx("div", { children: value })] }, label))) })] })] }), description ? SP_JSX.jsx("div", { style: reviewDescriptionStyle, children: description }) : null, screenshots.length > 0 ? (SP_JSX.jsx("div", { style: reviewScreenshotsStyle, children: screenshots.map((shot) => (SP_JSX.jsx("img", { src: shot.url, alt: "", style: reviewScreenshotStyle }, shot.url))) })) : null] }));
+    const content = (SP_JSX.jsx(DFL.ScrollPanelGroup, { children: SP_JSX.jsxs(DFL.Focusable, { noFocusRing: true, style: reviewBodyStyle, children: [SP_JSX.jsxs("div", { style: reviewHeaderStyle, children: [coverUrl ? SP_JSX.jsx("img", { src: coverUrl, alt: "", style: reviewCoverStyle }) : null, SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { style: reviewTitleStyle, children: metadata.title }), SP_JSX.jsx("div", { style: reviewFactsStyle, children: facts.map(([label, value]) => (SP_JSX.jsxs("div", { style: reviewFactRowStyle, children: [SP_JSX.jsx("div", { style: reviewFactLabelStyle, children: label }), SP_JSX.jsx("div", { children: value })] }, label))) })] })] }), description ? SP_JSX.jsx("div", { style: reviewDescriptionStyle, children: description }) : null, screenshots.length > 0 ? (SP_JSX.jsx("div", { style: reviewScreenshotsStyle, children: screenshots.map((shot) => (SP_JSX.jsx("img", { src: shot.url, alt: "", style: reviewScreenshotStyle }, shot.url))) })) : null] }) }));
     return new Promise((resolve) => {
-        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.review.title"), strDescription: t("editor.review.body"), strOKButtonText: t("editor.review.apply"), strCancelButtonText: t("editor.review.cancel"), onOK: () => resolve(true), onCancel: () => resolve(false), children: content }), undefined, {
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.review.title"), strOKButtonText: t("editor.review.apply"), strCancelButtonText: t("editor.review.cancel"), onOK: () => resolve(true), onCancel: () => resolve(false), children: content }), undefined, {
             strTitle: t("editor.review.title"),
             bHideMainWindowForPopouts: false,
             fnOnClose: () => resolve(false),
@@ -38685,6 +38241,8 @@ const MetadataPage = () => {
         mountedRef.current = false;
     }, []);
     const [page, setPage] = SP_REACT.useState("details");
+    // Steam search results outlive the Game Match page, as IGN results do.
+    const steamSearchRef = SP_REACT.useRef(null);
     const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
     // The visible fields whose value differs from the stored record.
     const changed = changedDraftFields(savedRecordRef.current, {
@@ -39327,7 +38885,9 @@ const MetadataPage = () => {
         const loadLabelKey = steamBusy && !loadDisabledReasonKey
             ? "editor.loadFromSteamBusy"
             : "editor.loadFromSteam";
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, onApply: async (steamAppId, coverUrl) => {
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, savedSearch: steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null, onSearchChange: (search) => {
+                        steamSearchRef.current = { entry: editorEntryToken, search };
+                    }, onApply: async (steamAppId, coverUrl) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
                         await applySteamAppId(steamAppId, { coverUrl });

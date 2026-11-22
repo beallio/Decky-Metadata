@@ -24,10 +24,6 @@
     "invalid_title": "neplatný název",
     "invalid_search": "neplatné hledání",
     "steam_search_unavailable": "Vyhledávání ve Steamu není dostupné. Zkuste to znovu.",
-    "steam_details_unavailable": "Podrobnosti hry ze Steamu nejsou dostupné",
-    "steam_title_unavailable": "Název hry ze Steamu není dostupný",
-    "invalid_steam_game": "Vyberte platnou hru ze Steamu.",
-    "steam_preview_unavailable": "Podrobnosti ze Steamu nejsou dostupné. Tuto shodu můžete přesto použít.",
     "settings_unreadable": "soubor nastavení metadat je nečitelný; před uložením změn ho opravte nebo odstraňte",
     "invalid_release_date": "release_date musí být kalendářní datum ve formátu RRRR-MM-DD nebo null",
     "hltb_settings_unavailable": "Nastavení HLTB se nepodařilo načíst",
@@ -469,7 +465,6 @@
     },
     "review": {
       "title": "Kontrola podrobností hry",
-      "body": "Takto budou podrobnosti o hře vypadat. Použitím je přidáte do editoru. Nic se neuloží, dokud nevyberete Uložit.",
       "apply": "Použít",
       "cancel": "Zrušit",
       "genres": "Žánry"
@@ -587,7 +582,7 @@
     "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
   },
   "matchPicker": {
-    "help": "Vyhledejte hru ve Steamu, vyberte výsledek pro kontrolu podrobností a potom zvolte „Použít tuto shodu Steam“. Procházení vaši hru nezmění.",
+    "help": "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
     "searchAriaLabel": "Vyhledávání her Steam",
     "search": "Hledat ve Steamu",
     "searching": "Hledání ve Steamu...",
@@ -595,18 +590,8 @@
     "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda",
-    "appIdSelected": "Steam App ID: {{appId}} · vybráno",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · aktuální shoda · vybráno",
-    "loadingDetails": "Načítání podrobností ze Steamu...",
-    "artworkAlt": "Grafika Steam hry {{title}}",
     "developer": "Vývojář: {{names}}",
-    "developerUnavailable": "Vývojář není dostupný",
-    "release": "Vydání: {{date}}",
-    "releaseUnavailable": "Datum vydání není dostupné",
-    "steamType": "Typ Steam: {{type}}. Zkontrolujte, zda je to hra nebo edice, kterou chcete.",
-    "applyHelp": "Použitím této shody se do tohoto formuláře načte její Steam App ID a podrobnosti. Uložíte je tlačítkem „Uložit“. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
-    "apply": "Použít tuto shodu Steam",
-    "cancel": "Zrušit výběr"
+    "release": "Vydání: {{date}}"
   },
   "categories": {
     "singlePlayer": "Pro jednoho hráče",
