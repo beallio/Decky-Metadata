@@ -22,7 +22,6 @@ vi.mock("react", async (importOriginal) => {
 vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   PanelSection: "PanelSection",
-  quickAccessControlsClasses: { PanelSectionTitle: "PanelSectionTitle" },
 }));
 
 import { CollapsibleSection } from "./CollapsibleSection";
@@ -71,11 +70,13 @@ describe("QAM collapsible sections", () => {
     expect(children(region(closed)).some(node => node.type === "span")).toBe(false);
   });
 
-  it("uses the native section title and gamepad focus styling", () => {
+  it("uses the old heading look with the tint driven by Steam's gamepad focus class", () => {
     const tree = render("Metadata");
-    expect(header(tree).props.className).toContain("PanelSectionTitle");
+    expect(header(tree).props.className).toBe("decky-metadata-qam-section-heading");
+    // An inline colour would beat the .gpfocus rule, so the look must stay in the stylesheet.
+    expect(header(tree).props.style).toBeUndefined();
     expect(children(tree).find(node => node.type === "style").props.children)
-      .toContain(".decky-metadata-qam-section-heading.gpfocus");
+      .toMatch(/\.decky-metadata-qam-section-heading\.gpfocus \{\s*background: rgba\(102, 182, 236, 0\.18\);\s*color: #fff;/);
 
     const scrollIntoView = vi.fn();
     const fakeHeading = {
