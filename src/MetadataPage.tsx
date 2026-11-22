@@ -1682,7 +1682,13 @@ export const MetadataPage = () => {
         </div>
         <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
           <div className="SettingsDialogSubHeader">{t("editor.searchIgn")}</div>
-          <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
+          <Field
+            label={t("editor.ign.gameName")}
+            description={t("editor.ign.help")}
+            childrenLayout="below"
+            childrenContainerWidth="max"
+            bottomSeparator="standard"
+          >
             <div style={editorSearchRowStyle}>
               <div style={editorSearchInputStyle}>
                 <TextField
@@ -1735,6 +1741,7 @@ export const MetadataPage = () => {
                 icon={result.cover_url ? <img src={result.cover_url} alt="" style={editorIgnResultImageStyle} /> : undefined}
                 focusable={true}
                 highlightOnFocus={true}
+                disabled={entryBusy || !nonSteam}
                 bottomSeparator="standard"
                 onActivate={() => void applyResult(result)}
                 onClick={() => void applyResult(result)}

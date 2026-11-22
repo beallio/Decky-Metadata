@@ -471,7 +471,8 @@
     "searchIgn": "IGN-Metadaten durchsuchen",
     "ign": {
       "gameName": "Spielname",
-      "noResults": "Keine Ergebnisse."
+      "noResults": "Keine Ergebnisse.",
+      "help": "Durchsuche IGN und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie."
     },
     "search": "Suchen",
     "searching": "Suche...",

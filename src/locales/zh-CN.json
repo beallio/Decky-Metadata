@@ -470,7 +470,8 @@
     "searchIgn": "搜索 IGN 元数据",
     "ign": {
       "gameName": "游戏名称",
-      "noResults": "没有结果。"
+      "noResults": "没有结果。",
+      "help": "搜索 IGN，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。"
     },
     "search": "搜索",
     "searching": "正在搜索...",

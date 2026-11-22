@@ -471,7 +471,8 @@
     "searchIgn": "IGN-metadata doorzoeken",
     "ign": {
       "gameName": "Naam van de game",
-      "noResults": "Geen resultaten."
+      "noResults": "Geen resultaten.",
+      "help": "Doorzoek IGN en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze."
     },
     "search": "Zoeken",
     "searching": "Zoeken...",

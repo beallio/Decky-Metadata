@@ -472,7 +472,8 @@
     "searchIgn": "Cerca i metadati su IGN",
     "ign": {
       "gameName": "Nome del gioco",
-      "noResults": "Nessun risultato."
+      "noResults": "Nessun risultato.",
+      "help": "Cerca su IGN, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva."
     },
     "search": "Cerca",
     "searching": "Ricerca in corso...",

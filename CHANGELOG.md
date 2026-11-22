@@ -30,7 +30,9 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
   explanation and a button. Groups such as **Store Categories**, **Search
   Steam**, **Current match** and **Search IGN metadata** use Steam's section
   headings. Edited fields show **Edited** in colour without moving the label.
-  HowLongToBeat results look like the Steam and IGN results.
+  HowLongToBeat results look like the Steam and IGN results. Steam and IGN
+  search both show help under the search box, show result details on Steam's
+  description line, and grey out their results while the editor is busy.
 - Editor text boxes stay white while you type with the on-screen keyboard
   and after you close it, until you move to another control. Steam's own
   boxes turn gray while the keyboard is open.

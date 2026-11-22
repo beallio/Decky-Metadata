@@ -471,7 +471,8 @@
     "searchIgn": "Sök IGN-metadata",
     "ign": {
       "gameName": "Spelets namn",
-      "noResults": "Inga resultat."
+      "noResults": "Inga resultat.",
+      "help": "Sök på IGN och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem."
     },
     "search": "Sök",
     "searching": "Söker...",

@@ -8,7 +8,7 @@ import {
   editorSearchRowStyle,
   editorSteamMatchImageStyle,
 } from "./metadataEditorStyles";
-import { compactTextStyle, fieldStyle, FocusableButton } from "./styles";
+import { fieldStyle, FocusableButton } from "./styles";
 import { translateBackendError, useT } from "./i18n";
 import type { SteamMatchCandidate } from "./types";
 
@@ -185,6 +185,9 @@ export const SteamMatchPicker = ({
             <Field
               className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
               label={candidate.title}
+              description={candidate.steam_appid === matchedSteamAppId
+                ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
+                : t("matchPicker.appId", { appId: candidate.steam_appid })}
               icon={candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : undefined}
               focusable={true}
               highlightOnFocus={true}
@@ -192,13 +195,7 @@ export const SteamMatchPicker = ({
               bottomSeparator="standard"
               onActivate={() => void apply(candidate)}
               onClick={() => void apply(candidate)}
-            >
-              <div style={compactTextStyle}>
-                {candidate.steam_appid === matchedSteamAppId
-                  ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
-                  : t("matchPicker.appId", { appId: candidate.steam_appid })}
-              </div>
-            </Field>
+            />
           </div>
         ))}
       </div>

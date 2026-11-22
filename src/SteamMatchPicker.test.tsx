@@ -66,11 +66,11 @@ const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return `${text(node.props?.label)}${text(node.props?.children)}`;
+  return `${text(node.props?.label)}${text(node.props?.description)}${text(node.props?.children)}`;
 };
 const button = (tree: any, label: string) => walk(tree, node => typeof node.props?.onClick === "function" && text(node) === label)[0];
 const candidate = (tree: any, id: number) =>
-  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.children).includes(`Steam App ID: ${id}`))[0];
+  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.description).includes(`Steam App ID: ${id}`))[0];
 const changeQuery = (tree: any, query: string) => walk(tree, node => node.type === "TextField")[0].props.onChange({ target: { value: query } });
 // The results container's ref (React 19 passes ref as a prop; older React keeps it on the element).
 const resultsRoot = (tree: any) => {

@@ -471,7 +471,8 @@
     "searchIgn": "Search IGN metadata",
     "ign": {
       "gameName": "Game name",
-      "noResults": "No results."
+      "noResults": "No results.",
+      "help": "Search IGN, then select a result to review its details. Apply loads them into this form and Save stores them."
     },
     "search": "Search",
     "searching": "Searching...",

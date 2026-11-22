@@ -1208,7 +1208,7 @@ describe("MetadataPage compatibility status", () => {
     expect(toast.toastError).toHaveBeenCalledWith("Fetch failed", expect.any(String));
   });
 
-  it("does not show IGN search busy text while applying an IGN result", async () => {
+  it("disables IGN results, without IGN search busy text, while applying an IGN result", async () => {
     configureShortcutPanel();
     const result = {
       title: "Chosen game",
@@ -1221,8 +1221,11 @@ describe("MetadataPage compatibility status", () => {
     backend.previewFetchedMetadata.mockReturnValue(pendingPreview.promise);
 
     const match = openPage("Game Match");
-    walk(match, (node) => node.type === "Field" && node.props.label === result.title)[0].props.onActivate();
+    const row = (page: unknown) => walk(page, (node) => node.type === "Field" && node.props.label === result.title)[0];
+    expect(row(match).props.disabled).toBe(false);
+    row(match).props.onActivate();
     const applying = renderPage();
+    expect(row(applying).props.disabled).toBe(true);
     expect(ignSearchButton(applying).props.children).toBe("Search");
     expect(text(applying)).not.toContain("Searching...");
     pendingPreview.resolve(null);

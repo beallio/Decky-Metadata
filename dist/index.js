@@ -3410,7 +3410,8 @@ var editor$o = {
 	searchIgn: "البحث في بيانات IGN الوصفية",
 	ign: {
 		gameName: "اسم اللعبة",
-		noResults: "لا نتائج."
+		noResults: "لا نتائج.",
+		help: "ابحث في IGN، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ»."
 	},
 	search: "بحث",
 	searching: "جارٍ البحث...",
@@ -4040,7 +4041,8 @@ var editor$n = {
 	searchIgn: "Търсене на метаданни в IGN",
 	ign: {
 		gameName: "Име на играта",
-		noResults: "Няма резултати."
+		noResults: "Няма резултати.",
+		help: "Потърсете в IGN, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва."
 	},
 	search: "Търсене",
 	searching: "Търсене...",
@@ -4672,7 +4674,8 @@ var editor$m = {
 	searchIgn: "Hledat metadata na IGN",
 	ign: {
 		gameName: "Název hry",
-		noResults: "Žádné výsledky."
+		noResults: "Žádné výsledky.",
+		help: "Vyhledejte hru v IGN, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží."
 	},
 	search: "Hledat",
 	searching: "Hledání...",
@@ -5302,7 +5305,8 @@ var editor$l = {
 	searchIgn: "IGN-Metadaten durchsuchen",
 	ign: {
 		gameName: "Spielname",
-		noResults: "Keine Ergebnisse."
+		noResults: "Keine Ergebnisse.",
+		help: "Durchsuche IGN und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie."
 	},
 	search: "Suchen",
 	searching: "Suche...",
@@ -5932,7 +5936,8 @@ var editor$k = {
 	searchIgn: "Αναζήτηση μεταδεδομένων IGN",
 	ign: {
 		gameName: "Όνομα παιχνιδιού",
-		noResults: "Δεν υπάρχουν αποτελέσματα."
+		noResults: "Δεν υπάρχουν αποτελέσματα.",
+		help: "Αναζητήστε στο IGN και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί."
 	},
 	search: "Αναζήτηση",
 	searching: "Αναζήτηση...",
@@ -6562,7 +6567,8 @@ var editor$j = {
 	searchIgn: "Search IGN metadata",
 	ign: {
 		gameName: "Game name",
-		noResults: "No results."
+		noResults: "No results.",
+		help: "Search IGN, then select a result to review its details. Apply loads them into this form and Save stores them."
 	},
 	search: "Search",
 	searching: "Searching...",
@@ -7193,7 +7199,8 @@ var editor$i = {
 	searchIgn: "Buscar metadatos de IGN",
 	ign: {
 		gameName: "Nombre del juego",
-		noResults: "No hay resultados."
+		noResults: "No hay resultados.",
+		help: "Busca en IGN y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva."
 	},
 	search: "Buscar",
 	searching: "Buscando...",
@@ -7823,7 +7830,8 @@ var editor$h = {
 	searchIgn: "Hae IGN-metatietoja",
 	ign: {
 		gameName: "Pelin nimi",
-		noResults: "Ei tuloksia."
+		noResults: "Ei tuloksia.",
+		help: "Hae IGN:stä ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne."
 	},
 	search: "Hae",
 	searching: "Haetaan...",
@@ -8454,7 +8462,8 @@ var editor$g = {
 	searchIgn: "Rechercher des métadonnées IGN",
 	ign: {
 		gameName: "Nom du jeu",
-		noResults: "Aucun résultat."
+		noResults: "Aucun résultat.",
+		help: "Recherchez sur IGN, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve."
 	},
 	search: "Rechercher",
 	searching: "Recherche...",
@@ -9085,7 +9094,8 @@ var editor$f = {
 	searchIgn: "Cerca i metadati su IGN",
 	ign: {
 		gameName: "Nome del gioco",
-		noResults: "Nessun risultato."
+		noResults: "Nessun risultato.",
+		help: "Cerca su IGN, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva."
 	},
 	search: "Cerca",
 	searching: "Ricerca in corso...",
@@ -9714,7 +9724,8 @@ var editor$e = {
 	searchIgn: "IGN メタデータを検索",
 	ign: {
 		gameName: "ゲーム名",
-		noResults: "結果がありません。"
+		noResults: "結果がありません。",
+		help: "IGN を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。"
 	},
 	search: "検索",
 	searching: "検索中...",
@@ -10344,7 +10355,8 @@ var editor$d = {
 	searchIgn: "IGN-ის მეტამონაცემებში ძებნა",
 	ign: {
 		gameName: "თამაშის სახელი",
-		noResults: "შედეგები არ არის."
+		noResults: "შედეგები არ არის.",
+		help: "მოძებნეთ IGN-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს."
 	},
 	search: "ძებნა",
 	searching: "მიმდინარეობს ძებნა...",
@@ -10973,7 +10985,8 @@ var editor$c = {
 	searchIgn: "IGN 메타데이터 검색",
 	ign: {
 		gameName: "게임 이름",
-		noResults: "결과가 없습니다."
+		noResults: "결과가 없습니다.",
+		help: "IGN을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다."
 	},
 	search: "검색",
 	searching: "검색 중...",
@@ -11603,7 +11616,8 @@ var editor$b = {
 	searchIgn: "IGN-metadata doorzoeken",
 	ign: {
 		gameName: "Naam van de game",
-		noResults: "Geen resultaten."
+		noResults: "Geen resultaten.",
+		help: "Doorzoek IGN en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze."
 	},
 	search: "Zoeken",
 	searching: "Zoeken...",
@@ -12235,7 +12249,8 @@ var editor$a = {
 	searchIgn: "Szukaj metadanych w IGN",
 	ign: {
 		gameName: "Nazwa gry",
-		noResults: "Brak wyników."
+		noResults: "Brak wyników.",
+		help: "Wyszukaj grę w IGN, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje."
 	},
 	search: "Szukaj",
 	searching: "Wyszukiwanie...",
@@ -12866,7 +12881,8 @@ var editor$9 = {
 	searchIgn: "Pesquisar metadados na IGN",
 	ign: {
 		gameName: "Nome do jogo",
-		noResults: "Nenhum resultado."
+		noResults: "Nenhum resultado.",
+		help: "Pesquise no IGN e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena."
 	},
 	search: "Pesquisar",
 	searching: "Pesquisando...",
@@ -13497,7 +13513,8 @@ var editor$8 = {
 	searchIgn: "Pesquisar metadados na IGN",
 	ign: {
 		gameName: "Nome do jogo",
-		noResults: "Sem resultados."
+		noResults: "Sem resultados.",
+		help: "Pesquise no IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
 	},
 	search: "Pesquisar",
 	searching: "A pesquisar...",
@@ -14128,7 +14145,8 @@ var editor$7 = {
 	searchIgn: "Caută metadate IGN",
 	ign: {
 		gameName: "Numele jocului",
-		noResults: "Nu există rezultate."
+		noResults: "Nu există rezultate.",
+		help: "Caută pe IGN, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează."
 	},
 	search: "Caută",
 	searching: "Se caută...",
@@ -14760,7 +14778,8 @@ var editor$6 = {
 	searchIgn: "Искать метаданные в IGN",
 	ign: {
 		gameName: "Название игры",
-		noResults: "Нет результатов."
+		noResults: "Нет результатов.",
+		help: "Найдите игру в IGN, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет."
 	},
 	search: "Искать",
 	searching: "Поиск...",
@@ -15390,7 +15409,8 @@ var editor$5 = {
 	searchIgn: "Kërko metadata në IGN",
 	ign: {
 		gameName: "Emri i lojës",
-		noResults: "Nuk ka rezultate."
+		noResults: "Nuk ka rezultate.",
+		help: "Kërko në IGN, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan."
 	},
 	search: "Kërko",
 	searching: "Po kërkohet...",
@@ -16020,7 +16040,8 @@ var editor$4 = {
 	searchIgn: "Sök IGN-metadata",
 	ign: {
 		gameName: "Spelets namn",
-		noResults: "Inga resultat."
+		noResults: "Inga resultat.",
+		help: "Sök på IGN och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem."
 	},
 	search: "Sök",
 	searching: "Söker...",
@@ -16650,7 +16671,8 @@ var editor$3 = {
 	searchIgn: "IGN meta verilerinde ara",
 	ign: {
 		gameName: "Oyun adı",
-		noResults: "Sonuç yok."
+		noResults: "Sonuç yok.",
+		help: "IGN'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar."
 	},
 	search: "Ara",
 	searching: "Aranıyor...",
@@ -17282,7 +17304,8 @@ var editor$2 = {
 	searchIgn: "Шукати метадані в IGN",
 	ign: {
 		gameName: "Назва гри",
-		noResults: "Немає результатів."
+		noResults: "Немає результатів.",
+		help: "Знайдіть гру в IGN, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає."
 	},
 	search: "Шукати",
 	searching: "Пошук...",
@@ -17911,7 +17934,8 @@ var editor$1 = {
 	searchIgn: "搜索 IGN 元数据",
 	ign: {
 		gameName: "游戏名称",
-		noResults: "没有结果。"
+		noResults: "没有结果。",
+		help: "搜索 IGN，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。"
 	},
 	search: "搜索",
 	searching: "正在搜索...",
@@ -18540,7 +18564,8 @@ var editor = {
 	searchIgn: "搜尋 IGN 中繼資料",
 	ign: {
 		gameName: "遊戲名稱",
-		noResults: "沒有結果。"
+		noResults: "沒有結果。",
+		help: "搜尋 IGN，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。"
 	},
 	search: "搜尋",
 	searching: "正在搜尋...",
@@ -36987,9 +37012,9 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, savedSear
                 ?.focus();
         });
     };
-    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsx("div", { "data-steam-match-appid": candidate.steam_appid, children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void apply(candidate), onClick: () => void apply(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidate.steam_appid === matchedSteamAppId
-                                    ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
-                                    : t("matchPicker.appId", { appId: candidate.steam_appid }) }) }) }, candidate.steam_appid)))] })] }));
+    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsx("div", { "data-steam-match-appid": candidate.steam_appid, children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, description: candidate.steam_appid === matchedSteamAppId
+                                ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
+                                : t("matchPicker.appId", { appId: candidate.steam_appid }), icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void apply(candidate), onClick: () => void apply(candidate) }) }, candidate.steam_appid)))] })] }));
 };
 
 function parseHltbGameId(input) {
@@ -38865,10 +38890,10 @@ const MetadataPage = () => {
                                                 markFormEdited();
                                                 clearPreviewMarker("steamAppId");
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: !nonSteam, onChange: (e) => {
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), description: t("editor.ign.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: !nonSteam, onChange: (e) => {
                                                 setQuery(e.target.value);
                                                 setResults(null);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
