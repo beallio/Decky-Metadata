@@ -8,7 +8,7 @@ import {
   editorSearchRowStyle,
   editorSteamMatchImageStyle,
 } from "./metadataEditorStyles";
-import { compactTextStyle, fieldStyle, FocusableButton } from "./styles";
+import { fieldStyle, FocusableButton } from "./styles";
 import { translateBackendError, useT } from "./i18n";
 import type { SteamMatchCandidate } from "./types";
 
@@ -168,23 +168,28 @@ export const SteamMatchPicker = ({
         </div>
       </Field>
       <div ref={resultsRootRef}>
-        <Field
-          focusable={false}
-          description={
-            <span aria-live="polite">
-              {status === "idle" ? t("matchPicker.idle") : null}
-              {status === "loading" ? t("matchPicker.searching") : null}
-              {status === "empty" ? t("matchPicker.empty") : null}
-              {status === "error" && searchError ? translateBackendError(searchError) : null}
-            </span>
-          }
-          bottomSeparator="none"
-        />
+        {status !== "results" ? (
+          <Field
+            focusable={false}
+            description={
+              <span aria-live="polite">
+                {status === "idle" ? t("matchPicker.idle") : null}
+                {status === "loading" ? t("matchPicker.searching") : null}
+                {status === "empty" ? t("matchPicker.empty") : null}
+                {status === "error" && searchError ? translateBackendError(searchError) : null}
+              </span>
+            }
+            bottomSeparator="none"
+          />
+        ) : null}
         {items.map((candidate) => (
           <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid}>
             <Field
               className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
               label={candidate.title}
+              description={candidate.steam_appid === matchedSteamAppId
+                ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
+                : t("matchPicker.appId", { appId: candidate.steam_appid })}
               icon={candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : undefined}
               focusable={true}
               highlightOnFocus={true}
@@ -192,13 +197,7 @@ export const SteamMatchPicker = ({
               bottomSeparator="standard"
               onActivate={() => void apply(candidate)}
               onClick={() => void apply(candidate)}
-            >
-              <div style={compactTextStyle}>
-                {candidate.steam_appid === matchedSteamAppId
-                  ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
-                  : t("matchPicker.appId", { appId: candidate.steam_appid })}
-              </div>
-            </Field>
+            />
           </div>
         ))}
       </div>

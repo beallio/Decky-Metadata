@@ -471,7 +471,8 @@
     "searchIgn": "Hae IGN-metatietoja",
     "ign": {
       "gameName": "Pelin nimi",
-      "noResults": "Ei tuloksia."
+      "noResults": "Ei tuloksia.",
+      "help": "Hae IGN:stä ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne."
     },
     "search": "Hae",
     "searching": "Haetaan...",

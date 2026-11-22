@@ -66,11 +66,11 @@ const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return `${text(node.props?.label)}${text(node.props?.children)}`;
+  return `${text(node.props?.label)}${text(node.props?.description)}${text(node.props?.children)}`;
 };
 const button = (tree: any, label: string) => walk(tree, node => typeof node.props?.onClick === "function" && text(node) === label)[0];
 const candidate = (tree: any, id: number) =>
-  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.children).includes(`Steam App ID: ${id}`))[0];
+  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.description).includes(`Steam App ID: ${id}`))[0];
 const changeQuery = (tree: any, query: string) => walk(tree, node => node.type === "TextField")[0].props.onChange({ target: { value: query } });
 // The results container's ref (React 19 passes ref as a prop; older React keeps it on the element).
 const resultsRoot = (tree: any) => {
@@ -177,6 +177,14 @@ describe("Steam match browsing ownership", () => {
     await flush();
 
     expect(applying).not.toHaveBeenCalled();
+  });
+
+  it("marks the current match on the result's description line", () => {
+    const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal2, portal], status: "results", error: null };
+    const tree = renderPicker({ savedSearch: snapshot, matchedSteamAppId: 400 });
+
+    expect(candidate(tree, 400).props.description).toBe("Steam App ID: 400 · Current match");
+    expect(candidate(tree, 620).props.description).toBe("Steam App ID: 620");
   });
 
   it("does not apply a result while the picker is disabled", async () => {

@@ -472,7 +472,8 @@
     "searchIgn": "Caută metadate IGN",
     "ign": {
       "gameName": "Numele jocului",
-      "noResults": "Nu există rezultate."
+      "noResults": "Nu există rezultate.",
+      "help": "Caută pe IGN, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează."
     },
     "search": "Caută",
     "searching": "Se caută...",

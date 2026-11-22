@@ -471,7 +471,8 @@
     "searchIgn": "IGN meta verilerinde ara",
     "ign": {
       "gameName": "Oyun adı",
-      "noResults": "Sonuç yok."
+      "noResults": "Sonuç yok.",
+      "help": "IGN'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar."
     },
     "search": "Ara",
     "searching": "Aranıyor...",

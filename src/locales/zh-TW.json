@@ -470,7 +470,8 @@
     "searchIgn": "搜尋 IGN 中繼資料",
     "ign": {
       "gameName": "遊戲名稱",
-      "noResults": "沒有結果。"
+      "noResults": "沒有結果。",
+      "help": "搜尋 IGN，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。"
     },
     "search": "搜尋",
     "searching": "正在搜尋...",

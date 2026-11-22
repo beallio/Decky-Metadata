@@ -471,7 +471,8 @@
     "searchIgn": "Kërko metadata në IGN",
     "ign": {
       "gameName": "Emri i lojës",
-      "noResults": "Nuk ka rezultate."
+      "noResults": "Nuk ka rezultate.",
+      "help": "Kërko në IGN, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan."
     },
     "search": "Kërko",
     "searching": "Po kërkohet...",
