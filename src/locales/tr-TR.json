@@ -468,7 +468,7 @@
       "genres": "Türler"
     },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
-    "searchIgn": "IGN meta verilerinde ara",
+    "searchIgn": "IGN'de ara",
     "ign": {
       "gameName": "Oyun adı",
       "noResults": "Sonuç yok.",
@@ -514,7 +514,11 @@
     "hltbApply": "HLTB oyununu uygula",
     "steamAppId": "Steam Uygulama ID'si",
     "steamAppIdHelp": "Bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si yapıştırın. Sabitlenmiş Steam eşleşmesini temizlemek için boş bırakın.",
-    "steamAppIdApply": "Steam Uygulama ID'sini uygula",
+    "manualMatch": {
+      "label": "Bir Steam Uygulama ID'si girin",
+      "help": "Arama oyunu bulamadığında bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si kullanın. Eşleşmeyi kaldırmak için boş bırakın.",
+      "button": "ID girin..."
+    },
     "shortcut": {
       "immediateNotice": "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
       "currentLabel": "Geçerli ad",
@@ -557,8 +561,6 @@
       "detailsLoadedTitle": "Ayrıntılar yüklendi",
       "steamPreviewBody": "Steam ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
       "ignPreviewBody": "IGN ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
-      "steamAppIdNotAppliedTitle": "Steam uygulama ID'si uygulanmadı",
-      "steamAppIdNotAppliedBody": "Kaydetmeden önce yeni eşleşmeyi yüklemek için “Steam Uygulama ID'sini uygula” seçeneğini seçin.",
       "fetchFailedTitle": "Getirme başarısız",
       "removedBody": "Meta veriler kaldırıldı",
       "removeFailedTitle": "Kaldırma başarısız",
@@ -586,7 +588,7 @@
     "search": "Steam'de ara",
     "searching": "Steam'de aranıyor...",
     "idle": "Steam eşleşmelerini bulmak için bir oyun adı girin.",
-    "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
+    "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya yukarıdaki “Bir Steam Uygulama ID'si girin” alanını kullanın.",
     "appId": "Steam Uygulama ID'si: {{appId}}",
     "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme"
   },

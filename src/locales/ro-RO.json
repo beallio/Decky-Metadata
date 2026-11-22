@@ -469,7 +469,7 @@
       "genres": "Genuri"
     },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
-    "searchIgn": "Caută metadate IGN",
+    "searchIgn": "Caută în IGN",
     "ign": {
       "gameName": "Numele jocului",
       "noResults": "Nu există rezultate.",
@@ -515,7 +515,11 @@
     "hltbApply": "Aplică jocul HLTB",
     "steamAppId": "ID aplicație Steam",
     "steamAppIdHelp": "Lipește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB. Lasă gol pentru a șterge potrivirea Steam fixată.",
-    "steamAppIdApply": "Aplică ID-ul de aplicație Steam",
+    "manualMatch": {
+      "label": "Introdu un ID de aplicație Steam",
+      "help": "Folosește un ID de aplicație Steam, un URL de magazin, comunitate sau SteamDB când căutarea nu găsește jocul. Lasă gol pentru a elimina potrivirea.",
+      "button": "Introdu ID..."
+    },
     "shortcut": {
       "immediateNotice": "Aceste acțiuni se aplică imediat. Nu trebuie să apeși „Salvează”.",
       "currentLabel": "Numele curent",
@@ -558,8 +562,6 @@
       "detailsLoadedTitle": "Detalii încărcate",
       "steamPreviewBody": "Detaliile Steam sunt încărcate în acest formular. Salvează pentru a le păstra.",
       "ignPreviewBody": "Detaliile IGN sunt încărcate în acest formular. Salvează pentru a le păstra.",
-      "steamAppIdNotAppliedTitle": "ID-ul de aplicație Steam nu a fost aplicat",
-      "steamAppIdNotAppliedBody": "Selectează Aplică ID-ul de aplicație Steam pentru a încărca noua potrivire înainte de a salva.",
       "fetchFailedTitle": "Obținerea a eșuat",
       "removedBody": "Metadate eliminate",
       "removeFailedTitle": "Eliminarea a eșuat",
@@ -587,7 +589,7 @@
     "search": "Caută pe Steam",
     "searching": "Se caută pe Steam...",
     "idle": "Introdu un nume de joc pentru a găsi potriviri Steam.",
-    "empty": "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește câmpul ID aplicație Steam de mai jos.",
+    "empty": "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește „Introdu un ID de aplicație Steam” mai sus.",
     "appId": "ID aplicație Steam: {{appId}}",
     "appIdCurrent": "ID aplicație Steam: {{appId}} · Potrivirea curentă"
   },

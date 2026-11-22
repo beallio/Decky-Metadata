@@ -470,7 +470,7 @@
       "genres": "Žánry"
     },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
-    "searchIgn": "Hledat metadata na IGN",
+    "searchIgn": "Hledat na IGN",
     "ign": {
       "gameName": "Název hry",
       "noResults": "Žádné výsledky.",
@@ -516,7 +516,11 @@
     "hltbApply": "Použít hru HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Vložte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB. Nechte prázdné pro zrušení připnuté shody Steam.",
-    "steamAppIdApply": "Použít Steam App ID",
+    "manualMatch": {
+      "label": "Zadejte Steam App ID",
+      "help": "Použijte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB, když hledání hru nenajde. Nechte prázdné pro odstranění shody.",
+      "button": "Zadat ID..."
+    },
     "shortcut": {
       "immediateNotice": "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
       "currentLabel": "Aktuální název",
@@ -559,8 +563,6 @@
       "detailsLoadedTitle": "Podrobnosti načteny",
       "steamPreviewBody": "Podrobnosti Steam jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
       "ignPreviewBody": "Podrobnosti IGN jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
-      "steamAppIdNotAppliedTitle": "Steam App ID nebylo použito",
-      "steamAppIdNotAppliedBody": "Před uložením vyberte „Použít Steam App ID“, abyste načetli novou shodu.",
       "fetchFailedTitle": "Načtení se nezdařilo",
       "removedBody": "Metadata odstraněna",
       "removeFailedTitle": "Odstranění se nezdařilo",
@@ -588,7 +590,7 @@
     "search": "Hledat ve Steamu",
     "searching": "Hledání ve Steamu...",
     "idle": "Zadejte název hry pro nalezení shod Steam.",
-    "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
+    "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte „Zadejte Steam App ID“ výše.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda"
   },

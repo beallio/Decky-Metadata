@@ -467,7 +467,7 @@
       "genres": "类型"
     },
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
-    "searchIgn": "搜索 IGN 元数据",
+    "searchIgn": "搜索 IGN",
     "ign": {
       "gameName": "游戏名称",
       "noResults": "没有结果。",
@@ -513,7 +513,11 @@
     "hltbApply": "应用 HLTB 游戏",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "粘贴 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可清除固定的 Steam 匹配。",
-    "steamAppIdApply": "应用 Steam App ID",
+    "manualMatch": {
+      "label": "输入 Steam App ID",
+      "help": "当搜索找不到游戏时，使用 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可移除匹配。",
+      "button": "输入 ID..."
+    },
     "shortcut": {
       "immediateNotice": "这些操作立即生效，无需点击“保存”。",
       "currentLabel": "当前名称",
@@ -556,8 +560,6 @@
       "detailsLoadedTitle": "详情已加载",
       "steamPreviewBody": "Steam 详情已加载到此表单中，点击保存后会存储。",
       "ignPreviewBody": "IGN 详情已加载到此表单中，点击保存后会存储。",
-      "steamAppIdNotAppliedTitle": "Steam App ID 未应用",
-      "steamAppIdNotAppliedBody": "保存前，请选择“应用 Steam App ID”以加载新的匹配。",
       "fetchFailedTitle": "获取失败",
       "removedBody": "元数据已移除",
       "removeFailedTitle": "移除失败",
@@ -585,7 +587,7 @@
     "search": "搜索 Steam",
     "searching": "正在搜索 Steam...",
     "idle": "输入游戏名称以查找 Steam 匹配。",
-    "empty": "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
+    "empty": "未找到 Steam 匹配。请尝试其他名称，或使用上方的“输入 Steam App ID”。",
     "appId": "Steam App ID：{{appId}}",
     "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配"
   },

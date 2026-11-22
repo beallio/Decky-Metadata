@@ -470,7 +470,7 @@
       "genres": "Жанри"
     },
     "nonSteamOnly": "Цей плагін змінює лише ігри поза Steam.",
-    "searchIgn": "Шукати метадані в IGN",
+    "searchIgn": "Шукати в IGN",
     "ign": {
       "gameName": "Назва гри",
       "noResults": "Немає результатів.",
@@ -516,7 +516,11 @@
     "hltbApply": "Застосувати гру HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставте Steam App ID, URL крамниці, URL спільноти або URL SteamDB. Залиште порожнім, щоб скасувати прив’язаний збіг Steam.",
-    "steamAppIdApply": "Застосувати Steam App ID",
+    "manualMatch": {
+      "label": "Введіть Steam App ID",
+      "help": "Використовуйте Steam App ID, URL крамниці, URL спільноти або URL SteamDB, коли пошук не знаходить гру. Залиште порожнім, щоб прибрати збіг.",
+      "button": "Ввести ID..."
+    },
     "shortcut": {
       "immediateNotice": "Ці дії застосовуються одразу. Натискати «Зберегти» не потрібно.",
       "currentLabel": "Поточна назва",
@@ -559,8 +563,6 @@
       "detailsLoadedTitle": "Відомості завантажено",
       "steamPreviewBody": "Відомості Steam завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
       "ignPreviewBody": "Відомості IGN завантажено в цю форму. Натисніть «Зберегти», щоб їх записати.",
-      "steamAppIdNotAppliedTitle": "Steam App ID не застосовано",
-      "steamAppIdNotAppliedBody": "Виберіть «Застосувати Steam App ID», щоб завантажити новий збіг перед збереженням.",
       "fetchFailedTitle": "Не вдалося отримати дані",
       "removedBody": "Метадані видалено",
       "removeFailedTitle": "Не вдалося видалити",
@@ -588,7 +590,7 @@
     "search": "Шукати в Steam",
     "searching": "Пошук у Steam...",
     "idle": "Введіть назву гри, щоб знайти збіги в Steam.",
-    "empty": "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
+    "empty": "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся «Введіть Steam App ID» вище.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг"
   },

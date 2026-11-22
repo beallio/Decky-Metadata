@@ -470,7 +470,7 @@
       "genres": "Gatunki"
     },
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
-    "searchIgn": "Szukaj metadanych w IGN",
+    "searchIgn": "Szukaj w IGN",
     "ign": {
       "gameName": "Nazwa gry",
       "noResults": "Brak wyników.",
@@ -516,7 +516,11 @@
     "hltbApply": "Zastosuj grę HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Wklej Steam App ID, adres URL sklepu, adres URL społeczności lub adres URL SteamDB. Pozostaw puste, aby usunąć przypięte dopasowanie Steam.",
-    "steamAppIdApply": "Zastosuj Steam App ID",
+    "manualMatch": {
+      "label": "Wprowadź Steam App ID",
+      "help": "Użyj Steam App ID, adresu URL sklepu, adresu URL społeczności lub adresu URL SteamDB, gdy wyszukiwanie nie znajdzie gry. Pozostaw puste, aby usunąć dopasowanie.",
+      "button": "Wprowadź ID..."
+    },
     "shortcut": {
       "immediateNotice": "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
       "currentLabel": "Bieżąca nazwa",
@@ -559,8 +563,6 @@
       "detailsLoadedTitle": "Szczegóły wczytane",
       "steamPreviewBody": "Szczegóły Steam zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
       "ignPreviewBody": "Szczegóły IGN zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
-      "steamAppIdNotAppliedTitle": "Nie zastosowano Steam App ID",
-      "steamAppIdNotAppliedBody": "Przed zapisaniem wybierz „Zastosuj Steam App ID”, aby wczytać nowe dopasowanie.",
       "fetchFailedTitle": "Pobieranie nie powiodło się",
       "removedBody": "Usunięto metadane",
       "removeFailedTitle": "Usuwanie nie powiodło się",
@@ -588,7 +590,7 @@
     "search": "Szukaj w Steam",
     "searching": "Wyszukiwanie w Steam...",
     "idle": "Wpisz nazwę gry, aby znaleźć dopasowania Steam.",
-    "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
+    "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj „Wprowadź Steam App ID” powyżej.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie"
   },

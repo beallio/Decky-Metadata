@@ -468,7 +468,7 @@
       "genres": "Genres"
     },
     "nonSteamOnly": "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
-    "searchIgn": "IGN-Metadaten durchsuchen",
+    "searchIgn": "IGN durchsuchen",
     "ign": {
       "gameName": "Spielname",
       "noResults": "Keine Ergebnisse.",
@@ -514,7 +514,11 @@
     "hltbApply": "HLTB-Spiel anwenden",
     "steamAppId": "Steam-App-ID",
     "steamAppIdHelp": "Füge eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL ein. Leer lassen, um die festgelegte Steam-Zuordnung zu entfernen.",
-    "steamAppIdApply": "Steam-App-ID anwenden",
+    "manualMatch": {
+      "label": "Steam-App-ID eingeben",
+      "help": "Verwende eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL, wenn die Suche das Spiel nicht findet. Leer lassen, um die Zuordnung zu entfernen.",
+      "button": "ID eingeben..."
+    },
     "shortcut": {
       "immediateNotice": "Diese Aktionen werden sofort ausgeführt. „Speichern“ ist nicht nötig.",
       "currentLabel": "Aktueller Name",
@@ -557,8 +561,6 @@
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
       "ignPreviewBody": "IGN-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
-      "steamAppIdNotAppliedTitle": "Steam-App-ID nicht angewendet",
-      "steamAppIdNotAppliedBody": "Wähle „Steam-App-ID anwenden“, um die neue Zuordnung vor dem Speichern zu laden.",
       "fetchFailedTitle": "Abrufen fehlgeschlagen",
       "removedBody": "Metadaten entfernt",
       "removeFailedTitle": "Entfernen fehlgeschlagen",
@@ -586,7 +588,7 @@
     "search": "Steam durchsuchen",
     "searching": "Steam wird durchsucht...",
     "idle": "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
-    "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
+    "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze „Steam-App-ID eingeben“ oben.",
     "appId": "Steam-App-ID: {{appId}}",
     "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung"
   },

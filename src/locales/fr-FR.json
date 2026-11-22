@@ -469,7 +469,7 @@
       "genres": "Genres"
     },
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
-    "searchIgn": "Rechercher des métadonnées IGN",
+    "searchIgn": "Rechercher sur IGN",
     "ign": {
       "gameName": "Nom du jeu",
       "noResults": "Aucun résultat.",
@@ -515,7 +515,11 @@
     "hltbApply": "Appliquer le jeu HLTB",
     "steamAppId": "App ID Steam",
     "steamAppIdHelp": "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
-    "steamAppIdApply": "Appliquer l'App ID Steam",
+    "manualMatch": {
+      "label": "Saisir un App ID Steam",
+      "help": "Utilisez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB lorsque la recherche ne trouve pas le jeu. Laissez vide pour supprimer l'association.",
+      "button": "Saisir l'ID..."
+    },
     "shortcut": {
       "immediateNotice": "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
       "currentLabel": "Nom actuel",
@@ -558,8 +562,6 @@
       "detailsLoadedTitle": "Détails chargés",
       "steamPreviewBody": "Les détails Steam sont chargés dans ce formulaire. Enregistrer les conserve.",
       "ignPreviewBody": "Les détails IGN sont chargés dans ce formulaire. Enregistrer les conserve.",
-      "steamAppIdNotAppliedTitle": "App ID Steam non appliqué",
-      "steamAppIdNotAppliedBody": "Sélectionnez Appliquer l'App ID Steam pour charger la nouvelle correspondance avant d'enregistrer.",
       "fetchFailedTitle": "Échec de la récupération",
       "removedBody": "Métadonnées supprimées",
       "removeFailedTitle": "Échec de la suppression",
@@ -587,7 +589,7 @@
     "search": "Rechercher sur Steam",
     "searching": "Recherche sur Steam...",
     "idle": "Saisissez un nom de jeu pour trouver des correspondances Steam.",
-    "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
+    "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez « Saisir un App ID Steam » ci-dessus.",
     "appId": "App ID Steam : {{appId}}",
     "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle"
   },

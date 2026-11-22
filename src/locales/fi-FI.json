@@ -468,7 +468,7 @@
       "genres": "Tyylilajit"
     },
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
-    "searchIgn": "Hae IGN-metatietoja",
+    "searchIgn": "Hae IGN:stä",
     "ign": {
       "gameName": "Pelin nimi",
       "noResults": "Ei tuloksia.",
@@ -514,7 +514,11 @@
     "hltbApply": "Ota HLTB-peli käyttöön",
     "steamAppId": "Steam-sovellustunnus",
     "steamAppIdHelp": "Liitä Steam-sovellustunnus, kaupan URL, yhteisön URL tai SteamDB-URL. Jätä tyhjäksi, jos haluat poistaa kiinnitetyn Steam-vastaavuuden.",
-    "steamAppIdApply": "Ota Steam-sovellustunnus käyttöön",
+    "manualMatch": {
+      "label": "Syötä Steam-sovellustunnus",
+      "help": "Käytä Steam-sovellustunnusta, kaupan URL-osoitetta, yhteisön URL-osoitetta tai SteamDB-URL-osoitetta, kun haku ei löydä peliä. Jätä tyhjäksi poistaaksesi vastaavuuden.",
+      "button": "Syötä tunnus..."
+    },
     "shortcut": {
       "immediateNotice": "Nämä toiminnot tulevat voimaan heti ilman, että sinun tarvitsee valita ”Tallenna”.",
       "currentLabel": "Nykyinen nimi",
@@ -557,8 +561,6 @@
       "detailsLoadedTitle": "Tiedot ladattu",
       "steamPreviewBody": "Steamin tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
       "ignPreviewBody": "IGN:n tiedot on ladattu tähän lomakkeeseen. Tallenna tallentaa ne.",
-      "steamAppIdNotAppliedTitle": "Steam-sovellustunnusta ei otettu käyttöön",
-      "steamAppIdNotAppliedBody": "Valitse ”Ota Steam-sovellustunnus käyttöön” ladataksesi uuden vastaavuuden ennen tallentamista.",
       "fetchFailedTitle": "Nouto epäonnistui",
       "removedBody": "Metatiedot poistettu",
       "removeFailedTitle": "Poisto epäonnistui",
@@ -586,7 +588,7 @@
     "search": "Hae Steamista",
     "searching": "Haetaan Steamista...",
     "idle": "Anna pelin nimi löytääksesi Steam-vastaavuuksia.",
-    "empty": "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä alla olevaa Steam-sovellustunnus-kenttää.",
+    "empty": "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä yllä olevaa kenttää ”Syötä Steam-sovellustunnus”.",
     "appId": "Steam-sovellustunnus: {{appId}}",
     "appIdCurrent": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus"
   },

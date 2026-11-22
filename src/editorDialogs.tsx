@@ -1,4 +1,5 @@
-import { ConfirmModal, ScrollPanelGroup, showModal } from "@decky/ui";
+import { ConfirmModal, ScrollPanelGroup, TextField, showModal } from "@decky/ui";
+import { useState } from "react";
 import type { CSSProperties, FC, ReactNode } from "react";
 
 import { t } from "./i18n";
@@ -206,6 +207,43 @@ export function showRemoveMetadataModal(opts: {
       onOK={opts.onConfirm}
     />,
   );
+}
+
+type SteamAppIdModalProps = {
+  initial: string;
+  onApply: (text: string) => void;
+  /** Injected by showModal; ConfirmModal closes through it after OK or Cancel. */
+  closeModal?: () => void;
+};
+
+// showModal renders this as a component, so it may hold the typed text in state.
+// OK drops onApply's promise so the dialog closes at once; the page shows its own busy state.
+function SteamAppIdModal({ initial, onApply, closeModal }: SteamAppIdModalProps) {
+  const [text, setText] = useState(initial);
+  return (
+    <ConfirmModal
+      strTitle={t("editor.steamAppId")}
+      strDescription={t("editor.steamAppIdHelp")}
+      strOKButtonText={t("editor.review.apply")}
+      strCancelButtonText={t("editor.review.cancel")}
+      onOK={() => {
+        onApply(text);
+      }}
+      closeModal={closeModal}
+    >
+      <TextField
+        aria-label={t("editor.steamAppId")}
+        value={text}
+        focusOnMount
+        bShowClearAction
+        onChange={(event) => setText(event.target.value)}
+      />
+    </ConfirmModal>
+  );
+}
+
+export function showSteamAppIdModal(opts: { initial: string; onApply: (text: string) => void }): void {
+  showModal(<SteamAppIdModal initial={opts.initial} onApply={opts.onApply} />);
 }
 
 export function saveButtonLabel(t: TFunction, count: number): string {

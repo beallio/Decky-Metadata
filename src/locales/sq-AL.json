@@ -468,7 +468,7 @@
       "genres": "Zhanret"
     },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
-    "searchIgn": "Kërko metadata në IGN",
+    "searchIgn": "Kërko në IGN",
     "ign": {
       "gameName": "Emri i lojës",
       "noResults": "Nuk ka rezultate.",
@@ -514,7 +514,11 @@
     "hltbApply": "Zbato lojën e HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Ngjit një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB. Lëre bosh për të pastruar përputhjen e fiksuar në Steam.",
-    "steamAppIdApply": "Zbato Steam App ID",
+    "manualMatch": {
+      "label": "Fut një Steam App ID",
+      "help": "Përdor një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB kur kërkimi nuk e gjen lojën. Lëre bosh për të hequr përputhjen.",
+      "button": "Fut ID..."
+    },
     "shortcut": {
       "immediateNotice": "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
       "currentLabel": "Emri aktual",
@@ -557,8 +561,6 @@
       "detailsLoadedTitle": "Detajet u ngarkuan",
       "steamPreviewBody": "Detajet e Steam u ngarkuan në këtë formular. Ruajtja i ruan ato.",
       "ignPreviewBody": "Detajet e IGN u ngarkuan në këtë formular. Ruajtja i ruan ato.",
-      "steamAppIdNotAppliedTitle": "Steam App ID nuk u zbatua",
-      "steamAppIdNotAppliedBody": "Zgjidh «Zbato Steam App ID» për të ngarkuar përputhjen e re përpara se të ruash.",
       "fetchFailedTitle": "Marrja dështoi",
       "removedBody": "Metadata u hoqën",
       "removeFailedTitle": "Heqja dështoi",
@@ -586,7 +588,7 @@
     "search": "Kërko në Steam",
     "searching": "Po kërkohet në Steam...",
     "idle": "Shkruaj një emër loje për të gjetur përputhje në Steam.",
-    "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
+    "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor „Fut një Steam App ID“ më lart.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale"
   },

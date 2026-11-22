@@ -468,7 +468,7 @@
       "genres": "Genrer"
     },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
-    "searchIgn": "Sök IGN-metadata",
+    "searchIgn": "Sök på IGN",
     "ign": {
       "gameName": "Spelets namn",
       "noResults": "Inga resultat.",
@@ -514,7 +514,11 @@
     "hltbApply": "Tillämpa HLTB-spel",
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Klistra in ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL. Lämna tomt för att rensa den fästa Steam-matchningen.",
-    "steamAppIdApply": "Tillämpa Steam-app-ID",
+    "manualMatch": {
+      "label": "Ange ett Steam-app-ID",
+      "help": "Använd ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL när sökningen inte hittar spelet. Lämna tomt för att ta bort matchningen.",
+      "button": "Ange ID..."
+    },
     "shortcut": {
       "immediateNotice": "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
       "currentLabel": "Aktuellt namn",
@@ -557,8 +561,6 @@
       "detailsLoadedTitle": "Detaljer inlästa",
       "steamPreviewBody": "Steam-detaljer är inlästa i det här formuläret. Spara sparar dem.",
       "ignPreviewBody": "IGN-detaljer är inlästa i det här formuläret. Spara sparar dem.",
-      "steamAppIdNotAppliedTitle": "Steam-app-ID:t tillämpades inte",
-      "steamAppIdNotAppliedBody": "Välj ”Tillämpa Steam-app-ID” för att läsa in den nya matchningen innan du sparar.",
       "fetchFailedTitle": "Det gick inte att hämta",
       "removedBody": "Metadata har tagits bort",
       "removeFailedTitle": "Det gick inte att ta bort",
@@ -586,7 +588,7 @@
     "search": "Sök på Steam",
     "searching": "Söker på Steam...",
     "idle": "Ange ett spelnamn för att hitta Steam-matchningar.",
-    "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
+    "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd ”Ange ett Steam-app-ID” ovan.",
     "appId": "Steam-app-ID: {{appId}}",
     "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning"
   },

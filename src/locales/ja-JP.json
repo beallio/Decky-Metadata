@@ -467,7 +467,7 @@
       "genres": "ジャンル"
     },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
-    "searchIgn": "IGN メタデータを検索",
+    "searchIgn": "IGN を検索",
     "ign": {
       "gameName": "ゲーム名",
       "noResults": "結果がありません。",
@@ -513,7 +513,11 @@
     "hltbApply": "HLTB ゲームを適用",
     "steamAppId": "Steam アプリ ID",
     "steamAppIdHelp": "Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を貼り付けてください。空欄にすると固定した Steam 一致が解除されます。",
-    "steamAppIdApply": "Steam アプリ ID を適用",
+    "manualMatch": {
+      "label": "Steam アプリ ID を入力",
+      "help": "検索でゲームが見つからない場合は、Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を使用してください。空欄にすると一致が解除されます。",
+      "button": "ID を入力..."
+    },
     "shortcut": {
       "immediateNotice": "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
       "currentLabel": "現在の名前",
@@ -556,8 +560,6 @@
       "detailsLoadedTitle": "詳細を読み込みました",
       "steamPreviewBody": "Steam の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
       "ignPreviewBody": "IGN の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
-      "steamAppIdNotAppliedTitle": "Steam アプリ ID が適用されていません",
-      "steamAppIdNotAppliedBody": "新しい一致を読み込むには、保存する前に「Steam アプリ ID を適用」を選択してください。",
       "fetchFailedTitle": "取得に失敗しました",
       "removedBody": "メタデータを削除しました",
       "removeFailedTitle": "削除に失敗しました",
@@ -585,7 +587,7 @@
     "search": "Steam を検索",
     "searching": "Steam を検索中...",
     "idle": "ゲーム名を入力して Steam の一致を検索してください。",
-    "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
+    "empty": "Steam の一致が見つかりません。別の名前を試すか、上の「Steam アプリ ID を入力」を使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
     "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致"
   },
