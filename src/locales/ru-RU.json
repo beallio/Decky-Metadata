@@ -516,11 +516,10 @@
     "hltbApply": "Применить игру HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Вставьте Steam App ID, URL магазина, URL сообщества или URL SteamDB. Оставьте пустым, чтобы снять привязанное совпадение Steam.",
-    "steamAppIdApply": "Применить Steam App ID",
     "manualMatch": {
       "label": "Введите Steam App ID",
       "help": "Используйте Steam App ID, URL магазина, URL сообщества или URL SteamDB, если поиск не находит игру. Оставьте пустым, чтобы убрать совпадение.",
-      "button": "Ввести ID…"
+      "button": "Ввести ID..."
     },
     "shortcut": {
       "immediateNotice": "Эти действия применяются сразу. Нажимать «Сохранить» не нужно.",
@@ -564,8 +563,6 @@
       "detailsLoadedTitle": "Сведения загружены",
       "steamPreviewBody": "Сведения Steam загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
       "ignPreviewBody": "Сведения IGN загружены в эту форму. Нажмите «Сохранить», чтобы их записать.",
-      "steamAppIdNotAppliedTitle": "Steam App ID не применён",
-      "steamAppIdNotAppliedBody": "Выберите «Применить Steam App ID», чтобы загрузить новое совпадение перед сохранением.",
       "fetchFailedTitle": "Не удалось получить данные",
       "removedBody": "Метаданные удалены",
       "removeFailedTitle": "Не удалось удалить",
@@ -593,7 +590,7 @@
     "search": "Искать в Steam",
     "searching": "Поиск в Steam...",
     "idle": "Введите название игры, чтобы найти совпадения в Steam.",
-    "empty": "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
+    "empty": "Совпадений в Steam не найдено. Попробуйте другое название или используйте «Введите Steam App ID» выше.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · текущее совпадение"
   },

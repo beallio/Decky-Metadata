@@ -518,11 +518,10 @@
     "hltbApply": "تطبيق لعبة HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "الصق Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اتركه فارغًا لمسح مطابقة Steam المثبّتة.",
-    "steamAppIdApply": "تطبيق Steam App ID",
     "manualMatch": {
       "label": "أدخل Steam App ID",
       "help": "استخدم Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB عندما لا يجد البحث اللعبة. اتركه فارغًا لإزالة المطابقة.",
-      "button": "أدخل ID…"
+      "button": "أدخل ID..."
     },
     "shortcut": {
       "immediateNotice": "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
@@ -566,8 +565,6 @@
       "detailsLoadedTitle": "تم تحميل التفاصيل",
       "steamPreviewBody": "تم تحميل تفاصيل Steam في هذا النموذج. يحفظها زر «حفظ».",
       "ignPreviewBody": "تم تحميل تفاصيل IGN في هذا النموذج. يحفظها زر «حفظ».",
-      "steamAppIdNotAppliedTitle": "لم يتم تطبيق Steam App ID",
-      "steamAppIdNotAppliedBody": "اختر «تطبيق Steam App ID» لتحميل المطابقة الجديدة قبل الحفظ.",
       "fetchFailedTitle": "فشل الجلب",
       "removedBody": "تمت إزالة البيانات الوصفية",
       "removeFailedTitle": "فشلت الإزالة",
@@ -595,7 +592,7 @@
     "search": "البحث في Steam",
     "searching": "جارٍ البحث في Steam...",
     "idle": "أدخل اسم لعبة للعثور على مطابقات في Steam.",
-    "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
+    "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم «أدخل Steam App ID» أعلاه.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية"
   },

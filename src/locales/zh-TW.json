@@ -513,11 +513,10 @@
     "hltbApply": "套用 HLTB 遊戲",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "貼上 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可清除固定的 Steam 比對。",
-    "steamAppIdApply": "套用 Steam App ID",
     "manualMatch": {
       "label": "輸入 Steam App ID",
       "help": "當搜尋找不到遊戲時，使用 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可移除比對。",
-      "button": "輸入 ID…"
+      "button": "輸入 ID..."
     },
     "shortcut": {
       "immediateNotice": "這些操作會立即生效，不必按「儲存」。",
@@ -561,8 +560,6 @@
       "detailsLoadedTitle": "詳細資料已載入",
       "steamPreviewBody": "Steam 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
       "ignPreviewBody": "IGN 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
-      "steamAppIdNotAppliedTitle": "Steam App ID 未套用",
-      "steamAppIdNotAppliedBody": "儲存前，請選擇「套用 Steam App ID」以載入新的比對。",
       "fetchFailedTitle": "取得失敗",
       "removedBody": "中繼資料已移除",
       "removeFailedTitle": "移除失敗",
@@ -590,7 +587,7 @@
     "search": "搜尋 Steam",
     "searching": "正在搜尋 Steam...",
     "idle": "輸入遊戲名稱以尋找 Steam 比對。",
-    "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
+    "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用上方的「輸入 Steam App ID」。",
     "appId": "Steam App ID：{{appId}}",
     "appIdCurrent": "Steam App ID：{{appId}} · 目前比對"
   },

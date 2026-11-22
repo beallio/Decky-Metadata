@@ -515,11 +515,10 @@
     "hltbApply": "Aplicar juego de HLTB",
     "steamAppId": "ID de aplicación de Steam",
     "steamAppIdHelp": "Pega un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB. Déjalo vacío para borrar la coincidencia de Steam fijada.",
-    "steamAppIdApply": "Aplicar ID de aplicación de Steam",
     "manualMatch": {
       "label": "Introduce un ID de aplicación de Steam",
       "help": "Usa un ID de aplicación de Steam, una URL de la tienda, de la comunidad o de SteamDB cuando la búsqueda no encuentre el juego. Déjalo vacío para quitar la coincidencia.",
-      "button": "Introducir ID…"
+      "button": "Introducir ID..."
     },
     "shortcut": {
       "immediateNotice": "Estas acciones se aplican inmediatamente, sin pulsar «Guardar».",
@@ -563,8 +562,6 @@
       "detailsLoadedTitle": "Detalles cargados",
       "steamPreviewBody": "Los detalles de Steam están cargados en este formulario. Guardar los conserva.",
       "ignPreviewBody": "Los detalles de IGN están cargados en este formulario. Guardar los conserva.",
-      "steamAppIdNotAppliedTitle": "ID de aplicación de Steam no aplicado",
-      "steamAppIdNotAppliedBody": "Selecciona Aplicar ID de aplicación de Steam para cargar la nueva coincidencia antes de guardar.",
       "fetchFailedTitle": "Error al obtener",
       "removedBody": "Metadatos eliminados",
       "removeFailedTitle": "Error al eliminar",
@@ -592,7 +589,7 @@
     "search": "Buscar en Steam",
     "searching": "Buscando en Steam...",
     "idle": "Introduce un nombre de juego para encontrar coincidencias en Steam.",
-    "empty": "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
+    "empty": "No se encontraron coincidencias en Steam. Prueba otro nombre o usa «Introduce un ID de aplicación de Steam» arriba.",
     "appId": "ID de aplicación de Steam: {{appId}}",
     "appIdCurrent": "ID de aplicación de Steam: {{appId}} · Coincidencia actual"
   },

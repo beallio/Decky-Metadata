@@ -801,6 +801,8 @@ export const MetadataPage = () => {
   const [page, setPage] = useState<EditorPageId>("details");
   // Steam search results outlive the Game Match page, as IGN results do.
   const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
+  // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
+  const applySteamAppIdRef = useRef<(steamAppId: number | null) => Promise<void>>(async () => undefined);
   const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
   // The visible fields whose value differs from the stored record.
   const changed = changedDraftFields(savedRecordRef.current, {
@@ -979,16 +981,6 @@ export const MetadataPage = () => {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return false;
     }
-    // The text field is the requested match; only Apply loads it into the form.
-    const textSteamAppId = checkSteamAppIdText(steamAppIdText);
-    if (textSteamAppId === undefined) return false;
-    if (textSteamAppId !== normalizedSteamAppId(normalizedMetadata.steam_appid)) {
-      toastWarn(
-        t("editor.toast.steamAppIdNotAppliedTitle"),
-        t("editor.toast.steamAppIdNotAppliedBody"),
-      );
-      return false;
-    }
     if (!beginBusy(requestedEntry)) return false;
     const requestedRevision = formRevisionRef.current;
     try {
@@ -1083,6 +1075,8 @@ export const MetadataPage = () => {
       return;
     }
     const parsed = normalizedSteamAppId(steamAppId);
+    // Clearing a game that has no match has nothing to clear.
+    if (parsed === null && normalizedSteamAppId(normalizedMetadata.steam_appid) === null) return;
     if (!beginBusy(requestedEntry, "steam")) return;
     try {
       if (parsed === null) {
@@ -1136,14 +1130,19 @@ export const MetadataPage = () => {
     }
   };
 
+  applySteamAppIdRef.current = applySteamAppId;
+
   /** Type a Steam App ID or URL in a dialog; an invalid entry warns and changes nothing. */
   const enterSteamAppId = () => {
+    const requestedEntry = editorEntryToken;
     showSteamAppIdModal({
-      initial: steamAppIdTextRef.current,
+      initial: formSteamAppId === null ? "" : String(formSteamAppId),
       onApply: (text) => {
+        // A dialog left open while the editor moved to another game or closed must not touch this form.
+        if (!stillOnEditor(requestedEntry)) return;
         const steamAppId = checkSteamAppIdText(text);
         if (steamAppId === undefined) return;
-        return applySteamAppId(steamAppId);
+        return applySteamAppIdRef.current(steamAppId);
       },
     });
   };
@@ -1591,13 +1590,16 @@ export const MetadataPage = () => {
       : formSteamAppId === null
         ? t("editor.loadFromSteamNoMatch")
         : matchName || t("matchPicker.appId", { appId: formSteamAppId });
-    const matchAppIdLine = formSteamAppId !== null && matchName
-      ? t("matchPicker.appId", { appId: formSteamAppId })
+    const shownMatchId = nonSteam ? formSteamAppId : null;
+    const matchAppIdLine = shownMatchId !== null && matchName
+      ? t("matchPicker.appId", { appId: shownMatchId })
       : null;
     // shortcut: guessed Steam CDN capsule path; apps with hashed asset paths get no art (hidden), use Steam's app assets API if that matters.
-    const matchArtUrl = formSteamAppId !== null
-      ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${formSteamAppId}/capsule_231x87.jpg`
+    // The img is keyed by URL so art hidden for one match does not stay hidden for the next.
+    const matchArtUrl = shownMatchId !== null
+      ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${shownMatchId}/capsule_231x87.jpg`
       : null;
+    const steamDataChanged = changed.includes("steamData");
     return (
       <>
         <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
@@ -1605,10 +1607,10 @@ export const MetadataPage = () => {
           <EditorButtonItem
             className={editorFocusTargetClassName}
             label={renderMarkedLabel(fieldMarker("steamAppId"), matchLabel)}
-            description={
+            description={matchAppIdLine || steamDataChanged ? (
               <>
                 {matchAppIdLine}
-                {changed.includes("steamData") ? (
+                {steamDataChanged ? (
                   <>
                     {matchAppIdLine ? <br /> : null}
                     <span style={{ color: colors.warning }}>
@@ -1617,14 +1619,15 @@ export const MetadataPage = () => {
                   </>
                 ) : null}
               </>
-            }
+            ) : undefined}
             icon={matchArtUrl ? (
               <img
+                key={matchArtUrl}
                 src={matchArtUrl}
                 alt=""
                 style={editorSteamMatchImageStyle}
                 onError={(event) => {
-                  event.currentTarget.style.visibility = "hidden";
+                  event.currentTarget.style.display = "none";
                 }}
               />
             ) : undefined}

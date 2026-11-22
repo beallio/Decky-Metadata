@@ -514,11 +514,10 @@
     "hltbApply": "Прилагане на игра от HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Поставете Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB. Оставете празно, за да изчистите закрепеното съвпадение в Steam.",
-    "steamAppIdApply": "Прилагане на Steam App ID",
     "manualMatch": {
       "label": "Въведете Steam App ID",
       "help": "Използвайте Steam App ID, URL на Магазина, URL на Общността или URL на SteamDB, когато търсенето не намери играта. Оставете празно, за да премахнете съвпадението.",
-      "button": "Въведете ID…"
+      "button": "Въведете ID..."
     },
     "shortcut": {
       "immediateNotice": "Тези действия влизат в сила веднага, без да е нужно да избирате „Запазване“.",
@@ -562,8 +561,6 @@
       "detailsLoadedTitle": "Подробностите са заредени",
       "steamPreviewBody": "Подробностите от Steam са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
       "ignPreviewBody": "Подробностите от IGN са заредени в този формуляр. Натиснете „Запази“, за да ги запазите.",
-      "steamAppIdNotAppliedTitle": "Steam App ID не е приложен",
-      "steamAppIdNotAppliedBody": "Преди запазване изберете „Прилагане на Steam App ID“, за да заредите новото съвпадение.",
       "fetchFailedTitle": "Извличането е неуспешно",
       "removedBody": "Метаданните са премахнати",
       "removeFailedTitle": "Премахването е неуспешно",
@@ -591,7 +588,7 @@
     "search": "Търсене в Steam",
     "searching": "Търсене в Steam...",
     "idle": "Въведете име на игра, за да намерите съвпадения в Steam.",
-    "empty": "Не са намерени съвпадения в Steam. Опитайте с друго име или използвайте полето Steam App ID по-долу.",
+    "empty": "Не са намерени съвпадения в Steam. Опитайте с друго име или използвайте „Въведете Steam App ID“ по-горе.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · Текущо съвпадение"
   },

@@ -1,6 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type * as React from "react";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
+// The Steam App ID dialog is a component; render it by hand with one state slot.
+const dialogState = vi.hoisted(() => ({ value: undefined as unknown }));
+
+vi.mock("react", async (importOriginal) => ({
+  ...(await importOriginal<typeof React>()),
+  useState: (initial: unknown) => {
+    if (dialogState.value === undefined) dialogState.value = initial;
+    return [dialogState.value, (next: unknown) => { dialogState.value = next; }];
+  },
+}));
 
 vi.mock("@decky/ui", () => ({
   ConfirmModal: "ConfirmModal",
@@ -14,6 +25,7 @@ import {
   saveButtonLabel,
   showMetadataReviewModal,
   showRemoveMetadataModal,
+  showSteamAppIdModal,
   showUnsavedChangesModal,
 } from "./editorDialogs";
 import { metadataTemplate } from "./metadataForm";
@@ -48,6 +60,7 @@ const walk = (node: unknown, texts: string[], images: TestElement[]): void => {
 
 beforeEach(() => {
   ui.showModal.mockClear();
+  dialogState.value = undefined;
 });
 
 describe("draftFieldLabel", () => {
@@ -201,5 +214,29 @@ describe("showMetadataReviewModal", () => {
     };
     closeProps.fnOnClose();
     await expect(closed).resolves.toBe(false);
+  });
+});
+
+describe("showSteamAppIdModal", () => {
+  it("starts with the current ID, applies the edited text and closes at once", () => {
+    const onApply = vi.fn(() => Promise.resolve());
+    showSteamAppIdModal({ initial: "15100", onApply });
+    const element = lastModal() as TestElement & { type: (props: object) => TestElement };
+    const closeModal = vi.fn();
+    const render = () => element.type({ ...element.props, closeModal });
+
+    const field = render().props.children as TestElement;
+    expect(field.type).toBe("TextField");
+    expect(field.props.value).toBe("15100");
+    (field.props.onChange as (event: { target: { value: string } }) => void)({ target: { value: "620" } });
+
+    const modal = render();
+    expect((modal.props.children as TestElement).props.value).toBe("620");
+    expect(modal.props.strTitle).toBe("Steam App ID");
+    expect(modal.props.strOKButtonText).toBe("Apply");
+    expect(modal.props.closeModal).toBe(closeModal);
+    // OK must not hand back the load's promise, or Steam keeps the dialog open until it settles.
+    expect((modal.props.onOK as () => unknown)()).toBeUndefined();
+    expect(onApply).toHaveBeenCalledWith("620");
   });
 });

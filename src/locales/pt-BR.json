@@ -515,11 +515,10 @@
     "hltbApply": "Aplicar jogo do HLTB",
     "steamAppId": "App ID da Steam",
     "steamAppIdHelp": "Cole um App ID da Steam, uma URL da Loja, da Comunidade ou do SteamDB. Deixe em branco para limpar a correspondência fixada da Steam.",
-    "steamAppIdApply": "Aplicar App ID da Steam",
     "manualMatch": {
       "label": "Insira um App ID da Steam",
       "help": "Use um App ID da Steam, uma URL da Loja, da Comunidade ou do SteamDB quando a pesquisa não encontrar o jogo. Deixe em branco para remover a correspondência.",
-      "button": "Inserir ID…"
+      "button": "Inserir ID..."
     },
     "shortcut": {
       "immediateNotice": "Essas ações são aplicadas imediatamente, sem precisar selecionar “Salvar”.",
@@ -563,8 +562,6 @@
       "detailsLoadedTitle": "Detalhes carregados",
       "steamPreviewBody": "Os detalhes da Steam foram carregados neste formulário. Salve para armazená-los.",
       "ignPreviewBody": "Os detalhes do IGN foram carregados neste formulário. Salve para armazená-los.",
-      "steamAppIdNotAppliedTitle": "App ID da Steam não aplicado",
-      "steamAppIdNotAppliedBody": "Selecione Aplicar App ID da Steam para carregar a nova correspondência antes de salvar.",
       "fetchFailedTitle": "Falha ao obter",
       "removedBody": "Metadados removidos",
       "removeFailedTitle": "Falha ao remover",
@@ -592,7 +589,7 @@
     "search": "Pesquisar na Steam",
     "searching": "Pesquisando na Steam...",
     "idle": "Digite o nome de um jogo para encontrar correspondências na Steam.",
-    "empty": "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
+    "empty": "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use «Insira um App ID da Steam» acima.",
     "appId": "App ID da Steam: {{appId}}",
     "appIdCurrent": "App ID da Steam: {{appId}} · Correspondência atual"
   },

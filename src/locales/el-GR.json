@@ -514,11 +514,10 @@
     "hltbApply": "Εφαρμογή παιχνιδιού HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Επικολλήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB. Αφήστε κενό για να διαγράψετε την καρφιτσωμένη αντιστοίχιση Steam.",
-    "steamAppIdApply": "Εφαρμογή Steam App ID",
     "manualMatch": {
       "label": "Εισαγάγετε Steam App ID",
       "help": "Χρησιμοποιήστε ένα Steam App ID, URL Καταστήματος, URL Κοινότητας ή URL SteamDB όταν η αναζήτηση δεν βρίσκει το παιχνίδι. Αφήστε κενό για να αφαιρέσετε την αντιστοίχιση.",
-      "button": "Εισαγωγή ID…"
+      "button": "Εισαγωγή ID..."
     },
     "shortcut": {
       "immediateNotice": "Αυτές οι ενέργειες εφαρμόζονται αμέσως, χωρίς να χρειάζεται να επιλέξετε «Αποθήκευση».",
@@ -562,8 +561,6 @@
       "detailsLoadedTitle": "Τα στοιχεία φορτώθηκαν",
       "steamPreviewBody": "Τα στοιχεία Steam έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
       "ignPreviewBody": "Τα στοιχεία IGN έχουν φορτωθεί σε αυτή τη φόρμα. Η αποθήκευση τα διατηρεί.",
-      "steamAppIdNotAppliedTitle": "Το Steam App ID δεν εφαρμόστηκε",
-      "steamAppIdNotAppliedBody": "Επιλέξτε «Εφαρμογή Steam App ID» για να φορτώσετε τη νέα αντιστοίχιση πριν από την αποθήκευση.",
       "fetchFailedTitle": "Η ανάκτηση απέτυχε",
       "removedBody": "Τα μεταδεδομένα αφαιρέθηκαν",
       "removeFailedTitle": "Η αφαίρεση απέτυχε",
@@ -591,7 +588,7 @@
     "search": "Αναζήτηση στο Steam",
     "searching": "Αναζήτηση στο Steam...",
     "idle": "Εισαγάγετε όνομα παιχνιδιού για να βρείτε αντιστοιχίσεις Steam.",
-    "empty": "Δεν βρέθηκαν αντιστοιχίσεις Steam. Δοκιμάστε άλλο όνομα ή χρησιμοποιήστε το πεδίο Steam App ID παρακάτω.",
+    "empty": "Δεν βρέθηκαν αντιστοιχίσεις Steam. Δοκιμάστε άλλο όνομα ή χρησιμοποιήστε το «Εισαγάγετε Steam App ID» παραπάνω.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση"
   },

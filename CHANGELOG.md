@@ -35,7 +35,7 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
   description line, and grey out their results while the editor is busy.
   The **Game Match** page now starts with the current match, shown as a row
   with the Steam game's art, name and App ID, followed by **Search Steam** and
-  **Search IGN**. Typing a Steam App ID or URL moves behind **Enter ID…**.
+  **Search IGN**. Typing a Steam App ID or URL moves behind **Enter ID...**.
 - Editor text boxes stay white while you type with the on-screen keyboard
   and after you close it, until you move to another control. Steam's own
   boxes turn gray while the keyboard is open.

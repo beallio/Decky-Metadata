@@ -217,15 +217,18 @@ type SteamAppIdModalProps = {
 };
 
 // showModal renders this as a component, so it may hold the typed text in state.
+// OK drops onApply's promise so the dialog closes at once; the page shows its own busy state.
 function SteamAppIdModal({ initial, onApply, closeModal }: SteamAppIdModalProps) {
   const [text, setText] = useState(initial);
   return (
     <ConfirmModal
       strTitle={t("editor.steamAppId")}
       strDescription={t("editor.steamAppIdHelp")}
-      strOKButtonText={t("editor.steamAppIdApply")}
+      strOKButtonText={t("editor.review.apply")}
       strCancelButtonText={t("editor.review.cancel")}
-      onOK={() => onApply(text)}
+      onOK={() => {
+        onApply(text);
+      }}
       closeModal={closeModal}
     >
       <TextField

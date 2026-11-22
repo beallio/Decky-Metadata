@@ -514,11 +514,10 @@
     "hltbApply": "HLTB-ის თამაშის გამოყენება",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "ჩასვით Steam აპის ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL. დატოვეთ ცარიელი Steam-ის დამაგრებული შესატყვისის გასასუფთავებლად.",
-    "steamAppIdApply": "Steam App ID-ის გამოყენება",
     "manualMatch": {
       "label": "შეიყვანეთ Steam App ID",
       "help": "გამოიყენეთ Steam App ID, მაღაზიის URL, საზოგადოების URL ან SteamDB URL, როცა ძებნა თამაშს ვერ პოულობს. დატოვეთ ცარიელი შესატყვისის მოსაშორებლად.",
-      "button": "ID-ის შეყვანა…"
+      "button": "ID-ის შეყვანა..."
     },
     "shortcut": {
       "immediateNotice": "ეს მოქმედებები დაუყოვნებლივ სრულდება. ღილაკზე „შენახვა“ დაჭერა საჭირო არ არის.",
@@ -562,8 +561,6 @@
       "detailsLoadedTitle": "დეტალები ჩატვირთულია",
       "steamPreviewBody": "Steam-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
       "ignPreviewBody": "IGN-ის დეტალები ჩატვირთულია ამ ფორმაში. მათ ინახავს ღილაკი „შენახვა“.",
-      "steamAppIdNotAppliedTitle": "Steam App ID არ არის გამოყენებული",
-      "steamAppIdNotAppliedBody": "ახალი შესატყვისის ჩასატვირთად შენახვამდე აირჩიეთ „Steam App ID-ის გამოყენება“.",
       "fetchFailedTitle": "მიღება ვერ მოხერხდა",
       "removedBody": "მეტამონაცემები წაშლილია",
       "removeFailedTitle": "წაშლა ვერ მოხერხდა",
@@ -591,7 +588,7 @@
     "search": "Steam-ში ძებნა",
     "searching": "Steam-ში მიმდინარეობს ძებნა...",
     "idle": "შეიყვანეთ თამაშის სახელი Steam-ის შესატყვისების საპოვნელად.",
-    "empty": "Steam-ის შესატყვისი ვერ მოიძებნა. სცადეთ სხვა სახელი ან გამოიყენეთ ქვემოთ მოცემული Steam App ID ველი.",
+    "empty": "Steam-ის შესატყვისი ვერ მოიძებნა. სცადეთ სხვა სახელი ან გამოიყენეთ ზემოთ მოცემული „შეიყვანეთ Steam App ID“.",
     "appId": "Steam App ID: {{appId}}",
     "appIdCurrent": "Steam App ID: {{appId}} · მიმდინარე შესატყვისი"
   },

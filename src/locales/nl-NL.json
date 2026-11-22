@@ -514,11 +514,10 @@
     "hltbApply": "HLTB-game toepassen",
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Plak een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL. Laat leeg om de vastgezette Steam-match te wissen.",
-    "steamAppIdApply": "Steam-app-ID toepassen",
     "manualMatch": {
       "label": "Voer een Steam-app-ID in",
-      "help": "Gebruik een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL als de zoekopdracht het spel niet vindt. Laat leeg om de match te verwijderen.",
-      "button": "ID invoeren…"
+      "help": "Gebruik een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL als de zoekopdracht de game niet vindt. Laat leeg om de match te verwijderen.",
+      "button": "ID invoeren..."
     },
     "shortcut": {
       "immediateNotice": "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
@@ -562,8 +561,6 @@
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-details zijn in dit formulier geladen. Opslaan bewaart ze.",
       "ignPreviewBody": "IGN-details zijn in dit formulier geladen. Opslaan bewaart ze.",
-      "steamAppIdNotAppliedTitle": "Steam-app-ID niet toegepast",
-      "steamAppIdNotAppliedBody": "Selecteer ’Steam-app-ID toepassen’ om de nieuwe match te laden voordat je opslaat.",
       "fetchFailedTitle": "Ophalen mislukt",
       "removedBody": "Metadata verwijderd",
       "removeFailedTitle": "Verwijderen mislukt",
@@ -591,7 +588,7 @@
     "search": "Steam doorzoeken",
     "searching": "Steam doorzoeken...",
     "idle": "Voer een gamenaam in om Steam-matches te vinden.",
-    "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
+    "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik ‘Voer een Steam-app-ID in’ hierboven.",
     "appId": "Steam-app-ID: {{appId}}",
     "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match"
   },
