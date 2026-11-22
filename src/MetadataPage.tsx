@@ -82,6 +82,7 @@ import {
   editorFieldPreviewLabelStyle,
   editorFocusTargetClassName,
   editorInlineInputStyle,
+  editorIgnResultImageStyle,
   editorNativeInputFirstStyle,
   editorNativeInputGapStyle,
   editorNativeInputRowStyle,
@@ -100,6 +101,7 @@ import { dirtyPages, EDITOR_PAGE_ORDER, PAGE_OF_FIELD, type EditorPageId } from 
 import {
   draftFieldLabel,
   saveButtonLabel,
+  showMetadataReviewModal,
   showRemoveMetadataModal,
   showUnsavedChangesModal,
 } from "./editorDialogs";
@@ -903,6 +905,7 @@ export const MetadataPage = () => {
     draft: MetadataData,
     previewedSteamAppId: number,
     language?: string,
+    review?: { coverUrl: string | null },
   ): Promise<boolean> => {
     const baselineMetadata = metadataRef.current;
     const baselineText = formTextSnapshot();
@@ -913,6 +916,7 @@ export const MetadataPage = () => {
         toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
         return false;
       }
+      if (review && !(await reviewFetched(requestedEntry, previewed, review.coverUrl))) return false;
       const beforeMerge = draftFormState();
       reconcileMetadataResponse(previewed, baselineMetadata, baselineText);
       previewedSteamAppIdRef.current = previewedSteamAppId;
@@ -1027,6 +1031,11 @@ export const MetadataPage = () => {
     const editorPaths = [`/decky-metadata/${appId}`, `/routes/decky-metadata/${appId}`];
     return currentRoutePath().split(" ").some((path) => editorPaths.includes(path));
   };
+  /** Review fetched details; true only when Apply is chosen while this editor entry is still shown. */
+  const reviewFetched = async (requestedEntry: number, fetched: MetadataData, coverUrl: string | null): Promise<boolean> =>
+    stillOnEditor(requestedEntry) &&
+    (await showMetadataReviewModal({ metadata: fetched, coverUrl })) &&
+    stillOnEditor(requestedEntry);
 
   /** B leaves the editor; a draft asks before it is dropped. */
   const requestLeave = (): void => {
@@ -1058,7 +1067,7 @@ export const MetadataPage = () => {
     });
   };
 
-  const applySteamAppId = async (explicitSteamAppId?: number) => {
+  const applySteamAppId = async (explicitSteamAppId?: number, review?: { coverUrl: string | null }) => {
     if (!nonSteam) {
       toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
       return;
@@ -1118,7 +1127,7 @@ export const MetadataPage = () => {
       };
       if (changed) delete draft.steam_store_state;
       const requestedText = steamAppIdTextRef.current;
-      if (await previewSteamDraft(requestedEntry, draft, parsed)) {
+      if (await previewSteamDraft(requestedEntry, draft, parsed, undefined, review)) {
         if (steamAppIdTextRef.current === requestedText) setSteamAppIdInput(String(parsed));
       }
     } finally {
@@ -1181,6 +1190,7 @@ export const MetadataPage = () => {
     try {
       const fetched = await previewFetchedMetadata(normalizedMetadata, result.slug || result.url);
       if (!fetched || !isCurrentEditorEntry(requestedEntry)) return;
+      if (!(await reviewFetched(requestedEntry, fetched, result.cover_url ?? null))) return;
       // An IGN result fills the draft; its release date keeps the stored baseline.
       const beforeMerge = draftFormState();
       reconcileMetadataResponse(fetched, baselineMetadata, baselineText, false);
@@ -1572,9 +1582,9 @@ export const MetadataPage = () => {
           initialQuery={appName(appId)}
           matchedSteamAppId={savedSteamAppId}
           disabled={entryBusy || !nonSteam}
-          onApply={async (steamAppId) => {
+          onApply={async (steamAppId, coverUrl) => {
             if (!isCurrentEditorEntry(editorEntryToken)) return;
-            await applySteamAppId(steamAppId);
+            await applySteamAppId(steamAppId, { coverUrl });
           }}
         />
         <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
@@ -1715,6 +1725,7 @@ export const MetadataPage = () => {
                 className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
                 label={result.title}
                 description={result.description}
+                icon={result.cover_url ? <img src={result.cover_url} alt="" style={editorIgnResultImageStyle} /> : undefined}
                 focusable={true}
                 highlightOnFocus={true}
                 bottomSeparator="standard"

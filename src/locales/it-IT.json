@@ -466,6 +466,13 @@
       "body": "Questo elimina tutti i metadati salvati per {{name}}. L'operazione non può essere annullata.",
       "cancel": "Annulla"
     },
+    "review": {
+      "title": "Controlla i dettagli del gioco",
+      "body": "Ecco come appariranno i dettagli del gioco. Applicandoli, verranno aggiunti all’editor. Nulla viene salvato finché non selezioni Salva.",
+      "apply": "Applica",
+      "cancel": "Annulla",
+      "genres": "Generi"
+    },
     "nonSteamOnly": "Questo plugin modifica solo i giochi non Steam.",
     "searchIgn": "Cerca i metadati su IGN",
     "ign": {

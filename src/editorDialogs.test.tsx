@@ -10,9 +10,11 @@ vi.mock("@decky/ui", () => ({
 import {
   draftFieldLabel,
   saveButtonLabel,
+  showMetadataReviewModal,
   showRemoveMetadataModal,
   showUnsavedChangesModal,
 } from "./editorDialogs";
+import { metadataTemplate } from "./metadataForm";
 import { t } from "./i18n";
 
 type TestElement = {
@@ -20,13 +22,26 @@ type TestElement = {
   props: { [key: string]: unknown; children?: unknown };
 };
 
-const lastModal = (): TestElement => ui.showModal.mock.calls[0][0] as TestElement;
+const lastModal = (): TestElement =>
+  ui.showModal.mock.calls[ui.showModal.mock.calls.length - 1][0] as TestElement;
 
 const listLabels = (modal: TestElement): string[] => {
   const list = modal.props.children as TestElement | null;
   return ((list?.props.children ?? []) as TestElement[]).map(
     (item) => item.props.children as string,
   );
+};
+
+const walk = (node: unknown, texts: string[], images: TestElement[]): void => {
+  if (typeof node === "string" || typeof node === "number") {
+    texts.push(String(node));
+  } else if (Array.isArray(node)) {
+    node.forEach((child) => walk(child, texts, images));
+  } else if (node && typeof node === "object") {
+    const element = node as TestElement;
+    if (element.type === "img") images.push(element);
+    walk(element.props.children, texts, images);
+  }
 };
 
 beforeEach(() => {
@@ -110,5 +125,73 @@ describe("showRemoveMetadataModal", () => {
     expect(modal.props.strOKButtonText).toBe("Remove Metadata");
     (modal.props.onOK as () => void)();
     expect(onConfirm).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("showMetadataReviewModal", () => {
+  it("shows fetched game details as plain text with a cover and up to three screenshots", () => {
+    showMetadataReviewModal({
+      metadata: {
+        ...metadataTemplate("Hades"),
+        developers: [{ name: "Supergiant", url: "" }],
+        publishers: [],
+        rating: 93,
+        genres: ["Action"],
+        store_categories: [2],
+        description: "Long",
+        short_description: "Short text",
+        screenshots: ["one", "two", "three", "four"].map((id) => ({
+          url: `https://cdn.example/${id}.jpg`,
+        })),
+      },
+      coverUrl: "https://cdn.example/cover.jpg",
+    });
+
+    const modal = lastModal();
+    expect(modal.type).toBe("ConfirmModal");
+    expect(modal.props.strTitle).toBe("Review game details");
+    expect(modal.props.strOKButtonText).toBe("Apply");
+    expect(modal.props.strCancelButtonText).toBe("Cancel");
+    const texts: string[] = [];
+    const images: TestElement[] = [];
+    walk(modal.props.children, texts, images);
+    expect(texts).toContain("Hades");
+    expect(texts).toContain("Developers");
+    expect(texts).toContain("Supergiant");
+    expect(texts).toContain("Genres");
+    expect(texts).toContain("Action");
+    expect(texts).toContain("Short text");
+    expect(texts).not.toContain("Publishers");
+    expect(texts).not.toContain("Long");
+    expect(images).toHaveLength(4);
+    expect(images[0].props.src).toBe("https://cdn.example/cover.jpg");
+  });
+
+  it("resolves true on Apply and false on Cancel or modal close", async () => {
+    const applied = showMetadataReviewModal({
+      metadata: metadataTemplate("Hades"),
+      coverUrl: null,
+    });
+    const applyElement = ui.showModal.mock.lastCall![0] as TestElement;
+    (applyElement.props.onOK as () => void)();
+    await expect(applied).resolves.toBe(true);
+
+    const cancelled = showMetadataReviewModal({
+      metadata: metadataTemplate("Hades"),
+      coverUrl: null,
+    });
+    const cancelElement = ui.showModal.mock.lastCall![0] as TestElement;
+    (cancelElement.props.onCancel as () => void)();
+    await expect(cancelled).resolves.toBe(false);
+
+    const closed = showMetadataReviewModal({
+      metadata: metadataTemplate("Hades"),
+      coverUrl: null,
+    });
+    const closeProps = ui.showModal.mock.lastCall![2] as {
+      fnOnClose: () => void;
+    };
+    closeProps.fnOnClose();
+    await expect(closed).resolves.toBe(false);
   });
 });

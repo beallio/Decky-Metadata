@@ -3406,6 +3406,13 @@ var editor$o = {
 		body: "سيؤدي هذا إلى حذف جميع البيانات الوصفية المحفوظة لـ {{name}}. لا يمكن التراجع عن ذلك.",
 		cancel: "إلغاء"
 	},
+	review: {
+		title: "مراجعة تفاصيل اللعبة",
+		body: "هذه هي الطريقة التي ستظهر بها تفاصيل اللعبة. يضيف تطبيق التفاصيل إلى المحرر. لا يتم الحفظ حتى تختار حفظ.",
+		apply: "تطبيق",
+		cancel: "إلغاء",
+		genres: "الأنواع"
+	},
 	nonSteamOnly: "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
 	searchIgn: "البحث في بيانات IGN الوصفية",
 	ign: {
@@ -4045,6 +4052,13 @@ var editor$n = {
 		title: "Да се премахнат ли метаданните?",
 		body: "Това изтрива всички запазени метаданни за {{name}}. Действието не може да бъде отменено.",
 		cancel: "Отказ"
+	},
+	review: {
+		title: "Преглед на подробностите за играта",
+		body: "Ето как ще изглеждат подробностите за играта. Прилагането им ги добавя в редактора. Нищо не се запазва, докато не изберете Запазване.",
+		apply: "Прилагане",
+		cancel: "Отказ",
+		genres: "Жанрове"
 	},
 	nonSteamOnly: "Тази приставка променя само не-Steam игри.",
 	searchIgn: "Търсене на метаданни в IGN",
@@ -4688,6 +4702,13 @@ var editor$m = {
 		body: "Tímto se smažou všechna uložená metadata pro {{name}}. Akci nelze vrátit zpět.",
 		cancel: "Zrušit"
 	},
+	review: {
+		title: "Kontrola podrobností hry",
+		body: "Takto budou podrobnosti o hře vypadat. Použitím je přidáte do editoru. Nic se neuloží, dokud nevyberete Uložit.",
+		apply: "Použít",
+		cancel: "Zrušit",
+		genres: "Žánry"
+	},
 	nonSteamOnly: "Tento plugin mění pouze hry mimo Steam.",
 	searchIgn: "Hledat metadata na IGN",
 	ign: {
@@ -5327,6 +5348,13 @@ var editor$l = {
 		title: "Metadaten entfernen?",
 		body: "Dies löscht alle gespeicherten Metadaten für {{name}}. Dies kann nicht rückgängig gemacht werden.",
 		cancel: "Abbrechen"
+	},
+	review: {
+		title: "Spieldetails überprüfen",
+		body: "So werden die Spieldetails aussehen. Mit Anwenden werden sie in den Editor übernommen. Es wird nichts gespeichert, bis du Speichern auswählst.",
+		apply: "Anwenden",
+		cancel: "Abbrechen",
+		genres: "Genres"
 	},
 	nonSteamOnly: "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
 	searchIgn: "IGN-Metadaten durchsuchen",
@@ -5968,6 +5996,13 @@ var editor$k = {
 		body: "Αυτό διαγράφει όλα τα αποθηκευμένα μεταδεδομένα για το {{name}}. Δεν μπορείτε να το αναιρέσετε.",
 		cancel: "Ακύρωση"
 	},
+	review: {
+		title: "Έλεγχος λεπτομερειών παιχνιδιού",
+		body: "Έτσι θα εμφανίζονται οι λεπτομέρειες του παιχνιδιού. Με την εφαρμογή τους προστίθενται στον επεξεργαστή. Δεν αποθηκεύεται τίποτα μέχρι να επιλέξετε Αποθήκευση.",
+		apply: "Εφαρμογή",
+		cancel: "Ακύρωση",
+		genres: "Είδη"
+	},
 	nonSteamOnly: "Αυτό το πρόσθετο αλλάζει μόνο παιχνίδια εκτός Steam.",
 	searchIgn: "Αναζήτηση μεταδεδομένων IGN",
 	ign: {
@@ -6607,6 +6642,13 @@ var editor$j = {
 		title: "Remove Metadata?",
 		body: "This deletes all saved metadata for {{name}}. You cannot undo this.",
 		cancel: "Cancel"
+	},
+	review: {
+		title: "Review game details",
+		body: "This is how the game details will look. Apply puts them in the editor. Nothing is saved until you select Save.",
+		apply: "Apply",
+		cancel: "Cancel",
+		genres: "Genres"
 	},
 	nonSteamOnly: "This plugin only changes non-Steam games.",
 	searchIgn: "Search IGN metadata",
@@ -7249,6 +7291,13 @@ var editor$i = {
 		body: "Esto elimina todos los metadatos guardados de {{name}}. No se puede deshacer.",
 		cancel: "Cancelar"
 	},
+	review: {
+		title: "Revisar los detalles del juego",
+		body: "Así se verán los detalles del juego. Al aplicar, se añaden al editor. No se guarda nada hasta que selecciones Guardar.",
+		apply: "Aplicar",
+		cancel: "Cancelar",
+		genres: "Géneros"
+	},
 	nonSteamOnly: "Este plugin solo modifica juegos que no son de Steam.",
 	searchIgn: "Buscar metadatos de IGN",
 	ign: {
@@ -7888,6 +7937,13 @@ var editor$h = {
 		title: "Poistetaanko metatiedot?",
 		body: "Tämä poistaa kaikki pelin {{name}} tallennetut metatiedot. Toimintoa ei voi kumota.",
 		cancel: "Peruuta"
+	},
+	review: {
+		title: "Tarkista pelin tiedot",
+		body: "Tältä pelin tiedot näyttävät. Käyttämällä niitä lisäät ne editoriin. Mitään ei tallenneta ennen kuin valitset Tallenna.",
+		apply: "Käytä",
+		cancel: "Peruuta",
+		genres: "Tyylilajit"
 	},
 	nonSteamOnly: "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
 	searchIgn: "Hae IGN-metatietoja",
@@ -8530,6 +8586,13 @@ var editor$g = {
 		body: "Cela supprime toutes les métadonnées enregistrées pour {{name}}. Cette action est irréversible.",
 		cancel: "Annuler"
 	},
+	review: {
+		title: "Vérifier les détails du jeu",
+		body: "Voici à quoi ressembleront les détails du jeu. Les appliquer les ajoute à l’éditeur. Rien n’est enregistré tant que vous ne choisissez pas Enregistrer.",
+		apply: "Appliquer",
+		cancel: "Annuler",
+		genres: "Genres"
+	},
 	nonSteamOnly: "Ce plugin ne modifie que les jeux non Steam.",
 	searchIgn: "Rechercher des métadonnées IGN",
 	ign: {
@@ -9171,6 +9234,13 @@ var editor$f = {
 		body: "Questo elimina tutti i metadati salvati per {{name}}. L'operazione non può essere annullata.",
 		cancel: "Annulla"
 	},
+	review: {
+		title: "Controlla i dettagli del gioco",
+		body: "Ecco come appariranno i dettagli del gioco. Applicandoli, verranno aggiunti all’editor. Nulla viene salvato finché non selezioni Salva.",
+		apply: "Applica",
+		cancel: "Annulla",
+		genres: "Generi"
+	},
 	nonSteamOnly: "Questo plugin modifica solo i giochi non Steam.",
 	searchIgn: "Cerca i metadati su IGN",
 	ign: {
@@ -9809,6 +9879,13 @@ var editor$e = {
 		title: "メタデータを削除しますか？",
 		body: "{{name}} の保存済みメタデータをすべて削除します。元に戻せません。",
 		cancel: "キャンセル"
+	},
+	review: {
+		title: "ゲームの詳細を確認",
+		body: "ゲームの詳細はこのように表示されます。適用するとエディターに反映されます。「保存」を選択するまで保存されません。",
+		apply: "適用",
+		cancel: "キャンセル",
+		genres: "ジャンル"
 	},
 	nonSteamOnly: "このプラグインは Steam 以外のゲームのみを変更します。",
 	searchIgn: "IGN メタデータを検索",
@@ -10450,6 +10527,13 @@ var editor$d = {
 		body: "ეს წაშლის {{name}}-ის ყველა შენახულ მეტამონაცემს. ამის გაუქმება შეუძლებელია.",
 		cancel: "გაუქმება"
 	},
+	review: {
+		title: "თამაშის დეტალების გადახედვა",
+		body: "ასე გამოჩნდება თამაშის დეტალები. გამოყენება მათ რედაქტორში გადაიტანს. არაფერი შეინახება, სანამ შენახვას არ აირჩევთ.",
+		apply: "გამოყენება",
+		cancel: "გაუქმება",
+		genres: "ჟანრები"
+	},
 	nonSteamOnly: "ეს პლაგინი ცვლის მხოლოდ არა-Steam თამაშებს.",
 	searchIgn: "IGN-ის მეტამონაცემებში ძებნა",
 	ign: {
@@ -11088,6 +11172,13 @@ var editor$c = {
 		title: "메타데이터를 제거할까요?",
 		body: "{{name}}의 저장된 메타데이터를 모두 삭제합니다. 되돌릴 수 없습니다.",
 		cancel: "취소"
+	},
+	review: {
+		title: "게임 정보 검토",
+		body: "게임 정보가 이렇게 표시됩니다. 적용하면 편집기에 반영됩니다. 저장을 선택하기 전까지는 저장되지 않습니다.",
+		apply: "적용",
+		cancel: "취소",
+		genres: "장르"
 	},
 	nonSteamOnly: "이 플러그인은 비Steam 게임만 변경합니다.",
 	searchIgn: "IGN 메타데이터 검색",
@@ -11728,6 +11819,13 @@ var editor$b = {
 		title: "Metadata verwijderen?",
 		body: "Dit verwijdert alle opgeslagen metadata voor {{name}}. Je kunt dit niet ongedaan maken.",
 		cancel: "Annuleren"
+	},
+	review: {
+		title: "Spelgegevens controleren",
+		body: "Zo worden de spelgegevens weergegeven. Door ze toe te passen, worden ze aan de editor toegevoegd. Er wordt niets opgeslagen totdat je Opslaan kiest.",
+		apply: "Toepassen",
+		cancel: "Annuleren",
+		genres: "Genres"
 	},
 	nonSteamOnly: "Deze plug-in wijzigt alleen niet-Steam-games.",
 	searchIgn: "IGN-metadata doorzoeken",
@@ -12371,6 +12469,13 @@ var editor$a = {
 		body: "Spowoduje to usunięcie wszystkich zapisanych metadanych dla {{name}}. Tej czynności nie można cofnąć.",
 		cancel: "Anuluj"
 	},
+	review: {
+		title: "Sprawdź szczegóły gry",
+		body: "Tak będą wyglądać szczegóły gry. Zastosowanie dodaje je do edytora. Nic nie zostanie zapisane, dopóki nie wybierzesz Zapisz.",
+		apply: "Zastosuj",
+		cancel: "Anuluj",
+		genres: "Gatunki"
+	},
 	nonSteamOnly: "Ta wtyczka zmienia tylko gry spoza Steam.",
 	searchIgn: "Szukaj metadanych w IGN",
 	ign: {
@@ -13011,6 +13116,13 @@ var editor$9 = {
 		title: "Remover metadados?",
 		body: "Isso exclui todos os metadados salvos de {{name}}. Não é possível desfazer.",
 		cancel: "Cancelar"
+	},
+	review: {
+		title: "Revisar detalhes do jogo",
+		body: "É assim que os detalhes do jogo serão exibidos. Ao aplicar, eles são adicionados ao editor. Nada é salvo até você selecionar Salvar.",
+		apply: "Aplicar",
+		cancel: "Cancelar",
+		genres: "Gêneros"
 	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
 	searchIgn: "Pesquisar metadados na IGN",
@@ -13653,6 +13765,13 @@ var editor$8 = {
 		body: "Isto elimina todos os metadados guardados de {{name}}. Não pode ser anulado.",
 		cancel: "Cancelar"
 	},
+	review: {
+		title: "Rever detalhes do jogo",
+		body: "É assim que os detalhes do jogo serão apresentados. Ao aplicar, são adicionados ao editor. Nada é guardado até selecionar Guardar.",
+		apply: "Aplicar",
+		cancel: "Cancelar",
+		genres: "Géneros"
+	},
 	nonSteamOnly: "Este plugin só altera jogos que não são da Steam.",
 	searchIgn: "Pesquisar metadados na IGN",
 	ign: {
@@ -14293,6 +14412,13 @@ var editor$7 = {
 		title: "Elimini metadatele?",
 		body: "Aceasta șterge toate metadatele salvate pentru {{name}}. Nu poți anula această acțiune.",
 		cancel: "Anulează"
+	},
+	review: {
+		title: "Verifică detaliile jocului",
+		body: "Așa vor arăta detaliile jocului. Aplicarea le adaugă în editor. Nimic nu este salvat până când nu selectezi Salvează.",
+		apply: "Aplică",
+		cancel: "Anulează",
+		genres: "Genuri"
 	},
 	nonSteamOnly: "Acest plugin modifică doar jocurile non-Steam.",
 	searchIgn: "Caută metadate IGN",
@@ -14936,6 +15062,13 @@ var editor$6 = {
 		body: "Это удалит все сохранённые метаданные для {{name}}. Отменить это действие нельзя.",
 		cancel: "Отмена"
 	},
+	review: {
+		title: "Проверка сведений об игре",
+		body: "Так будут выглядеть сведения об игре. Применение добавит их в редактор. Ничего не будет сохранено, пока вы не выберете «Сохранить».",
+		apply: "Применить",
+		cancel: "Отмена",
+		genres: "Жанры"
+	},
 	nonSteamOnly: "Этот плагин изменяет только игры вне Steam.",
 	searchIgn: "Искать метаданные в IGN",
 	ign: {
@@ -15575,6 +15708,13 @@ var editor$5 = {
 		title: "Të hiqen metadatat?",
 		body: "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
 		cancel: "Anulo"
+	},
+	review: {
+		title: "Shqyrto detajet e lojës",
+		body: "Kështu do të duken detajet e lojës. Zbatimi i shton ato në redaktues. Asgjë nuk ruhet derisa të zgjedhësh Ruaj.",
+		apply: "Zbato",
+		cancel: "Anulo",
+		genres: "Zhanret"
 	},
 	nonSteamOnly: "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
 	searchIgn: "Kërko metadata në IGN",
@@ -16216,6 +16356,13 @@ var editor$4 = {
 		body: "Detta tar bort all sparad metadata för {{name}}. Det går inte att ångra.",
 		cancel: "Avbryt"
 	},
+	review: {
+		title: "Granska speluppgifter",
+		body: "Så här kommer speluppgifterna att se ut. Om du använder dem läggs de till i redigeraren. Inget sparas förrän du väljer Spara.",
+		apply: "Använd",
+		cancel: "Avbryt",
+		genres: "Genrer"
+	},
 	nonSteamOnly: "Det här plugin-programmet ändrar bara icke-Steam-spel.",
 	searchIgn: "Sök IGN-metadata",
 	ign: {
@@ -16855,6 +17002,13 @@ var editor$3 = {
 		title: "Meta Veriler Kaldırılsın mı?",
 		body: "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
 		cancel: "İptal"
+	},
+	review: {
+		title: "Oyun ayrıntılarını gözden geçir",
+		body: "Oyun ayrıntıları böyle görünecek. Uygula, ayrıntıları düzenleyiciye ekler. Kaydet'i seçene kadar hiçbir şey kaydedilmez.",
+		apply: "Uygula",
+		cancel: "İptal",
+		genres: "Türler"
 	},
 	nonSteamOnly: "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
 	searchIgn: "IGN meta verilerinde ara",
@@ -17498,6 +17652,13 @@ var editor$2 = {
 		body: "Це видалить усі збережені метадані для {{name}}. Скасувати цю дію неможливо.",
 		cancel: "Скасувати"
 	},
+	review: {
+		title: "Перегляд відомостей про гру",
+		body: "Так виглядатимуть відомості про гру. Застосування додасть їх до редактора. Нічого не буде збережено, доки ви не виберете «Зберегти».",
+		apply: "Застосувати",
+		cancel: "Скасувати",
+		genres: "Жанри"
+	},
 	nonSteamOnly: "Цей плагін змінює лише ігри поза Steam.",
 	searchIgn: "Шукати метадані в IGN",
 	ign: {
@@ -18137,6 +18298,13 @@ var editor$1 = {
 		body: "这将删除 {{name}} 的所有已保存元数据。此操作无法撤销。",
 		cancel: "取消"
 	},
+	review: {
+		title: "查看游戏详情",
+		body: "游戏详情将如下所示。应用后会将其添加到编辑器。选择“保存”之前不会保存任何内容。",
+		apply: "应用",
+		cancel: "取消",
+		genres: "类型"
+	},
 	nonSteamOnly: "此插件仅修改非 Steam 游戏。",
 	searchIgn: "搜索 IGN 元数据",
 	ign: {
@@ -18775,6 +18943,13 @@ var editor = {
 		title: "移除中繼資料？",
 		body: "這會刪除 {{name}} 的所有已儲存中繼資料。此操作無法復原。",
 		cancel: "取消"
+	},
+	review: {
+		title: "檢視遊戲詳細資料",
+		body: "遊戲詳細資料會以此方式呈現。套用後會加入編輯器。選擇「儲存」前不會儲存任何內容。",
+		apply: "套用",
+		cancel: "取消",
+		genres: "類型"
 	},
 	nonSteamOnly: "此外掛只會變更非 Steam 遊戲。",
 	searchIgn: "搜尋 IGN 中繼資料",
@@ -37081,6 +37256,13 @@ const editorSteamMatchImageStyle = {
     objectFit: "cover",
     borderRadius: 4,
 };
+const editorIgnResultImageStyle = {
+    width: 64,
+    height: 64,
+    flexShrink: 0,
+    objectFit: "cover",
+    borderRadius: 4,
+};
 const editorFieldEditedLabelStyle = {
     color: colors.accent,
 };
@@ -37290,7 +37472,10 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }
             previewRequestRef.current !== confirmationRequest ||
             !selected || selectedRef.current !== selected)
             return;
-        await onApplyRef.current(selected.steam_appid);
+        await onApplyRef.current(selected.steam_appid, preview?.cover_url ?? selected.cover_url);
+        // The review modal closed with Apply or Cancel; return to the results with this row focused.
+        if (mountedRef.current)
+            cancelSelection();
     };
     return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsxs("div", { "data-steam-match-appid": candidate.steam_appid, children: [SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void select(candidate), onClick: () => void select(candidate), children: SP_JSX.jsx("div", { style: compactTextStyle, children: candidateTitleLine(candidate, matchedSteamAppId, selected, t) }) }), selected?.steam_appid === candidate.steam_appid ? (SP_JSX.jsxs("div", { style: rowStackStyle, children: [previewLoading ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("matchPicker.loadingDetails") }), bottomSeparator: "none" })) : null, previewError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { role: "status", children: translateBackendError(previewError) }), bottomSeparator: "none" })) : null, preview ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [!selected.cover_url && preview.cover_url ? (SP_JSX.jsx("div", { children: SP_JSX.jsx("img", { src: preview.cover_url, alt: t("matchPicker.artworkAlt", { title: preview.title }), style: { ...editorSteamMatchImageStyle, objectFit: "contain" } }) })) : null, preview.developers.length ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.developers"), focusable: false, bottomSeparator: "standard", children: preview.developers.join(", ") })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.developerUnavailable"), bottomSeparator: "none" })), preview.release_date_label ? (SP_JSX.jsx(DFL.Field, { label: t("editor.field.releaseDate"), focusable: false, bottomSeparator: "standard", children: preview.release_date_label })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.releaseUnavailable"), bottomSeparator: "none" })), preview.app_type && preview.app_type !== "game" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.steamType", { type: preview.app_type }), bottomSeparator: "none" })) : null] })) : null, SP_JSX.jsx(DFL.Field, { focusable: false, description: t("matchPicker.applyHelp"), bottomSeparator: "none" }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || previewLoading, onClick: () => void apply(), style: { flex: 1 }, children: t("matchPicker.apply") }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled, onClick: cancelSelection, style: { flex: 1 }, children: t("matchPicker.cancel") })] })] })) : null] }, candidate.steam_appid)))] })] }));
 };
@@ -37814,11 +37999,85 @@ const changedListStyle = {
     margin: "8px 0 0",
     paddingLeft: 20,
 };
+const reviewCoverStyle = {
+    maxWidth: 184,
+    maxHeight: 184,
+    flexShrink: 0,
+    objectFit: "contain",
+    borderRadius: 4,
+};
+const reviewDescriptionStyle = {
+    marginTop: 12,
+    whiteSpace: "pre-line",
+    display: "-webkit-box",
+    WebkitBoxOrient: "vertical",
+    WebkitLineClamp: 6,
+    overflow: "hidden",
+};
+const reviewScreenshotStyle = {
+    width: 160,
+    height: 90,
+    objectFit: "cover",
+    borderRadius: 4,
+};
+const reviewHeaderStyle = {
+    display: "flex",
+    gap: 16,
+    alignItems: "flex-start",
+};
+const reviewTitleStyle = {
+    fontSize: 22,
+    fontWeight: 700,
+    marginBottom: 8,
+};
+const reviewFactsStyle = {
+    display: "grid",
+    gridTemplateColumns: "max-content 1fr",
+    columnGap: 12,
+    rowGap: 4,
+};
+const reviewFactLabelStyle = {
+    color: "#8b929a",
+};
+const reviewScreenshotsStyle = {
+    display: "flex",
+    gap: 8,
+    marginTop: 12,
+};
+const reviewFactRowStyle = {
+    display: "contents",
+};
 function draftFieldLabel(t, key) {
     return t(FIELD_LABEL_KEYS[key]);
 }
 function showUnsavedChangesModal(opts) {
     DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.unsaved.title"), strDescription: t("editor.unsaved.body"), strOKButtonText: t("editor.save"), strMiddleButtonText: t("editor.unsaved.discard"), strCancelButtonText: t("editor.unsaved.cancel"), onOK: opts.onSave, onMiddleButton: opts.onDiscard, onCancel: opts.onCancel, children: opts.groups.length > 0 ? (SP_JSX.jsx("ul", { style: changedListStyle, children: opts.groups.map(({ page, fields }) => (SP_JSX.jsx("li", { children: t("editor.unsaved.group", { page, fields: fields.join(", ") }) }, page))) })) : null }));
+}
+function showMetadataReviewModal(opts) {
+    const { metadata, coverUrl } = opts;
+    const facts = [
+        [t("editor.field.developers"), personsToText(metadata.developers)],
+        [t("editor.field.publishers"), personsToText(metadata.publishers)],
+        [t("editor.field.releaseDate"), metadata.release_date ?? ""],
+        [t("editor.field.rating"), metadata.rating == null ? "" : String(metadata.rating)],
+        [t("editor.review.genres"), (metadata.genres ?? []).join(", ")],
+        [
+            t("editor.field.categories"),
+            (metadata.store_categories ?? []).map((category) => categoryLabel(category, t)).join(", "),
+        ],
+    ].filter(([, value]) => value !== "");
+    const description = metadata.short_description?.trim()
+        ? metadata.short_description
+        : metadata.description || "";
+    const screenshots = (metadata.screenshots ?? []).slice(0, 3);
+    const content = (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { style: reviewHeaderStyle, children: [coverUrl ? SP_JSX.jsx("img", { src: coverUrl, alt: "", style: reviewCoverStyle }) : null, SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { style: reviewTitleStyle, children: metadata.title }), SP_JSX.jsx("div", { style: reviewFactsStyle, children: facts.map(([label, value]) => (SP_JSX.jsxs("div", { style: reviewFactRowStyle, children: [SP_JSX.jsx("div", { style: reviewFactLabelStyle, children: label }), SP_JSX.jsx("div", { children: value })] }, label))) })] })] }), description ? SP_JSX.jsx("div", { style: reviewDescriptionStyle, children: description }) : null, screenshots.length > 0 ? (SP_JSX.jsx("div", { style: reviewScreenshotsStyle, children: screenshots.map((shot) => (SP_JSX.jsx("img", { src: shot.url, alt: "", style: reviewScreenshotStyle }, shot.url))) })) : null] }));
+    return new Promise((resolve) => {
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.review.title"), strDescription: t("editor.review.body"), strOKButtonText: t("editor.review.apply"), strCancelButtonText: t("editor.review.cancel"), onOK: () => resolve(true), onCancel: () => resolve(false), children: content }), undefined, {
+            strTitle: t("editor.review.title"),
+            bHideMainWindowForPopouts: false,
+            fnOnClose: () => resolve(false),
+        });
+    });
 }
 function showRemoveMetadataModal(opts) {
     DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { bDestructiveWarning: true, strTitle: t("editor.removeConfirm.title"), strDescription: t("editor.removeConfirm.body", { name: opts.gameName }), strOKButtonText: t("editor.removeMetadata"), strCancelButtonText: t("editor.removeConfirm.cancel"), onOK: opts.onConfirm }));
@@ -38493,7 +38752,7 @@ const MetadataPage = () => {
         return id;
     };
     /** Preview a Steam match into the form; nothing is stored until Save. */
-    const previewSteamDraft = async (requestedEntry, draft, previewedSteamAppId, language) => {
+    const previewSteamDraft = async (requestedEntry, draft, previewedSteamAppId, language, review) => {
         const baselineMetadata = metadataRef.current;
         const baselineText = formTextSnapshot();
         try {
@@ -38504,6 +38763,8 @@ const MetadataPage = () => {
                 toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
                 return false;
             }
+            if (review && !(await reviewFetched(requestedEntry, previewed, review.coverUrl)))
+                return false;
             const beforeMerge = draftFormState();
             reconcileMetadataResponse(previewed, baselineMetadata, baselineText);
             previewedSteamAppIdRef.current = previewedSteamAppId;
@@ -38625,6 +38886,10 @@ const MetadataPage = () => {
         const editorPaths = [`/decky-metadata/${appId}`, `/routes/decky-metadata/${appId}`];
         return currentRoutePath().split(" ").some((path) => editorPaths.includes(path));
     };
+    /** Review fetched details; true only when Apply is chosen while this editor entry is still shown. */
+    const reviewFetched = async (requestedEntry, fetched, coverUrl) => stillOnEditor(requestedEntry) &&
+        (await showMetadataReviewModal({ metadata: fetched, coverUrl })) &&
+        stillOnEditor(requestedEntry);
     /** B leaves the editor; a draft asks before it is dropped. */
     const requestLeave = () => {
         const requestedEntry = editorEntryToken;
@@ -38656,7 +38921,7 @@ const MetadataPage = () => {
             },
         });
     };
-    const applySteamAppId = async (explicitSteamAppId) => {
+    const applySteamAppId = async (explicitSteamAppId, review) => {
         if (!nonSteam) {
             toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
             return;
@@ -38719,7 +38984,7 @@ const MetadataPage = () => {
             if (changed)
                 delete draft.steam_store_state;
             const requestedText = steamAppIdTextRef.current;
-            if (await previewSteamDraft(requestedEntry, draft, parsed)) {
+            if (await previewSteamDraft(requestedEntry, draft, parsed, undefined, review)) {
                 if (steamAppIdTextRef.current === requestedText)
                     setSteamAppIdInput(String(parsed));
             }
@@ -38788,6 +39053,8 @@ const MetadataPage = () => {
         try {
             const fetched = await previewFetchedMetadata(normalizedMetadata, result.slug || result.url);
             if (!fetched || !isCurrentEditorEntry(requestedEntry))
+                return;
+            if (!(await reviewFetched(requestedEntry, fetched, result.cover_url ?? null)))
                 return;
             // An IGN result fills the draft; its release date keeps the stored baseline.
             const beforeMerge = draftFormState();
@@ -39060,10 +39327,10 @@ const MetadataPage = () => {
         const loadLabelKey = steamBusy && !loadDisabledReasonKey
             ? "editor.loadFromSteamBusy"
             : "editor.loadFromSteam";
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, onApply: async (steamAppId) => {
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, onApply: async (steamAppId, coverUrl) => {
                         if (!isCurrentEditorEntry(editorEntryToken))
                             return;
-                        await applySteamAppId(steamAppId);
+                        await applySteamAppId(steamAppId, { coverUrl });
                     } }, editorEntryToken), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.currentMatch") }), SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.currentMatch"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [formSteamAppId !== null
                                         ? t("matchPicker.appId", { appId: formSteamAppId })
                                         : loadDisabledReasonKey
@@ -39078,7 +39345,7 @@ const MetadataPage = () => {
                                             }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: !nonSteam, onChange: (e) => {
                                                 setQuery(e.target.value);
                                                 setResults(null);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used

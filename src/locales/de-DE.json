@@ -465,6 +465,13 @@
       "body": "Dies löscht alle gespeicherten Metadaten für {{name}}. Dies kann nicht rückgängig gemacht werden.",
       "cancel": "Abbrechen"
     },
+    "review": {
+      "title": "Spieldetails überprüfen",
+      "body": "So werden die Spieldetails aussehen. Mit Anwenden werden sie in den Editor übernommen. Es wird nichts gespeichert, bis du Speichern auswählst.",
+      "apply": "Anwenden",
+      "cancel": "Abbrechen",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
     "searchIgn": "IGN-Metadaten durchsuchen",
     "ign": {

@@ -467,6 +467,13 @@
       "body": "Tímto se smažou všechna uložená metadata pro {{name}}. Akci nelze vrátit zpět.",
       "cancel": "Zrušit"
     },
+    "review": {
+      "title": "Kontrola podrobností hry",
+      "body": "Takto budou podrobnosti o hře vypadat. Použitím je přidáte do editoru. Nic se neuloží, dokud nevyberete Uložit.",
+      "apply": "Použít",
+      "cancel": "Zrušit",
+      "genres": "Žánry"
+    },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
     "searchIgn": "Hledat metadata na IGN",
     "ign": {

@@ -158,6 +158,27 @@ describe("Steam match browsing ownership", () => {
     expect(applying).not.toHaveBeenCalled();
   });
 });
+it("passes the preview cover art and returns to the result row after applying", async () => {
+  vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
+  try {
+    backend.getSteamMatchPreview.mockResolvedValue({
+      preview: { ...portalPreview, cover_url: "https://cdn.example/header.jpg" },
+      error: null,
+    });
+    button(renderPicker(), "Search Steam").props.onClick();
+    await flush();
+    candidate(renderPicker(), 400).props.onClick();
+    await flush();
+    button(renderPicker(), "Use this Steam match").props.onClick();
+    await flush();
+
+    expect(applying).toHaveBeenCalledWith(400, "https://cdn.example/header.jpg");
+    expect(text(renderPicker())).not.toContain("Oct 9, 2007");
+    expect(text(renderPicker())).toContain("Steam App ID: 400");
+  } finally {
+    vi.unstubAllGlobals();
+  }
+});
 
 it("rejects an old confirmation when the same row is selected again and its new preview is pending", async () => {
   const newPreview = deferred<{ preview: SteamMatchPreview; error: null }>();

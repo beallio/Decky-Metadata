@@ -294,9 +294,9 @@ the `dev` → `main` merge and `scripts/release.sh`. It stops before pushing by
 default and publishes only when the maintainer explicitly requests it for that
 invocation.
 
-Manual dev prereleases publish the current `## [Unreleased]` notes. Immediately
-after a stable cut that new section is empty, so `dev-release.yml` intentionally
-refuses to publish until a new entry is added; this is not a bug.
+The Dev Release workflow publishes the current `## [Unreleased]` notes and
+refuses to publish when that section is empty; PRs into `dev` should add an
+Unreleased entry.
 
 **Plugin identity — distribution vs Decky display.** Two names, deliberately
 different. Do not "unify" them.
@@ -335,10 +335,13 @@ conflated:
   `dev-build` tag) is for the on-device sideload loop only. Its non-semver tag means the
   self-updater's discovery deliberately skips it — it is **not** an update
   source.
-- The **Dev Release** workflow (`.github/workflows/dev-release.yml`, manual
-  `workflow_dispatch`) publishes distinct `vX.Y.Z-dev.g<sha>` semver
-  prereleases with a manifest + checksum. These are what the updater's
-  "development" channel discovers and installs.
+- The **Dev Release** workflow (`.github/workflows/dev-release.yml`) runs on
+  every same-repository PR merged into `dev` and can also be run manually with
+  `workflow_dispatch` (full 40-character SHA or real ref). It publishes distinct
+  `vX.Y.Z-dev.g<sha>` semver prereleases with a manifest + checksum. These are
+  what the updater's "development" channel discovers and installs. It refuses
+  to publish when `## [Unreleased]` in `CHANGELOG.md` is empty, so PRs into
+  `dev` should add an Unreleased entry.
 
 Version grammar the updater parses (and `scripts/package.mjs --release-version`
 accepts): `X.Y.Z`, optionally `-dev.<id>` (development channel) and/or

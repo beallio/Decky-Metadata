@@ -465,6 +465,13 @@
       "body": "Tämä poistaa kaikki pelin {{name}} tallennetut metatiedot. Toimintoa ei voi kumota.",
       "cancel": "Peruuta"
     },
+    "review": {
+      "title": "Tarkista pelin tiedot",
+      "body": "Tältä pelin tiedot näyttävät. Käyttämällä niitä lisäät ne editoriin. Mitään ei tallenneta ennen kuin valitset Tallenna.",
+      "apply": "Käytä",
+      "cancel": "Peruuta",
+      "genres": "Tyylilajit"
+    },
     "nonSteamOnly": "Tämä liitännäinen muuttaa vain Steamin ulkopuolisia pelejä.",
     "searchIgn": "Hae IGN-metatietoja",
     "ign": {

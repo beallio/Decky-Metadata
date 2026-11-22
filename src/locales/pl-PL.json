@@ -467,6 +467,13 @@
       "body": "Spowoduje to usunięcie wszystkich zapisanych metadanych dla {{name}}. Tej czynności nie można cofnąć.",
       "cancel": "Anuluj"
     },
+    "review": {
+      "title": "Sprawdź szczegóły gry",
+      "body": "Tak będą wyglądać szczegóły gry. Zastosowanie dodaje je do edytora. Nic nie zostanie zapisane, dopóki nie wybierzesz Zapisz.",
+      "apply": "Zastosuj",
+      "cancel": "Anuluj",
+      "genres": "Gatunki"
+    },
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
     "searchIgn": "Szukaj metadanych w IGN",
     "ign": {

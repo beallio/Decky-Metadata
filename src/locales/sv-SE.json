@@ -465,6 +465,13 @@
       "body": "Detta tar bort all sparad metadata för {{name}}. Det går inte att ångra.",
       "cancel": "Avbryt"
     },
+    "review": {
+      "title": "Granska speluppgifter",
+      "body": "Så här kommer speluppgifterna att se ut. Om du använder dem läggs de till i redigeraren. Inget sparas förrän du väljer Spara.",
+      "apply": "Använd",
+      "cancel": "Avbryt",
+      "genres": "Genrer"
+    },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
     "searchIgn": "Sök IGN-metadata",
     "ign": {

@@ -16,7 +16,7 @@ type SteamMatchPickerProps = {
   initialQuery: string;
   matchedSteamAppId: number | null;
   disabled: boolean;
-  onApply: (steamAppId: number) => Promise<void>;
+  onApply: (steamAppId: number, coverUrl: string | null) => Promise<void>;
 };
 
 type SearchStatus = "idle" | "loading" | "results" | "empty" | "error";
@@ -172,7 +172,9 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
       previewRequestRef.current !== confirmationRequest ||
       !selected || selectedRef.current !== selected
     ) return;
-    await onApplyRef.current(selected.steam_appid);
+    await onApplyRef.current(selected.steam_appid, preview?.cover_url ?? selected.cover_url);
+    // The review modal closed with Apply or Cancel; return to the results with this row focused.
+    if (mountedRef.current) cancelSelection();
   };
 
   return (

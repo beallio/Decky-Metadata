@@ -13,6 +13,12 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
   **Edit Metadata...**, with long names scrolling as in Steam's own menu. A
   second option uses the matched Steam game's icon when the game has none;
   otherwise no icon is shown. Off by default.
+- **Cover art in IGN results.** Each IGN search result in **Edit Metadata...**
+  now shows the game's cover art when IGN has one.
+- **Review before you apply.** Choosing an IGN result or **Use this Steam
+  match** now opens a preview of the game details first. **Apply** puts the
+  details in the editor; **Cancel** leaves the editor as it was. Nothing is
+  saved until you select **Save**.
 
 ### Changed
 
