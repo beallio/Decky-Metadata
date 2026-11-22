@@ -188,6 +188,19 @@ describe("showMetadataReviewModal", () => {
     expect(images[0].props.src).toBe("https://cdn.example/cover.jpg");
   });
 
+  it("lists only the store categories it can name", () => {
+    const factValue = (categories: number[]) => {
+      showMetadataReviewModal({ metadata: { ...metadataTemplate("Hades"), store_categories: categories }, coverUrl: null });
+      const texts: string[] = [];
+      walk(lastModal().props.children, texts, []);
+      const label = texts.indexOf("Categories");
+      return label === -1 ? null : texts[label + 1];
+    };
+
+    expect(factValue([2, 999_001, 999_002])).toBe("Single-player");
+    expect(factValue([999_001])).toBeNull();
+  });
+
   it("resolves true on Apply and false on Cancel or modal close", async () => {
     const applied = showMetadataReviewModal({
       metadata: metadataTemplate("Hades"),

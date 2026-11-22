@@ -138,7 +138,8 @@ export function showMetadataReviewModal(opts: {
       [t("editor.review.genres"), (metadata.genres ?? []).join(", ")],
       [
         t("editor.field.categories"),
-        (metadata.store_categories ?? []).map((category) => categoryLabel(category, t)).join(", "),
+        // Steam sends category codes the plugin has no label for; list only the ones it can name.
+        (metadata.store_categories ?? []).map((category) => categoryLabel(category, t)).filter(Boolean).join(", "),
       ],
     ] as [string, string][]
   ).filter(([, value]) => value !== "");
