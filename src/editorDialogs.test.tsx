@@ -197,8 +197,9 @@ describe("showMetadataReviewModal", () => {
       return label === -1 ? null : texts[label + 1];
     };
 
-    expect(factValue([2, 999_001, 999_002])).toBe("Single-player");
-    expect(factValue([999_001])).toBeNull();
+    expect(factValue([999_001, 2, 999_002, 22])).toBe("Single-player, Achievements");
+    // Several unnamed codes used to show as "Categories: , ".
+    expect(factValue([999_001, 999_002])).toBeNull();
   });
 
   it("resolves true on Apply and false on Cancel or modal close", async () => {
