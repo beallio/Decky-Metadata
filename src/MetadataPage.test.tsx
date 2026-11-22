@@ -1230,6 +1230,7 @@ describe("MetadataPage compatibility status", () => {
     expect(text(applying)).not.toContain("Searching...");
     pendingPreview.resolve(null);
     await flushAsyncWork();
+    expect(row(renderPage()).props.disabled).toBe(false);
   });
 
   it("resets the IGN search query and results when the editor moves to another game", async () => {

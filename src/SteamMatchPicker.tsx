@@ -168,18 +168,20 @@ export const SteamMatchPicker = ({
         </div>
       </Field>
       <div ref={resultsRootRef}>
-        <Field
-          focusable={false}
-          description={
-            <span aria-live="polite">
-              {status === "idle" ? t("matchPicker.idle") : null}
-              {status === "loading" ? t("matchPicker.searching") : null}
-              {status === "empty" ? t("matchPicker.empty") : null}
-              {status === "error" && searchError ? translateBackendError(searchError) : null}
-            </span>
-          }
-          bottomSeparator="none"
-        />
+        {status !== "results" ? (
+          <Field
+            focusable={false}
+            description={
+              <span aria-live="polite">
+                {status === "idle" ? t("matchPicker.idle") : null}
+                {status === "loading" ? t("matchPicker.searching") : null}
+                {status === "empty" ? t("matchPicker.empty") : null}
+                {status === "error" && searchError ? translateBackendError(searchError) : null}
+              </span>
+            }
+            bottomSeparator="none"
+          />
+        ) : null}
         {items.map((candidate) => (
           <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid}>
             <Field

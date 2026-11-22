@@ -179,6 +179,14 @@ describe("Steam match browsing ownership", () => {
     expect(applying).not.toHaveBeenCalled();
   });
 
+  it("marks the current match on the result's description line", () => {
+    const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal2, portal], status: "results", error: null };
+    const tree = renderPicker({ savedSearch: snapshot, matchedSteamAppId: 400 });
+
+    expect(candidate(tree, 400).props.description).toBe("Steam App ID: 400 · Current match");
+    expect(candidate(tree, 620).props.description).toBe("Steam App ID: 620");
+  });
+
   it("does not apply a result while the picker is disabled", async () => {
     const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal], status: "results", error: null };
     candidate(renderPicker({ savedSearch: snapshot, disabled: true }), 400).props.onClick();

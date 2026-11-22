@@ -4675,7 +4675,7 @@ var editor$m = {
 	ign: {
 		gameName: "Název hry",
 		noResults: "Žádné výsledky.",
-		help: "Vyhledejte hru v IGN, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží."
+		help: "Vyhledejte hru na IGN, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží."
 	},
 	search: "Hledat",
 	searching: "Hledání...",
@@ -12882,7 +12882,7 @@ var editor$9 = {
 	ign: {
 		gameName: "Nome do jogo",
 		noResults: "Nenhum resultado.",
-		help: "Pesquise no IGN e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena."
+		help: "Pesquise na IGN e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena."
 	},
 	search: "Pesquisar",
 	searching: "Pesquisando...",
@@ -13514,7 +13514,7 @@ var editor$8 = {
 	ign: {
 		gameName: "Nome do jogo",
 		noResults: "Sem resultados.",
-		help: "Pesquise no IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
+		help: "Pesquise na IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
 	},
 	search: "Pesquisar",
 	searching: "A pesquisar...",
@@ -37012,7 +37012,7 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, savedSear
                 ?.focus();
         });
     };
-    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" }), items.map((candidate) => (SP_JSX.jsx("div", { "data-steam-match-appid": candidate.steam_appid, children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, description: candidate.steam_appid === matchedSteamAppId
+    return (SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("matchPicker.search") }), SP_JSX.jsx(DFL.Field, { label: t("matchPicker.searchAriaLabel"), description: t("matchPicker.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("matchPicker.searchAriaLabel"), value: query, disabled: disabled, onChange: (event) => changeQuery(event.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: disabled || status === "loading" || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: status === "loading" ? t("matchPicker.searching") : t("matchPicker.search") })] }) }), SP_JSX.jsxs("div", { ref: resultsRootRef, children: [status !== "results" ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsxs("span", { "aria-live": "polite", children: [status === "idle" ? t("matchPicker.idle") : null, status === "loading" ? t("matchPicker.searching") : null, status === "empty" ? t("matchPicker.empty") : null, status === "error" && searchError ? translateBackendError(searchError) : null] }), bottomSeparator: "none" })) : null, items.map((candidate) => (SP_JSX.jsx("div", { "data-steam-match-appid": candidate.steam_appid, children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: candidate.title, description: candidate.steam_appid === matchedSteamAppId
                                 ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
                                 : t("matchPicker.appId", { appId: candidate.steam_appid }), icon: candidate.cover_url ? SP_JSX.jsx("img", { src: candidate.cover_url, alt: "", style: editorSteamMatchImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: disabled, bottomSeparator: "standard", onActivate: () => void apply(candidate), onClick: () => void apply(candidate) }) }, candidate.steam_appid)))] })] }));
 };
@@ -38589,6 +38589,8 @@ const MetadataPage = () => {
         }
     };
     const applyResult = async (result) => {
+        if (!nonSteam)
+            return;
         const requestedEntry = editorEntryToken;
         if (!beginBusy(requestedEntry, "other"))
             return;
@@ -38890,7 +38892,7 @@ const MetadataPage = () => {
                                                 markFormEdited();
                                                 clearPreviewMarker("steamAppId");
                                                 setSteamAppIdInput(e.target.value);
-                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), description: t("editor.ign.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: !nonSteam, onChange: (e) => {
+                                            }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applySteamAppId(), style: editorSearchButtonStyle, children: t("editor.steamAppIdApply") })] }) }), steamLanguageMismatch ? (SP_JSX.jsx(EditorButtonItem, { className: editorFocusTargetClassName, label: t("editor.steamTextLanguage", { language: storedSteamLanguageLabel }), description: t("editor.toast.steamPreviewBody"), layout: "inline", disabled: entryBusy, onClick: () => void refreshFromSteam(steamLanguage ?? undefined), bottomSeparator: "none", children: t("editor.fetchSteamText", { language: currentSteamLanguageLabel }) })) : null] }), SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.searchIgn") }), SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), description: t("editor.ign.help"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.ign.gameName"), value: query, disabled: entryBusy || !nonSteam, onChange: (e) => {
                                                 setQuery(e.target.value);
                                                 setResults(null);
                                             }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam || !query.trim(), onClick: search, style: editorSearchButtonStyle, children: ignBusy ? t("editor.searching") : t("editor.search") })] }) }), SP_JSX.jsxs("div", { children: [ignBusy ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: t("editor.searching") }), bottomSeparator: "none" })) : null, !ignBusy && !results?.length ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: results === null ? t("editor.noResults") : t("editor.ign.noResults") }), bottomSeparator: "none" })) : null, (results ?? []).map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }, result.slug || result.url)))] })] })] }));

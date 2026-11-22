@@ -473,7 +473,7 @@
     "ign": {
       "gameName": "Nome do jogo",
       "noResults": "Sem resultados.",
-      "help": "Pesquise no IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
+      "help": "Pesquise na IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
     },
     "search": "Pesquisar",
     "searching": "A pesquisar...",

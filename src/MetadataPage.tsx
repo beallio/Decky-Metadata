@@ -1185,6 +1185,7 @@ export const MetadataPage = () => {
   };
 
   const applyResult = async (result: MetadataSearchResult) => {
+    if (!nonSteam) return;
     const requestedEntry = editorEntryToken;
     if (!beginBusy(requestedEntry, "other")) return;
     const baselineMetadata = metadataRef.current;
@@ -1695,7 +1696,7 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   aria-label={t("editor.ign.gameName")}
                   value={query}
-                  disabled={!nonSteam}
+                  disabled={entryBusy || !nonSteam}
                   onChange={(e) => {
                     setQuery(e.target.value);
                     setResults(null);
