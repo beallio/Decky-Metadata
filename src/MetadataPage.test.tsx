@@ -2058,7 +2058,11 @@ describe("Steam-match picker application", () => {
       steam_store_name: "New Steam Name",
     }));
 
-    await picker(openPage("Game Match")).props.onApply(15200);
+    const applying = picker(openPage("Game Match")).props.onApply(15200, null);
+    await flushAsyncWork();
+    expect(state.values[0].steam_appid).toBe(15100);
+    lastCall(ui.showModal).props.onOK();
+    await applying;
 
     // The preview is in the form, but only Save stores it.
     expect(state.values[0].steam_appid).toBe(15200);
@@ -2071,7 +2075,7 @@ describe("Steam-match picker application", () => {
     configureShortcutPanel({ metadata: { description: "Old description", deck_compat_override: "valve" } });
     state.values[8] = "620";
     backend.previewSteamMetadata.mockReturnValue(pendingPreview.promise);
-    const applying = picker(openPage("Game Match")).props.onApply(400);
+    const applying = picker(openPage("Game Match")).props.onApply(400, null);
     walk(openPage("Details"), (node) => node.type === "textarea")[0]
       .props.onChange({ target: { value: "My edit during the request" } });
     pendingPreview.resolve(makeMetadata({
@@ -2079,6 +2083,8 @@ describe("Steam-match picker application", () => {
       description: "Steam description", short_description: "Steam description",
       developers: [{ name: "Valve", url: "" }], deck_compat_override: "valve",
     }));
+    await flushAsyncWork();
+    lastCall(ui.showModal).props.onOK();
     await applying;
 
     expect(backend.previewSteamMetadata.mock.calls[0][0]).toEqual(expect.objectContaining({
@@ -2111,11 +2117,43 @@ describe("Steam-match picker application", () => {
     route.appid = "100";
     renderPage();
 
-    await retired(400);
+    await retired(400, null);
 
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(steam.metadataCache["100"]).toBeUndefined();
+  });
+
+  it("leaves the Steam draft unchanged when review is canceled", async () => {
+    configureShortcutPanel({ metadata: { title: "Original", steam_appid: 15100 } });
+    backend.previewSteamMetadata.mockResolvedValue(makeMetadata({ title: "New match", steam_appid: 15200 }));
+    const applying = picker(openPage("Game Match")).props.onApply(15200, "https://cdn.example/header.jpg");
+    await flushAsyncWork();
+
+    expect(walk(lastCall(ui.showModal), (node) =>
+      node.type === "img" && node.props.src === "https://cdn.example/header.jpg")).toHaveLength(1);
+    lastCall(ui.showModal).props.onCancel();
+    await applying;
+
+    expect(state.values[0]).toMatchObject({ steam_appid: 15100, title: "Original" });
+    expect(toast.toastSuccess).not.toHaveBeenCalled();
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+  });
+
+  it("leaves the draft unchanged when an IGN result review is canceled", async () => {
+    configureShortcutPanel({ metadata: { title: "Hades" } });
+    state.values[6] = [{ slug: "hades", url: "https://www.ign.com/games/hades", title: "Hades", description: "" }];
+    backend.previewFetchedMetadata.mockResolvedValue(makeMetadata({ title: "Hades", source: "IGN" }));
+    const result = walk(openPage("Game Match"), (node) =>
+      node.type === "Field" && node.props.label === "Hades" && typeof node.props.onClick === "function")[0];
+    result.props.onClick();
+    await flushAsyncWork();
+
+    lastCall(ui.showModal).props.onCancel();
+    await flushAsyncWork();
+
+    expect(state.values[0].source).not.toBe("IGN");
+    expect(toast.toastSuccess).not.toHaveBeenCalled();
   });
 
   it("shows HLTB times again after a removed game gets an IGN match, without a reload", async () => {
@@ -2138,6 +2176,9 @@ describe("Steam-match picker application", () => {
     const result = walk(openPage("Game Match"), (node) =>
       node.type === "Field" && node.props.label === "Hades" && typeof node.props.onClick === "function")[0];
     result.props.onClick();
+    await flushAsyncWork();
+    expect(state.values[0].source).not.toBe("IGN");
+    lastCall(ui.showModal).props.onOK();
     await flushAsyncWork();
 
     expect(backend.previewFetchedMetadata).toHaveBeenCalledWith(

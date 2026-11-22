@@ -466,6 +466,13 @@
       "body": "Cela supprime toutes les métadonnées enregistrées pour {{name}}. Cette action est irréversible.",
       "cancel": "Annuler"
     },
+    "review": {
+      "title": "Vérifier les détails du jeu",
+      "body": "Voici à quoi ressembleront les détails du jeu. Les appliquer les ajoute à l’éditeur. Rien n’est enregistré tant que vous ne choisissez pas Enregistrer.",
+      "apply": "Appliquer",
+      "cancel": "Annuler",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
     "searchIgn": "Rechercher des métadonnées IGN",
     "ign": {

@@ -466,6 +466,13 @@
       "body": "Isto elimina todos os metadados guardados de {{name}}. Não pode ser anulado.",
       "cancel": "Cancelar"
     },
+    "review": {
+      "title": "Rever detalhes do jogo",
+      "body": "É assim que os detalhes do jogo serão apresentados. Ao aplicar, são adicionados ao editor. Nada é guardado até selecionar Guardar.",
+      "apply": "Aplicar",
+      "cancel": "Cancelar",
+      "genres": "Géneros"
+    },
     "nonSteamOnly": "Este plugin só altera jogos que não são da Steam.",
     "searchIgn": "Pesquisar metadados na IGN",
     "ign": {

@@ -466,6 +466,13 @@
       "body": "Aceasta șterge toate metadatele salvate pentru {{name}}. Nu poți anula această acțiune.",
       "cancel": "Anulează"
     },
+    "review": {
+      "title": "Verifică detaliile jocului",
+      "body": "Așa vor arăta detaliile jocului. Aplicarea le adaugă în editor. Nimic nu este salvat până când nu selectezi Salvează.",
+      "apply": "Aplică",
+      "cancel": "Anulează",
+      "genres": "Genuri"
+    },
     "nonSteamOnly": "Acest plugin modifică doar jocurile non-Steam.",
     "searchIgn": "Caută metadate IGN",
     "ign": {

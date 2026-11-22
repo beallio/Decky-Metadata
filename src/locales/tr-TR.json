@@ -465,6 +465,13 @@
       "body": "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
       "cancel": "İptal"
     },
+    "review": {
+      "title": "Oyun ayrıntılarını gözden geçir",
+      "body": "Oyun ayrıntıları böyle görünecek. Uygula, ayrıntıları düzenleyiciye ekler. Kaydet'i seçene kadar hiçbir şey kaydedilmez.",
+      "apply": "Uygula",
+      "cancel": "İptal",
+      "genres": "Türler"
+    },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
     "searchIgn": "IGN meta verilerinde ara",
     "ign": {

@@ -465,6 +465,13 @@
       "body": "Dit verwijdert alle opgeslagen metadata voor {{name}}. Je kunt dit niet ongedaan maken.",
       "cancel": "Annuleren"
     },
+    "review": {
+      "title": "Spelgegevens controleren",
+      "body": "Zo worden de spelgegevens weergegeven. Door ze toe te passen, worden ze aan de editor toegevoegd. Er wordt niets opgeslagen totdat je Opslaan kiest.",
+      "apply": "Toepassen",
+      "cancel": "Annuleren",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
     "searchIgn": "IGN-metadata doorzoeken",
     "ign": {

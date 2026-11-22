@@ -465,6 +465,13 @@
       "body": "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
       "cancel": "Anulo"
     },
+    "review": {
+      "title": "Shqyrto detajet e lojës",
+      "body": "Kështu do të duken detajet e lojës. Zbatimi i shton ato në redaktues. Asgjë nuk ruhet derisa të zgjedhësh Ruaj.",
+      "apply": "Zbato",
+      "cancel": "Anulo",
+      "genres": "Zhanret"
+    },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
     "searchIgn": "Kërko metadata në IGN",
     "ign": {

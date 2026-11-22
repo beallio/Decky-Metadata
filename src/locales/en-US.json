@@ -465,6 +465,13 @@
       "body": "This deletes all saved metadata for {{name}}. You cannot undo this.",
       "cancel": "Cancel"
     },
+    "review": {
+      "title": "Review game details",
+      "body": "This is how the game details will look. Apply puts them in the editor. Nothing is saved until you select Save.",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "This plugin only changes non-Steam games.",
     "searchIgn": "Search IGN metadata",
     "ign": {
