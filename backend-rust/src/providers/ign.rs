@@ -553,6 +553,17 @@ async fn graphql(http: &Http, query: &str, variables: Value) -> Result<Value, St
     Ok(payload)
 }
 
+/// An IGN image as an HTTPS thumbnail the editor may load; anything else is None.
+fn ign_thumbnail_url(value: &Value) -> Option<String> {
+    let mut url = reqwest::Url::parse(&matching::https_url(&truthy_string(value))).ok()?;
+    if url.scheme() != "https" || url.host_str().is_none() {
+        return None;
+    }
+    // IGN's image CDN resizes on request: about 218 KB becomes about 7 KB at width 128.
+    url.query_pairs_mut().append_pair("width", "256");
+    Some(url.into())
+}
+
 /// Search IGN games and return its raw, mapped search-result envelope.
 pub async fn search_metadata(
     http: &Http,
@@ -578,6 +589,7 @@ pub async fn search_metadata(
               descriptions { short }
             }
             primaryReview { score }
+            primaryImage { url }
           }
         }
       }
@@ -627,6 +639,7 @@ pub async fn search_metadata(
             "title": title,
             "description": matching::description_html_to_text(&truthy_string(&node["metadata"]["descriptions"]["short"])),
             "rating": matching::rating_to_percent(&node["primaryReview"]["score"]).map(Value::from).unwrap_or(Value::Null),
+            "cover_url": ign_thumbnail_url(&node["primaryImage"]["url"]),
         }));
     }
     Ok(results)
@@ -1687,10 +1700,10 @@ mod tests {
             vec![
                 json!({
                     "id": "game-deadpool", "slug": "deadpool", "url": "https://www.ign.com/games/deadpool",
-                    "title": "Deadpool", "description": "Provider description", "rating": 85
+                    "title": "Deadpool", "description": "Provider description", "rating": 85, "cover_url": null
                 }),
                 json!({"id":null,"slug":"ignored-without-a-title","url":"https://www.ign.com/games/ignored-without-a-title",
-            "title":"ignored-without-a-title","description":"","rating":null})
+            "title":"ignored-without-a-title","description":"","rating":null,"cover_url":null})
             ]
         );
         assert!(
@@ -1708,6 +1721,23 @@ mod tests {
         assert_eq!(
             search_count(&json!("not a number")).unwrap_err(),
             "invalid IGN search limit"
+        );
+    }
+    #[tokio::test]
+    async fn ign_search_returns_https_cover_thumbnails() {
+        let mut promoted = search_node("Hades", "hades", "game-hades");
+        promoted["primaryImage"] = json!({"url": "http://assets-prd.ignimgs.com/hades.jpg"});
+        let mut unsafe_scheme = search_node("Hades II", "hades-ii", "game-hades-ii");
+        unsafe_scheme["primaryImage"] = json!({"url": "javascript:alert(1)"});
+        let mut missing = search_node("Hades Nebula", "hades-nebula", "game-hades-nebula");
+        missing["primaryImage"] = Value::Null;
+        let http = Http::fixtures(vec![graphql_json(search_reply(vec![promoted, unsafe_scheme, missing]))]);
+        let results = search_metadata(&http, &json!("Hades"), &json!(8)).await.unwrap();
+        http.assert_drained();
+        let covers: Vec<&Value> = results.iter().map(|result| &result["cover_url"]).collect();
+        assert_eq!(
+            covers,
+            vec![&json!("https://assets-prd.ignimgs.com/hades.jpg?width=256"), &Value::Null, &Value::Null]
         );
     }
     #[tokio::test]

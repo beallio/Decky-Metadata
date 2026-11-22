@@ -33,6 +33,14 @@ export const editorSteamMatchImageStyle = {
   borderRadius: 4,
 } as const;
 
+export const editorIgnResultImageStyle = {
+  width: 64,
+  height: 64,
+  flexShrink: 0,
+  objectFit: "cover",
+  borderRadius: 4,
+} as const;
+
 
 
 

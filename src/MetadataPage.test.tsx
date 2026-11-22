@@ -1185,6 +1185,20 @@ describe("MetadataPage compatibility status", () => {
     expect(text(afterSearch)).not.toContain("No results yet.");
   });
 
+  it("shows IGN cover art only for results that have it", () => {
+    configureShortcutPanel();
+    const coverUrl = "https://assets-prd.ignimgs.com/h.jpg?width=256";
+    state.values[6] = [
+      { slug: "hades", url: "https://www.ign.com/games/hades", title: "Hades", description: "", cover_url: coverUrl },
+      { slug: "hades-nebula", url: "https://www.ign.com/games/hades-nebula", title: "Hades Nebula", description: "" },
+    ];
+    const match = openPage("Game Match");
+    const row = (title: string) => walk(match, (node) => node.type === "Field" && node.props.label === title)[0];
+
+    expect(row("Hades").props.icon.props.src).toBe(coverUrl);
+    expect(row("Hades Nebula").props.icon).toBeUndefined();
+  });
+
   it("uses the fetch-failed toast title when IGN search fails", async () => {
     configureShortcutPanel();
     backend.searchMetadata.mockRejectedValue(new Error("offline"));

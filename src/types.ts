@@ -208,6 +208,7 @@ export type MetadataSearchResult = {
   title: string;
   description: string;
   rating?: number | null;
+  cover_url?: string | null;
 };
 
 export type SteamMatchCandidate = {

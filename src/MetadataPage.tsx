@@ -82,6 +82,7 @@ import {
   editorFieldPreviewLabelStyle,
   editorFocusTargetClassName,
   editorInlineInputStyle,
+  editorIgnResultImageStyle,
   editorNativeInputFirstStyle,
   editorNativeInputGapStyle,
   editorNativeInputRowStyle,
@@ -1715,6 +1716,7 @@ export const MetadataPage = () => {
                 className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
                 label={result.title}
                 description={result.description}
+                icon={result.cover_url ? <img src={result.cover_url} alt="" style={editorIgnResultImageStyle} /> : undefined}
                 focusable={true}
                 highlightOnFocus={true}
                 bottomSeparator="standard"
