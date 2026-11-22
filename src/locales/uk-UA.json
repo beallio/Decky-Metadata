@@ -24,10 +24,6 @@
     "invalid_title": "неприпустима назва",
     "invalid_search": "неприпустимий запит",
     "steam_search_unavailable": "Пошук у Steam недоступний. Спробуйте ще раз.",
-    "steam_details_unavailable": "Відомості про гру Steam недоступні",
-    "steam_title_unavailable": "Назва гри Steam недоступна",
-    "invalid_steam_game": "Виберіть дійсну гру Steam.",
-    "steam_preview_unavailable": "Відомості Steam недоступні. Цей збіг усе одно можна використати.",
     "settings_unreadable": "файл налаштувань метаданих не читається; виправте або видаліть його перед збереженням змін",
     "invalid_release_date": "release_date має бути календарною датою у форматі РРРР-ММ-ДД або null",
     "hltb_settings_unavailable": "Не вдалося завантажити налаштування HLTB",
@@ -469,7 +465,6 @@
     },
     "review": {
       "title": "Перегляд відомостей про гру",
-      "body": "Так виглядатимуть відомості про гру. Застосування додасть їх до редактора. Нічого не буде збережено, доки ви не виберете «Зберегти».",
       "apply": "Застосувати",
       "cancel": "Скасувати",
       "genres": "Жанри"
@@ -587,26 +582,14 @@
     "steamTextUnavailable": "Steam не повернув текст для цієї гри."
   },
   "matchPicker": {
-    "help": "Знайдіть гру в Steam, виберіть результат, щоб перевірити відомості, потім виберіть «Використати цей збіг Steam». Перегляд не змінює вашу гру.",
+    "help": "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",
     "searchAriaLabel": "Пошук гри в Steam",
     "search": "Шукати в Steam",
     "searching": "Пошук у Steam...",
     "idle": "Введіть назву гри, щоб знайти збіги в Steam.",
     "empty": "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг",
-    "appIdSelected": "Steam App ID: {{appId}} · вибрано",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · поточний збіг · вибрано",
-    "loadingDetails": "Завантаження відомостей Steam...",
-    "artworkAlt": "Арт Steam для {{title}}",
-    "developer": "Розробник: {{names}}",
-    "developerUnavailable": "Розробник недоступний",
-    "release": "Дата виходу: {{date}}",
-    "releaseUnavailable": "Дата виходу недоступна",
-    "steamType": "Тип Steam: {{type}}. Переконайтеся, що це потрібна гра або видання.",
-    "applyHelp": "Використання цього збігу завантажує його Steam App ID і відомості в цю форму. Натисніть «Зберегти», щоб їх записати. Воно не перейменовує ярлик і не замінює ваш арт.",
-    "apply": "Використати цей збіг Steam",
-    "cancel": "Скасувати вибір"
+    "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг"
   },
   "categories": {
     "singlePlayer": "Для одного гравця",

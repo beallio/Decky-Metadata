@@ -22,10 +22,6 @@
     "invalid_title": "titull i pavlefshëm",
     "invalid_search": "kërkim i pavlefshëm",
     "steam_search_unavailable": "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",
-    "steam_details_unavailable": "Detajet e lojës në Steam nuk janë të disponueshme",
-    "steam_title_unavailable": "Titulli i lojës në Steam nuk është i disponueshëm",
-    "invalid_steam_game": "Zgjidh një lojë të vlefshme në Steam.",
-    "steam_preview_unavailable": "Detajet nga Steam nuk janë të disponueshme. Mund ta përdorësh gjithsesi këtë përputhje.",
     "settings_unreadable": "skedari i cilësimeve të metadatave nuk mund të lexohet; rregulloje ose hiqe përpara se të ruash ndryshimet",
     "invalid_release_date": "release_date duhet të jetë datë kalendarike VVVV-MM-DD ose null",
     "hltb_settings_unavailable": "cilësimet e HLTB nuk mund të ngarkoheshin",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Shqyrto detajet e lojës",
-      "body": "Kështu do të duken detajet e lojës. Zbatimi i shton ato në redaktues. Asgjë nuk ruhet derisa të zgjedhësh Ruaj.",
       "apply": "Zbato",
       "cancel": "Anulo",
       "genres": "Zhanret"
@@ -585,26 +580,14 @@
     "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë."
   },
   "matchPicker": {
-    "help": "Kërko në Steam, zgjidh një rezultat për të kontrolluar detajet dhe pastaj zgjidh „Përdor këtë përputhje në Steam“. Shfletimi nuk e ndryshon lojën tënde.",
+    "help": "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
     "searchAriaLabel": "Kërkimi i lojërave në Steam",
     "search": "Kërko në Steam",
     "searching": "Po kërkohet në Steam...",
     "idle": "Shkruaj një emër loje për të gjetur përputhje në Steam.",
     "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale",
-    "appIdSelected": "Steam App ID: {{appId}} · I zgjedhur",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · Përputhja aktuale · I zgjedhur",
-    "loadingDetails": "Po ngarkohen detajet nga Steam...",
-    "artworkAlt": "Arti i Steam për {{title}}",
-    "developer": "Zhvilluesi: {{names}}",
-    "developerUnavailable": "Zhvilluesi i padisponueshëm",
-    "release": "Publikimi: {{date}}",
-    "releaseUnavailable": "Data e publikimit e padisponueshme",
-    "steamType": "Lloji në Steam: {{type}}. Kontrollo që kjo është loja ose botimi që dëshiron.",
-    "applyHelp": "Përdorimi i kësaj përputhjeje ngarkon Steam App ID dhe detajet e tij në këtë formular. Ruajtja i ruan ato. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
-    "apply": "Përdor këtë përputhje në Steam",
-    "cancel": "Anulo zgjedhjen"
+    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale"
   },
   "categories": {
     "singlePlayer": "Një lojtar",

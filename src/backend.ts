@@ -7,7 +7,6 @@ import {
   MetadataData,
   MetadataSearchResult,
   SteamMatchSearchResponse,
-  SteamMatchPreviewResponse,
   PluginUpdateCandidate,
   RevalidateResult,
   ScanProgress,
@@ -93,10 +92,6 @@ export const searchSteamMatches = callable<
   [query: string, limit?: number],
   SteamMatchSearchResponse
 >("search_steam_matches");
-export const getSteamMatchPreview = callable<
-  [steamAppId: number],
-  SteamMatchPreviewResponse
->("get_steam_match_preview");
 export const fetchMetadata = callable<[slugOrUrl: string], MetadataData | null>(
   "fetch_metadata"
 );

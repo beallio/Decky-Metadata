@@ -54,7 +54,6 @@ pub const METHODS: &[&str] = &[
     "save_previewed_metadata",
     "search_metadata",
     "search_steam_matches",
-    "get_steam_match_preview",
     "fetch_metadata",
     "find_ign_trailer",
     "apply_fetched_metadata",
@@ -500,10 +499,6 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 )
                 .await,
             )
-        }
-        "get_steam_match_preview" => {
-            arity(&args, 1, 1)?;
-            Ok(steam::steam_match_preview(&state.http, &args[0]).await)
         }
         "fetch_metadata" => {
             arity(&args, 1, 1)?;

@@ -1,5 +1,5 @@
-import { ConfirmModal, showModal } from "@decky/ui";
-import type { CSSProperties } from "react";
+import { ConfirmModal, ScrollPanelGroup, showModal } from "@decky/ui";
+import type { CSSProperties, FC, ReactNode } from "react";
 
 import { t } from "./i18n";
 import { personsToText } from "./metadataForm";
@@ -35,14 +35,21 @@ const reviewCoverStyle = {
   borderRadius: 4,
 } as const;
 
-const reviewDescriptionStyle: CSSProperties = {
+const reviewDescriptionStyle = {
   marginTop: 12,
   whiteSpace: "pre-line",
-  display: "-webkit-box",
-  WebkitBoxOrient: "vertical",
-  WebkitLineClamp: 6,
-  overflow: "hidden",
-};
+} as const;
+
+// Long details scroll inside the modal instead of pushing Apply/Cancel off screen.
+// The bound sits on the scroll panel itself: Steam's ScrollPanelGroup is the
+// focusable element that scrolls, and it forwards style to that element.
+const reviewBodyStyle = {
+  maxHeight: "60vh",
+  overflowY: "auto",
+} as const;
+
+// @decky/ui types only children, but Steam's ScrollPanelGroup forwards style to its panel.
+const ReviewScrollPanel = ScrollPanelGroup as FC<{ children?: ReactNode; style?: CSSProperties }>;
 
 const reviewScreenshotStyle = {
   width: 160,
@@ -139,7 +146,7 @@ export function showMetadataReviewModal(opts: {
     : metadata.description || "";
   const screenshots = (metadata.screenshots ?? []).slice(0, 3);
   const content = (
-    <>
+    <ReviewScrollPanel style={reviewBodyStyle}>
       <div style={reviewHeaderStyle}>
         {coverUrl ? <img src={coverUrl} alt="" style={reviewCoverStyle} /> : null}
         <div>
@@ -162,13 +169,12 @@ export function showMetadataReviewModal(opts: {
           ))}
         </div>
       ) : null}
-    </>
+    </ReviewScrollPanel>
   );
   return new Promise<boolean>((resolve) => {
     showModal(
       <ConfirmModal
         strTitle={t("editor.review.title")}
-        strDescription={t("editor.review.body")}
         strOKButtonText={t("editor.review.apply")}
         strCancelButtonText={t("editor.review.cancel")}
         onOK={() => resolve(true)}

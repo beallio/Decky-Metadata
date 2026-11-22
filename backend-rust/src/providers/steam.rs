@@ -796,81 +796,6 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
     json!({"items": items, "error": null})
 }
 
-pub async fn steam_match_preview(http: &Http, steam_appid: &Value) -> Value {
-    let Some(appid) = steam_match_appid(steam_appid) else {
-        return json!({"preview": null, "error": "invalid_steam_game"});
-    };
-    let url = query_url(
-        STEAM_APP_DETAILS_URL,
-        &[
-            ("appids", appid.to_string()),
-            ("l", "english".into()),
-            ("filters", "basic,developers,release_date".into()),
-        ],
-    );
-    let result = async {
-        let payload = http.json(&url, Duration::from_secs(12), usize::MAX).await?;
-        let row = payload.get(appid.to_string());
-        if !row
-            .and_then(|row| row.get("success"))
-            .is_some_and(py_truthy)
-        {
-            return Err("steam_details_unavailable".to_owned());
-        }
-        let data = row
-            .and_then(|row| row.get("data"))
-            .filter(|data| data.is_object())
-            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
-        let raw_title = data["name"]
-            .as_str()
-            .ok_or_else(|| "steam_details_unavailable".to_owned())?;
-        let title = matching::clean_game_title(raw_title);
-        if title.is_empty() {
-            return Err("steam_title_unavailable".to_owned());
-        }
-        let developers = data["developers"]
-            .as_array()
-            .into_iter()
-            .flatten()
-            .filter_map(Value::as_str)
-            .filter(|name| !name.trim().is_empty())
-            .map(|name| matching::clean_html_text(name).trim().to_owned())
-            .collect::<Vec<_>>();
-        let release_date_label = data["release_date"]["date"]
-            .as_str()
-            .map(matching::clean_html_text)
-            .map(|value| value.trim().to_owned())
-            .filter(|value| !value.is_empty());
-        let app_type = data["type"]
-            .as_str()
-            .map(str::trim)
-            .filter(|value| !value.is_empty());
-        let cover_url = steam_match_image(&data["header_image"])
-            .or_else(|| steam_match_image(&data["capsule_image"]));
-        Ok::<Value, String>(json!({
-            "steam_appid": appid,
-            "title": title,
-            "cover_url": cover_url,
-            "developers": developers,
-            "release_date_label": release_date_label,
-            "app_type": app_type,
-        }))
-    }
-    .await;
-    match result {
-        Ok(preview) => json!({"preview": preview, "error": null}),
-        Err(error) => {
-            log_provider_error(
-                "match preview failed",
-                Some(appid),
-                Some(&error),
-                Level::Warn,
-            );
-            json!({"preview": null, "error": "steam_preview_unavailable"})
-        }
-    }
-}
-
 fn appdetails_descriptions(data: &Value) -> (String, String) {
     let descriptions = [
         "short_description",
@@ -1696,10 +1621,6 @@ mod tests {
             search_steam_matches(&invalid, &json!(true), &json!(8)).await,
             json!({"items":[],"error":null})
         );
-        assert_eq!(
-            steam_match_preview(&invalid, &json!(true)).await,
-            json!({"preview":null,"error":"invalid_steam_game"})
-        );
         invalid.assert_drained();
 
         let failure = Http::fixtures(vec![Fixture::failure(SEARCH_URL)]);
@@ -1711,9 +1632,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn steam_manual_search_filters_rows_and_preview_uses_partial_release_date() {
-        let capsule =
-            "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/400/header.jpg";
+    async fn steam_manual_search_filters_rows() {
         let search = Http::fixtures(vec![json_fixture(
             SEARCH_URL,
             json!({"items":[
@@ -1730,32 +1649,6 @@ mod tests {
             json!({"items":[{"steam_appid":400,"title":"Portal","cover_url":null}],"error":null})
         );
         search.assert_drained();
-
-        let preview = Http::fixtures(vec![json_fixture(
-            "https://store.steampowered.com/api/appdetails?appids=400&l=english&filters=basic%2Cdevelopers%2Crelease_date",
-            json!({"400":{"success":true,"data":{
-                "steam_appid":400,"name":"Portal","type":"game","header_image":"https://[",
-                "capsule_image":capsule,"developers":["Valve"],"release_date":{"date":"2007"}
-            }}}),
-        )]);
-        assert_eq!(
-            steam_match_preview(&preview, &json!("400")).await,
-            json!({"preview":{
-                "steam_appid":400,"title":"Portal","cover_url":capsule,"developers":["Valve"],
-                "release_date_label":"2007","app_type":"game"
-            },"error":null})
-        );
-        preview.assert_drained();
-
-        let failure = Http::fixtures(vec![json_fixture(
-            "https://store.steampowered.com/api/appdetails?appids=400&l=english&filters=basic%2Cdevelopers%2Crelease_date",
-            json!({"400":{"success":false}}),
-        )]);
-        assert_eq!(
-            steam_match_preview(&failure, &json!(400)).await,
-            json!({"preview":null,"error":"steam_preview_unavailable"})
-        );
-        failure.assert_drained();
     }
 
     #[tokio::test]

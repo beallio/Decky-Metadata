@@ -15,10 +15,12 @@ Match Steam's own layout, colours and controls, and fix more Steam beta lookups
   otherwise no icon is shown. Off by default.
 - **Cover art in IGN results.** Each IGN search result in **Edit Metadata...**
   now shows the game's cover art when IGN has one.
-- **Review before you apply.** Choosing an IGN result or **Use this Steam
-  match** now opens a preview of the game details first. **Apply** puts the
-  details in the editor; **Cancel** leaves the editor as it was. Nothing is
-  saved until you select **Save**.
+- **Review before you apply.** Selecting a Steam or IGN search result on the
+  **Game Match** page now opens a preview of the game details first. Long
+  details scroll inside the preview. **Apply** puts the details in the editor;
+  **Cancel** leaves the editor as it was. Nothing is saved until you select
+  **Save**. Steam search results now stay listed when you visit another page
+  of the editor and come back, as IGN results already did.
 
 ### Changed
 

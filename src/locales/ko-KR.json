@@ -21,10 +21,6 @@
     "invalid_title": "잘못된 제목",
     "invalid_search": "잘못된 검색",
     "steam_search_unavailable": "Steam 검색을 사용할 수 없습니다. 다시 시도하세요.",
-    "steam_details_unavailable": "Steam 게임 정보를 사용할 수 없습니다",
-    "steam_title_unavailable": "Steam 게임 제목을 사용할 수 없습니다",
-    "invalid_steam_game": "유효한 Steam 게임을 선택하세요.",
-    "steam_preview_unavailable": "Steam 정보를 사용할 수 없습니다. 그래도 이 일치 항목을 사용할 수 있습니다.",
     "settings_unreadable": "메타데이터 설정 파일을 읽을 수 없습니다. 변경 사항을 저장하기 전에 수정하거나 삭제하세요",
     "invalid_release_date": "release_date는 YYYY-MM-DD 형식의 날짜 또는 null이어야 합니다",
     "hltb_settings_unavailable": "HLTB 설정을 불러올 수 없습니다",
@@ -466,7 +462,6 @@
     },
     "review": {
       "title": "게임 정보 검토",
-      "body": "게임 정보가 이렇게 표시됩니다. 적용하면 편집기에 반영됩니다. 저장을 선택하기 전까지는 저장되지 않습니다.",
       "apply": "적용",
       "cancel": "취소",
       "genres": "장르"
@@ -584,26 +579,14 @@
     "steamTextUnavailable": "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
   },
   "matchPicker": {
-    "help": "Steam을 검색하고 결과를 선택해 세부 정보를 확인한 다음 '이 Steam 일치 항목 사용'을 선택하세요. 둘러보기만으로는 게임이 변경되지 않습니다.",
+    "help": "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
     "searchAriaLabel": "Steam 게임 검색",
     "search": "Steam 검색",
     "searching": "Steam 검색 중...",
     "idle": "게임 이름을 입력하여 Steam 일치 항목을 찾으세요.",
     "empty": "Steam 일치 항목을 찾을 수 없습니다. 다른 이름으로 시도하거나 아래의 Steam 앱 ID 필드를 사용하세요.",
     "appId": "Steam 앱 ID: {{appId}}",
-    "appIdCurrent": "Steam 앱 ID: {{appId}} · 현재 일치 항목",
-    "appIdSelected": "Steam 앱 ID: {{appId}} · 선택됨",
-    "appIdCurrentSelected": "Steam 앱 ID: {{appId}} · 현재 일치 항목 · 선택됨",
-    "loadingDetails": "Steam 세부 정보 불러오는 중...",
-    "artworkAlt": "{{title}} Steam 아트워크",
-    "developer": "개발자: {{names}}",
-    "developerUnavailable": "개발자 정보 없음",
-    "release": "출시: {{date}}",
-    "releaseUnavailable": "출시일 정보 없음",
-    "steamType": "Steam 유형: {{type}}. 원하는 게임 또는 에디션인지 확인하세요.",
-    "applyHelp": "이 일치 항목을 사용하면 해당 Steam 앱 ID와 세부 정보가 이 양식에 로드됩니다. '저장'을 누르면 저장됩니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
-    "apply": "이 Steam 일치 항목 사용",
-    "cancel": "선택 취소"
+    "appIdCurrent": "Steam 앱 ID: {{appId}} · 현재 일치 항목"
   },
   "categories": {
     "singlePlayer": "싱글 플레이어",

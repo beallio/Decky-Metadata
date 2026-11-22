@@ -26,10 +26,6 @@
     "invalid_title": "عنوان غير صالح",
     "invalid_search": "بحث غير صالح",
     "steam_search_unavailable": "بحث Steam غير متاح. أعد المحاولة.",
-    "steam_details_unavailable": "تفاصيل لعبة Steam غير متاحة",
-    "steam_title_unavailable": "عنوان لعبة Steam غير متاح",
-    "invalid_steam_game": "اختر لعبة Steam صالحة.",
-    "steam_preview_unavailable": "تفاصيل Steam غير متاحة. يمكنك استخدام هذه المطابقة رغم ذلك.",
     "settings_unreadable": "ملف إعدادات البيانات الوصفية غير قابل للقراءة؛ أصلحه أو احذفه قبل حفظ التغييرات",
     "invalid_release_date": "يجب أن يكون release_date تاريخًا تقويميًا بصيغة YYYY-MM-DD أو null",
     "hltb_settings_unavailable": "تعذّر تحميل إعدادات HLTB",
@@ -471,7 +467,6 @@
     },
     "review": {
       "title": "مراجعة تفاصيل اللعبة",
-      "body": "هذه هي الطريقة التي ستظهر بها تفاصيل اللعبة. يضيف تطبيق التفاصيل إلى المحرر. لا يتم الحفظ حتى تختار حفظ.",
       "apply": "تطبيق",
       "cancel": "إلغاء",
       "genres": "الأنواع"
@@ -589,26 +584,14 @@
     "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
   },
   "matchPicker": {
-    "help": "ابحث في Steam، واختر نتيجة لفحص تفاصيلها، ثم اختر «استخدام مطابقة Steam هذه». التصفح لا يغيّر لعبتك.",
+    "help": "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
     "searchAriaLabel": "بحث ألعاب Steam",
     "search": "البحث في Steam",
     "searching": "جارٍ البحث في Steam...",
     "idle": "أدخل اسم لعبة للعثور على مطابقات في Steam.",
     "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية",
-    "appIdSelected": "Steam App ID: {{appId}} · محدد",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · المطابقة الحالية · محدد",
-    "loadingDetails": "جارٍ تحميل تفاصيل Steam...",
-    "artworkAlt": "رسومات Steam لـ {{title}}",
-    "developer": "المطوّر: {{names}}",
-    "developerUnavailable": "المطوّر غير متاح",
-    "release": "الإصدار: {{date}}",
-    "releaseUnavailable": "تاريخ الإصدار غير متاح",
-    "steamType": "نوع Steam: {{type}}. تحقق من أن هذه هي اللعبة أو الإصدار الذي تريده.",
-    "applyHelp": "استخدام هذه المطابقة يحمّل Steam App ID الخاص بها وتفاصيلها في هذا النموذج. يحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
-    "apply": "استخدام مطابقة Steam هذه",
-    "cancel": "إلغاء التحديد"
+    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية"
   },
   "categories": {
     "singlePlayer": "لاعب واحد",

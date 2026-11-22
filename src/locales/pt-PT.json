@@ -23,10 +23,6 @@
     "invalid_title": "título inválido",
     "invalid_search": "pesquisa inválida",
     "steam_search_unavailable": "A pesquisa na Steam está indisponível. Tente novamente.",
-    "steam_details_unavailable": "Os detalhes do jogo na Steam estão indisponíveis",
-    "steam_title_unavailable": "O título do jogo na Steam está indisponível",
-    "invalid_steam_game": "Selecione um jogo da Steam válido.",
-    "steam_preview_unavailable": "Os detalhes da Steam estão indisponíveis. Ainda pode usar esta correspondência.",
     "settings_unreadable": "o ficheiro de definições de metadados está ilegível; corrija-o ou remova-o antes de guardar as alterações",
     "invalid_release_date": "release_date tem de ser uma data de calendário AAAA-MM-DD ou null",
     "hltb_settings_unavailable": "não foi possível carregar as definições do HLTB",
@@ -468,7 +464,6 @@
     },
     "review": {
       "title": "Rever detalhes do jogo",
-      "body": "É assim que os detalhes do jogo serão apresentados. Ao aplicar, são adicionados ao editor. Nada é guardado até selecionar Guardar.",
       "apply": "Aplicar",
       "cancel": "Cancelar",
       "genres": "Géneros"
@@ -586,26 +581,14 @@
     "steamTextUnavailable": "A Steam não devolveu texto para este jogo."
   },
   "matchPicker": {
-    "help": "Pesquise na Steam, selecione um resultado para ver os detalhes e depois escolha Usar esta correspondência da Steam. Navegar não altera o seu jogo.",
+    "help": "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
     "searchAriaLabel": "Pesquisa de jogos na Steam",
     "search": "Pesquisar na Steam",
     "searching": "A pesquisar na Steam...",
     "idle": "Introduza o nome de um jogo para encontrar correspondências na Steam.",
     "empty": "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
     "appId": "App ID da Steam: {{appId}}",
-    "appIdCurrent": "App ID da Steam: {{appId}} · Correspondência atual",
-    "appIdSelected": "App ID da Steam: {{appId}} · Selecionado",
-    "appIdCurrentSelected": "App ID da Steam: {{appId}} · Correspondência atual · Selecionado",
-    "loadingDetails": "A carregar detalhes da Steam...",
-    "artworkAlt": "Arte de {{title}} na Steam",
-    "developer": "Programador: {{names}}",
-    "developerUnavailable": "Programador indisponível",
-    "release": "Lançamento: {{date}}",
-    "releaseUnavailable": "Data de lançamento indisponível",
-    "steamType": "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que quer.",
-    "applyHelp": "Usar esta correspondência carrega o App ID da Steam e os respetivos detalhes neste formulário. Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
-    "apply": "Usar esta correspondência da Steam",
-    "cancel": "Cancelar seleção"
+    "appIdCurrent": "App ID da Steam: {{appId}} · Correspondência atual"
   },
   "categories": {
     "singlePlayer": "Um jogador",

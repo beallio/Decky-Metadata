@@ -26,7 +26,6 @@ const backend = vi.hoisted(() => ({
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
   searchSteamMatches: vi.fn(),
-  getSteamMatchPreview: vi.fn(),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -92,6 +91,7 @@ vi.mock("@decky/ui", () => ({
   Field: "Field",
   Focusable: "Focusable",
   Navigation: { NavigateBack: vi.fn() },
+  ScrollPanelGroup: "ScrollPanelGroup",
   TextField: "TextField",
   ToggleField: "ToggleField",
   useParams: () => ({ appid: route.appid }),
@@ -2047,6 +2047,49 @@ describe("Steam-match picker application", () => {
   });
 
   const picker = (page: any) => walk(page, (node) => node.type === SteamMatchPicker)[0];
+
+  it("keeps the Steam search results while another editor page is shown", () => {
+    configureShortcutPanel();
+    const search = {
+      query: "Portal",
+      items: [{ steam_appid: 400, title: "Portal", cover_url: null }],
+      status: "results" as const,
+      error: null,
+    };
+
+    picker(openPage("Game Match")).props.onSearchChange(search);
+    openPage("Details");
+
+    expect(picker(openPage("Game Match")).props.savedSearch).toEqual(search);
+  });
+
+  it("drops the saved Steam search when the editor moves to another game", () => {
+    configureShortcutPanel();
+    picker(openPage("Game Match")).props.onSearchChange({
+      query: "Portal",
+      items: [{ steam_appid: 400, title: "Portal", cover_url: null }],
+      status: "results",
+      error: null,
+    });
+
+    route.appid = "200";
+    renderPage();
+
+    expect(picker(openPage("Game Match")).props.savedSearch).toBeNull();
+  });
+
+  it("ignores a Steam search reported by the previous game's picker", () => {
+    configureShortcutPanel();
+    const retired = picker(openPage("Game Match")).props.onSearchChange;
+    route.appid = "200";
+    renderPage();
+    const current = { query: "Hades", items: [{ steam_appid: 1145360, title: "Hades", cover_url: null }], status: "results" as const, error: null };
+    picker(openPage("Game Match")).props.onSearchChange(current);
+
+    retired({ query: "Portal", items: [], status: "idle", error: null });
+
+    expect(picker(renderPage()).props.savedSearch).toEqual(current);
+  });
 
   it("labels the picker with the stored match, not an unsaved preview", async () => {
     configureShortcutPanel({

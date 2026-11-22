@@ -22,10 +22,6 @@
     "invalid_title": "ungültiger Titel",
     "invalid_search": "ungültige Suche",
     "steam_search_unavailable": "Steam-Suche ist nicht verfügbar. Versuche es erneut.",
-    "steam_details_unavailable": "Steam-Spieldetails sind nicht verfügbar",
-    "steam_title_unavailable": "Steam-Spieltitel ist nicht verfügbar",
-    "invalid_steam_game": "Wähle ein gültiges Steam-Spiel.",
-    "steam_preview_unavailable": "Steam-Details sind nicht verfügbar. Du kannst diese Zuordnung trotzdem verwenden.",
     "settings_unreadable": "Metadaten-Einstellungsdatei ist nicht lesbar; repariere oder entferne sie, bevor du Änderungen speicherst",
     "invalid_release_date": "release_date muss ein Kalenderdatum im Format YYYY-MM-DD oder null sein",
     "hltb_settings_unavailable": "HLTB-Einstellungen konnten nicht geladen werden",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Spieldetails überprüfen",
-      "body": "So werden die Spieldetails aussehen. Mit Anwenden werden sie in den Editor übernommen. Es wird nichts gespeichert, bis du Speichern auswählst.",
       "apply": "Anwenden",
       "cancel": "Abbrechen",
       "genres": "Genres"
@@ -585,26 +580,14 @@
     "steamTextUnavailable": "Steam hat für dieses Spiel keinen Text zurückgegeben."
   },
   "matchPicker": {
-    "help": "Durchsuche Steam, wähle ein Ergebnis, um die Details zu prüfen, und wähle dann „Diese Steam-Zuordnung verwenden“. Das Durchsuchen ändert dein Spiel nicht.",
+    "help": "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
     "searchAriaLabel": "Steam-Spielsuche",
     "search": "Steam durchsuchen",
     "searching": "Steam wird durchsucht...",
     "idle": "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
     "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
     "appId": "Steam-App-ID: {{appId}}",
-    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
-    "appIdSelected": "Steam-App-ID: {{appId}} · Ausgewählt",
-    "appIdCurrentSelected": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung · Ausgewählt",
-    "loadingDetails": "Steam-Details werden geladen...",
-    "artworkAlt": "Steam-Artwork für {{title}}",
-    "developer": "Entwickler: {{names}}",
-    "developerUnavailable": "Entwickler nicht verfügbar",
-    "release": "Veröffentlichung: {{date}}",
-    "releaseUnavailable": "Veröffentlichungsdatum nicht verfügbar",
-    "steamType": "Steam-Typ: {{type}}. Prüfe, ob dies das gewünschte Spiel bzw. die gewünschte Edition ist.",
-    "applyHelp": "Diese Zuordnung lädt ihre Steam-App-ID und Details in dieses Formular. Speichern übernimmt sie. Sie benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
-    "apply": "Diese Steam-Zuordnung verwenden",
-    "cancel": "Auswahl abbrechen"
+    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung"
   },
   "categories": {
     "singlePlayer": "Einzelspieler",

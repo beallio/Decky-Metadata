@@ -22,10 +22,6 @@
     "invalid_title": "virheellinen nimi",
     "invalid_search": "virheellinen haku",
     "steam_search_unavailable": "Steam-haku ei ole käytettävissä. Yritä uudelleen.",
-    "steam_details_unavailable": "Steam-pelin tiedot eivät ole käytettävissä",
-    "steam_title_unavailable": "Steam-pelin nimi ei ole käytettävissä",
-    "invalid_steam_game": "Valitse kelvollinen Steam-peli.",
-    "steam_preview_unavailable": "Steam-tiedot eivät ole käytettävissä. Voit silti käyttää tätä vastaavuutta.",
     "settings_unreadable": "metatietojen asetustiedostoa ei voi lukea; korjaa tai poista se ennen muutosten tallentamista",
     "invalid_release_date": "release_date:n on oltava muotoa YYYY-MM-DD oleva kalenteripäivä tai null",
     "hltb_settings_unavailable": "HLTB-asetuksia ei voitu ladata",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Tarkista pelin tiedot",
-      "body": "Tältä pelin tiedot näyttävät. Käyttämällä niitä lisäät ne editoriin. Mitään ei tallenneta ennen kuin valitset Tallenna.",
       "apply": "Käytä",
       "cancel": "Peruuta",
       "genres": "Tyylilajit"
@@ -585,26 +580,14 @@
     "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille."
   },
   "matchPicker": {
-    "help": "Hae Steamista, valitse tulos tarkistaaksesi sen tiedot ja valitse sitten Käytä tätä Steam-vastaavuutta. Selailu ei muuta peliäsi.",
+    "help": "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
     "searchAriaLabel": "Steam-pelihaku",
     "search": "Hae Steamista",
     "searching": "Haetaan Steamista...",
     "idle": "Anna pelin nimi löytääksesi Steam-vastaavuuksia.",
     "empty": "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä alla olevaa Steam-sovellustunnus-kenttää.",
     "appId": "Steam-sovellustunnus: {{appId}}",
-    "appIdCurrent": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus",
-    "appIdSelected": "Steam-sovellustunnus: {{appId}} · Valittu",
-    "appIdCurrentSelected": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus · Valittu",
-    "loadingDetails": "Ladataan Steam-tietoja...",
-    "artworkAlt": "Kohteen {{title}} Steam-kuvitus",
-    "developer": "Kehittäjä: {{names}}",
-    "developerUnavailable": "Kehittäjä ei ole käytettävissä",
-    "release": "Julkaisu: {{date}}",
-    "releaseUnavailable": "Julkaisupäivä ei ole käytettävissä",
-    "steamType": "Steam-tyyppi: {{type}}. Varmista, että tämä on haluamasi peli tai versio.",
-    "applyHelp": "Tämän vastaavuuden käyttäminen lataa sen Steam-sovellustunnuksen ja tiedot tähän lomakkeeseen. Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
-    "apply": "Käytä tätä Steam-vastaavuutta",
-    "cancel": "Peruuta valinta"
+    "appIdCurrent": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus"
   },
   "categories": {
     "singlePlayer": "Yksinpeli",

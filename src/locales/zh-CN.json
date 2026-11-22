@@ -21,10 +21,6 @@
     "invalid_title": "标题无效",
     "invalid_search": "搜索无效",
     "steam_search_unavailable": "Steam 搜索不可用，请重试。",
-    "steam_details_unavailable": "Steam 游戏详情不可用",
-    "steam_title_unavailable": "Steam 游戏名称不可用",
-    "invalid_steam_game": "请选择有效的 Steam 游戏。",
-    "steam_preview_unavailable": "Steam 详情不可用，但仍可使用此匹配。",
     "settings_unreadable": "元数据设置文件无法读取；请在保存更改前修复或删除该文件",
     "invalid_release_date": "release_date 必须是 YYYY-MM-DD 格式的日历日期或 null",
     "hltb_settings_unavailable": "无法加载 HLTB 设置",
@@ -466,7 +462,6 @@
     },
     "review": {
       "title": "查看游戏详情",
-      "body": "游戏详情将如下所示。应用后会将其添加到编辑器。选择“保存”之前不会保存任何内容。",
       "apply": "应用",
       "cancel": "取消",
       "genres": "类型"
@@ -584,26 +579,14 @@
     "steamTextUnavailable": "Steam 未返回此游戏的文本。"
   },
   "matchPicker": {
-    "help": "搜索 Steam，选择一个结果查看详情，然后选择“使用此 Steam 匹配”。浏览不会更改你的游戏。",
+    "help": "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
     "searchAriaLabel": "Steam 游戏搜索",
     "search": "搜索 Steam",
     "searching": "正在搜索 Steam...",
     "idle": "输入游戏名称以查找 Steam 匹配。",
     "empty": "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配",
-    "appIdSelected": "Steam App ID：{{appId}} · 已选择",
-    "appIdCurrentSelected": "Steam App ID：{{appId}} · 当前匹配 · 已选择",
-    "loadingDetails": "正在加载 Steam 详情...",
-    "artworkAlt": "{{title}} 的 Steam 艺术图",
-    "developer": "开发商：{{names}}",
-    "developerUnavailable": "开发商不可用",
-    "release": "发行：{{date}}",
-    "releaseUnavailable": "发行日期不可用",
-    "steamType": "Steam 类型：{{type}}。请确认这是你想要的游戏或版本。",
-    "applyHelp": "使用此匹配会将其 Steam App ID 和详情加载到此表单中，点击保存后才会存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
-    "apply": "使用此 Steam 匹配",
-    "cancel": "取消选择"
+    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配"
   },
   "categories": {
     "singlePlayer": "单人",

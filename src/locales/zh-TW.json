@@ -21,10 +21,6 @@
     "invalid_title": "標題無效",
     "invalid_search": "搜尋無效",
     "steam_search_unavailable": "Steam 搜尋無法使用，請再試一次。",
-    "steam_details_unavailable": "Steam 遊戲詳細資料無法使用",
-    "steam_title_unavailable": "Steam 遊戲名稱無法使用",
-    "invalid_steam_game": "請選擇有效的 Steam 遊戲。",
-    "steam_preview_unavailable": "Steam 詳細資料無法使用，但你仍可使用此比對。",
     "settings_unreadable": "中繼資料設定檔無法讀取；請在儲存變更前修正或移除該檔案",
     "invalid_release_date": "release_date 必須是 YYYY-MM-DD 格式的日曆日期或 null",
     "hltb_settings_unavailable": "無法載入 HLTB 設定",
@@ -466,7 +462,6 @@
     },
     "review": {
       "title": "檢視遊戲詳細資料",
-      "body": "遊戲詳細資料會以此方式呈現。套用後會加入編輯器。選擇「儲存」前不會儲存任何內容。",
       "apply": "套用",
       "cancel": "取消",
       "genres": "類型"
@@ -584,26 +579,14 @@
     "steamTextUnavailable": "Steam 未傳回此遊戲的文字。"
   },
   "matchPicker": {
-    "help": "搜尋 Steam，選取結果以查看詳細資料，然後選擇「使用此 Steam 比對」。瀏覽並不會變更你的遊戲。",
+    "help": "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
     "searchAriaLabel": "Steam 遊戲搜尋",
     "search": "搜尋 Steam",
     "searching": "正在搜尋 Steam...",
     "idle": "輸入遊戲名稱以尋找 Steam 比對。",
     "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對",
-    "appIdSelected": "Steam App ID：{{appId}} · 已選取",
-    "appIdCurrentSelected": "Steam App ID：{{appId}} · 目前比對 · 已選取",
-    "loadingDetails": "正在載入 Steam 詳細資料...",
-    "artworkAlt": "{{title}} 的 Steam 美術圖",
-    "developer": "開發人員：{{names}}",
-    "developerUnavailable": "開發人員無法使用",
-    "release": "發行：{{date}}",
-    "releaseUnavailable": "發行日期無法使用",
-    "steamType": "Steam 類型：{{type}}。請確認這是你想要的遊戲或版本。",
-    "applyHelp": "使用此比對會將其 Steam App ID 和詳細資料載入此表單中，按下「儲存」後才會儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
-    "apply": "使用此 Steam 比對",
-    "cancel": "取消選取"
+    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對"
   },
   "categories": {
     "singlePlayer": "單人",

@@ -22,10 +22,6 @@
     "invalid_title": "ogiltig titel",
     "invalid_search": "ogiltig sökning",
     "steam_search_unavailable": "Steamsökningen är inte tillgänglig. Försök igen.",
-    "steam_details_unavailable": "Steam-speldetaljer är inte tillgängliga",
-    "steam_title_unavailable": "Steam-speltiteln är inte tillgänglig",
-    "invalid_steam_game": "Välj ett giltigt Steam-spel.",
-    "steam_preview_unavailable": "Steam-detaljer är inte tillgängliga. Du kan fortfarande använda den här matchningen.",
     "settings_unreadable": "metadata-inställningsfilen kan inte läsas; åtgärda eller ta bort den innan du sparar ändringar",
     "invalid_release_date": "release_date måste vara ett kalenderdatum i formatet YYYY-MM-DD eller null",
     "hltb_settings_unavailable": "HLTB-inställningarna kunde inte läsas in",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Granska speluppgifter",
-      "body": "Så här kommer speluppgifterna att se ut. Om du använder dem läggs de till i redigeraren. Inget sparas förrän du väljer Spara.",
       "apply": "Använd",
       "cancel": "Avbryt",
       "genres": "Genrer"
@@ -585,26 +580,14 @@
     "steamTextUnavailable": "Steam returnerade ingen text för det här spelet."
   },
   "matchPicker": {
-    "help": "Sök på Steam, välj ett resultat för att kontrollera detaljerna och välj sedan Använd den här Steam-matchningen. Bläddring ändrar inte ditt spel.",
+    "help": "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
     "searchAriaLabel": "Steam-spelsökning",
     "search": "Sök på Steam",
     "searching": "Söker på Steam...",
     "idle": "Ange ett spelnamn för att hitta Steam-matchningar.",
     "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
     "appId": "Steam-app-ID: {{appId}}",
-    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning",
-    "appIdSelected": "Steam-app-ID: {{appId}} · Valt",
-    "appIdCurrentSelected": "Steam-app-ID: {{appId}} · Aktuell matchning · Valt",
-    "loadingDetails": "Läser in Steam-detaljer...",
-    "artworkAlt": "Steam-grafik för {{title}}",
-    "developer": "Utvecklare: {{names}}",
-    "developerUnavailable": "Utvecklare inte tillgänglig",
-    "release": "Utgivningsdatum: {{date}}",
-    "releaseUnavailable": "Utgivningsdatum inte tillgängligt",
-    "steamType": "Steam-typ: {{type}}. Kontrollera att det är spelet eller utgåvan du vill ha.",
-    "applyHelp": "Om du använder den här matchningen läses Steam-app-ID:t och detaljerna in i det här formuläret. Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
-    "apply": "Använd den här Steam-matchningen",
-    "cancel": "Avbryt val"
+    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning"
   },
   "categories": {
     "singlePlayer": "Enspelarläge",

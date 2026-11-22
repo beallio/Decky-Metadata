@@ -23,10 +23,6 @@
     "invalid_title": "titre invalide",
     "invalid_search": "recherche invalide",
     "steam_search_unavailable": "La recherche Steam est indisponible. Réessayez.",
-    "steam_details_unavailable": "Les détails du jeu Steam sont indisponibles",
-    "steam_title_unavailable": "Le titre du jeu Steam est indisponible",
-    "invalid_steam_game": "Sélectionnez un jeu Steam valide.",
-    "steam_preview_unavailable": "Les détails Steam sont indisponibles. Vous pouvez tout de même utiliser cette correspondance.",
     "settings_unreadable": "le fichier de paramètres des métadonnées est illisible ; corrigez-le ou supprimez-le avant d'enregistrer des modifications",
     "invalid_release_date": "release_date doit être une date calendaire AAAA-MM-JJ ou null",
     "hltb_settings_unavailable": "Les paramètres HLTB n'ont pas pu être chargés",
@@ -468,7 +464,6 @@
     },
     "review": {
       "title": "Vérifier les détails du jeu",
-      "body": "Voici à quoi ressembleront les détails du jeu. Les appliquer les ajoute à l’éditeur. Rien n’est enregistré tant que vous ne choisissez pas Enregistrer.",
       "apply": "Appliquer",
       "cancel": "Annuler",
       "genres": "Genres"
@@ -586,26 +581,14 @@
     "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu."
   },
   "matchPicker": {
-    "help": "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez « Utiliser cette correspondance Steam ». La navigation ne modifie pas votre jeu.",
+    "help": "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
     "searchAriaLabel": "Recherche de jeu Steam",
     "search": "Rechercher sur Steam",
     "searching": "Recherche sur Steam...",
     "idle": "Saisissez un nom de jeu pour trouver des correspondances Steam.",
     "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
     "appId": "App ID Steam : {{appId}}",
-    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle",
-    "appIdSelected": "App ID Steam : {{appId}} · Sélectionné",
-    "appIdCurrentSelected": "App ID Steam : {{appId}} · Correspondance actuelle · Sélectionné",
-    "loadingDetails": "Chargement des détails Steam...",
-    "artworkAlt": "Jaquette Steam de {{title}}",
-    "developer": "Développeur : {{names}}",
-    "developerUnavailable": "Développeur indisponible",
-    "release": "Sortie : {{date}}",
-    "releaseUnavailable": "Date de sortie indisponible",
-    "steamType": "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
-    "applyHelp": "Utiliser cette correspondance charge l'App ID Steam et ses détails dans ce formulaire. Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
-    "apply": "Utiliser cette correspondance Steam",
-    "cancel": "Annuler la sélection"
+    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle"
   },
   "categories": {
     "singlePlayer": "Solo",

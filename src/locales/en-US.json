@@ -22,10 +22,6 @@
     "invalid_title": "invalid title",
     "invalid_search": "invalid search",
     "steam_search_unavailable": "Steam search is unavailable. Try again.",
-    "steam_details_unavailable": "Steam game details are unavailable",
-    "steam_title_unavailable": "Steam game title is unavailable",
-    "invalid_steam_game": "Select a valid Steam game.",
-    "steam_preview_unavailable": "Steam details are unavailable. You can still use this match.",
     "settings_unreadable": "metadata settings file is unreadable; fix or remove it before saving changes",
     "invalid_release_date": "release_date must be a YYYY-MM-DD calendar date or null",
     "hltb_settings_unavailable": "HLTB settings could not be loaded",
@@ -467,7 +463,6 @@
     },
     "review": {
       "title": "Review game details",
-      "body": "This is how the game details will look. Apply puts them in the editor. Nothing is saved until you select Save.",
       "apply": "Apply",
       "cancel": "Cancel",
       "genres": "Genres"
@@ -585,26 +580,14 @@
     "steamTextUnavailable": "Steam did not return text for this game."
   },
   "matchPicker": {
-    "help": "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game.",
+    "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
     "searchAriaLabel": "Steam game search",
     "search": "Search Steam",
     "searching": "Searching Steam...",
     "idle": "Enter a game name to find Steam matches.",
     "empty": "No Steam matches found. Try another name or use the Steam App ID field below.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Current match",
-    "appIdSelected": "Steam App ID: {{appId}} · Selected",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · Current match · Selected",
-    "loadingDetails": "Loading Steam details...",
-    "artworkAlt": "{{title}} Steam artwork",
-    "developer": "Developer: {{names}}",
-    "developerUnavailable": "Developer unavailable",
-    "release": "Release: {{date}}",
-    "releaseUnavailable": "Release date unavailable",
-    "steamType": "Steam type: {{type}}. Check that this is the game or edition you want.",
-    "applyHelp": "Using this match loads its Steam App ID and details into this form. Save stores them. It does not rename your shortcut or replace your custom artwork.",
-    "apply": "Use this Steam match",
-    "cancel": "Cancel selection"
+    "appIdCurrent": "Steam App ID: {{appId}} · Current match"
   },
   "categories": {
     "singlePlayer": "Single-player",
