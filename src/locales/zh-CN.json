@@ -586,9 +586,7 @@
     "idle": "输入游戏名称以查找 Steam 匹配。",
     "empty": "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配",
-    "developer": "开发商：{{names}}",
-    "release": "发行：{{date}}"
+    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配"
   },
   "categories": {
     "singlePlayer": "单人",

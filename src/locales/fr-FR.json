@@ -588,9 +588,7 @@
     "idle": "Saisissez un nom de jeu pour trouver des correspondances Steam.",
     "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
     "appId": "App ID Steam : {{appId}}",
-    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle",
-    "developer": "Développeur : {{names}}",
-    "release": "Sortie : {{date}}"
+    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle"
   },
   "categories": {
     "singlePlayer": "Solo",

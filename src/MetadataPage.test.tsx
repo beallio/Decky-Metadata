@@ -2078,6 +2078,19 @@ describe("Steam-match picker application", () => {
     expect(picker(openPage("Game Match")).props.savedSearch).toBeNull();
   });
 
+  it("ignores a Steam search reported by the previous game's picker", () => {
+    configureShortcutPanel();
+    const retired = picker(openPage("Game Match")).props.onSearchChange;
+    route.appid = "200";
+    renderPage();
+    const current = { query: "Hades", items: [{ steam_appid: 1145360, title: "Hades", cover_url: null }], status: "results" as const, error: null };
+    picker(openPage("Game Match")).props.onSearchChange(current);
+
+    retired({ query: "Portal", items: [], status: "idle", error: null });
+
+    expect(picker(renderPage()).props.savedSearch).toEqual(current);
+  });
+
   it("labels the picker with the stored match, not an unsaved preview", async () => {
     configureShortcutPanel({
       metadata: { title: "Original", steam_appid: 15100, steam_store_name: "Old Steam Name" },

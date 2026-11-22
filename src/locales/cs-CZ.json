@@ -589,9 +589,7 @@
     "idle": "Zadejte název hry pro nalezení shod Steam.",
     "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda",
-    "developer": "Vývojář: {{names}}",
-    "release": "Vydání: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda"
   },
   "categories": {
     "singlePlayer": "Pro jednoho hráče",

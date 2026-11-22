@@ -587,9 +587,7 @@
     "idle": "Steam eşleşmelerini bulmak için bir oyun adı girin.",
     "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
     "appId": "Steam Uygulama ID'si: {{appId}}",
-    "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme",
-    "developer": "Geliştirici: {{names}}",
-    "release": "Çıkış: {{date}}"
+    "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme"
   },
   "categories": {
     "singlePlayer": "Tek oyunculu",

@@ -587,9 +587,7 @@
     "idle": "შეიყვანეთ თამაშის სახელი Steam-ის შესატყვისების საპოვნელად.",
     "empty": "Steam-ის შესატყვისი ვერ მოიძებნა. სცადეთ სხვა სახელი ან გამოიყენეთ ქვემოთ მოცემული Steam App ID ველი.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · მიმდინარე შესატყვისი",
-    "developer": "შემქმნელი: {{names}}",
-    "release": "გამოშვება: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · მიმდინარე შესატყვისი"
   },
   "categories": {
     "singlePlayer": "ერთმოთამაშიანი",

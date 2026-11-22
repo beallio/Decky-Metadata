@@ -587,9 +587,7 @@
     "idle": "Anna pelin nimi löytääksesi Steam-vastaavuuksia.",
     "empty": "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä alla olevaa Steam-sovellustunnus-kenttää.",
     "appId": "Steam-sovellustunnus: {{appId}}",
-    "appIdCurrent": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus",
-    "developer": "Kehittäjä: {{names}}",
-    "release": "Julkaisu: {{date}}"
+    "appIdCurrent": "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus"
   },
   "categories": {
     "singlePlayer": "Yksinpeli",

@@ -72,6 +72,11 @@ const button = (tree: any, label: string) => walk(tree, node => typeof node.prop
 const candidate = (tree: any, id: number) =>
   walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.children).includes(`Steam App ID: ${id}`))[0];
 const changeQuery = (tree: any, query: string) => walk(tree, node => node.type === "TextField")[0].props.onChange({ target: { value: query } });
+// The results container's ref (React 19 passes ref as a prop; older React keeps it on the element).
+const resultsRoot = (tree: any) => {
+  const node = walk(tree, value => value.type === "div" && (value.ref ?? value.props?.ref))[0];
+  return node.ref ?? node.props.ref;
+};
 const flush = async () => { for (let index = 0; index < 8; index++) await Promise.resolve(); };
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
@@ -110,19 +115,58 @@ describe("Steam match browsing ownership", () => {
     expect(applying).not.toHaveBeenCalled();
   });
 
-  it("applies a clicked result and keeps the results listed", async () => {
+  it("applies a clicked result, keeps the results listed and refocuses that row", async () => {
     vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
     try {
       await searchOnce();
-      candidate(renderPicker(), 400).props.onClick();
+      const focus = vi.fn();
+      const querySelector = vi.fn(() => ({ focus }));
+      const tree = renderPicker();
+      resultsRoot(tree).current = { querySelector };
+      candidate(tree, 400).props.onClick();
       await flush();
 
       expect(applying).toHaveBeenCalledWith(400, "https://cdn.example/portal.jpg");
+      expect(querySelector).toHaveBeenCalledWith('[data-steam-match-appid="400"] .decky-metadata-editor__result');
+      expect(focus).toHaveBeenCalledTimes(1);
       expect(text(renderPicker())).toContain("Steam App ID: 400");
       expect(text(renderPicker())).toContain("Portal 2");
     } finally {
       vi.unstubAllGlobals();
     }
+  });
+
+  it("opens one review for a double press and does not refocus a row a new search replaced", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
+    try {
+      const review = deferred<void>();
+      applying.mockReturnValue(review.promise);
+      await searchOnce();
+      const focus = vi.fn();
+      const tree = renderPicker();
+      resultsRoot(tree).current = { querySelector: () => ({ focus }) };
+      const row = candidate(tree, 400);
+      row.props.onActivate();
+      row.props.onClick();
+      changeQuery(renderPicker(), "Hades");
+      review.resolve();
+      await flush();
+
+      expect(applying).toHaveBeenCalledTimes(1);
+      expect(focus).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("does not apply a result from an unmounted picker", async () => {
+    await searchOnce();
+    const row = candidate(renderPicker(), 400);
+    hooks.cleanup!();
+    row.props.onClick();
+    await flush();
+
+    expect(applying).not.toHaveBeenCalled();
   });
 
   it("does not apply a result captured before the query changed", async () => {

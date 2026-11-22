@@ -589,9 +589,7 @@
     "idle": "Wpisz nazwę gry, aby znaleźć dopasowania Steam.",
     "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie",
-    "developer": "Producent: {{names}}",
-    "release": "Wydanie: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie"
   },
   "categories": {
     "singlePlayer": "Jednoosobowa",

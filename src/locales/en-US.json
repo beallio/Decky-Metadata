@@ -587,9 +587,7 @@
     "idle": "Enter a game name to find Steam matches.",
     "empty": "No Steam matches found. Try another name or use the Steam App ID field below.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Current match",
-    "developer": "Developer: {{names}}",
-    "release": "Release: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · Current match"
   },
   "categories": {
     "singlePlayer": "Single-player",

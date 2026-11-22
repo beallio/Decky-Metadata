@@ -586,9 +586,7 @@
     "idle": "ゲーム名を入力して Steam の一致を検索してください。",
     "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
-    "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致",
-    "developer": "開発元: {{names}}",
-    "release": "リリース: {{date}}"
+    "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致"
   },
   "categories": {
     "singlePlayer": "シングルプレイヤー",

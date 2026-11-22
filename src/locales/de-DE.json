@@ -587,9 +587,7 @@
     "idle": "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
     "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
     "appId": "Steam-App-ID: {{appId}}",
-    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
-    "developer": "Entwickler: {{names}}",
-    "release": "Veröffentlichung: {{date}}"
+    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung"
   },
   "categories": {
     "singlePlayer": "Einzelspieler",

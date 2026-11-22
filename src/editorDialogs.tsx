@@ -1,4 +1,5 @@
-import { ConfirmModal, Focusable, ScrollPanelGroup, showModal } from "@decky/ui";
+import { ConfirmModal, ScrollPanelGroup, showModal } from "@decky/ui";
+import type { CSSProperties, FC, ReactNode } from "react";
 
 import { t } from "./i18n";
 import { personsToText } from "./metadataForm";
@@ -39,11 +40,16 @@ const reviewDescriptionStyle = {
   whiteSpace: "pre-line",
 } as const;
 
-// Long details scroll inside the modal instead of pushing Apply/Cancel off screen (same bound as PluginLogModal).
+// Long details scroll inside the modal instead of pushing Apply/Cancel off screen.
+// The bound sits on the scroll panel itself: Steam's ScrollPanelGroup is the
+// focusable element that scrolls, and it forwards style to that element.
 const reviewBodyStyle = {
   maxHeight: "60vh",
   overflowY: "auto",
 } as const;
+
+// @decky/ui types only children, but Steam's ScrollPanelGroup forwards style to its panel.
+const ReviewScrollPanel = ScrollPanelGroup as FC<{ children?: ReactNode; style?: CSSProperties }>;
 
 const reviewScreenshotStyle = {
   width: 160,
@@ -140,32 +146,30 @@ export function showMetadataReviewModal(opts: {
     : metadata.description || "";
   const screenshots = (metadata.screenshots ?? []).slice(0, 3);
   const content = (
-    <ScrollPanelGroup>
-      <Focusable noFocusRing style={reviewBodyStyle}>
-        <div style={reviewHeaderStyle}>
-          {coverUrl ? <img src={coverUrl} alt="" style={reviewCoverStyle} /> : null}
-          <div>
-            <div style={reviewTitleStyle}>{metadata.title}</div>
-            <div style={reviewFactsStyle}>
-              {facts.map(([label, value]) => (
-                <div key={label} style={reviewFactRowStyle}>
-                  <div style={reviewFactLabelStyle}>{label}</div>
-                  <div>{value}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-        {description ? <div style={reviewDescriptionStyle}>{description}</div> : null}
-        {screenshots.length > 0 ? (
-          <div style={reviewScreenshotsStyle}>
-            {screenshots.map((shot) => (
-              <img key={shot.url} src={shot.url} alt="" style={reviewScreenshotStyle} />
+    <ReviewScrollPanel style={reviewBodyStyle}>
+      <div style={reviewHeaderStyle}>
+        {coverUrl ? <img src={coverUrl} alt="" style={reviewCoverStyle} /> : null}
+        <div>
+          <div style={reviewTitleStyle}>{metadata.title}</div>
+          <div style={reviewFactsStyle}>
+            {facts.map(([label, value]) => (
+              <div key={label} style={reviewFactRowStyle}>
+                <div style={reviewFactLabelStyle}>{label}</div>
+                <div>{value}</div>
+              </div>
             ))}
           </div>
-        ) : null}
-      </Focusable>
-    </ScrollPanelGroup>
+        </div>
+      </div>
+      {description ? <div style={reviewDescriptionStyle}>{description}</div> : null}
+      {screenshots.length > 0 ? (
+        <div style={reviewScreenshotsStyle}>
+          {screenshots.map((shot) => (
+            <img key={shot.url} src={shot.url} alt="" style={reviewScreenshotStyle} />
+          ))}
+        </div>
+      ) : null}
+    </ReviewScrollPanel>
   );
   return new Promise<boolean>((resolve) => {
     showModal(

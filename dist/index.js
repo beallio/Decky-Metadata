@@ -3526,9 +3526,7 @@ var matchPicker$o = {
 	idle: "أدخل اسم لعبة للعثور على مطابقات في Steam.",
 	empty: "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · المطابقة الحالية",
-	developer: "المطوّر: {{names}}",
-	release: "الإصدار: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · المطابقة الحالية"
 };
 var categories$o = {
 	singlePlayer: "لاعب واحد",
@@ -4158,9 +4156,7 @@ var matchPicker$n = {
 	idle: "Въведете име на игра, за да намерите съвпадения в Steam.",
 	empty: "Не са намерени съвпадения в Steam. Опитайте с друго име или използвайте полето Steam App ID по-долу.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · Текущо съвпадение",
-	developer: "Разработчик: {{names}}",
-	release: "Издаване: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · Текущо съвпадение"
 };
 var categories$n = {
 	singlePlayer: "Самостоятелна игра",
@@ -4792,9 +4788,7 @@ var matchPicker$m = {
 	idle: "Zadejte název hry pro nalezení shod Steam.",
 	empty: "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · aktuální shoda",
-	developer: "Vývojář: {{names}}",
-	release: "Vydání: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · aktuální shoda"
 };
 var categories$m = {
 	singlePlayer: "Pro jednoho hráče",
@@ -5424,9 +5418,7 @@ var matchPicker$l = {
 	idle: "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
 	empty: "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
 	appId: "Steam-App-ID: {{appId}}",
-	appIdCurrent: "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
-	developer: "Entwickler: {{names}}",
-	release: "Veröffentlichung: {{date}}"
+	appIdCurrent: "Steam-App-ID: {{appId}} · Aktuelle Zuordnung"
 };
 var categories$l = {
 	singlePlayer: "Einzelspieler",
@@ -6056,9 +6048,7 @@ var matchPicker$k = {
 	idle: "Εισαγάγετε όνομα παιχνιδιού για να βρείτε αντιστοιχίσεις Steam.",
 	empty: "Δεν βρέθηκαν αντιστοιχίσεις Steam. Δοκιμάστε άλλο όνομα ή χρησιμοποιήστε το πεδίο Steam App ID παρακάτω.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση",
-	developer: "Δημιουργός: {{names}}",
-	release: "Κυκλοφορία: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση"
 };
 var categories$k = {
 	singlePlayer: "Ένας παίκτης",
@@ -6688,9 +6678,7 @@ var matchPicker$j = {
 	idle: "Enter a game name to find Steam matches.",
 	empty: "No Steam matches found. Try another name or use the Steam App ID field below.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · Current match",
-	developer: "Developer: {{names}}",
-	release: "Release: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · Current match"
 };
 var categories$j = {
 	singlePlayer: "Single-player",
@@ -7321,9 +7309,7 @@ var matchPicker$i = {
 	idle: "Introduce un nombre de juego para encontrar coincidencias en Steam.",
 	empty: "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
 	appId: "ID de aplicación de Steam: {{appId}}",
-	appIdCurrent: "ID de aplicación de Steam: {{appId}} · Coincidencia actual",
-	developer: "Desarrollador: {{names}}",
-	release: "Lanzamiento: {{date}}"
+	appIdCurrent: "ID de aplicación de Steam: {{appId}} · Coincidencia actual"
 };
 var categories$i = {
 	singlePlayer: "Un jugador",
@@ -7953,9 +7939,7 @@ var matchPicker$h = {
 	idle: "Anna pelin nimi löytääksesi Steam-vastaavuuksia.",
 	empty: "Steam-vastaavuuksia ei löytynyt. Kokeile toista nimeä tai käytä alla olevaa Steam-sovellustunnus-kenttää.",
 	appId: "Steam-sovellustunnus: {{appId}}",
-	appIdCurrent: "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus",
-	developer: "Kehittäjä: {{names}}",
-	release: "Julkaisu: {{date}}"
+	appIdCurrent: "Steam-sovellustunnus: {{appId}} · Nykyinen vastaavuus"
 };
 var categories$h = {
 	singlePlayer: "Yksinpeli",
@@ -8586,9 +8570,7 @@ var matchPicker$g = {
 	idle: "Saisissez un nom de jeu pour trouver des correspondances Steam.",
 	empty: "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
 	appId: "App ID Steam : {{appId}}",
-	appIdCurrent: "App ID Steam : {{appId}} · Correspondance actuelle",
-	developer: "Développeur : {{names}}",
-	release: "Sortie : {{date}}"
+	appIdCurrent: "App ID Steam : {{appId}} · Correspondance actuelle"
 };
 var categories$g = {
 	singlePlayer: "Solo",
@@ -9219,9 +9201,7 @@ var matchPicker$f = {
 	idle: "Inserisci il nome di un gioco per trovare corrispondenze su Steam.",
 	empty: "Nessuna corrispondenza Steam trovata. Prova un altro nome o usa il campo ID app Steam qui sotto.",
 	appId: "ID app Steam: {{appId}}",
-	appIdCurrent: "ID app Steam: {{appId}} · Corrispondenza attuale",
-	developer: "Sviluppatore: {{names}}",
-	release: "Uscita: {{date}}"
+	appIdCurrent: "ID app Steam: {{appId}} · Corrispondenza attuale"
 };
 var categories$f = {
 	singlePlayer: "Giocatore singolo",
@@ -9850,9 +9830,7 @@ var matchPicker$e = {
 	idle: "ゲーム名を入力して Steam の一致を検索してください。",
 	empty: "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
 	appId: "Steam アプリ ID: {{appId}}",
-	appIdCurrent: "Steam アプリ ID: {{appId}} · 現在の一致",
-	developer: "開発元: {{names}}",
-	release: "リリース: {{date}}"
+	appIdCurrent: "Steam アプリ ID: {{appId}} · 現在の一致"
 };
 var categories$e = {
 	singlePlayer: "シングルプレイヤー",
@@ -10482,9 +10460,7 @@ var matchPicker$d = {
 	idle: "შეიყვანეთ თამაშის სახელი Steam-ის შესატყვისების საპოვნელად.",
 	empty: "Steam-ის შესატყვისი ვერ მოიძებნა. სცადეთ სხვა სახელი ან გამოიყენეთ ქვემოთ მოცემული Steam App ID ველი.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · მიმდინარე შესატყვისი",
-	developer: "შემქმნელი: {{names}}",
-	release: "გამოშვება: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · მიმდინარე შესატყვისი"
 };
 var categories$d = {
 	singlePlayer: "ერთმოთამაშიანი",
@@ -11113,9 +11089,7 @@ var matchPicker$c = {
 	idle: "게임 이름을 입력하여 Steam 일치 항목을 찾으세요.",
 	empty: "Steam 일치 항목을 찾을 수 없습니다. 다른 이름으로 시도하거나 아래의 Steam 앱 ID 필드를 사용하세요.",
 	appId: "Steam 앱 ID: {{appId}}",
-	appIdCurrent: "Steam 앱 ID: {{appId}} · 현재 일치 항목",
-	developer: "개발자: {{names}}",
-	release: "출시: {{date}}"
+	appIdCurrent: "Steam 앱 ID: {{appId}} · 현재 일치 항목"
 };
 var categories$c = {
 	singlePlayer: "싱글 플레이어",
@@ -11745,9 +11719,7 @@ var matchPicker$b = {
 	idle: "Voer een gamenaam in om Steam-matches te vinden.",
 	empty: "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
 	appId: "Steam-app-ID: {{appId}}",
-	appIdCurrent: "Steam-app-ID: {{appId}} · Huidige match",
-	developer: "Ontwikkelaar: {{names}}",
-	release: "Release: {{date}}"
+	appIdCurrent: "Steam-app-ID: {{appId}} · Huidige match"
 };
 var categories$b = {
 	singlePlayer: "Singleplayer",
@@ -12379,9 +12351,7 @@ var matchPicker$a = {
 	idle: "Wpisz nazwę gry, aby znaleźć dopasowania Steam.",
 	empty: "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · bieżące dopasowanie",
-	developer: "Producent: {{names}}",
-	release: "Wydanie: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · bieżące dopasowanie"
 };
 var categories$a = {
 	singlePlayer: "Jednoosobowa",
@@ -13012,9 +12982,7 @@ var matchPicker$9 = {
 	idle: "Digite o nome de um jogo para encontrar correspondências na Steam.",
 	empty: "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
 	appId: "App ID da Steam: {{appId}}",
-	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual",
-	developer: "Desenvolvedora: {{names}}",
-	release: "Lançamento: {{date}}"
+	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual"
 };
 var categories$9 = {
 	singlePlayer: "Um jogador",
@@ -13645,9 +13613,7 @@ var matchPicker$8 = {
 	idle: "Introduza o nome de um jogo para encontrar correspondências na Steam.",
 	empty: "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
 	appId: "App ID da Steam: {{appId}}",
-	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual",
-	developer: "Programador: {{names}}",
-	release: "Lançamento: {{date}}"
+	appIdCurrent: "App ID da Steam: {{appId}} · Correspondência atual"
 };
 var categories$8 = {
 	singlePlayer: "Um jogador",
@@ -14278,9 +14244,7 @@ var matchPicker$7 = {
 	idle: "Introdu un nume de joc pentru a găsi potriviri Steam.",
 	empty: "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește câmpul ID aplicație Steam de mai jos.",
 	appId: "ID aplicație Steam: {{appId}}",
-	appIdCurrent: "ID aplicație Steam: {{appId}} · Potrivirea curentă",
-	developer: "Dezvoltator: {{names}}",
-	release: "Lansare: {{date}}"
+	appIdCurrent: "ID aplicație Steam: {{appId}} · Potrivirea curentă"
 };
 var categories$7 = {
 	singlePlayer: "Un singur jucător",
@@ -14912,9 +14876,7 @@ var matchPicker$6 = {
 	idle: "Введите название игры, чтобы найти совпадения в Steam.",
 	empty: "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · текущее совпадение",
-	developer: "Разработчик: {{names}}",
-	release: "Дата выхода: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · текущее совпадение"
 };
 var categories$6 = {
 	singlePlayer: "Для одного игрока",
@@ -15544,9 +15506,7 @@ var matchPicker$5 = {
 	idle: "Shkruaj një emër loje për të gjetur përputhje në Steam.",
 	empty: "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · Përputhja aktuale",
-	developer: "Zhvilluesi: {{names}}",
-	release: "Publikimi: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · Përputhja aktuale"
 };
 var categories$5 = {
 	singlePlayer: "Një lojtar",
@@ -16176,9 +16136,7 @@ var matchPicker$4 = {
 	idle: "Ange ett spelnamn för att hitta Steam-matchningar.",
 	empty: "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
 	appId: "Steam-app-ID: {{appId}}",
-	appIdCurrent: "Steam-app-ID: {{appId}} · Aktuell matchning",
-	developer: "Utvecklare: {{names}}",
-	release: "Utgivningsdatum: {{date}}"
+	appIdCurrent: "Steam-app-ID: {{appId}} · Aktuell matchning"
 };
 var categories$4 = {
 	singlePlayer: "Enspelarläge",
@@ -16808,9 +16766,7 @@ var matchPicker$3 = {
 	idle: "Steam eşleşmelerini bulmak için bir oyun adı girin.",
 	empty: "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
 	appId: "Steam Uygulama ID'si: {{appId}}",
-	appIdCurrent: "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme",
-	developer: "Geliştirici: {{names}}",
-	release: "Çıkış: {{date}}"
+	appIdCurrent: "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme"
 };
 var categories$3 = {
 	singlePlayer: "Tek oyunculu",
@@ -17442,9 +17398,7 @@ var matchPicker$2 = {
 	idle: "Введіть назву гри, щоб знайти збіги в Steam.",
 	empty: "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
 	appId: "Steam App ID: {{appId}}",
-	appIdCurrent: "Steam App ID: {{appId}} · поточний збіг",
-	developer: "Розробник: {{names}}",
-	release: "Дата виходу: {{date}}"
+	appIdCurrent: "Steam App ID: {{appId}} · поточний збіг"
 };
 var categories$2 = {
 	singlePlayer: "Для одного гравця",
@@ -18073,9 +18027,7 @@ var matchPicker$1 = {
 	idle: "输入游戏名称以查找 Steam 匹配。",
 	empty: "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
 	appId: "Steam App ID：{{appId}}",
-	appIdCurrent: "Steam App ID：{{appId}} · 当前匹配",
-	developer: "开发商：{{names}}",
-	release: "发行：{{date}}"
+	appIdCurrent: "Steam App ID：{{appId}} · 当前匹配"
 };
 var categories$1 = {
 	singlePlayer: "单人",
@@ -18704,9 +18656,7 @@ var matchPicker = {
 	idle: "輸入遊戲名稱以尋找 Steam 比對。",
 	empty: "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
 	appId: "Steam App ID：{{appId}}",
-	appIdCurrent: "Steam App ID：{{appId}} · 目前比對",
-	developer: "開發人員：{{names}}",
-	release: "發行：{{date}}"
+	appIdCurrent: "Steam App ID：{{appId}} · 目前比對"
 };
 var categories = {
 	singlePlayer: "單人",
@@ -36952,6 +36902,8 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, savedSear
     const onApplyRef = SP_REACT.useRef(onApply);
     disabledRef.current = disabled;
     onApplyRef.current = onApply;
+    // One modal at a time: a double press must not open a second review or steal focus from the first.
+    const applyingRef = SP_REACT.useRef(false);
     SP_REACT.useEffect(() => {
         mountedRef.current = true;
         return () => {
@@ -37017,13 +36969,18 @@ const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, savedSear
     };
     /** Load the candidate into the editor; the review modal opens before anything merges. */
     const apply = async (candidate) => {
-        if (!mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate))
+        if (applyingRef.current || !mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate))
             return;
-        await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
-        if (!mountedRef.current)
-            return;
+        applyingRef.current = true;
+        try {
+            await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
+        }
+        finally {
+            applyingRef.current = false;
+        }
+        // Return focus to the row only while it is still listed (no new search, still mounted).
         requestAnimationFrame(() => {
-            if (!mountedRef.current)
+            if (!mountedRef.current || !itemsRef.current.includes(candidate))
                 return;
             resultsRootRef.current
                 ?.querySelector(`[data-steam-match-appid="${candidate.steam_appid}"] .decky-metadata-editor__result`)
@@ -37565,11 +37522,15 @@ const reviewDescriptionStyle = {
     marginTop: 12,
     whiteSpace: "pre-line",
 };
-// Long details scroll inside the modal instead of pushing Apply/Cancel off screen (same bound as PluginLogModal).
+// Long details scroll inside the modal instead of pushing Apply/Cancel off screen.
+// The bound sits on the scroll panel itself: Steam's ScrollPanelGroup is the
+// focusable element that scrolls, and it forwards style to that element.
 const reviewBodyStyle = {
     maxHeight: "60vh",
     overflowY: "auto",
 };
+// @decky/ui types only children, but Steam's ScrollPanelGroup forwards style to its panel.
+const ReviewScrollPanel = DFL.ScrollPanelGroup;
 const reviewScreenshotStyle = {
     width: 160,
     height: 90,
@@ -37626,7 +37587,7 @@ function showMetadataReviewModal(opts) {
         ? metadata.short_description
         : metadata.description || "";
     const screenshots = (metadata.screenshots ?? []).slice(0, 3);
-    const content = (SP_JSX.jsx(DFL.ScrollPanelGroup, { children: SP_JSX.jsxs(DFL.Focusable, { noFocusRing: true, style: reviewBodyStyle, children: [SP_JSX.jsxs("div", { style: reviewHeaderStyle, children: [coverUrl ? SP_JSX.jsx("img", { src: coverUrl, alt: "", style: reviewCoverStyle }) : null, SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { style: reviewTitleStyle, children: metadata.title }), SP_JSX.jsx("div", { style: reviewFactsStyle, children: facts.map(([label, value]) => (SP_JSX.jsxs("div", { style: reviewFactRowStyle, children: [SP_JSX.jsx("div", { style: reviewFactLabelStyle, children: label }), SP_JSX.jsx("div", { children: value })] }, label))) })] })] }), description ? SP_JSX.jsx("div", { style: reviewDescriptionStyle, children: description }) : null, screenshots.length > 0 ? (SP_JSX.jsx("div", { style: reviewScreenshotsStyle, children: screenshots.map((shot) => (SP_JSX.jsx("img", { src: shot.url, alt: "", style: reviewScreenshotStyle }, shot.url))) })) : null] }) }));
+    const content = (SP_JSX.jsxs(ReviewScrollPanel, { style: reviewBodyStyle, children: [SP_JSX.jsxs("div", { style: reviewHeaderStyle, children: [coverUrl ? SP_JSX.jsx("img", { src: coverUrl, alt: "", style: reviewCoverStyle }) : null, SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { style: reviewTitleStyle, children: metadata.title }), SP_JSX.jsx("div", { style: reviewFactsStyle, children: facts.map(([label, value]) => (SP_JSX.jsxs("div", { style: reviewFactRowStyle, children: [SP_JSX.jsx("div", { style: reviewFactLabelStyle, children: label }), SP_JSX.jsx("div", { children: value })] }, label))) })] })] }), description ? SP_JSX.jsx("div", { style: reviewDescriptionStyle, children: description }) : null, screenshots.length > 0 ? (SP_JSX.jsx("div", { style: reviewScreenshotsStyle, children: screenshots.map((shot) => (SP_JSX.jsx("img", { src: shot.url, alt: "", style: reviewScreenshotStyle }, shot.url))) })) : null] }));
     return new Promise((resolve) => {
         DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.review.title"), strOKButtonText: t("editor.review.apply"), strCancelButtonText: t("editor.review.cancel"), onOK: () => resolve(true), onCancel: () => resolve(false), children: content }), undefined, {
             strTitle: t("editor.review.title"),
@@ -38886,6 +38847,8 @@ const MetadataPage = () => {
             ? "editor.loadFromSteamBusy"
             : "editor.loadFromSteam";
         return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(SteamMatchPicker, { initialQuery: appName(appId), matchedSteamAppId: savedSteamAppId, disabled: entryBusy || !nonSteam, savedSearch: steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null, onSearchChange: (search) => {
+                        if (!isCurrentEditorEntry(editorEntryToken))
+                            return;
                         steamSearchRef.current = { entry: editorEntryToken, search };
                     }, onApply: async (steamAppId, coverUrl) => {
                         if (!isCurrentEditorEntry(editorEntryToken))

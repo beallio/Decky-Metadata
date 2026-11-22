@@ -587,9 +587,7 @@
     "idle": "Εισαγάγετε όνομα παιχνιδιού για να βρείτε αντιστοιχίσεις Steam.",
     "empty": "Δεν βρέθηκαν αντιστοιχίσεις Steam. Δοκιμάστε άλλο όνομα ή χρησιμοποιήστε το πεδίο Steam App ID παρακάτω.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση",
-    "developer": "Δημιουργός: {{names}}",
-    "release": "Κυκλοφορία: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · Τρέχουσα αντιστοίχιση"
   },
   "categories": {
     "singlePlayer": "Ένας παίκτης",

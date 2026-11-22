@@ -56,6 +56,8 @@ export const SteamMatchPicker = ({
   const onApplyRef = useRef(onApply);
   disabledRef.current = disabled;
   onApplyRef.current = onApply;
+  // One modal at a time: a double press must not open a second review or steal focus from the first.
+  const applyingRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -118,11 +120,16 @@ export const SteamMatchPicker = ({
 
   /** Load the candidate into the editor; the review modal opens before anything merges. */
   const apply = async (candidate: SteamMatchCandidate) => {
-    if (!mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate)) return;
-    await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
-    if (!mountedRef.current) return;
+    if (applyingRef.current || !mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate)) return;
+    applyingRef.current = true;
+    try {
+      await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
+    } finally {
+      applyingRef.current = false;
+    }
+    // Return focus to the row only while it is still listed (no new search, still mounted).
     requestAnimationFrame(() => {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || !itemsRef.current.includes(candidate)) return;
       resultsRootRef.current
         ?.querySelector<HTMLElement>(`[data-steam-match-appid="${candidate.steam_appid}"] .decky-metadata-editor__result`)
         ?.focus();

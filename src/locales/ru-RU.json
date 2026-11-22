@@ -589,9 +589,7 @@
     "idle": "Введите название игры, чтобы найти совпадения в Steam.",
     "empty": "Совпадений в Steam не найдено. Попробуйте другое название или используйте поле Steam App ID ниже.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · текущее совпадение",
-    "developer": "Разработчик: {{names}}",
-    "release": "Дата выхода: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · текущее совпадение"
   },
   "categories": {
     "singlePlayer": "Для одного игрока",

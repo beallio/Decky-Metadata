@@ -591,9 +591,7 @@
     "idle": "أدخل اسم لعبة للعثور على مطابقات في Steam.",
     "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية",
-    "developer": "المطوّر: {{names}}",
-    "release": "الإصدار: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية"
   },
   "categories": {
     "singlePlayer": "لاعب واحد",

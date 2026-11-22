@@ -1586,6 +1586,7 @@ export const MetadataPage = () => {
           disabled={entryBusy || !nonSteam}
           savedSearch={steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null}
           onSearchChange={(search) => {
+            if (!isCurrentEditorEntry(editorEntryToken)) return;
             steamSearchRef.current = { entry: editorEntryToken, search };
           }}
           onApply={async (steamAppId, coverUrl) => {

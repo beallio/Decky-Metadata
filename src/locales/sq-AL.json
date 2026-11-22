@@ -587,9 +587,7 @@
     "idle": "Shkruaj një emër loje për të gjetur përputhje në Steam.",
     "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale",
-    "developer": "Zhvilluesi: {{names}}",
-    "release": "Publikimi: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale"
   },
   "categories": {
     "singlePlayer": "Një lojtar",

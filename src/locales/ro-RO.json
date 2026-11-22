@@ -588,9 +588,7 @@
     "idle": "Introdu un nume de joc pentru a găsi potriviri Steam.",
     "empty": "Nicio potrivire Steam găsită. Încearcă alt nume sau folosește câmpul ID aplicație Steam de mai jos.",
     "appId": "ID aplicație Steam: {{appId}}",
-    "appIdCurrent": "ID aplicație Steam: {{appId}} · Potrivirea curentă",
-    "developer": "Dezvoltator: {{names}}",
-    "release": "Lansare: {{date}}"
+    "appIdCurrent": "ID aplicație Steam: {{appId}} · Potrivirea curentă"
   },
   "categories": {
     "singlePlayer": "Un singur jucător",

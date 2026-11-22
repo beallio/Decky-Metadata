@@ -587,9 +587,7 @@
     "idle": "Voer een gamenaam in om Steam-matches te vinden.",
     "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
     "appId": "Steam-app-ID: {{appId}}",
-    "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match",
-    "developer": "Ontwikkelaar: {{names}}",
-    "release": "Release: {{date}}"
+    "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match"
   },
   "categories": {
     "singlePlayer": "Singleplayer",

@@ -587,9 +587,7 @@
     "idle": "Ange ett spelnamn för att hitta Steam-matchningar.",
     "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
     "appId": "Steam-app-ID: {{appId}}",
-    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning",
-    "developer": "Utvecklare: {{names}}",
-    "release": "Utgivningsdatum: {{date}}"
+    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning"
   },
   "categories": {
     "singlePlayer": "Enspelarläge",

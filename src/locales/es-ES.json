@@ -588,9 +588,7 @@
     "idle": "Introduce un nombre de juego para encontrar coincidencias en Steam.",
     "empty": "No se encontraron coincidencias en Steam. Prueba otro nombre o usa el campo ID de aplicación de Steam de abajo.",
     "appId": "ID de aplicación de Steam: {{appId}}",
-    "appIdCurrent": "ID de aplicación de Steam: {{appId}} · Coincidencia actual",
-    "developer": "Desarrollador: {{names}}",
-    "release": "Lanzamiento: {{date}}"
+    "appIdCurrent": "ID de aplicación de Steam: {{appId}} · Coincidencia actual"
   },
   "categories": {
     "singlePlayer": "Un jugador",

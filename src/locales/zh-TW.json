@@ -586,9 +586,7 @@
     "idle": "輸入遊戲名稱以尋找 Steam 比對。",
     "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對",
-    "developer": "開發人員：{{names}}",
-    "release": "發行：{{date}}"
+    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對"
   },
   "categories": {
     "singlePlayer": "單人",

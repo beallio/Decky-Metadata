@@ -589,9 +589,7 @@
     "idle": "Введіть назву гри, щоб знайти збіги в Steam.",
     "empty": "Збігів у Steam не знайдено. Спробуйте іншу назву або скористайтеся полем Steam App ID нижче.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг",
-    "developer": "Розробник: {{names}}",
-    "release": "Дата виходу: {{date}}"
+    "appIdCurrent": "Steam App ID: {{appId}} · поточний збіг"
   },
   "categories": {
     "singlePlayer": "Для одного гравця",
