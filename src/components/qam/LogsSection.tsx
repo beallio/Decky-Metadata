@@ -43,6 +43,7 @@ export function LogsSection({
           bottomSeparator="none"
           checked={debugLogging}
           disabled={!debugLoggingLoaded || debugLoggingBusy}
+          onChange={onToggleDebugLogging}
         />
       </PanelSectionRow>
     </CollapsibleSection>

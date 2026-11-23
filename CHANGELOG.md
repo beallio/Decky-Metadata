@@ -4,6 +4,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Fixed
+
+- **Debug Logging switch works again.** In the **Logs** section of the Quick
+  Access Menu, turning **Debug Logging** on or off had no effect. It now saves
+  the setting and turns detailed logging on or off at once.
+
 ## [0.6.6] - 2026-11-22
 
 Match Steam's own layout, colours and controls, and fix more Steam beta lookups
