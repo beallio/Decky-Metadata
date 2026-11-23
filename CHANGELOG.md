@@ -4,6 +4,69 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-11-22
+
+Match Steam's own layout, colours and controls, and fix more Steam beta lookups
+
+### Added
+
+- **Game icon in the editor header.** A new **Context menu** section in the
+  Quick Access Menu can show the game's icon beside its name at the top of
+  **Edit Metadata...**, with long names scrolling as in Steam's own menu. A
+  second option uses the matched Steam game's icon when the game has none;
+  otherwise no icon is shown. Off by default.
+- **Cover art in IGN results.** Each IGN search result in **Edit Metadata...**
+  now shows the game's cover art when IGN has one.
+- **Review before you apply.** Selecting a Steam or IGN search result on the
+  **Game Match** page now opens a preview of the game details first. Long
+  details scroll inside the preview. **Apply** puts the details in the editor;
+  **Cancel** leaves the editor as it was. Nothing is saved until you select
+  **Save**. Steam search results now stay listed when you visit another page
+  of the editor and come back, as IGN results already did.
+
+### Changed
+
+- **Steam-style editor pages.** Help text now sits under the setting it
+  explains, as in Steam's settings. Actions such as **Load from Steam**,
+  **Use Steam name** and **Remove Metadata** are rows with a name, a short
+  explanation and a button. Groups such as **Store Categories**, **Search
+  Steam**, **Current match** and **Search IGN metadata** use Steam's section
+  headings. Edited fields show **Edited** in colour without moving the label.
+  HowLongToBeat results look like the Steam and IGN results. Steam and IGN
+  search both show help under the search box, show result details on Steam's
+  description line, and grey out their results while the editor is busy.
+  The **Game Match** page now starts with the current match, shown as a row
+  with the Steam game's art, name and App ID, followed by **Search Steam** and
+  **Search IGN**. Typing a Steam App ID or URL moves behind **Enter ID...**.
+- Editor text boxes stay white while you type with the on-screen keyboard
+  and after you close it, until you move to another control. Steam's own
+  boxes turn gray while the keyboard is open.
+- **Quick Access Menu.** Help text sits under its control. Metadata scans
+  show a progress bar, and the log viewer scrolls with the controller.
+  Section headings keep their earlier look, with the blue highlight following
+  controller focus.
+- **Colours** follow Valve's Steam Deck palette.
+- Controls that cannot do anything are disabled: editor fields for Steam
+  games, update settings before they load, and trailer options while
+  trailers are off.
+
+### Fixed
+
+- Trailers stop when you press **Play** in every Steam language.
+- **Edit Metadata...** fills the screen down to the button bar, as Decky
+  Loader's settings do, instead of stopping short and leaving a dark strip.
+- Picking an IGN result no longer shows **Searching...**, an empty IGN search
+  is blocked, and a failed search no longer says **Save failed**.
+- On the Steam Deck Client Beta, game descriptions keep their line breaks,
+  ProtonDB badges find Library covers without CSS Loader, and the HLTB
+  **Details** button keeps Steam's style.
+- Library compatibility icons on non-Steam games now use your device's own
+  style, as Steam's icons do: Steam Machine and SteamOS icons instead of
+  always the Steam Deck logo (#58). A Library compatibility filter picks its
+  style too, and no icon appears where Steam shows none.
+- On the Steam Deck Client Beta, compatibility icons appear again on Library
+  Home and Library grid tiles for matched non-Steam games.
+
 ## [0.6.5] - 2026-11-20
 
 New Steam-style metadata editor, Game Match, and Steam beta fixes

@@ -29,6 +29,7 @@ import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
 import { LogsSection } from "./components/qam/LogsSection";
 import { MiniAchievementsSection } from "./components/qam/MiniAchievementsSection";
+import { ContextMenuSection } from "./components/qam/ContextMenuSection";
 import { MetadataSection } from "./components/qam/MetadataSection";
 import { PluginLogModal } from "./components/qam/PluginLogModal";
 import { PluginUpdateSection } from "./components/qam/PluginUpdateSection";
@@ -260,6 +261,8 @@ export const Content = () => {
   const [missing, setMissing] = useState(0);
   const [busy, setBusy] = useState(false);
   const [scanMessage, setScanMessage] = useState("");
+  const [scanCompleted, setScanCompleted] = useState(0);
+  const [scanTotal, setScanTotal] = useState(0);
   const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
   // One scan-progress poll is pending at a time; unmounting the panel stops polling.
   const scanPoll = useRef<{ timer: number | null; stopped: boolean }>({ timer: null, stopped: false });
@@ -280,6 +283,7 @@ export const Content = () => {
   const [delistedBusy, setDelistedBusy] = useState(false);
   const [logsBusy, setLogsBusy] = useState(false);
   const [debugLogging, setDebugLoggingState] = useState(false);
+  const [debugLoggingLoaded, setDebugLoggingLoaded] = useState(false);
   const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
   const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
   const [deckyVersion, setDeckyVersion] = useState("");
@@ -691,7 +695,10 @@ export const Content = () => {
           log.setVerboseLogging(enabled);
         }
       })
-      .catch((error) => log.warn("bridge", "debug logging setting load failed", error));
+      .catch((error) => log.warn("bridge", "debug logging setting load failed", error))
+      .finally(() => {
+        if (!cancelled) setDebugLoggingLoaded(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -847,6 +854,8 @@ export const Content = () => {
     if (busy) return;
     setBusy(true);
     setScanMessage("");
+    setScanCompleted(0);
+    setScanTotal(0);
     setScanStatusKind("active");
     const failScan = (error: unknown) => {
       setBusy(false);
@@ -866,6 +875,8 @@ export const Content = () => {
       try {
         const progress = await getScanProgress();
         if (poll.stopped) return;
+        setScanCompleted(Number(progress.completed || 0));
+        setScanTotal(Number(progress.total || 0));
         setScanStatusKind("active");
         setScanMessage(
           progress.current ||
@@ -973,6 +984,8 @@ export const Content = () => {
         savedCount={metadataCount}
         missingCount={missing}
         scanBusy={busy}
+        scanCompleted={scanCompleted}
+        scanTotal={scanTotal}
         scanMessage={scanMessage}
         scanStatusKind={scanStatusKind}
         cacheBusy={cacheBusy}
@@ -1090,9 +1103,11 @@ export const Content = () => {
         state={miniAchievementsSnapshot}
         onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
       />
+      <ContextMenuSection />
       <LogsSection
         logsBusy={logsBusy}
         debugLogging={debugLogging}
+        debugLoggingLoaded={debugLoggingLoaded}
         debugLoggingBusy={debugLoggingBusy}
         onViewLogs={() => void viewLogs()}
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}

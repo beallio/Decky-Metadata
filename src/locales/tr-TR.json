@@ -22,10 +22,6 @@
     "invalid_title": "geçersiz başlık",
     "invalid_search": "geçersiz arama",
     "steam_search_unavailable": "Steam araması kullanılamıyor. Tekrar deneyin.",
-    "steam_details_unavailable": "Steam oyun ayrıntıları kullanılamıyor",
-    "steam_title_unavailable": "Steam oyun başlığı kullanılamıyor",
-    "invalid_steam_game": "Geçerli bir Steam oyunu seçin.",
-    "steam_preview_unavailable": "Steam ayrıntıları kullanılamıyor. Bu eşleşmeyi yine de kullanabilirsiniz.",
     "settings_unreadable": "meta veri ayarları dosyası okunamıyor; değişiklikleri kaydetmeden önce düzeltin veya kaldırın",
     "invalid_release_date": "release_date, YYYY-MM-DD biçiminde bir takvim tarihi veya null olmalıdır",
     "hltb_settings_unavailable": "HLTB ayarları yüklenemedi",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "fragman ayarları yüklenemedi",
     "mini_achievements_settings_unavailable": "mini başarım ayarları yüklenemedi",
     "protondb_settings_unavailable": "ProtonDB rozet ayarları yüklenemedi",
+    "editor_header_settings_unavailable": "Düzenleyici başlık ayarları yüklenemedi",
     "steam_ui_unavailable": "Steam arayüzü kullanılamıyor",
     "update_check_failed": "Güncellemeler denetlenemedi",
     "rate_limited": "İstek sınırı aşıldı",
@@ -215,6 +212,13 @@
       "enableLabel": "Mini başarımları etkinleştir",
       "enableDescription": "Oyun ayrıntıları sayfalarında Oynama Süresi'nin yanında Steam'in küçük başarım ilerleme çubuğunu gösterir. Varsayılan olarak kapalıdır.",
       "footnote": "Bu, Steam oyunları için Steam'in başarım ilerlemesini kullanır; Steam dışı oyunlara başarım izleme eklemez."
+    },
+    "contextMenu": {
+      "title": "Bağlam menüsü",
+      "headerIconLabel": "Düzenleyici başlığında oyun simgesi",
+      "headerIconDescription": "Meta verileri düzenleme sayfasının üst kısmında oyun simgesini adının yanında gösterir. Uzun adlar kaydırılır.",
+      "steamIconLabel": "Yoksa Steam simgesini kullan",
+      "steamIconDescription": "Oyunun kendine ait bir simgesi yoksa eşleşen Steam oyununun simgesi kullanılır. İkisi de yoksa simge gösterilmez."
     },
     "compat": {
       "title": "Uyumluluk durumu",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Geçerli eşleşme",
     "loadFromSteam": "Steam'den yükle",
-    "loadFromSteamSteamGame": "Steam'den yükle (Steam oyunları için kullanılamaz)",
-    "loadFromSteamNoMatch": "Steam'den yükle (Steam eşleşmesi yok)",
+    "loadFromSteamSteamGame": "Steam oyunları için kullanılamaz",
+    "loadFromSteamNoMatch": "Steam eşleşmesi yok",
     "loadFromSteamBusy": "Steam'den yükle (güncelleniyor)",
     "fieldEdited": "Düzenlendi",
     "fieldFromSteam": "Steam'den, kaydedilmedi",
@@ -457,10 +461,18 @@
       "body": "Bu, {{name}} için kaydedilmiş tüm meta verileri siler. Bu işlem geri alınamaz.",
       "cancel": "İptal"
     },
+    "review": {
+      "title": "Oyun ayrıntılarını gözden geçir",
+      "apply": "Uygula",
+      "cancel": "İptal",
+      "genres": "Türler"
+    },
     "nonSteamOnly": "Bu eklenti yalnızca Steam dışı oyunları değiştirir.",
-    "searchIgn": "IGN meta verilerinde ara",
+    "searchIgn": "IGN'de ara",
     "ign": {
-      "gameName": "Oyun adı"
+      "gameName": "Oyun adı",
+      "noResults": "Sonuç yok.",
+      "help": "IGN'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar."
     },
     "search": "Ara",
     "searching": "Aranıyor...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "Otomatik seçeneği, her oyun için Steam'de eşleşen oyunun durumunu kullanır. Genel varsayılanı kullan seçeneği, bu oyun için o ayarı devralır. Valve'ı Takip Et seçeneği her zaman Valve'ın belirlediği durumu kullanır. Valve verileri kullanılamadığında özgün Steam durumu korunur.",
     "compatibilityChoices": "Elle seçilen ve varsayılan kategoriler sizin seçimlerinizdir; Valve sertifikası veya emülatör performans sonucu değildir.",
     "hltbGame": "HowLongToBeat oyunu",
+    "hltbSearchTitle": "HowLongToBeat'te ara",
     "hltbHelp": "Bu oyun için gösterilecek süreleri seçmek üzere HowLongToBeat'te arayın veya bir oyun numarası ya da oyun sayfası bağlantısı yapıştırın. Otomatik eşleştirmek için boş bırakın.",
     "hltbCurrentChosen": "Geçerli oyun: {{name}} (seçildi)",
     "hltbCurrentAutomatic": "Geçerli oyun: {{name}} (otomatik bulundu)",
     "hltbApply": "HLTB oyununu uygula",
     "steamAppId": "Steam Uygulama ID'si",
     "steamAppIdHelp": "Bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si yapıştırın. Sabitlenmiş Steam eşleşmesini temizlemek için boş bırakın.",
-    "steamAppIdApply": "Steam Uygulama ID'sini uygula",
+    "manualMatch": {
+      "label": "Bir Steam Uygulama ID'si girin",
+      "help": "Arama oyunu bulamadığında bir Steam uygulama ID'si, Mağaza URL'si, Topluluk URL'si veya SteamDB URL'si kullanın. Eşleşmeyi kaldırmak için boş bırakın.",
+      "button": "ID girin..."
+    },
     "shortcut": {
       "immediateNotice": "Bu işlemler hemen uygulanır. Kaydet düğmesine basmanız gerekmez.",
-      "current": "Geçerli: {{name}}",
+      "currentLabel": "Geçerli ad",
       "missingName": "Steam yerel bir kısayol adı sunmadı",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam adı",
       "loadingSteamName": "Steam adı yükleniyor...",
       "noOfficialName": "Steam resmî bir ad döndürmedi",
       "managementUnavailable": "Kısayol adı yönetimi kullanılamıyor",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Ayrıntılar yüklendi",
       "steamPreviewBody": "Steam ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
       "ignPreviewBody": "IGN ayrıntıları bu forma yüklendi. Kaydet düğmesiyle saklanır.",
-      "steamAppIdNotAppliedTitle": "Steam uygulama ID'si uygulanmadı",
-      "steamAppIdNotAppliedBody": "Kaydetmeden önce yeni eşleşmeyi yüklemek için “Steam Uygulama ID'sini uygula” seçeneğini seçin.",
       "fetchFailedTitle": "Getirme başarısız",
       "removedBody": "Meta veriler kaldırıldı",
       "removeFailedTitle": "Kaldırma başarısız",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
   },
   "matchPicker": {
-    "help": "Steam'de arayın, ayrıntılarını incelemek için bir sonuç seçin ve ardından Bu Steam eşleşmesini kullan öğesini seçin. Gezinmek oyununuzu değiştirmez.",
+    "help": "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
     "searchAriaLabel": "Steam oyun araması",
     "search": "Steam'de ara",
     "searching": "Steam'de aranıyor...",
     "idle": "Steam eşleşmelerini bulmak için bir oyun adı girin.",
-    "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya aşağıdaki Steam Uygulama ID'si alanını kullanın.",
+    "empty": "Steam eşleşmesi bulunamadı. Başka bir ad deneyin veya yukarıdaki “Bir Steam Uygulama ID'si girin” alanını kullanın.",
     "appId": "Steam Uygulama ID'si: {{appId}}",
-    "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme",
-    "appIdSelected": "Steam Uygulama ID'si: {{appId}} · Seçildi",
-    "appIdCurrentSelected": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme · Seçildi",
-    "loadingDetails": "Steam ayrıntıları yükleniyor...",
-    "artworkAlt": "{{title}} Steam görseli",
-    "developer": "Geliştirici: {{names}}",
-    "developerUnavailable": "Geliştirici kullanılamıyor",
-    "release": "Çıkış: {{date}}",
-    "releaseUnavailable": "Çıkış tarihi kullanılamıyor",
-    "steamType": "Steam türü: {{type}}. Bunun istediğiniz oyun veya sürüm olduğunu doğrulayın.",
-    "applyHelp": "Bu eşleşmeyi kullanmak, Steam Uygulama ID'sini ve ayrıntılarını bu forma yükler. Kaydet düğmesiyle saklanır. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
-    "apply": "Bu Steam eşleşmesini kullan",
-    "cancel": "Seçimi iptal et"
+    "appIdCurrent": "Steam Uygulama ID'si: {{appId}} · Geçerli eşleşme"
   },
   "categories": {
     "singlePlayer": "Tek oyunculu",

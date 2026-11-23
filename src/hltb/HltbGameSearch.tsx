@@ -1,15 +1,14 @@
-import { PanelSectionRow, TextField } from "@decky/ui";
+import { Field, TextField } from "@decky/ui";
 import { useRef, useState } from "react";
 import { searchHltbGames, type HltbSearchResult } from "../backend";
 import { formatHours, translateBackendError, useT } from "../i18n";
 import {
   editorFocusTargetClassName,
   editorSearchButtonStyle,
-  editorSearchInputRowSpacingStyle,
-  editorSearchResultsSpacingStyle,
   editorSearchRowStyle,
+  editorSearchInputStyle,
 } from "../metadataEditorStyles";
-import { compactTextStyle, fieldStyle, FocusableButton, rowStackStyle } from "../styles";
+import { fieldStyle, FocusableButton } from "../styles";
 
 type Props = {
   initialQuery: string;
@@ -46,48 +45,52 @@ export function HltbGameSearch({ initialQuery, disabled, onApply }: Props) {
 
   return (
     <>
-      <PanelSectionRow>
-        <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center", ...editorSearchInputRowSpacingStyle }}>
-          <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-            <TextField
-              className={editorFocusTargetClassName}
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              style={{ ...fieldStyle, width: "100%" }}
-            />
-          </div>
-          <FocusableButton
-            className={`DialogButton ${editorFocusTargetClassName}`}
-            disabled={disabled || searching || !query.trim()}
-            onClick={() => void search()}
-            style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
-          >
-            {searching ? t("hltb.search.searching") : t("hltb.search.action")}
-          </FocusableButton>
+      <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
+      <div style={editorSearchRowStyle}>
+        <div style={editorSearchInputStyle}>
+          <TextField
+            className={editorFocusTargetClassName}
+            aria-label={t("editor.hltbSearchTitle")}
+            value={query}
+            disabled={disabled}
+            onChange={(e) => setQuery(e.target.value)}
+            style={{ ...fieldStyle, width: "100%" }}
+          />
         </div>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-          {error ? <div style={compactTextStyle}>{error}</div> : null}
-          {!searching && results?.length === 0 ? <div style={compactTextStyle}>{t("hltb.search.noGames")}</div> : null}
-          {results?.map((result) => (
-            <FocusableButton
-              key={result.game_id}
-              className={`DialogButton ${editorFocusTargetClassName} decky-metadata-editor__result`}
-              disabled={disabled}
-              onClick={() => void onApply({ id: result.game_id, name: result.game_name })}
-              style={{ justifyContent: "flex-start", textAlign: "left" }}
-            >
-              <div style={rowStackStyle}>
-                <b>{result.game_name}</b>
-                <span style={compactTextStyle}>
-                  {result.main_seconds > 0 ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) }) : t("hltb.search.noMainStory")}
-                </span>
-              </div>
-            </FocusableButton>
-          ))}
-        </div>
-      </PanelSectionRow>
+        <FocusableButton
+          className={`DialogButton ${editorFocusTargetClassName}`}
+          disabled={disabled || searching || !query.trim()}
+          onClick={() => void search()}
+          style={editorSearchButtonStyle}
+        >
+          {searching ? t("hltb.search.searching") : t("hltb.search.action")}
+        </FocusableButton>
+      </div>
+      </Field>
+        {error ? (
+          <Field focusable={false} description={<span aria-live="polite">{error}</span>} bottomSeparator="none" />
+        ) : null}
+        {!searching && results?.length === 0 ? (
+          <Field focusable={false} description={t("hltb.search.noGames")} bottomSeparator="none" />
+        ) : null}
+        {results?.map((result) => (
+          <Field
+            key={result.game_id}
+            className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
+            label={result.game_name}
+            description={
+              result.main_seconds > 0
+                ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
+                : t("hltb.search.noMainStory")
+            }
+            focusable={true}
+            highlightOnFocus={true}
+            bottomSeparator="standard"
+            disabled={disabled}
+            onActivate={() => void onApply({ id: result.game_id, name: result.game_name })}
+            onClick={() => void onApply({ id: result.game_id, name: result.game_name })}
+          />
+        ))}
     </>
   );
 }

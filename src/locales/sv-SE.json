@@ -22,10 +22,6 @@
     "invalid_title": "ogiltig titel",
     "invalid_search": "ogiltig sökning",
     "steam_search_unavailable": "Steamsökningen är inte tillgänglig. Försök igen.",
-    "steam_details_unavailable": "Steam-speldetaljer är inte tillgängliga",
-    "steam_title_unavailable": "Steam-speltiteln är inte tillgänglig",
-    "invalid_steam_game": "Välj ett giltigt Steam-spel.",
-    "steam_preview_unavailable": "Steam-detaljer är inte tillgängliga. Du kan fortfarande använda den här matchningen.",
     "settings_unreadable": "metadata-inställningsfilen kan inte läsas; åtgärda eller ta bort den innan du sparar ändringar",
     "invalid_release_date": "release_date måste vara ett kalenderdatum i formatet YYYY-MM-DD eller null",
     "hltb_settings_unavailable": "HLTB-inställningarna kunde inte läsas in",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "trailerinställningarna kunde inte läsas in",
     "mini_achievements_settings_unavailable": "inställningarna för miniprestationer kunde inte läsas in",
     "protondb_settings_unavailable": "ProtonDB-märkesinställningarna kunde inte läsas in",
+    "editor_header_settings_unavailable": "Inställningarna för redigerarens sidhuvud kunde inte läsas in",
     "steam_ui_unavailable": "Steam-gränssnittet är inte tillgängligt",
     "update_check_failed": "Det gick inte att söka efter uppdateringar",
     "rate_limited": "Hastighetsgränsen har överskridits",
@@ -215,6 +212,13 @@
       "enableLabel": "Aktivera miniprestationer",
       "enableDescription": "Visar Steams lilla förloppsrad för prestationer bredvid Speltid på speldetaljsidor. Av som standard.",
       "footnote": "Detta använder Steams prestationsförlopp för Steam-spel; det lägger inte till prestationsspårning för icke-Steam-spel."
+    },
+    "contextMenu": {
+      "title": "Snabbmeny",
+      "headerIconLabel": "Spelikonen i redigerarens sidhuvud",
+      "headerIconDescription": "Visar spelikonen bredvid namnet högst upp på sidan för redigering av metadata. Långa namn rullar.",
+      "steamIconLabel": "Använd Steam-ikonen om den saknas",
+      "steamIconDescription": "Om spelet inte har en egen ikon används ikonen för det matchade Steam-spelet. Om ingen ikon finns visas ingen ikon."
     },
     "compat": {
       "title": "Kompatibilitetsstatus",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Aktuell matchning",
     "loadFromSteam": "Läs in från Steam",
-    "loadFromSteamSteamGame": "Läs in från Steam (inte tillgängligt för Steam-spel)",
-    "loadFromSteamNoMatch": "Läs in från Steam (ingen Steam-matchning)",
+    "loadFromSteamSteamGame": "Inte tillgängligt för Steam-spel",
+    "loadFromSteamNoMatch": "Ingen Steam-matchning",
     "loadFromSteamBusy": "Läs in från Steam (uppdatering pågår)",
     "fieldEdited": "Ändrad",
     "fieldFromSteam": "Från Steam, inte sparat",
@@ -457,10 +461,18 @@
       "body": "Detta tar bort all sparad metadata för {{name}}. Det går inte att ångra.",
       "cancel": "Avbryt"
     },
+    "review": {
+      "title": "Granska speluppgifter",
+      "apply": "Använd",
+      "cancel": "Avbryt",
+      "genres": "Genrer"
+    },
     "nonSteamOnly": "Det här plugin-programmet ändrar bara icke-Steam-spel.",
-    "searchIgn": "Sök IGN-metadata",
+    "searchIgn": "Sök på IGN",
     "ign": {
-      "gameName": "Spelets namn"
+      "gameName": "Spelets namn",
+      "noResults": "Inga resultat.",
+      "help": "Sök på IGN och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem."
     },
     "search": "Sök",
     "searching": "Söker...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "Automatisk använder statusen för varje spels matchning i Steam. Använd global standard ärver den inställningen för det här spelet. Följ Valve använder alltid Valves status. Om data från Valve saknas behåller Följ Valve den ursprungliga Steam-statusen.",
     "compatibilityChoices": "Manuella kategorier och standardkategorier är dina val, inte Valves certifiering eller ett resultat för emulatorprestanda.",
     "hltbGame": "HowLongToBeat-spel",
+    "hltbSearchTitle": "Sök på HowLongToBeat",
     "hltbHelp": "Sök på HowLongToBeat eller klistra in ett spelnummer eller en länk till spelsidan för att välja tiderna som visas för det här spelet. Lämna tomt för att matcha automatiskt.",
     "hltbCurrentChosen": "Aktuellt spel: {{name}} (valt)",
     "hltbCurrentAutomatic": "Aktuellt spel: {{name}} (hittat automatiskt)",
     "hltbApply": "Tillämpa HLTB-spel",
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Klistra in ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL. Lämna tomt för att rensa den fästa Steam-matchningen.",
-    "steamAppIdApply": "Tillämpa Steam-app-ID",
+    "manualMatch": {
+      "label": "Ange ett Steam-app-ID",
+      "help": "Använd ett Steam-app-ID, en butiks-URL, gemenskaps-URL eller SteamDB-URL när sökningen inte hittar spelet. Lämna tomt för att ta bort matchningen.",
+      "button": "Ange ID..."
+    },
     "shortcut": {
       "immediateNotice": "De här åtgärderna tillämpas direkt. Du behöver inte trycka på Spara.",
-      "current": "Aktuellt: {{name}}",
+      "currentLabel": "Aktuellt namn",
       "missingName": "Steam angav inget inbyggt genvägsnamn",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam-namn",
       "loadingSteamName": "Läser in Steam-namnet...",
       "noOfficialName": "Steam returnerade inget officiellt namn",
       "managementUnavailable": "Hantering av genvägsnamn är inte tillgänglig",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Detaljer inlästa",
       "steamPreviewBody": "Steam-detaljer är inlästa i det här formuläret. Spara sparar dem.",
       "ignPreviewBody": "IGN-detaljer är inlästa i det här formuläret. Spara sparar dem.",
-      "steamAppIdNotAppliedTitle": "Steam-app-ID:t tillämpades inte",
-      "steamAppIdNotAppliedBody": "Välj ”Tillämpa Steam-app-ID” för att läsa in den nya matchningen innan du sparar.",
       "fetchFailedTitle": "Det gick inte att hämta",
       "removedBody": "Metadata har tagits bort",
       "removeFailedTitle": "Det gick inte att ta bort",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam returnerade ingen text för det här spelet."
   },
   "matchPicker": {
-    "help": "Sök på Steam, välj ett resultat för att kontrollera detaljerna och välj sedan Använd den här Steam-matchningen. Bläddring ändrar inte ditt spel.",
+    "help": "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
     "searchAriaLabel": "Steam-spelsökning",
     "search": "Sök på Steam",
     "searching": "Söker på Steam...",
     "idle": "Ange ett spelnamn för att hitta Steam-matchningar.",
-    "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd fältet Steam-app-ID nedan.",
+    "empty": "Inga Steam-matchningar hittades. Prova ett annat namn eller använd ”Ange ett Steam-app-ID” ovan.",
     "appId": "Steam-app-ID: {{appId}}",
-    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning",
-    "appIdSelected": "Steam-app-ID: {{appId}} · Valt",
-    "appIdCurrentSelected": "Steam-app-ID: {{appId}} · Aktuell matchning · Valt",
-    "loadingDetails": "Läser in Steam-detaljer...",
-    "artworkAlt": "Steam-grafik för {{title}}",
-    "developer": "Utvecklare: {{names}}",
-    "developerUnavailable": "Utvecklare inte tillgänglig",
-    "release": "Utgivningsdatum: {{date}}",
-    "releaseUnavailable": "Utgivningsdatum inte tillgängligt",
-    "steamType": "Steam-typ: {{type}}. Kontrollera att det är spelet eller utgåvan du vill ha.",
-    "applyHelp": "Om du använder den här matchningen läses Steam-app-ID:t och detaljerna in i det här formuläret. Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
-    "apply": "Använd den här Steam-matchningen",
-    "cancel": "Avbryt val"
+    "appIdCurrent": "Steam-app-ID: {{appId}} · Aktuell matchning"
   },
   "categories": {
     "singlePlayer": "Enspelarläge",

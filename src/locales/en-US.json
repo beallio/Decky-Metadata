@@ -22,10 +22,6 @@
     "invalid_title": "invalid title",
     "invalid_search": "invalid search",
     "steam_search_unavailable": "Steam search is unavailable. Try again.",
-    "steam_details_unavailable": "Steam game details are unavailable",
-    "steam_title_unavailable": "Steam game title is unavailable",
-    "invalid_steam_game": "Select a valid Steam game.",
-    "steam_preview_unavailable": "Steam details are unavailable. You can still use this match.",
     "settings_unreadable": "metadata settings file is unreadable; fix or remove it before saving changes",
     "invalid_release_date": "release_date must be a YYYY-MM-DD calendar date or null",
     "hltb_settings_unavailable": "HLTB settings could not be loaded",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "trailer settings could not be loaded",
     "mini_achievements_settings_unavailable": "mini achievements settings could not be loaded",
     "protondb_settings_unavailable": "ProtonDB badge settings could not be loaded",
+    "editor_header_settings_unavailable": "editor header settings could not be loaded",
     "steam_ui_unavailable": "Steam UI unavailable",
     "update_check_failed": "Failed to check for updates",
     "rate_limited": "Rate limit exceeded",
@@ -215,6 +212,13 @@
       "enableLabel": "Enable mini achievements",
       "enableDescription": "Show Steam's small achievement progress bar beside Play Time on game details pages. Off by default.",
       "footnote": "This uses Steam's achievement progress for Steam games; it does not add achievement tracking to non-Steam games."
+    },
+    "contextMenu": {
+      "title": "Context menu",
+      "headerIconLabel": "Game icon in editor header",
+      "headerIconDescription": "Show the game's icon beside its name at the top of the Edit Metadata page. Long names scroll.",
+      "steamIconLabel": "Use Steam icon if missing",
+      "steamIconDescription": "When the game has no icon of its own, use the matched Steam game's icon. If neither exists, no icon is shown."
     },
     "compat": {
       "title": "Compatibility status",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Current match",
     "loadFromSteam": "Load from Steam",
-    "loadFromSteamSteamGame": "Load from Steam (Not available for Steam games)",
-    "loadFromSteamNoMatch": "Load from Steam (No Steam match)",
+    "loadFromSteamSteamGame": "Not available for Steam games",
+    "loadFromSteamNoMatch": "No Steam match",
     "loadFromSteamBusy": "Load from Steam (Updating)",
     "fieldEdited": "Edited",
     "fieldFromSteam": "From Steam, not saved",
@@ -457,10 +461,18 @@
       "body": "This deletes all saved metadata for {{name}}. You cannot undo this.",
       "cancel": "Cancel"
     },
+    "review": {
+      "title": "Review game details",
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "This plugin only changes non-Steam games.",
-    "searchIgn": "Search IGN metadata",
+    "searchIgn": "Search IGN",
     "ign": {
-      "gameName": "Game name"
+      "gameName": "Game name",
+      "noResults": "No results.",
+      "help": "Search IGN, then select a result to review its details. Apply loads them into this form and Save stores them."
     },
     "search": "Search",
     "searching": "Searching...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "Automatic uses each game's Steam-matched status. Use global default inherits that setting for this game. Follow Valve always uses Valve's status. When Valve data is unavailable, Follow Valve keeps the original Steam status.",
     "compatibilityChoices": "Manual and default categories are your choices, not Valve certification or an emulator performance result.",
     "hltbGame": "HowLongToBeat game",
+    "hltbSearchTitle": "Search HowLongToBeat",
     "hltbHelp": "Search HowLongToBeat, or paste a game number or game page link, to choose the times shown for this game. Leave empty to match automatically.",
     "hltbCurrentChosen": "Current game: {{name}} (chosen)",
     "hltbCurrentAutomatic": "Current game: {{name}} (found automatically)",
     "hltbApply": "Apply HLTB game",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Paste a Steam app ID, Store URL, Community URL, or SteamDB URL. Leave empty to clear the pinned Steam match.",
-    "steamAppIdApply": "Apply Steam App ID",
+    "manualMatch": {
+      "label": "Enter a Steam App ID",
+      "help": "Use an ID or a Store, Community or SteamDB URL when search does not find the game. Leave it empty to remove the match.",
+      "button": "Enter ID..."
+    },
     "shortcut": {
       "immediateNotice": "These actions apply now. They do not use Save.",
-      "current": "Current: {{name}}",
+      "currentLabel": "Current name",
       "missingName": "Steam did not expose a native shortcut name",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam name",
       "loadingSteamName": "Loading Steam name...",
       "noOfficialName": "Steam did not return an official name",
       "managementUnavailable": "Shortcut-name management is unavailable",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Details loaded",
       "steamPreviewBody": "Steam details are loaded into this form. Save stores them.",
       "ignPreviewBody": "IGN details are loaded into this form. Save stores them.",
-      "steamAppIdNotAppliedTitle": "Steam App ID not applied",
-      "steamAppIdNotAppliedBody": "Select Apply Steam App ID to load the new match before saving.",
       "fetchFailedTitle": "Fetch failed",
       "removedBody": "Metadata removed",
       "removeFailedTitle": "Remove failed",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam did not return text for this game."
   },
   "matchPicker": {
-    "help": "Search Steam, select a result to check its details, then choose Use this Steam match. Browsing does not change your game.",
+    "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
     "searchAriaLabel": "Steam game search",
     "search": "Search Steam",
     "searching": "Searching Steam...",
     "idle": "Enter a game name to find Steam matches.",
-    "empty": "No Steam matches found. Try another name or use the Steam App ID field below.",
+    "empty": "No Steam matches found. Try another name, or use Enter a Steam App ID above.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Current match",
-    "appIdSelected": "Steam App ID: {{appId}} · Selected",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · Current match · Selected",
-    "loadingDetails": "Loading Steam details...",
-    "artworkAlt": "{{title}} Steam artwork",
-    "developer": "Developer: {{names}}",
-    "developerUnavailable": "Developer unavailable",
-    "release": "Release: {{date}}",
-    "releaseUnavailable": "Release date unavailable",
-    "steamType": "Steam type: {{type}}. Check that this is the game or edition you want.",
-    "applyHelp": "Using this match loads its Steam App ID and details into this form. Save stores them. It does not rename your shortcut or replace your custom artwork.",
-    "apply": "Use this Steam match",
-    "cancel": "Cancel selection"
+    "appIdCurrent": "Steam App ID: {{appId}} · Current match"
   },
   "categories": {
     "singlePlayer": "Single-player",

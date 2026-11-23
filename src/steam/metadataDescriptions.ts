@@ -26,9 +26,12 @@ const resolveClasses = () => {
     const found = inspect(module);
     return found?.GameInfoContainer ? found : undefined;
   });
-  const owner = (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer");
+  const owners = Array.from(new Set([
+    (typeof details?.GameInfoContainer === "string" && details.GameInfoContainer) || getNativeCssClass("gameInfoContainer"),
+    getNativeCssClass("appGameInfoContainer"),
+  ].filter((value): value is string => Boolean(value))));
   const description = (typeof descriptions?.GameDescription === "string" && descriptions.GameDescription) || getNativeCssClass("gameDescription");
-  return owner && description ? { owner, description } : undefined;
+  return owners.length && description ? { owner: owners, description } : undefined;
 };
 
 /** Read one confirmed scalar prop on host ancestors, never enumerate Steam stores. */
@@ -43,7 +46,7 @@ export const descriptionOwnerAppId = (owner: HTMLElement): number => {
 };
 export type DescriptionPresentationDependencies = {
   documents: () => Document[];
-  classes: () => { owner: string; description: string } | undefined;
+  classes: () => { owner: string[]; description: string } | undefined;
   route: () => string;
   eligible: (appId: number) => boolean;
   ownerAppId: (owner: HTMLElement) => number;
@@ -106,10 +109,10 @@ export const installMetadataDescriptions = (
 ): void => {
   let classes = dependencies.classes();
   const resolveValidClasses = () => {
-    if (!classes || !selector(classes.owner) || !selector(classes.description)) {
+    if (!classes || !classes.owner.some((value) => selector(value)) || !selector(classes.description)) {
       classes = dependencies.classes();
     }
-    return classes && selector(classes.owner) && selector(classes.description) ? classes : undefined;
+    return classes && classes.owner.some((value) => selector(value)) && selector(classes.description) ? classes : undefined;
   };
   let disposed = false;
   type Owner = {
@@ -166,25 +169,36 @@ export const installMetadataDescriptions = (
     const route = dependencies.route();
     const appId = gameDetailAppIdFromPath(route);
     if (!isCurrentGameInfoRoute(route, appId) || !dependencies.eligible(appId)) return;
-    for (const doc of dependencies.documents()) {
-      const matched = Array.from(doc.querySelectorAll<HTMLElement>(selector(currentClasses.owner))).find((candidate) => dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
-      if (!matched) continue;
-      stopDiscovery();
-      // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
-      if (!owners.has(matched)) {
-        const record: Owner = { appId, stops: [], originals: new Map() };
-        owners.set(matched, record);
-        const refresh = () => {
-          if (disposed) return;
-          refreshOwner(matched, record);
-          if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId)) reconcile();
-        };
-        record.stops.push(dependencies.observe(matched, refresh));
-        if (dependencies.visibility) record.stops.push(dependencies.visibility(matched, refresh));
-        refreshOwner(matched, record);
+    const descriptionSelector = selector(currentClasses.description);
+    const docs = dependencies.documents();
+    let matched: HTMLElement | undefined;
+    for (const ownerClass of currentClasses.owner) {
+      const ownerSelector = selector(ownerClass);
+      if (!ownerSelector) continue;
+      for (const doc of docs) {
+        matched = Array.from(doc.querySelectorAll<HTMLElement>(ownerSelector)).find((candidate) =>
+          candidate.querySelectorAll<HTMLElement>(descriptionSelector).length > 0 &&
+          dependencies.ownerAppId(candidate) === appId && dependencies.visible(candidate));
+        if (matched) break;
       }
-      return;
+      if (matched) break;
     }
+    if (!matched) return;
+    stopDiscovery();
+    // Each outgoing owner keeps its formatting for its own visible DOM lifetime.
+    if (!owners.has(matched)) {
+      const record: Owner = { appId, stops: [], originals: new Map() };
+      owners.set(matched, record);
+      const refresh = () => {
+        if (disposed) return;
+        refreshOwner(matched, record);
+        if (!owners.has(matched) && isCurrentGameInfoRoute(dependencies.route(), appId) && dependencies.eligible(appId)) reconcile();
+      };
+      record.stops.push(dependencies.observe(matched, refresh));
+      if (dependencies.visibility) record.stops.push(dependencies.visibility(matched, refresh));
+      refreshOwner(matched, record);
+    }
+    return;
   };
   const reconcile = () => {
     if (disposed) return;

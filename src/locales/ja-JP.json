@@ -21,10 +21,6 @@
     "invalid_title": "無効なタイトル",
     "invalid_search": "無効な検索",
     "steam_search_unavailable": "Steam 検索を利用できません。再試行してください。",
-    "steam_details_unavailable": "Steam のゲーム詳細を取得できません",
-    "steam_title_unavailable": "Steam のゲームタイトルを取得できません",
-    "invalid_steam_game": "有効な Steam ゲームを選択してください。",
-    "steam_preview_unavailable": "Steam の詳細を取得できません。この一致は引き続き使用できます。",
     "settings_unreadable": "メタデータ設定ファイルを読み取れません。変更を保存する前に修正するか削除してください",
     "invalid_release_date": "release_date は YYYY-MM-DD 形式の日付または null である必要があります",
     "hltb_settings_unavailable": "HLTB 設定を読み込めませんでした",
@@ -33,6 +29,7 @@
     "trailer_settings_unavailable": "トレーラー設定を読み込めませんでした",
     "mini_achievements_settings_unavailable": "ミニ実績設定を読み込めませんでした",
     "protondb_settings_unavailable": "ProtonDB バッジ設定を読み込めませんでした",
+    "editor_header_settings_unavailable": "エディターのヘッダー設定を読み込めませんでした",
     "steam_ui_unavailable": "Steam UI を利用できません",
     "update_check_failed": "アップデートの確認に失敗しました",
     "rate_limited": "レート制限を超えました",
@@ -214,6 +211,13 @@
       "enableLabel": "ミニ実績を有効化",
       "enableDescription": "ゲームの詳細ページのプレイ時間の横に、Steam の小さな実績進捗バーを表示します。既定ではオフです。",
       "footnote": "これは Steam ゲームの Steam 実績進捗を使用します。Steam 以外のゲームに実績トラッキングを追加するものではありません。"
+    },
+    "contextMenu": {
+      "title": "コンテキストメニュー",
+      "headerIconLabel": "エディターのヘッダーにゲームアイコンを表示",
+      "headerIconDescription": "メタデータ編集ページの上部で、ゲーム名の横にアイコンを表示します。長い名前はスクロールします。",
+      "steamIconLabel": "アイコンがない場合はSteamアイコンを使用",
+      "steamIconDescription": "ゲーム固有のアイコンがない場合、対応するSteamゲームのアイコンを使用します。どちらもない場合、アイコンは表示されません。"
     },
     "compat": {
       "title": "互換性ステータス",
@@ -438,8 +442,8 @@
     },
     "currentMatch": "現在の一致",
     "loadFromSteam": "Steam から読み込む",
-    "loadFromSteamSteamGame": "Steam から読み込む（Steam ゲームでは利用不可）",
-    "loadFromSteamNoMatch": "Steam から読み込む（Steam で一致するゲームなし）",
+    "loadFromSteamSteamGame": "Steam ゲームでは利用不可",
+    "loadFromSteamNoMatch": "Steam で一致するゲームなし",
     "loadFromSteamBusy": "Steam から読み込む（更新中）",
     "fieldEdited": "編集済み",
     "fieldFromSteam": "Steam から取得、未保存",
@@ -456,10 +460,18 @@
       "body": "{{name}} の保存済みメタデータをすべて削除します。元に戻せません。",
       "cancel": "キャンセル"
     },
+    "review": {
+      "title": "ゲームの詳細を確認",
+      "apply": "適用",
+      "cancel": "キャンセル",
+      "genres": "ジャンル"
+    },
     "nonSteamOnly": "このプラグインは Steam 以外のゲームのみを変更します。",
-    "searchIgn": "IGN メタデータを検索",
+    "searchIgn": "IGN を検索",
     "ign": {
-      "gameName": "ゲーム名"
+      "gameName": "ゲーム名",
+      "noResults": "結果がありません。",
+      "help": "IGN を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。"
     },
     "search": "検索",
     "searching": "検索中...",
@@ -494,18 +506,23 @@
     "compatibilityHelp": "「自動」では、Steam で一致したゲームのステータスがゲームごとに適用されます。「グローバル既定値を使用」では、このゲームにグローバル設定が適用されます。「Valve に従う」では、常に Valve のステータスが使用されます。Valve のデータが利用できない場合は、Steam の元のステータスが維持されます。",
     "compatibilityChoices": "手動および既定のカテゴリはユーザーの選択であり、Valve の認定やエミュレーターのパフォーマンス結果ではありません。",
     "hltbGame": "HowLongToBeat ゲーム",
+    "hltbSearchTitle": "HowLongToBeat を検索",
     "hltbHelp": "HowLongToBeat を検索するか、ゲーム番号またはゲームページのリンクを貼り付けて、このゲームで表示する時間を選択します。空欄のままにすると自動で照合します。",
     "hltbCurrentChosen": "現在のゲーム: {{name}}（選択済み）",
     "hltbCurrentAutomatic": "現在のゲーム: {{name}}（自動検出）",
     "hltbApply": "HLTB ゲームを適用",
     "steamAppId": "Steam アプリ ID",
     "steamAppIdHelp": "Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を貼り付けてください。空欄にすると固定した Steam 一致が解除されます。",
-    "steamAppIdApply": "Steam アプリ ID を適用",
+    "manualMatch": {
+      "label": "Steam アプリ ID を入力",
+      "help": "検索でゲームが見つからない場合は、Steam アプリ ID、ストア URL、コミュニティ URL、または SteamDB URL を使用してください。空欄にすると一致が解除されます。",
+      "button": "ID を入力..."
+    },
     "shortcut": {
       "immediateNotice": "これらの操作はすぐに適用されます。「保存」を押す必要はありません。",
-      "current": "現在: {{name}}",
+      "currentLabel": "現在の名前",
       "missingName": "Steam がネイティブのショートカット名を公開していません",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam の名前",
       "loadingSteamName": "Steam 名を読み込み中...",
       "noOfficialName": "Steam が正式な名前を返しませんでした",
       "managementUnavailable": "ショートカット名の管理を利用できません",
@@ -543,8 +560,6 @@
       "detailsLoadedTitle": "詳細を読み込みました",
       "steamPreviewBody": "Steam の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
       "ignPreviewBody": "IGN の詳細がこのフォームに読み込まれています。「保存」を押すと保存されます。",
-      "steamAppIdNotAppliedTitle": "Steam アプリ ID が適用されていません",
-      "steamAppIdNotAppliedBody": "新しい一致を読み込むには、保存する前に「Steam アプリ ID を適用」を選択してください。",
       "fetchFailedTitle": "取得に失敗しました",
       "removedBody": "メタデータを削除しました",
       "removeFailedTitle": "削除に失敗しました",
@@ -567,26 +582,14 @@
     "steamTextUnavailable": "Steam はこのゲームのテキストを返しませんでした。"
   },
   "matchPicker": {
-    "help": "Steam を検索し、結果を選択して詳細を確認してから「この Steam 一致を使用」を選んでください。閲覧してもゲームは変更されません。",
+    "help": "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
     "searchAriaLabel": "Steam ゲーム検索",
     "search": "Steam を検索",
     "searching": "Steam を検索中...",
     "idle": "ゲーム名を入力して Steam の一致を検索してください。",
-    "empty": "Steam の一致が見つかりません。別の名前を試すか、下の Steam アプリ ID フィールドを使用してください。",
+    "empty": "Steam の一致が見つかりません。別の名前を試すか、上の「Steam アプリ ID を入力」を使用してください。",
     "appId": "Steam アプリ ID: {{appId}}",
-    "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致",
-    "appIdSelected": "Steam アプリ ID: {{appId}} · 選択済み",
-    "appIdCurrentSelected": "Steam アプリ ID: {{appId}} · 現在の一致 · 選択済み",
-    "loadingDetails": "Steam の詳細を読み込み中...",
-    "artworkAlt": "{{title}} の Steam アートワーク",
-    "developer": "開発元: {{names}}",
-    "developerUnavailable": "開発元を取得できません",
-    "release": "リリース: {{date}}",
-    "releaseUnavailable": "リリース日を取得できません",
-    "steamType": "Steam タイプ: {{type}}。目的のゲームまたはエディションか確認してください。",
-    "applyHelp": "この一致を使用すると、その Steam アプリ ID と詳細がこのフォームに読み込まれます。「保存」を押すと保存されます。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
-    "apply": "この Steam 一致を使用",
-    "cancel": "選択をキャンセル"
+    "appIdCurrent": "Steam アプリ ID: {{appId}} · 現在の一致"
   },
   "categories": {
     "singlePlayer": "シングルプレイヤー",

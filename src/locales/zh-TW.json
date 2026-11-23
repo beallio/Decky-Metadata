@@ -21,10 +21,6 @@
     "invalid_title": "標題無效",
     "invalid_search": "搜尋無效",
     "steam_search_unavailable": "Steam 搜尋無法使用，請再試一次。",
-    "steam_details_unavailable": "Steam 遊戲詳細資料無法使用",
-    "steam_title_unavailable": "Steam 遊戲名稱無法使用",
-    "invalid_steam_game": "請選擇有效的 Steam 遊戲。",
-    "steam_preview_unavailable": "Steam 詳細資料無法使用，但你仍可使用此比對。",
     "settings_unreadable": "中繼資料設定檔無法讀取；請在儲存變更前修正或移除該檔案",
     "invalid_release_date": "release_date 必須是 YYYY-MM-DD 格式的日曆日期或 null",
     "hltb_settings_unavailable": "無法載入 HLTB 設定",
@@ -33,6 +29,7 @@
     "trailer_settings_unavailable": "無法載入預告片設定",
     "mini_achievements_settings_unavailable": "無法載入迷你成就設定",
     "protondb_settings_unavailable": "無法載入 ProtonDB 徽章設定",
+    "editor_header_settings_unavailable": "無法載入編輯器標題列設定",
     "steam_ui_unavailable": "Steam 介面無法使用",
     "update_check_failed": "檢查更新失敗",
     "rate_limited": "已超出速率限制",
@@ -214,6 +211,13 @@
       "enableLabel": "啟用迷你成就",
       "enableDescription": "在遊戲詳細資料頁面的遊玩時間旁顯示 Steam 的小型成就進度列。預設為關閉。",
       "footnote": "此功能使用 Steam 遊戲的 Steam 成就進度；不會為非 Steam 遊戲加入成就追蹤。"
+    },
+    "contextMenu": {
+      "title": "內容選單",
+      "headerIconLabel": "在編輯器標題列顯示遊戲圖示",
+      "headerIconDescription": "在中繼資料編輯頁面頂端的遊戲名稱旁顯示遊戲圖示。名稱較長時會捲動。",
+      "steamIconLabel": "缺少圖示時使用 Steam 圖示",
+      "steamIconDescription": "如果遊戲沒有自己的圖示，則使用相符 Steam 遊戲的圖示。如果兩者都不存在，則不會顯示圖示。"
     },
     "compat": {
       "title": "相容性狀態",
@@ -438,8 +442,8 @@
     },
     "currentMatch": "目前比對",
     "loadFromSteam": "從 Steam 載入",
-    "loadFromSteamSteamGame": "從 Steam 載入（不適用於 Steam 遊戲）",
-    "loadFromSteamNoMatch": "從 Steam 載入（無 Steam 比對結果）",
+    "loadFromSteamSteamGame": "不適用於 Steam 遊戲",
+    "loadFromSteamNoMatch": "無 Steam 比對結果",
     "loadFromSteamBusy": "從 Steam 載入（正在更新）",
     "fieldEdited": "已編輯",
     "fieldFromSteam": "來自 Steam，未儲存",
@@ -456,10 +460,18 @@
       "body": "這會刪除 {{name}} 的所有已儲存中繼資料。此操作無法復原。",
       "cancel": "取消"
     },
+    "review": {
+      "title": "檢視遊戲詳細資料",
+      "apply": "套用",
+      "cancel": "取消",
+      "genres": "類型"
+    },
     "nonSteamOnly": "此外掛只會變更非 Steam 遊戲。",
-    "searchIgn": "搜尋 IGN 中繼資料",
+    "searchIgn": "搜尋 IGN",
     "ign": {
-      "gameName": "遊戲名稱"
+      "gameName": "遊戲名稱",
+      "noResults": "沒有結果。",
+      "help": "搜尋 IGN，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。"
     },
     "search": "搜尋",
     "searching": "正在搜尋...",
@@ -494,18 +506,23 @@
     "compatibilityHelp": "「自動」會使用每款遊戲在 Steam 上比對到的遊戲的相容性狀態。「使用全域預設值」會將該設定套用到這款遊戲。「跟隨 Valve」一律使用 Valve 提供的狀態；若 Valve 資料無法使用，則保留 Steam 的原始狀態。",
     "compatibilityChoices": "手動與預設分類是你的選擇，並非 Valve 認證，也不是模擬器效能結果。",
     "hltbGame": "HowLongToBeat 遊戲",
+    "hltbSearchTitle": "搜尋 HowLongToBeat",
     "hltbHelp": "搜尋 HowLongToBeat，或貼上遊戲編號或遊戲頁面連結，以選擇此遊戲顯示的時數。留空則自動比對。",
     "hltbCurrentChosen": "目前遊戲：{{name}}（已選擇）",
     "hltbCurrentAutomatic": "目前遊戲：{{name}}（自動找到）",
     "hltbApply": "套用 HLTB 遊戲",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "貼上 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可清除固定的 Steam 比對。",
-    "steamAppIdApply": "套用 Steam App ID",
+    "manualMatch": {
+      "label": "輸入 Steam App ID",
+      "help": "當搜尋找不到遊戲時，使用 Steam App ID、商店 URL、社群 URL 或 SteamDB URL。留空可移除比對。",
+      "button": "輸入 ID..."
+    },
     "shortcut": {
       "immediateNotice": "這些操作會立即生效，不必按「儲存」。",
-      "current": "目前：{{name}}",
+      "currentLabel": "目前名稱",
       "missingName": "Steam 未提供原生捷徑名稱",
-      "steamName": "Steam：{{name}}",
+      "steamNameLabel": "Steam 名稱",
       "loadingSteamName": "正在載入 Steam 名稱...",
       "noOfficialName": "Steam 未傳回官方名稱",
       "managementUnavailable": "捷徑名稱管理無法使用",
@@ -543,8 +560,6 @@
       "detailsLoadedTitle": "詳細資料已載入",
       "steamPreviewBody": "Steam 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
       "ignPreviewBody": "IGN 詳細資料已載入此表單中，按下「儲存」後才會儲存。",
-      "steamAppIdNotAppliedTitle": "Steam App ID 未套用",
-      "steamAppIdNotAppliedBody": "儲存前，請選擇「套用 Steam App ID」以載入新的比對。",
       "fetchFailedTitle": "取得失敗",
       "removedBody": "中繼資料已移除",
       "removeFailedTitle": "移除失敗",
@@ -567,26 +582,14 @@
     "steamTextUnavailable": "Steam 未傳回此遊戲的文字。"
   },
   "matchPicker": {
-    "help": "搜尋 Steam，選取結果以查看詳細資料，然後選擇「使用此 Steam 比對」。瀏覽並不會變更你的遊戲。",
+    "help": "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
     "searchAriaLabel": "Steam 遊戲搜尋",
     "search": "搜尋 Steam",
     "searching": "正在搜尋 Steam...",
     "idle": "輸入遊戲名稱以尋找 Steam 比對。",
-    "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用下方的 Steam App ID 欄位。",
+    "empty": "找不到 Steam 比對。請嘗試其他名稱，或使用上方的「輸入 Steam App ID」。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對",
-    "appIdSelected": "Steam App ID：{{appId}} · 已選取",
-    "appIdCurrentSelected": "Steam App ID：{{appId}} · 目前比對 · 已選取",
-    "loadingDetails": "正在載入 Steam 詳細資料...",
-    "artworkAlt": "{{title}} 的 Steam 美術圖",
-    "developer": "開發人員：{{names}}",
-    "developerUnavailable": "開發人員無法使用",
-    "release": "發行：{{date}}",
-    "releaseUnavailable": "發行日期無法使用",
-    "steamType": "Steam 類型：{{type}}。請確認這是你想要的遊戲或版本。",
-    "applyHelp": "使用此比對會將其 Steam App ID 和詳細資料載入此表單中，按下「儲存」後才會儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
-    "apply": "使用此 Steam 比對",
-    "cancel": "取消選取"
+    "appIdCurrent": "Steam App ID：{{appId}} · 目前比對"
   },
   "categories": {
     "singlePlayer": "單人",

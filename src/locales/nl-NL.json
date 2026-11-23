@@ -22,10 +22,6 @@
     "invalid_title": "ongeldige titel",
     "invalid_search": "ongeldige zoekopdracht",
     "steam_search_unavailable": "De Steam-zoekfunctie is niet beschikbaar. Probeer het opnieuw.",
-    "steam_details_unavailable": "Steam-spelgegevens zijn niet beschikbaar",
-    "steam_title_unavailable": "Steam-speltitel is niet beschikbaar",
-    "invalid_steam_game": "Selecteer een geldig Steam-spel.",
-    "steam_preview_unavailable": "Steam-gegevens zijn niet beschikbaar. Je kunt deze match nog steeds gebruiken.",
     "settings_unreadable": "metadata-instellingenbestand is onleesbaar; herstel of verwijder het voordat je wijzigingen opslaat",
     "invalid_release_date": "release_date moet een kalenderdatum in de vorm YYYY-MM-DD of null zijn",
     "hltb_settings_unavailable": "HLTB-instellingen konden niet worden geladen",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "trailerinstellingen konden niet worden geladen",
     "mini_achievements_settings_unavailable": "mini-prestatie-instellingen konden niet worden geladen",
     "protondb_settings_unavailable": "ProtonDB-badge-instellingen konden niet worden geladen",
+    "editor_header_settings_unavailable": "De instellingen voor de editor-kop konden niet worden geladen",
     "steam_ui_unavailable": "Steam-interface niet beschikbaar",
     "update_check_failed": "Controleren op updates mislukt",
     "rate_limited": "Limiet overschreden",
@@ -215,6 +212,13 @@
       "enableLabel": "Mini-prestaties inschakelen",
       "enableDescription": "Toont Steams kleine voortgangsbalk voor prestaties naast Speeltijd op speldetailpagina's. Standaard uit.",
       "footnote": "Dit gebruikt de prestatievoortgang van Steam voor Steam-games; het voegt geen prestatietracking toe aan niet-Steam-games."
+    },
+    "contextMenu": {
+      "title": "Contextmenu",
+      "headerIconLabel": "Spelicoon in de editorkop",
+      "headerIconDescription": "Toont het spelicoon naast de naam bovenaan de pagina voor het bewerken van metadata. Lange namen scrollen.",
+      "steamIconLabel": "Steam-icoon gebruiken als het ontbreekt",
+      "steamIconDescription": "Als de game geen eigen icoon heeft, wordt het icoon van de gekoppelde Steam-game gebruikt. Als geen van beide bestaat, wordt er geen icoon getoond."
     },
     "compat": {
       "title": "Compatibiliteitsstatus",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Huidige match",
     "loadFromSteam": "Laden vanuit Steam",
-    "loadFromSteamSteamGame": "Laden vanuit Steam (niet beschikbaar voor Steam-games)",
-    "loadFromSteamNoMatch": "Laden vanuit Steam (geen Steam-match)",
+    "loadFromSteamSteamGame": "Niet beschikbaar voor Steam-games",
+    "loadFromSteamNoMatch": "Geen Steam-match",
     "loadFromSteamBusy": "Laden vanuit Steam (bezig met bijwerken)",
     "fieldEdited": "Bewerkt",
     "fieldFromSteam": "Van Steam, niet opgeslagen",
@@ -457,10 +461,18 @@
       "body": "Dit verwijdert alle opgeslagen metadata voor {{name}}. Je kunt dit niet ongedaan maken.",
       "cancel": "Annuleren"
     },
+    "review": {
+      "title": "Spelgegevens controleren",
+      "apply": "Toepassen",
+      "cancel": "Annuleren",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Deze plug-in wijzigt alleen niet-Steam-games.",
-    "searchIgn": "IGN-metadata doorzoeken",
+    "searchIgn": "IGN doorzoeken",
     "ign": {
-      "gameName": "Naam van de game"
+      "gameName": "Naam van de game",
+      "noResults": "Geen resultaten.",
+      "help": "Doorzoek IGN en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze."
     },
     "search": "Zoeken",
     "searching": "Zoeken...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "Bij ‘Automatisch’ wordt voor elke game de status van de bijbehorende game op Steam gebruikt. ‘Globale standaard gebruiken’ past de globale instelling toe op deze game. ‘Valve volgen’ gebruikt altijd de status van Valve. Zijn er geen gegevens van Valve beschikbaar, dan behoudt ‘Valve volgen’ de oorspronkelijke Steam-status.",
     "compatibilityChoices": "Handmatige en standaardcategorieën zijn jouw keuzes, geen Valve-certificering of een emulatorprestatieresultaat.",
     "hltbGame": "HowLongToBeat-game",
+    "hltbSearchTitle": "Zoeken op HowLongToBeat",
     "hltbHelp": "Doorzoek HowLongToBeat of plak een gamenummer of link naar de spelpagina om de tijden te kiezen die voor deze game worden getoond. Laat leeg om automatisch te matchen.",
     "hltbCurrentChosen": "Huidige game: {{name}} (gekozen)",
     "hltbCurrentAutomatic": "Huidige game: {{name}} (automatisch gevonden)",
     "hltbApply": "HLTB-game toepassen",
     "steamAppId": "Steam-app-ID",
     "steamAppIdHelp": "Plak een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL. Laat leeg om de vastgezette Steam-match te wissen.",
-    "steamAppIdApply": "Steam-app-ID toepassen",
+    "manualMatch": {
+      "label": "Voer een Steam-app-ID in",
+      "help": "Gebruik een Steam-app-ID, winkel-URL, community-URL of SteamDB-URL als de zoekopdracht de game niet vindt. Laat leeg om de match te verwijderen.",
+      "button": "ID invoeren..."
+    },
     "shortcut": {
       "immediateNotice": "Deze acties worden direct toegepast. Je hoeft niet op ‘Opslaan’ te drukken.",
-      "current": "Huidige: {{name}}",
+      "currentLabel": "Huidige naam",
       "missingName": "Steam heeft geen native naam voor de snelkoppeling beschikbaar gesteld",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam-naam",
       "loadingSteamName": "Steam-naam laden...",
       "noOfficialName": "Steam heeft geen officiële naam teruggegeven",
       "managementUnavailable": "Beheer van snelkoppelingsnamen is niet beschikbaar",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-details zijn in dit formulier geladen. Opslaan bewaart ze.",
       "ignPreviewBody": "IGN-details zijn in dit formulier geladen. Opslaan bewaart ze.",
-      "steamAppIdNotAppliedTitle": "Steam-app-ID niet toegepast",
-      "steamAppIdNotAppliedBody": "Selecteer ’Steam-app-ID toepassen’ om de nieuwe match te laden voordat je opslaat.",
       "fetchFailedTitle": "Ophalen mislukt",
       "removedBody": "Metadata verwijderd",
       "removeFailedTitle": "Verwijderen mislukt",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd."
   },
   "matchPicker": {
-    "help": "Doorzoek Steam, selecteer een resultaat om de details te bekijken en kies dan Deze Steam-match gebruiken. Door te bladeren wordt je game niet gewijzigd.",
+    "help": "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
     "searchAriaLabel": "Steam-games zoeken",
     "search": "Steam doorzoeken",
     "searching": "Steam doorzoeken...",
     "idle": "Voer een gamenaam in om Steam-matches te vinden.",
-    "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik het veld Steam-app-ID hieronder.",
+    "empty": "Geen Steam-matches gevonden. Probeer een andere naam of gebruik ‘Voer een Steam-app-ID in’ hierboven.",
     "appId": "Steam-app-ID: {{appId}}",
-    "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match",
-    "appIdSelected": "Steam-app-ID: {{appId}} · Geselecteerd",
-    "appIdCurrentSelected": "Steam-app-ID: {{appId}} · Huidige match · Geselecteerd",
-    "loadingDetails": "Steam-gegevens laden...",
-    "artworkAlt": "Steam-illustratie van {{title}}",
-    "developer": "Ontwikkelaar: {{names}}",
-    "developerUnavailable": "Ontwikkelaar niet beschikbaar",
-    "release": "Release: {{date}}",
-    "releaseUnavailable": "Releasedatum niet beschikbaar",
-    "steamType": "Steam-type: {{type}}. Controleer of dit de game of editie is die je wilt.",
-    "applyHelp": "Als je deze match gebruikt, worden de Steam-app-ID en details in dit formulier geladen. Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
-    "apply": "Deze Steam-match gebruiken",
-    "cancel": "Selectie annuleren"
+    "appIdCurrent": "Steam-app-ID: {{appId}} · Huidige match"
   },
   "categories": {
     "singlePlayer": "Singleplayer",

@@ -1,7 +1,8 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import type * as I18nModule from "../i18n";
-vi.mock("@decky/ui", () => ({ findClassModule: () => undefined, Focusable: "div", Navigation: { NavigateToExternalWeb: vi.fn() } }));
+const { findClassModuleMock } = vi.hoisted(() => ({ findClassModuleMock: vi.fn() }));
+vi.mock("@decky/ui", () => ({ findClassModule: findClassModuleMock, Focusable: "div", Navigation: { NavigateToExternalWeb: vi.fn() } }));
 // The component is called directly here, so its hook must not need a React renderer.
 vi.mock("../i18n", async (importOriginal) => {
   const actual = await importOriginal<typeof I18nModule>();
@@ -79,5 +80,22 @@ describe("HLTB stats", () => {
     } finally {
       setNativeCssClasses(null);
     }
+  });
+  it("retries Steam class lookup on later renders and caches successful results", () => {
+    const detailsModule = { DeckVerifiedInfo: "native-details-info", Details: "native-details", Focused: "native-focused" };
+    const menuModule = { MenuButton: "native-menu-button", ControllerConfigButton: "native-controller-button" };
+    findClassModuleMock.mockReset().mockReturnValue(undefined);
+    const first = render();
+    expect(nodes(first).find(node => node.props.onActivate)!.props.className).not.toContain("native-details");
+
+    findClassModuleMock.mockImplementation((predicate: (module: Record<string, string>) => boolean) =>
+      [detailsModule, menuModule].find(predicate));
+    const laterDefault = render();
+    expect(nodes(laterDefault).find(node => node.props.onActivate)!.props.className).toContain("native-details");
+    const laterClean = render({ settings: { ...DEFAULT_HLTB_SETTINGS, style: "clean" } });
+    expect(nodes(laterClean).find(node => node.props.onActivate)!.props.className).toContain("native-menu-button");
+    const lookups = findClassModuleMock.mock.calls.length;
+    render();
+    expect(findClassModuleMock).toHaveBeenCalledTimes(lookups);
   });
 });

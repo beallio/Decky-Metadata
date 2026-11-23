@@ -31,7 +31,8 @@ def classify(appid: str, entry: dict[str, object]) -> str | None:
     return "listed_match"
 
 
-def select(data: object, overrides: dict[str, str] | None = None) -> dict[str, object]:
+def select(data: object, overrides: dict[str, str] | None = None, library: set[str] | None = None) -> dict[str, object]:
+    """Pick one fixture per role; with `library`, only apps Steam currently lists qualify."""
     if not isinstance(data, dict): raise ValueError("metadata root must be an object")
     metadata = data.get("metadata", data)
     if not isinstance(metadata, dict): raise ValueError("metadata must be an object")
@@ -39,6 +40,8 @@ def select(data: object, overrides: dict[str, str] | None = None) -> dict[str, o
     by_id: dict[str, dict[str, object]] = {}
     for appid, raw in metadata.items():
         if not isinstance(raw, dict): continue
+        # Metadata outlives deleted shortcuts; such an app has no page to test.
+        if library is not None and str(appid) not in library: continue
         role = classify(str(appid), raw)
         if not role: continue
         item = {"appid": str(appid), "title": str(raw.get("title") or raw.get("name") or ""), "steam_appid": str(raw.get("steam_appid") or ""), "store_state": str(raw.get("steam_store_state") or raw.get("store_state") or "unknown"), "reason": f"stable {role} candidate"}
@@ -58,12 +61,18 @@ def select(data: object, overrides: dict[str, str] | None = None) -> dict[str, o
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("source", nargs="?", type=Path)
+    parser.add_argument("--library", type=Path, help="JSON array of app IDs Steam currently lists")
     for role in ROLES: parser.add_argument(f"--{role.replace('_', '-')}")
     args = parser.parse_args()
     try:
         data = json.load(args.source.open() if args.source else sys.stdin)
+        library = None
+        if args.library:
+            ids = json.load(args.library.open())
+            if not isinstance(ids, list) or not ids: raise ValueError("library must be a non-empty JSON array of app IDs")
+            library = {str(appid) for appid in ids}
         overrides = {role: getattr(args, role) or os.environ.get(f"DECKY_FIXTURE_{role.upper()}") for role in ROLES}
-        print(json.dumps(select(data, {key: value for key, value in overrides.items() if value}), sort_keys=True, separators=(",", ":")))
+        print(json.dumps(select(data, {key: value for key, value in overrides.items() if value}, library), sort_keys=True, separators=(",", ":")))
         return 0
     except (OSError, ValueError, json.JSONDecodeError) as error:
         print(f"select-fixtures: {error}", file=sys.stderr); return 1

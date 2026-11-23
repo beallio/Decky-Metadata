@@ -1,4 +1,4 @@
-# Manual development pre-release for the self-updater's "development" channel.
+# Development pre-release for the self-updater's "development" channel, run manually or when a PR merges into dev.
 #
 # Each run publishes a distinct semver prerelease tagged vX.Y.Z-dev.g<sha> with a
 # release manifest + checksum, so the in-plugin updater can discover and install
@@ -14,9 +14,13 @@ on:
         description: "Commit hash or ref to build (defaults to the current SHA)"
         required: false
         type: string
+  pull_request:
+    types: [closed]
+    branches: [dev]
 
+# One group per commit: a shared group keeps only one pending run, so rapid merges would cancel releases.
 concurrency:
-  group: dev-release-manual
+  group: dev-release-${{ github.event.pull_request.merge_commit_sha || github.event.inputs.commit || github.sha }}
   cancel-in-progress: false
 
 permissions:
@@ -24,6 +28,7 @@ permissions:
 
 jobs:
   dev-release:
+    if: github.event_name == 'workflow_dispatch' || (github.event.pull_request.merged == true && github.event.pull_request.head.repo.full_name == github.repository)
     name: Build and Publish Dev Prerelease
     runs-on: ubuntu-latest
     steps:
@@ -31,11 +36,18 @@ jobs:
         shell: bash
         env:
           INPUT_COMMIT: ${{ github.event.inputs.commit }}
+          DEFAULT_SHA: ${{ github.sha }}
+          MERGE_SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          commit_ref="$INPUT_COMMIT"
-          if [ -z "$commit_ref" ]; then
-            commit_ref="${{ github.sha }}"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            commit_ref="$INPUT_COMMIT"
+            if [ -z "$commit_ref" ]; then
+              commit_ref="$DEFAULT_SHA"
+            fi
+          else
+            commit_ref="$MERGE_SHA"
           fi
           if [[ ! "$commit_ref" =~ ^[a-zA-Z0-9./_-]+$ ]]; then
             echo "Commit ref contains invalid characters." >&2

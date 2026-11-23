@@ -110,6 +110,12 @@ export type ProtonDbBadgeSettings = {
   coverPosition: "bottom-left" | "top-left" | "top-right";
 };
 
+/** QAM "Context menu" options for the Edit Metadata page header. */
+export type EditorHeaderSettings = {
+  gameIcon: boolean;
+  steamIconFallback: boolean;
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;
@@ -202,6 +208,7 @@ export type MetadataSearchResult = {
   title: string;
   description: string;
   rating?: number | null;
+  cover_url?: string | null;
 };
 
 export type SteamMatchCandidate = {
@@ -210,20 +217,8 @@ export type SteamMatchCandidate = {
   cover_url: string | null;
 };
 
-export type SteamMatchPreview = SteamMatchCandidate & {
-  developers: string[];
-  /** Steam's display label, including partial dates or "Coming Soon". */
-  release_date_label: string | null;
-  app_type: string | null;
-};
-
 export type SteamMatchSearchResponse = {
   items: SteamMatchCandidate[];
-  error: string | null;
-};
-
-export type SteamMatchPreviewResponse = {
-  preview: SteamMatchPreview | null;
   error: string | null;
 };
 
@@ -265,6 +260,7 @@ export type SteamInternals = {
   };
   appStore: {
     GetAppOverviewByAppID?: (appId: number) => SteamOverview | null | undefined;
+    GetIconURLForApp?: (overview: SteamOverview) => string | null;
     allApps?: SteamOverview[] | Record<string, SteamOverview>;
   };
   appDetailsStore: object;

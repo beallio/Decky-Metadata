@@ -23,10 +23,6 @@
     "invalid_title": "título inválido",
     "invalid_search": "pesquisa inválida",
     "steam_search_unavailable": "A pesquisa na Steam está indisponível. Tente novamente.",
-    "steam_details_unavailable": "Os detalhes do jogo na Steam estão indisponíveis",
-    "steam_title_unavailable": "O título do jogo na Steam está indisponível",
-    "invalid_steam_game": "Selecione um jogo da Steam válido.",
-    "steam_preview_unavailable": "Os detalhes da Steam estão indisponíveis. Ainda pode usar esta correspondência.",
     "settings_unreadable": "o ficheiro de definições de metadados está ilegível; corrija-o ou remova-o antes de guardar as alterações",
     "invalid_release_date": "release_date tem de ser uma data de calendário AAAA-MM-DD ou null",
     "hltb_settings_unavailable": "não foi possível carregar as definições do HLTB",
@@ -35,6 +31,7 @@
     "trailer_settings_unavailable": "não foi possível carregar as definições de trailers",
     "mini_achievements_settings_unavailable": "não foi possível carregar as definições de miniconquistas",
     "protondb_settings_unavailable": "não foi possível carregar as definições do selo ProtonDB",
+    "editor_header_settings_unavailable": "não foi possível carregar as definições do cabeçalho do editor",
     "steam_ui_unavailable": "Interface da Steam indisponível",
     "update_check_failed": "Falha ao procurar atualizações",
     "rate_limited": "Limite de pedidos excedido",
@@ -216,6 +213,13 @@
       "enableLabel": "Ativar miniconquistas",
       "enableDescription": "Mostra a pequena barra de progresso de conquistas da Steam ao lado do Tempo de jogo nas páginas de detalhes do jogo. Desativado por predefinição.",
       "footnote": "Isto usa o progresso de conquistas da Steam para jogos da Steam; não adiciona o acompanhamento de conquistas a jogos que não são da Steam."
+    },
+    "contextMenu": {
+      "title": "Menu de contexto",
+      "headerIconLabel": "Ícone do jogo no cabeçalho do editor",
+      "headerIconDescription": "Mostra o ícone do jogo junto ao nome na parte superior da página de edição de metadados. Os nomes longos deslocam-se.",
+      "steamIconLabel": "Usar o ícone da Steam se estiver em falta",
+      "steamIconDescription": "Quando o jogo não tem ícone próprio, usa o ícone do jogo correspondente na Steam. Se nenhum existir, não é apresentado qualquer ícone."
     },
     "compat": {
       "title": "Estado de compatibilidade",
@@ -440,8 +444,8 @@
     },
     "currentMatch": "Correspondência atual",
     "loadFromSteam": "Carregar a partir da Steam",
-    "loadFromSteamSteamGame": "Carregar a partir da Steam (indisponível para jogos da Steam)",
-    "loadFromSteamNoMatch": "Carregar a partir da Steam (sem correspondência na Steam)",
+    "loadFromSteamSteamGame": "Indisponível para jogos da Steam",
+    "loadFromSteamNoMatch": "Sem correspondência na Steam",
     "loadFromSteamBusy": "Carregar a partir da Steam (a atualizar)",
     "fieldEdited": "Editado",
     "fieldFromSteam": "Da Steam, não guardado",
@@ -458,10 +462,18 @@
       "body": "Isto elimina todos os metadados guardados de {{name}}. Não pode ser anulado.",
       "cancel": "Cancelar"
     },
+    "review": {
+      "title": "Rever detalhes do jogo",
+      "apply": "Aplicar",
+      "cancel": "Cancelar",
+      "genres": "Géneros"
+    },
     "nonSteamOnly": "Este plugin só altera jogos que não são da Steam.",
-    "searchIgn": "Pesquisar metadados na IGN",
+    "searchIgn": "Pesquisar na IGN",
     "ign": {
-      "gameName": "Nome do jogo"
+      "gameName": "Nome do jogo",
+      "noResults": "Sem resultados.",
+      "help": "Pesquise na IGN e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos."
     },
     "search": "Pesquisar",
     "searching": "A pesquisar...",
@@ -496,18 +508,23 @@
     "compatibilityHelp": "A opção «Automático» usa, para cada jogo, o estado do jogo correspondente na Steam. A opção «Usar predefinição global» aplica a definição global a este jogo. A opção «Seguir a Valve» usa sempre o estado da Valve. Quando os dados da Valve não estão disponíveis, «Seguir a Valve» mantém o estado original da Steam.",
     "compatibilityChoices": "As categorias manuais e predefinidas são escolhas suas, não uma certificação da Valve nem o resultado de desempenho de um emulador.",
     "hltbGame": "Jogo no HowLongToBeat",
+    "hltbSearchTitle": "Pesquisar no HowLongToBeat",
     "hltbHelp": "Pesquise no HowLongToBeat, ou cole o número ou a ligação da página do jogo, para escolher os tempos mostrados para este jogo. Deixe vazio para corresponder automaticamente.",
     "hltbCurrentChosen": "Jogo atual: {{name}} (escolhido)",
     "hltbCurrentAutomatic": "Jogo atual: {{name}} (encontrado automaticamente)",
     "hltbApply": "Aplicar jogo do HLTB",
     "steamAppId": "App ID da Steam",
     "steamAppIdHelp": "Cole um App ID da Steam, um URL da Loja, da Comunidade ou do SteamDB. Deixe vazio para limpar a correspondência fixada da Steam.",
-    "steamAppIdApply": "Aplicar App ID da Steam",
+    "manualMatch": {
+      "label": "Introduza um App ID da Steam",
+      "help": "Use um App ID da Steam, um URL da Loja, da Comunidade ou do SteamDB quando a pesquisa não encontrar o jogo. Deixe vazio para remover a correspondência.",
+      "button": "Introduzir ID..."
+    },
     "shortcut": {
       "immediateNotice": "Estas ações são aplicadas de imediato, sem ter de selecionar «Guardar».",
-      "current": "Atual: {{name}}",
+      "currentLabel": "Nome atual",
       "missingName": "A Steam não expôs um nome nativo para o atalho",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Nome da Steam",
       "loadingSteamName": "A carregar o nome da Steam...",
       "noOfficialName": "A Steam não devolveu um nome oficial",
       "managementUnavailable": "A gestão de nomes de atalhos está indisponível",
@@ -545,8 +562,6 @@
       "detailsLoadedTitle": "Detalhes carregados",
       "steamPreviewBody": "Os detalhes da Steam foram carregados neste formulário. Guarde para os manter.",
       "ignPreviewBody": "Os detalhes da IGN foram carregados neste formulário. Guarde para os manter.",
-      "steamAppIdNotAppliedTitle": "App ID da Steam não aplicado",
-      "steamAppIdNotAppliedBody": "Selecione Aplicar App ID da Steam para carregar a nova correspondência antes de guardar.",
       "fetchFailedTitle": "Falha ao obter",
       "removedBody": "Metadados removidos",
       "removeFailedTitle": "Falha ao remover",
@@ -569,26 +584,14 @@
     "steamTextUnavailable": "A Steam não devolveu texto para este jogo."
   },
   "matchPicker": {
-    "help": "Pesquise na Steam, selecione um resultado para ver os detalhes e depois escolha Usar esta correspondência da Steam. Navegar não altera o seu jogo.",
+    "help": "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
     "searchAriaLabel": "Pesquisa de jogos na Steam",
     "search": "Pesquisar na Steam",
     "searching": "A pesquisar na Steam...",
     "idle": "Introduza o nome de um jogo para encontrar correspondências na Steam.",
-    "empty": "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use o campo App ID da Steam abaixo.",
+    "empty": "Nenhuma correspondência encontrada na Steam. Tente outro nome ou use «Introduza um App ID da Steam» acima.",
     "appId": "App ID da Steam: {{appId}}",
-    "appIdCurrent": "App ID da Steam: {{appId}} · Correspondência atual",
-    "appIdSelected": "App ID da Steam: {{appId}} · Selecionado",
-    "appIdCurrentSelected": "App ID da Steam: {{appId}} · Correspondência atual · Selecionado",
-    "loadingDetails": "A carregar detalhes da Steam...",
-    "artworkAlt": "Arte de {{title}} na Steam",
-    "developer": "Programador: {{names}}",
-    "developerUnavailable": "Programador indisponível",
-    "release": "Lançamento: {{date}}",
-    "releaseUnavailable": "Data de lançamento indisponível",
-    "steamType": "Tipo na Steam: {{type}}. Confirme se este é o jogo ou a edição que quer.",
-    "applyHelp": "Usar esta correspondência carrega o App ID da Steam e os respetivos detalhes neste formulário. Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
-    "apply": "Usar esta correspondência da Steam",
-    "cancel": "Cancelar seleção"
+    "appIdCurrent": "App ID da Steam: {{appId}} · Correspondência atual"
   },
   "categories": {
     "singlePlayer": "Um jogador",

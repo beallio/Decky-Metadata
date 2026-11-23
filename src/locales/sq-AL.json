@@ -22,10 +22,6 @@
     "invalid_title": "titull i pavlefshëm",
     "invalid_search": "kërkim i pavlefshëm",
     "steam_search_unavailable": "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",
-    "steam_details_unavailable": "Detajet e lojës në Steam nuk janë të disponueshme",
-    "steam_title_unavailable": "Titulli i lojës në Steam nuk është i disponueshëm",
-    "invalid_steam_game": "Zgjidh një lojë të vlefshme në Steam.",
-    "steam_preview_unavailable": "Detajet nga Steam nuk janë të disponueshme. Mund ta përdorësh gjithsesi këtë përputhje.",
     "settings_unreadable": "skedari i cilësimeve të metadatave nuk mund të lexohet; rregulloje ose hiqe përpara se të ruash ndryshimet",
     "invalid_release_date": "release_date duhet të jetë datë kalendarike VVVV-MM-DD ose null",
     "hltb_settings_unavailable": "cilësimet e HLTB nuk mund të ngarkoheshin",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "cilësimet e trailerave nuk mund të ngarkoheshin",
     "mini_achievements_settings_unavailable": "cilësimet e arritjeve mini nuk mund të ngarkoheshin",
     "protondb_settings_unavailable": "cilësimet e distinktivëve ProtonDB nuk mund të ngarkoheshin",
+    "editor_header_settings_unavailable": "Cilësimet e kreut të redaktuesit nuk mund të ngarkoheshin",
     "steam_ui_unavailable": "Ndërfaqja e Steam nuk është e disponueshme",
     "update_check_failed": "Kontrolli për përditësime dështoi",
     "rate_limited": "Limiti i kërkesave u tejkalua",
@@ -215,6 +212,13 @@
       "enableLabel": "Aktivizo arritjet mini",
       "enableDescription": "Shfaq shiritin e vogël të përparimit të arritjeve të Steam pranë Kohës së lojës në faqet e detajeve. I çaktivizuar si parazgjedhje.",
       "footnote": "Kjo përdor përparimin e arritjeve të Steam për lojërat e Steam; nuk shton gjurmim arritjesh për lojërat jo-Steam."
+    },
+    "contextMenu": {
+      "title": "Menuja e kontekstit",
+      "headerIconLabel": "Ikona e lojës në kreun e redaktuesit",
+      "headerIconDescription": "Shfaq ikonën e lojës pranë emrit të saj në krye të faqes së redaktimit të metadatave. Emrat e gjatë lëvizin.",
+      "steamIconLabel": "Përdor ikonën e Steam nëse mungon",
+      "steamIconDescription": "Kur loja nuk ka ikonën e vet, përdoret ikona e lojës përkatëse në Steam. Nëse nuk ekziston asnjë, nuk shfaqet ikonë."
     },
     "compat": {
       "title": "Gjendja e përputhshmërisë",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Përputhja aktuale",
     "loadFromSteam": "Ngarko nga Steam",
-    "loadFromSteamSteamGame": "Ngarko nga Steam (nuk ofrohet për lojërat e Steam)",
-    "loadFromSteamNoMatch": "Ngarko nga Steam (pa përputhje në Steam)",
+    "loadFromSteamSteamGame": "Nuk ofrohet për lojërat e Steam",
+    "loadFromSteamNoMatch": "Pa përputhje në Steam",
     "loadFromSteamBusy": "Ngarko nga Steam (po përditësohet)",
     "fieldEdited": "Ndryshuar",
     "fieldFromSteam": "Nga Steam, nuk është ruajtur",
@@ -457,10 +461,18 @@
       "body": "Kjo fshin të gjitha metadatat e ruajtura për {{name}}. Nuk mund ta zhbësh.",
       "cancel": "Anulo"
     },
+    "review": {
+      "title": "Shqyrto detajet e lojës",
+      "apply": "Zbato",
+      "cancel": "Anulo",
+      "genres": "Zhanret"
+    },
     "nonSteamOnly": "Kjo shtojcë ndryshon vetëm lojërat jo-Steam.",
-    "searchIgn": "Kërko metadata në IGN",
+    "searchIgn": "Kërko në IGN",
     "ign": {
-      "gameName": "Emri i lojës"
+      "gameName": "Emri i lojës",
+      "noResults": "Nuk ka rezultate.",
+      "help": "Kërko në IGN, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan."
     },
     "search": "Kërko",
     "searching": "Po kërkohet...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "„Automatike“ përdor për çdo lojë gjendjen e lojës përkatëse në Steam. „Përdor parazgjedhjen globale“ trashëgon atë cilësim për këtë lojë. „Ndiq Valve“ përdor gjithmonë gjendjen e përcaktuar nga Valve. Kur të dhënat e Valve nuk janë të disponueshme, „Ndiq Valve“ ruan gjendjen origjinale në Steam.",
     "compatibilityChoices": "Kategoritë manuale dhe ato të paracaktuara janë zgjedhjet e tua, jo certifikim i Valve ose rezultat i performancës së emulatorit.",
     "hltbGame": "Loja në HowLongToBeat",
+    "hltbSearchTitle": "Kërko në HowLongToBeat",
     "hltbHelp": "Kërko në HowLongToBeat ose ngjit një numër loje ose lidhje faqeje loje për të zgjedhur kohët që shfaqen për këtë lojë. Lëre bosh për përputhje automatike.",
     "hltbCurrentChosen": "Loja aktuale: {{name}} (e zgjedhur)",
     "hltbCurrentAutomatic": "Loja aktuale: {{name}} (gjetur automatikisht)",
     "hltbApply": "Zbato lojën e HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Ngjit një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB. Lëre bosh për të pastruar përputhjen e fiksuar në Steam.",
-    "steamAppIdApply": "Zbato Steam App ID",
+    "manualMatch": {
+      "label": "Fut një Steam App ID",
+      "help": "Përdor një Steam App ID, URL të Dyqanit, URL të Komunitetit ose URL të SteamDB kur kërkimi nuk e gjen lojën. Lëre bosh për të hequr përputhjen.",
+      "button": "Fut ID..."
+    },
     "shortcut": {
       "immediateNotice": "Këto veprime zbatohen menjëherë. Nuk ka nevojë të shtypësh „Ruaj“.",
-      "current": "Aktual: {{name}}",
+      "currentLabel": "Emri aktual",
       "missingName": "Steam nuk ekspozoi një emër shkurtoreje vendase",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Emri i Steam",
       "loadingSteamName": "Po ngarkohet emri nga Steam...",
       "noOfficialName": "Steam nuk ktheu një emër zyrtar",
       "managementUnavailable": "Menaxhimi i emrave të shkurtoreve nuk është i disponueshëm",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Detajet u ngarkuan",
       "steamPreviewBody": "Detajet e Steam u ngarkuan në këtë formular. Ruajtja i ruan ato.",
       "ignPreviewBody": "Detajet e IGN u ngarkuan në këtë formular. Ruajtja i ruan ato.",
-      "steamAppIdNotAppliedTitle": "Steam App ID nuk u zbatua",
-      "steamAppIdNotAppliedBody": "Zgjidh «Zbato Steam App ID» për të ngarkuar përputhjen e re përpara se të ruash.",
       "fetchFailedTitle": "Marrja dështoi",
       "removedBody": "Metadata u hoqën",
       "removeFailedTitle": "Heqja dështoi",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë."
   },
   "matchPicker": {
-    "help": "Kërko në Steam, zgjidh një rezultat për të kontrolluar detajet dhe pastaj zgjidh „Përdor këtë përputhje në Steam“. Shfletimi nuk e ndryshon lojën tënde.",
+    "help": "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
     "searchAriaLabel": "Kërkimi i lojërave në Steam",
     "search": "Kërko në Steam",
     "searching": "Po kërkohet në Steam...",
     "idle": "Shkruaj një emër loje për të gjetur përputhje në Steam.",
-    "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor fushën Steam App ID më poshtë.",
+    "empty": "Nuk u gjetën përputhje në Steam. Provo një emër tjetër ose përdor „Fut një Steam App ID“ më lart.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale",
-    "appIdSelected": "Steam App ID: {{appId}} · I zgjedhur",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · Përputhja aktuale · I zgjedhur",
-    "loadingDetails": "Po ngarkohen detajet nga Steam...",
-    "artworkAlt": "Arti i Steam për {{title}}",
-    "developer": "Zhvilluesi: {{names}}",
-    "developerUnavailable": "Zhvilluesi i padisponueshëm",
-    "release": "Publikimi: {{date}}",
-    "releaseUnavailable": "Data e publikimit e padisponueshme",
-    "steamType": "Lloji në Steam: {{type}}. Kontrollo që kjo është loja ose botimi që dëshiron.",
-    "applyHelp": "Përdorimi i kësaj përputhjeje ngarkon Steam App ID dhe detajet e tij në këtë formular. Ruajtja i ruan ato. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
-    "apply": "Përdor këtë përputhje në Steam",
-    "cancel": "Anulo zgjedhjen"
+    "appIdCurrent": "Steam App ID: {{appId}} · Përputhja aktuale"
   },
   "categories": {
     "singlePlayer": "Një lojtar",

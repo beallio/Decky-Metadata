@@ -21,10 +21,6 @@
     "invalid_title": "标题无效",
     "invalid_search": "搜索无效",
     "steam_search_unavailable": "Steam 搜索不可用，请重试。",
-    "steam_details_unavailable": "Steam 游戏详情不可用",
-    "steam_title_unavailable": "Steam 游戏名称不可用",
-    "invalid_steam_game": "请选择有效的 Steam 游戏。",
-    "steam_preview_unavailable": "Steam 详情不可用，但仍可使用此匹配。",
     "settings_unreadable": "元数据设置文件无法读取；请在保存更改前修复或删除该文件",
     "invalid_release_date": "release_date 必须是 YYYY-MM-DD 格式的日历日期或 null",
     "hltb_settings_unavailable": "无法加载 HLTB 设置",
@@ -33,6 +29,7 @@
     "trailer_settings_unavailable": "无法加载预告片设置",
     "mini_achievements_settings_unavailable": "无法加载迷你成就设置",
     "protondb_settings_unavailable": "无法加载 ProtonDB 徽章设置",
+    "editor_header_settings_unavailable": "无法加载编辑器标题栏设置",
     "steam_ui_unavailable": "Steam 界面不可用",
     "update_check_failed": "检查更新失败",
     "rate_limited": "超出速率限制",
@@ -214,6 +211,13 @@
       "enableLabel": "启用迷你成就",
       "enableDescription": "在游戏详情页的游戏时间旁显示 Steam 的小型成就进度条。默认关闭。",
       "footnote": "此功能使用 Steam 游戏的 Steam 成就进度；不会为非 Steam 游戏添加成就追踪。"
+    },
+    "contextMenu": {
+      "title": "上下文菜单",
+      "headerIconLabel": "在编辑器标题栏显示游戏图标",
+      "headerIconDescription": "在元数据编辑页面顶部的游戏名称旁显示游戏图标。名称较长时会滚动。",
+      "steamIconLabel": "缺少图标时使用 Steam 图标",
+      "steamIconDescription": "如果游戏没有自己的图标，则使用匹配的 Steam 游戏图标。如果两者都没有，则不显示图标。"
     },
     "compat": {
       "title": "兼容性状态",
@@ -438,8 +442,8 @@
     },
     "currentMatch": "当前匹配",
     "loadFromSteam": "从 Steam 加载",
-    "loadFromSteamSteamGame": "从 Steam 加载（不适用于 Steam 游戏）",
-    "loadFromSteamNoMatch": "从 Steam 加载（无 Steam 匹配）",
+    "loadFromSteamSteamGame": "不适用于 Steam 游戏",
+    "loadFromSteamNoMatch": "无 Steam 匹配",
     "loadFromSteamBusy": "从 Steam 加载（正在更新）",
     "fieldEdited": "已编辑",
     "fieldFromSteam": "来自 Steam，未保存",
@@ -456,10 +460,18 @@
       "body": "这将删除 {{name}} 的所有已保存元数据。此操作无法撤销。",
       "cancel": "取消"
     },
+    "review": {
+      "title": "查看游戏详情",
+      "apply": "应用",
+      "cancel": "取消",
+      "genres": "类型"
+    },
     "nonSteamOnly": "此插件仅修改非 Steam 游戏。",
-    "searchIgn": "搜索 IGN 元数据",
+    "searchIgn": "搜索 IGN",
     "ign": {
-      "gameName": "游戏名称"
+      "gameName": "游戏名称",
+      "noResults": "没有结果。",
+      "help": "搜索 IGN，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。"
     },
     "search": "搜索",
     "searching": "正在搜索...",
@@ -494,18 +506,23 @@
     "compatibilityHelp": "“自动”使用每款游戏在 Steam 上匹配到的游戏的兼容性状态。“使用全局默认值”会对此游戏沿用该设置。“跟随 Valve”始终使用 Valve 提供的状态；若 Valve 数据不可用，则保留 Steam 的原始状态。",
     "compatibilityChoices": "手动和默认分类是你的选择，并非 Valve 认证，也不是模拟器性能结果。",
     "hltbGame": "HowLongToBeat 游戏",
+    "hltbSearchTitle": "搜索 HowLongToBeat",
     "hltbHelp": "搜索 HowLongToBeat，或粘贴游戏编号或游戏页面链接，以选择此游戏显示的时长。留空则自动匹配。",
     "hltbCurrentChosen": "当前游戏：{{name}}（已选择）",
     "hltbCurrentAutomatic": "当前游戏：{{name}}（自动匹配）",
     "hltbApply": "应用 HLTB 游戏",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "粘贴 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可清除固定的 Steam 匹配。",
-    "steamAppIdApply": "应用 Steam App ID",
+    "manualMatch": {
+      "label": "输入 Steam App ID",
+      "help": "当搜索找不到游戏时，使用 Steam App ID、商店 URL、社区 URL 或 SteamDB URL。留空可移除匹配。",
+      "button": "输入 ID..."
+    },
     "shortcut": {
       "immediateNotice": "这些操作立即生效，无需点击“保存”。",
-      "current": "当前：{{name}}",
+      "currentLabel": "当前名称",
       "missingName": "Steam 未提供原生快捷方式名称",
-      "steamName": "Steam：{{name}}",
+      "steamNameLabel": "Steam 名称",
       "loadingSteamName": "正在加载 Steam 名称...",
       "noOfficialName": "Steam 未返回官方名称",
       "managementUnavailable": "快捷方式名称管理不可用",
@@ -543,8 +560,6 @@
       "detailsLoadedTitle": "详情已加载",
       "steamPreviewBody": "Steam 详情已加载到此表单中，点击保存后会存储。",
       "ignPreviewBody": "IGN 详情已加载到此表单中，点击保存后会存储。",
-      "steamAppIdNotAppliedTitle": "Steam App ID 未应用",
-      "steamAppIdNotAppliedBody": "保存前，请选择“应用 Steam App ID”以加载新的匹配。",
       "fetchFailedTitle": "获取失败",
       "removedBody": "元数据已移除",
       "removeFailedTitle": "移除失败",
@@ -567,26 +582,14 @@
     "steamTextUnavailable": "Steam 未返回此游戏的文本。"
   },
   "matchPicker": {
-    "help": "搜索 Steam，选择一个结果查看详情，然后选择“使用此 Steam 匹配”。浏览不会更改你的游戏。",
+    "help": "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
     "searchAriaLabel": "Steam 游戏搜索",
     "search": "搜索 Steam",
     "searching": "正在搜索 Steam...",
     "idle": "输入游戏名称以查找 Steam 匹配。",
-    "empty": "未找到 Steam 匹配。请尝试其他名称，或使用下方的 Steam App ID 字段。",
+    "empty": "未找到 Steam 匹配。请尝试其他名称，或使用上方的“输入 Steam App ID”。",
     "appId": "Steam App ID：{{appId}}",
-    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配",
-    "appIdSelected": "Steam App ID：{{appId}} · 已选择",
-    "appIdCurrentSelected": "Steam App ID：{{appId}} · 当前匹配 · 已选择",
-    "loadingDetails": "正在加载 Steam 详情...",
-    "artworkAlt": "{{title}} 的 Steam 艺术图",
-    "developer": "开发商：{{names}}",
-    "developerUnavailable": "开发商不可用",
-    "release": "发行：{{date}}",
-    "releaseUnavailable": "发行日期不可用",
-    "steamType": "Steam 类型：{{type}}。请确认这是你想要的游戏或版本。",
-    "applyHelp": "使用此匹配会将其 Steam App ID 和详情加载到此表单中，点击保存后才会存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
-    "apply": "使用此 Steam 匹配",
-    "cancel": "取消选择"
+    "appIdCurrent": "Steam App ID：{{appId}} · 当前匹配"
   },
   "categories": {
     "singlePlayer": "单人",

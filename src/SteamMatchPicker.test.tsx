@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type * as I18n from "./i18n";
 
-const backend = vi.hoisted(() => ({ searchSteamMatches: vi.fn(), getSteamMatchPreview: vi.fn() }));
+const backend = vi.hoisted(() => ({ searchSteamMatches: vi.fn() }));
 const hooks = vi.hoisted(() => ({
   values: [] as any[], refs: [] as any[], cursor: 0, refCursor: 0,
   setup: null as (() => (() => void)) | null, cleanup: null as (() => void) | null,
@@ -34,22 +34,26 @@ vi.mock("./i18n", async (importOriginal) => {
 });
 
 import { SteamMatchPicker } from "./SteamMatchPicker";
-import type { SteamMatchCandidate, SteamMatchPreview } from "./types";
+import type { SteamSearchSnapshot } from "./SteamMatchPicker";
+import type { SteamMatchCandidate } from "./types";
 
-const portal: SteamMatchCandidate = { steam_appid: 400, title: "Portal", cover_url: null };
+const portal: SteamMatchCandidate = { steam_appid: 400, title: "Portal", cover_url: "https://cdn.example/portal.jpg" };
 const portal2: SteamMatchCandidate = { steam_appid: 620, title: "Portal 2", cover_url: null };
 const hades: SteamMatchCandidate = { steam_appid: 1145360, title: "Hades", cover_url: null };
-const portalPreview: SteamMatchPreview = {
-  ...portal, developers: ["Valve"], release_date_label: "Oct 9, 2007", app_type: "game",
-};
-const portal2Preview: SteamMatchPreview = {
-  ...portal2, developers: ["Valve"], release_date_label: "Apr 18, 2011", app_type: "game",
-};
-const applying = vi.fn(async (_steamAppId: number) => {});
-const renderPicker = () => {
+const applying = vi.fn();
+const onSearchChange = vi.fn();
+const renderPicker = (overrides: Partial<Parameters<typeof SteamMatchPicker>[0]> = {}) => {
   hooks.cursor = 0;
   hooks.refCursor = 0;
-  return SteamMatchPicker({ initialQuery: "Portal", matchedSteamAppId: null, disabled: false, onApply: applying }) as any;
+  return SteamMatchPicker({
+    initialQuery: "Portal",
+    matchedSteamAppId: null,
+    disabled: false,
+    savedSearch: null,
+    onSearchChange,
+    onApply: applying,
+    ...overrides,
+  });
 };
 const walk = (node: any, predicate: (value: any) => boolean): any[] => {
   if (!node || typeof node !== "object") return [];
@@ -62,17 +66,26 @@ const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join("");
-  return `${text(node.props?.label)}${text(node.props?.children)}`;
+  return `${text(node.props?.label)}${text(node.props?.description)}${text(node.props?.children)}`;
 };
 const button = (tree: any, label: string) => walk(tree, node => typeof node.props?.onClick === "function" && text(node) === label)[0];
 const candidate = (tree: any, id: number) =>
-  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.children).includes(`Steam App ID: ${id}`))[0];
+  walk(tree, node => node.type === "Field" && typeof node.props?.onClick === "function" && text(node.props?.description).includes(`Steam App ID: ${id}`))[0];
 const changeQuery = (tree: any, query: string) => walk(tree, node => node.type === "TextField")[0].props.onChange({ target: { value: query } });
+// The results container's ref (React 19 passes ref as a prop; older React keeps it on the element).
+const resultsRoot = (tree: any) => {
+  const node = walk(tree, value => value.type === "div" && (value.ref ?? value.props?.ref))[0];
+  return node.ref ?? node.props.ref;
+};
 const flush = async () => { for (let index = 0; index < 8; index++) await Promise.resolve(); };
 const deferred = <T,>() => {
   let resolve!: (value: T) => void;
   const promise = new Promise<T>(done => { resolve = done; });
   return { promise, resolve };
+};
+const searchOnce = async () => {
+  button(renderPicker(), "Search Steam").props.onClick();
+  await flush();
 };
 
 beforeEach(() => {
@@ -81,23 +94,11 @@ beforeEach(() => {
   hooks.setup = null;
   hooks.cleanup = null;
   vi.resetAllMocks();
+  applying.mockResolvedValue(undefined);
   backend.searchSteamMatches.mockResolvedValue({ items: [portal2, portal], error: null });
-  backend.getSteamMatchPreview.mockResolvedValue({ preview: portalPreview, error: null });
 });
 
 describe("Steam match browsing ownership", () => {
-  it("shows identifying details for a non-first candidate without applying a match", async () => {
-    button(renderPicker(), "Search Steam").props.onClick();
-    await flush();
-    candidate(renderPicker(), 400).props.onClick();
-    await flush();
-
-    const shown = text(renderPicker());
-    expect(shown).toContain("Valve");
-    expect(shown).toContain("Oct 9, 2007");
-    expect(applying).not.toHaveBeenCalled();
-  });
-
   it("ignores an old search response after the user searches another title", async () => {
     const oldSearch = deferred<{ items: SteamMatchCandidate[]; error: null }>();
     backend.searchSteamMatches.mockReturnValueOnce(oldSearch.promise)
@@ -114,68 +115,100 @@ describe("Steam match browsing ownership", () => {
     expect(applying).not.toHaveBeenCalled();
   });
 
-  it("keeps the new candidate's release details when an older preview completes", async () => {
-    const oldPreview = deferred<{ preview: SteamMatchPreview; error: null }>();
-    backend.getSteamMatchPreview.mockReturnValueOnce(oldPreview.promise)
-      .mockResolvedValueOnce({ preview: portal2Preview, error: null });
-    button(renderPicker(), "Search Steam").props.onClick();
-    await flush();
-    candidate(renderPicker(), 400).props.onClick();
-    candidate(renderPicker(), 620).props.onClick();
-    await flush();
-    oldPreview.resolve({ preview: portalPreview, error: null });
-    await flush();
+  it("applies a clicked result, keeps the results listed and refocuses that row", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
+    try {
+      await searchOnce();
+      const focus = vi.fn();
+      const querySelector = vi.fn(() => ({ focus }));
+      const tree = renderPicker();
+      resultsRoot(tree).current = { querySelector };
+      candidate(tree, 400).props.onClick();
+      await flush();
 
-    expect(text(renderPicker())).toContain("Apr 18, 2011");
-    expect(text(renderPicker())).not.toContain("Oct 9, 2007");
-    expect(applying).not.toHaveBeenCalled();
+      expect(applying).toHaveBeenCalledWith(400, "https://cdn.example/portal.jpg");
+      expect(querySelector).toHaveBeenCalledWith('[data-steam-match-appid="400"] .decky-metadata-editor__result');
+      expect(focus).toHaveBeenCalledTimes(1);
+      expect(text(renderPicker())).toContain("Steam App ID: 400");
+      expect(text(renderPicker())).toContain("Portal 2");
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
-  it("cannot apply a previously selected result after the query changes", async () => {
-    button(renderPicker(), "Search Steam").props.onClick();
-    await flush();
-    candidate(renderPicker(), 400).props.onClick();
-    await flush();
-    const retiredConfirm = button(renderPicker(), "Use this Steam match");
-    changeQuery(renderPicker(), "Hades");
-    retiredConfirm.props.onClick();
-    await flush();
+  it("opens one review for a double press and does not refocus a row a new search replaced", async () => {
+    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => { callback(0); return 0; });
+    try {
+      const review = deferred<void>();
+      applying.mockReturnValue(review.promise);
+      await searchOnce();
+      const focus = vi.fn();
+      const tree = renderPicker();
+      resultsRoot(tree).current = { querySelector: () => ({ focus }) };
+      const row = candidate(tree, 400);
+      row.props.onActivate();
+      row.props.onClick();
+      changeQuery(renderPicker(), "Hades");
+      review.resolve();
+      await flush();
 
-    expect(applying).not.toHaveBeenCalled();
-    expect(text(renderPicker())).not.toContain("Oct 9, 2007");
+      expect(applying).toHaveBeenCalledTimes(1);
+      expect(focus).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
-  it("rejects confirmation from an unmounted picker", async () => {
-    button(renderPicker(), "Search Steam").props.onClick();
-    await flush();
-    candidate(renderPicker(), 400).props.onClick();
-    await flush();
-    const retiredConfirm = button(renderPicker(), "Use this Steam match");
+  it("does not apply a result from an unmounted picker", async () => {
+    await searchOnce();
+    const row = candidate(renderPicker(), 400);
     hooks.cleanup!();
-    retiredConfirm.props.onClick();
+    row.props.onClick();
     await flush();
 
     expect(applying).not.toHaveBeenCalled();
   });
-});
 
-it("rejects an old confirmation when the same row is selected again and its new preview is pending", async () => {
-  const newPreview = deferred<{ preview: SteamMatchPreview; error: null }>();
-  backend.getSteamMatchPreview.mockResolvedValueOnce({ preview: portalPreview, error: null })
-    .mockResolvedValueOnce({ preview: portal2Preview, error: null })
-    .mockReturnValueOnce(newPreview.promise);
-  button(renderPicker(), "Search Steam").props.onClick();
-  await flush();
-  candidate(renderPicker(), 400).props.onClick();
-  await flush();
-  const retiredConfirm = button(renderPicker(), "Use this Steam match");
-  candidate(renderPicker(), 620).props.onClick();
-  await flush();
-  candidate(renderPicker(), 400).props.onClick();
-  retiredConfirm.props.onClick();
-  await flush();
+  it("does not apply a result captured before the query changed", async () => {
+    await searchOnce();
+    const staleRow = candidate(renderPicker(), 400);
+    changeQuery(renderPicker(), "Hades");
+    staleRow.props.onClick();
+    await flush();
 
-  expect(applying).not.toHaveBeenCalled();
-  newPreview.resolve({ preview: portalPreview, error: null });
-  await flush();
+    expect(applying).not.toHaveBeenCalled();
+  });
+
+  it("marks the current match on the result's description line", () => {
+    const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal2, portal], status: "results", error: null };
+    const tree = renderPicker({ savedSearch: snapshot, matchedSteamAppId: 400 });
+
+    expect(candidate(tree, 400).props.description).toBe("Steam App ID: 400 · Current match");
+    expect(candidate(tree, 620).props.description).toBe("Steam App ID: 620");
+  });
+
+  it("does not apply a result while the picker is disabled", async () => {
+    const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal], status: "results", error: null };
+    candidate(renderPicker({ savedSearch: snapshot, disabled: true }), 400).props.onClick();
+    await flush();
+
+    expect(applying).not.toHaveBeenCalled();
+  });
+
+  it("reports the completed search and restores it on a fresh mount", async () => {
+    await searchOnce();
+    const snapshot: SteamSearchSnapshot = { query: "Portal", items: [portal2, portal], status: "results", error: null };
+    expect(onSearchChange).toHaveBeenLastCalledWith(snapshot);
+
+    hooks.values = [];
+    hooks.refs = [];
+    hooks.setup = null;
+    hooks.cleanup = null;
+    const restored = renderPicker({ savedSearch: snapshot });
+
+    expect(backend.searchSteamMatches).toHaveBeenCalledTimes(1);
+    expect(text(restored)).toContain("Portal 2");
+    expect(text(restored)).toContain("Steam App ID: 400");
+    expect(walk(restored, node => node.type === "TextField")[0].props.value).toBe("Portal");
+  });
 });

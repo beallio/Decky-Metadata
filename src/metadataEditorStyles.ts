@@ -4,24 +4,22 @@ export const editorRootClassName = "decky-metadata-editor";
 export const editorFocusTargetClassName = "decky-metadata-editor__focus-target";
 
 export const editorSearchRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) minmax(112px, max-content)",
+  display: "flex",
   alignItems: "center",
   gap: 8,
-  width: "100%",
   minWidth: 0,
 } as const;
 
-export const editorSearchInputRowSpacingStyle = {
-  marginTop: 12,
+export const editorSearchInputStyle = {
+  flex: "1 1 auto",
+  minWidth: 0,
 } as const;
 
-export const editorSearchResultsSpacingStyle = {
-  marginTop: 12,
-} as const;
 
 export const editorSearchButtonStyle = {
-  width: "100%",
+  flex: "0 0 auto",
+  // DialogButton is width:100% natively, which squeezed the input to nothing.
+  width: "auto",
   minWidth: 112,
   whiteSpace: "nowrap",
 } as const;
@@ -35,49 +33,16 @@ export const editorSteamMatchImageStyle = {
   borderRadius: 4,
 } as const;
 
-
-export const editorAppIdRowStyle = {
-  display: "grid",
-  gridTemplateColumns: "minmax(0, 1fr) auto",
-  alignItems: "center",
-  gap: 8,
-  width: "100%",
-  minWidth: 0,
+export const editorIgnResultImageStyle = {
+  width: 64,
+  height: 64,
+  flexShrink: 0,
+  objectFit: "cover",
+  borderRadius: 4,
 } as const;
 
-export const editorAppIdButtonStyle = {
-  width: "auto",
-  minWidth: 0,
-  paddingLeft: 24,
-  paddingRight: 24,
-  whiteSpace: "nowrap",
-} as const;
 
-export const editorRowActionStyle = {
-  ...editorAppIdButtonStyle,
-  maxWidth: "100%",
-  justifySelf: "end",
-  whiteSpace: "normal",
-  overflowWrap: "anywhere",
-} as const;
 
-// Longhands only: React drops a removed longhand after re-applying a shorthand, which left the bar visible.
-export const editorFieldMarkerBaseStyle = {
-  borderLeftWidth: 3,
-  borderLeftStyle: "solid",
-  borderLeftColor: "transparent",
-  paddingLeft: 12,
-} as const;
-
-export const editorFieldEditedStyle = {
-  ...editorFieldMarkerBaseStyle,
-  borderLeftColor: colors.accent,
-} as const;
-
-export const editorFieldPreviewStyle = {
-  ...editorFieldMarkerBaseStyle,
-  borderLeftColor: colors.warning,
-} as const;
 
 export const editorFieldEditedLabelStyle = {
   color: colors.accent,
@@ -129,7 +94,18 @@ export const editorInlineInputStyle = {
 } as const;
 
 export const editorScopedCss = `
+/* Steam's own settings wrapper fills the route host; without this the page stops short of the footer. */
+.decky-metadata-editor {
+  height: 100%;
+}
+
 .decky-metadata-editor .decky-metadata-editor__focus-target {
   scroll-margin-block: 12px;
+}
+
+/* Steam drops its white focus look when the on-screen keyboard takes focus; keep it while the box holds the cursor. */
+.decky-metadata-editor input.DialogInput[data-decky-metadata-active-input]:not(:disabled) {
+  background-color: #fff;
+  color: #000;
 }
 `;

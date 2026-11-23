@@ -1,74 +1,63 @@
-import { DialogControlsSection, Field, TextField } from "@decky/ui";
+import { Field, TextField } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
-import { getSteamMatchPreview, searchSteamMatches } from "./backend";
+import { searchSteamMatches } from "./backend";
 import {
   editorFocusTargetClassName,
   editorSearchButtonStyle,
-  editorSearchInputRowSpacingStyle,
-  editorSearchResultsSpacingStyle,
+  editorSearchInputStyle,
   editorSearchRowStyle,
   editorSteamMatchImageStyle,
 } from "./metadataEditorStyles";
-import { compactTextStyle, fieldStyle, FocusableButton, rowStackStyle } from "./styles";
+import { fieldStyle, FocusableButton } from "./styles";
 import { translateBackendError, useT } from "./i18n";
-import type { SteamMatchCandidate, SteamMatchPreview } from "./types";
+import type { SteamMatchCandidate } from "./types";
+
+/** What the picker last searched, kept by the editor while the page is hidden. */
+export type SteamSearchSnapshot = {
+  query: string;
+  items: SteamMatchCandidate[];
+  status: "idle" | "results" | "empty" | "error";
+  error: string | null;
+};
 
 type SteamMatchPickerProps = {
   initialQuery: string;
   matchedSteamAppId: number | null;
   disabled: boolean;
-  onApply: (steamAppId: number) => Promise<void>;
+  savedSearch: SteamSearchSnapshot | null;
+  onSearchChange: (search: SteamSearchSnapshot) => void;
+  onApply: (steamAppId: number, coverUrl: string | null) => Promise<void>;
 };
 
-type SearchStatus = "idle" | "loading" | "results" | "empty" | "error";
+type SearchStatus = SteamSearchSnapshot["status"] | "loading";
 const EMPTY_MATCHES: SteamMatchCandidate[] = [];
 
-// The ID line carries up to two independent markers; each combination is one sentence.
-const candidateTitleLine = (
-  candidate: SteamMatchCandidate,
-  matchedSteamAppId: number | null,
-  selected: SteamMatchCandidate | null,
-  t: (key: string, options?: Record<string, unknown>) => string,
-): string => {
-  const isCurrentMatch = candidate.steam_appid === matchedSteamAppId;
-  const isSelected = candidate.steam_appid === selected?.steam_appid;
-  if (isCurrentMatch && isSelected) {
-    return t("matchPicker.appIdCurrentSelected", { appId: candidate.steam_appid });
-  }
-  if (isCurrentMatch) {
-    return t("matchPicker.appIdCurrent", { appId: candidate.steam_appid });
-  }
-  if (isSelected) {
-    return t("matchPicker.appIdSelected", { appId: candidate.steam_appid });
-  }
-  return t("matchPicker.appId", { appId: candidate.steam_appid });
-};
-
-export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, onApply }: SteamMatchPickerProps) => {
+export const SteamMatchPicker = ({
+  initialQuery,
+  matchedSteamAppId,
+  disabled,
+  savedSearch,
+  onSearchChange,
+  onApply,
+}: SteamMatchPickerProps) => {
   const t = useT();
-  const [query, setQuery] = useState(initialQuery);
-  const [items, setItems] = useState<SteamMatchCandidate[]>(EMPTY_MATCHES);
-  const [status, setStatus] = useState<SearchStatus>("idle");
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [selected, setSelected] = useState<SteamMatchCandidate | null>(null);
-  const [preview, setPreview] = useState<SteamMatchPreview | null>(null);
-  const [previewLoading, setPreviewLoading] = useState(false);
-  const [previewError, setPreviewError] = useState<string | null>(null);
-  const queryRef = useRef(initialQuery);
+  const [query, setQuery] = useState(savedSearch?.query ?? initialQuery);
+  const [items, setItems] = useState<SteamMatchCandidate[]>(savedSearch?.items ?? EMPTY_MATCHES);
+  const [status, setStatus] = useState<SearchStatus>(savedSearch?.status ?? "idle");
+  const [searchError, setSearchError] = useState<string | null>(savedSearch?.error ?? null);
+  const queryRef = useRef(savedSearch?.query ?? initialQuery);
   const searchRequestRef = useRef(0);
-  const previewRequestRef = useRef(0);
   const lifetimeRef = useRef(0);
   const mountedRef = useRef(true);
-  const itemsRef = useRef<SteamMatchCandidate[]>(EMPTY_MATCHES);
-  const selectedRef = useRef<SteamMatchCandidate | null>(null);
+  const itemsRef = useRef<SteamMatchCandidate[]>(savedSearch?.items ?? EMPTY_MATCHES);
   const pendingQueryRef = useRef<string | null>(null);
   const resultsRootRef = useRef<HTMLDivElement>(null);
   const disabledRef = useRef(disabled);
   const onApplyRef = useRef(onApply);
   disabledRef.current = disabled;
   onApplyRef.current = onApply;
-  // A row can be selected again; identity alone does not retire its old button.
-  const confirmationRequest = previewRequestRef.current;
+  // One modal at a time: a double press must not open a second review or steal focus from the first.
+  const applyingRef = useRef(false);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -77,27 +66,6 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
       lifetimeRef.current += 1;
     };
   }, []);
-
-  const clearSelection = () => {
-    previewRequestRef.current += 1;
-    selectedRef.current = null;
-    setSelected(null);
-    setPreview(null);
-    setPreviewLoading(false);
-    setPreviewError(null);
-  };
-
-  const cancelSelection = () => {
-    const appId = selectedRef.current?.steam_appid;
-    clearSelection();
-    const request = previewRequestRef.current;
-    requestAnimationFrame(() => {
-      if (!mountedRef.current || previewRequestRef.current !== request || appId === undefined) return;
-      resultsRootRef.current
-        ?.querySelector<HTMLElement>(`[data-steam-match-appid="${appId}"] .decky-metadata-editor__result`)
-        ?.focus();
-    });
-  };
 
   const changeQuery = (value: string) => {
     queryRef.current = value;
@@ -108,7 +76,7 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
     setItems(EMPTY_MATCHES);
     setStatus("idle");
     setSearchError(null);
-    clearSelection();
+    onSearchChange({ query: value, items: [], status: "idle", error: null });
   };
 
   const search = async () => {
@@ -117,7 +85,6 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
     const request = ++searchRequestRef.current;
     const lifetime = lifetimeRef.current;
     pendingQueryRef.current = requestedQuery;
-    clearSelection();
     itemsRef.current = EMPTY_MATCHES;
     setItems(EMPTY_MATCHES);
     setStatus("loading");
@@ -129,145 +96,111 @@ export const SteamMatchPicker = ({ initialQuery, matchedSteamAppId, disabled, on
       if (response.error) {
         setSearchError(response.error);
         setStatus("error");
+        onSearchChange({ query: queryRef.current, items: [], status: "error", error: response.error });
       } else {
         itemsRef.current = response.items;
         setItems(response.items);
         setStatus(response.items.length ? "results" : "empty");
+        onSearchChange({
+          query: queryRef.current,
+          items: response.items,
+          status: response.items.length ? "results" : "empty",
+          error: null,
+        });
       }
     } catch {
       if (!isCurrent()) return;
       setSearchError("steam_search_unavailable");
       setStatus("error");
+      onSearchChange({ query: queryRef.current, items: [], status: "error", error: "steam_search_unavailable" });
     } finally {
       if (isCurrent()) pendingQueryRef.current = null;
     }
   };
 
-  const select = async (candidate: SteamMatchCandidate) => {
-    if (!mountedRef.current || disabled || !itemsRef.current.includes(candidate)) return;
-    if (selectedRef.current === candidate && (previewLoading || preview)) return;
-    const request = ++previewRequestRef.current;
-    const lifetime = lifetimeRef.current;
-    selectedRef.current = candidate;
-    setSelected(candidate);
-    setPreview(null);
-    setPreviewLoading(true);
-    setPreviewError(null);
-    const isCurrent = () => lifetimeRef.current === lifetime && previewRequestRef.current === request;
+  /** Load the candidate into the editor; the review modal opens before anything merges. */
+  const apply = async (candidate: SteamMatchCandidate) => {
+    if (applyingRef.current || !mountedRef.current || disabledRef.current || !itemsRef.current.includes(candidate)) return;
+    applyingRef.current = true;
     try {
-      const response = await getSteamMatchPreview(candidate.steam_appid);
-      if (!isCurrent()) return;
-      setPreview(response.preview);
-      setPreviewError(response.error);
-    } catch {
-      if (!isCurrent()) return;
-      setPreviewError("steam_preview_unavailable");
+      await onApplyRef.current(candidate.steam_appid, candidate.cover_url);
     } finally {
-      if (isCurrent()) setPreviewLoading(false);
+      applyingRef.current = false;
     }
-  };
-
-  const apply = async () => {
-    if (
-      !mountedRef.current || disabledRef.current || previewLoading ||
-      previewRequestRef.current !== confirmationRequest ||
-      !selected || selectedRef.current !== selected
-    ) return;
-    await onApplyRef.current(selected.steam_appid);
+    // Return focus to the row only while it is still listed (no new search, still mounted).
+    requestAnimationFrame(() => {
+      if (!mountedRef.current || !itemsRef.current.includes(candidate)) return;
+      resultsRootRef.current
+        ?.querySelector<HTMLElement>(`[data-steam-match-appid="${candidate.steam_appid}"] .decky-metadata-editor__result`)
+        ?.focus();
+    });
   };
 
   return (
-    <DialogControlsSection>
-      <div style={editorSearchInputRowSpacingStyle}>
-        <Field
-          label={t("matchPicker.searchAriaLabel")}
-          description={t("matchPicker.help")}
-          childrenLayout="below"
-          childrenContainerWidth="max"
-          bottomSeparator="standard"
-        >
-          <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
-            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-              <TextField
-                className={editorFocusTargetClassName}
-                aria-label={t("matchPicker.searchAriaLabel")}
-                value={query}
-                disabled={disabled}
-                onChange={(event) => changeQuery(event.target.value)}
-                style={{ ...fieldStyle, width: "100%" }}
-              />
-            </div>
-            <FocusableButton
-              className={`DialogButton ${editorFocusTargetClassName}`}
-              disabled={disabled || status === "loading" || !query.trim()}
-              onClick={() => void search()}
-              style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
-            >
-              {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
-            </FocusableButton>
+    <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+      <div className="SettingsDialogSubHeader">{t("matchPicker.search")}</div>
+      <Field
+        label={t("matchPicker.searchAriaLabel")}
+        description={t("matchPicker.help")}
+        childrenLayout="below"
+        childrenContainerWidth="max"
+        bottomSeparator="standard"
+      >
+        <div style={editorSearchRowStyle}>
+          <div style={editorSearchInputStyle}>
+            <TextField
+              className={editorFocusTargetClassName}
+              aria-label={t("matchPicker.searchAriaLabel")}
+              value={query}
+              disabled={disabled}
+              onChange={(event) => changeQuery(event.target.value)}
+              style={{ ...fieldStyle, width: "100%" }}
+            />
           </div>
-        </Field>
-      </div>
-      <div ref={resultsRootRef} style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
-        <Field focusable={false} padding="none" bottomSeparator="none">
-          <div aria-live="polite" style={compactTextStyle}>
-            {status === "idle" ? t("matchPicker.idle") : null}
-            {status === "loading" ? t("matchPicker.searching") : null}
-            {status === "empty" ? t("matchPicker.empty") : null}
-            {status === "error" && searchError ? translateBackendError(searchError) : null}
-          </div>
-        </Field>
+          <FocusableButton
+            className={editorFocusTargetClassName}
+            disabled={disabled || status === "loading" || !query.trim()}
+            onClick={() => void search()}
+            style={editorSearchButtonStyle}
+          >
+            {status === "loading" ? t("matchPicker.searching") : t("matchPicker.search")}
+          </FocusableButton>
+        </div>
+      </Field>
+      <div ref={resultsRootRef}>
+        {status !== "results" ? (
+          <Field
+            focusable={false}
+            description={
+              <span aria-live="polite">
+                {status === "idle" ? t("matchPicker.idle") : null}
+                {status === "loading" ? t("matchPicker.searching") : null}
+                {status === "empty" ? t("matchPicker.empty") : null}
+                {status === "error" && searchError ? translateBackendError(searchError) : null}
+              </span>
+            }
+            bottomSeparator="none"
+          />
+        ) : null}
         {items.map((candidate) => (
           <div key={candidate.steam_appid} data-steam-match-appid={candidate.steam_appid}>
             <Field
               className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
               label={candidate.title}
+              description={candidate.steam_appid === matchedSteamAppId
+                ? t("matchPicker.appIdCurrent", { appId: candidate.steam_appid })
+                : t("matchPicker.appId", { appId: candidate.steam_appid })}
               icon={candidate.cover_url ? <img src={candidate.cover_url} alt="" style={editorSteamMatchImageStyle} /> : undefined}
               focusable={true}
               highlightOnFocus={true}
               disabled={disabled}
               bottomSeparator="standard"
-              onActivate={() => void select(candidate)}
-              onClick={() => void select(candidate)}
-            >
-              <div style={compactTextStyle}>
-                {candidateTitleLine(candidate, matchedSteamAppId, selected, t)}
-              </div>
-            </Field>
-            {selected?.steam_appid === candidate.steam_appid ? (
-              <Field focusable={false} childrenLayout="below" padding="standard" bottomSeparator="none">
-                <div style={rowStackStyle}>
-                  {previewLoading ? <div aria-live="polite" style={compactTextStyle}>{t("matchPicker.loadingDetails")}</div> : null}
-                  {previewError ? <div role="status" style={compactTextStyle}>{translateBackendError(previewError)}</div> : null}
-                  {preview ? (
-                    <>
-                      {!selected.cover_url && preview.cover_url ? <img src={preview.cover_url} alt={t("matchPicker.artworkAlt", { title: preview.title })} style={editorSteamMatchImageStyle} /> : null}
-                      <div style={compactTextStyle}>{preview.developers.length ? t("matchPicker.developer", { names: preview.developers.join(", ") }) : t("matchPicker.developerUnavailable")}</div>
-                      <div style={compactTextStyle}>{preview.release_date_label ? t("matchPicker.release", { date: preview.release_date_label }) : t("matchPicker.releaseUnavailable")}</div>
-                      {preview.app_type && preview.app_type !== "game" ? <div style={compactTextStyle}>{t("matchPicker.steamType", { type: preview.app_type })}</div> : null}
-                    </>
-                  ) : null}
-                  <div style={compactTextStyle}>{t("matchPicker.applyHelp")}</div>
-                  <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
-                    disabled={disabled || previewLoading}
-                    onClick={() => void apply()}
-                  >
-                    {t("matchPicker.apply")}
-                  </FocusableButton>
-                  <FocusableButton
-                    className={`DialogButton ${editorFocusTargetClassName}`}
-                    disabled={disabled}
-                    onClick={cancelSelection}
-                  >
-                    {t("matchPicker.cancel")}
-                  </FocusableButton>
-                </div>
-              </Field>
-            ) : null}
+              onActivate={() => void apply(candidate)}
+              onClick={() => void apply(candidate)}
+            />
           </div>
         ))}
       </div>
-    </DialogControlsSection>
+    </div>
   );
 };

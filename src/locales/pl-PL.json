@@ -24,10 +24,6 @@
     "invalid_title": "nieprawidłowy tytuł",
     "invalid_search": "nieprawidłowe wyszukiwanie",
     "steam_search_unavailable": "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
-    "steam_details_unavailable": "Szczegóły gry Steam są niedostępne",
-    "steam_title_unavailable": "Tytuł gry Steam jest niedostępny",
-    "invalid_steam_game": "Wybierz prawidłową grę Steam.",
-    "steam_preview_unavailable": "Szczegóły Steam są niedostępne. Nadal możesz użyć tego dopasowania.",
     "settings_unreadable": "plik ustawień metadanych jest nieczytelny; napraw go lub usuń przed zapisaniem zmian",
     "invalid_release_date": "release_date musi być datą kalendarzową w formacie RRRR-MM-DD lub null",
     "hltb_settings_unavailable": "Nie udało się wczytać ustawień HLTB",
@@ -36,6 +32,7 @@
     "trailer_settings_unavailable": "nie udało się wczytać ustawień zwiastunów",
     "mini_achievements_settings_unavailable": "nie udało się wczytać ustawień mini osiągnięć",
     "protondb_settings_unavailable": "nie udało się wczytać ustawień odznak ProtonDB",
+    "editor_header_settings_unavailable": "Nie udało się wczytać ustawień nagłówka edytora",
     "steam_ui_unavailable": "Interfejs Steam jest niedostępny",
     "update_check_failed": "Nie udało się sprawdzić aktualizacji",
     "rate_limited": "Przekroczono limit zapytań",
@@ -217,6 +214,13 @@
       "enableLabel": "Włącz mini osiągnięcia",
       "enableDescription": "Pokazuj mały pasek postępu osiągnięć Steam obok czasu gry na stronach szczegółów. Domyślnie wyłączone.",
       "footnote": "Wykorzystuje postęp osiągnięć Steam dla gier Steam; nie dodaje śledzenia osiągnięć do gier spoza Steam."
+    },
+    "contextMenu": {
+      "title": "Menu kontekstowe",
+      "headerIconLabel": "Ikona gry w nagłówku edytora",
+      "headerIconDescription": "Pokazuje ikonę gry obok jej nazwy u góry strony edycji metadanych. Długie nazwy przewijają się.",
+      "steamIconLabel": "Użyj ikony Steam, jeśli brakuje własnej",
+      "steamIconDescription": "Gdy gra nie ma własnej ikony, używana jest ikona dopasowanej gry Steam. Jeśli nie ma żadnej, ikona nie jest wyświetlana."
     },
     "compat": {
       "title": "Status kompatybilności",
@@ -441,8 +445,8 @@
     },
     "currentMatch": "Bieżące dopasowanie",
     "loadFromSteam": "Wczytaj ze Steam",
-    "loadFromSteamSteamGame": "Wczytaj ze Steam (niedostępne dla gier ze Steam)",
-    "loadFromSteamNoMatch": "Wczytaj ze Steam (brak dopasowania na Steam)",
+    "loadFromSteamSteamGame": "Niedostępne dla gier ze Steam",
+    "loadFromSteamNoMatch": "Brak dopasowania na Steam",
     "loadFromSteamBusy": "Wczytaj ze Steam (trwa aktualizacja)",
     "fieldEdited": "Edytowano",
     "fieldFromSteam": "Ze Steam, niezapisane",
@@ -459,10 +463,18 @@
       "body": "Spowoduje to usunięcie wszystkich zapisanych metadanych dla {{name}}. Tej czynności nie można cofnąć.",
       "cancel": "Anuluj"
     },
+    "review": {
+      "title": "Sprawdź szczegóły gry",
+      "apply": "Zastosuj",
+      "cancel": "Anuluj",
+      "genres": "Gatunki"
+    },
     "nonSteamOnly": "Ta wtyczka zmienia tylko gry spoza Steam.",
-    "searchIgn": "Szukaj metadanych w IGN",
+    "searchIgn": "Szukaj w IGN",
     "ign": {
-      "gameName": "Nazwa gry"
+      "gameName": "Nazwa gry",
+      "noResults": "Brak wyników.",
+      "help": "Wyszukaj grę w IGN, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje."
     },
     "search": "Szukaj",
     "searching": "Wyszukiwanie...",
@@ -497,18 +509,23 @@
     "compatibilityHelp": "Opcja „Automatycznie” używa dla każdej gry statusu jej odpowiednika w Steam. Opcja „Użyj ustawienia globalnego” stosuje ustawienie globalne do tej gry. Opcja „Zgodnie z Valve” zawsze używa statusu Valve. Jeśli dane Valve są niedostępne, opcja „Zgodnie z Valve” zachowuje oryginalny status Steam.",
     "compatibilityChoices": "Ręczne kategorie i kategorie domyślne to Twoje wybory, a nie certyfikacja Valve ani wynik wydajności emulatora.",
     "hltbGame": "Gra HowLongToBeat",
+    "hltbSearchTitle": "Szukaj w HowLongToBeat",
     "hltbHelp": "Wyszukaj grę w HowLongToBeat lub wklej numer gry albo link do jej strony, aby wybrać czasy pokazywane dla tej gry. Pozostaw puste, aby dopasować automatycznie.",
     "hltbCurrentChosen": "Bieżąca gra: {{name}} (wybrana)",
     "hltbCurrentAutomatic": "Bieżąca gra: {{name}} (znaleziona automatycznie)",
     "hltbApply": "Zastosuj grę HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Wklej Steam App ID, adres URL sklepu, adres URL społeczności lub adres URL SteamDB. Pozostaw puste, aby usunąć przypięte dopasowanie Steam.",
-    "steamAppIdApply": "Zastosuj Steam App ID",
+    "manualMatch": {
+      "label": "Wprowadź Steam App ID",
+      "help": "Użyj Steam App ID, adresu URL sklepu, adresu URL społeczności lub adresu URL SteamDB, gdy wyszukiwanie nie znajdzie gry. Pozostaw puste, aby usunąć dopasowanie.",
+      "button": "Wprowadź ID..."
+    },
     "shortcut": {
       "immediateNotice": "Te działania są stosowane od razu, bez naciskania przycisku „Zapisz”.",
-      "current": "Bieżąca: {{name}}",
+      "currentLabel": "Bieżąca nazwa",
       "missingName": "Steam nie udostępnił nazwy natywnego skrótu",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Nazwa Steam",
       "loadingSteamName": "Wczytywanie nazwy Steam...",
       "noOfficialName": "Steam nie zwrócił oficjalnej nazwy",
       "managementUnavailable": "Zarządzanie nazwami skrótów jest niedostępne",
@@ -546,8 +563,6 @@
       "detailsLoadedTitle": "Szczegóły wczytane",
       "steamPreviewBody": "Szczegóły Steam zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
       "ignPreviewBody": "Szczegóły IGN zostały wczytane do tego formularza. Zapiszesz je przyciskiem „Zapisz”.",
-      "steamAppIdNotAppliedTitle": "Nie zastosowano Steam App ID",
-      "steamAppIdNotAppliedBody": "Przed zapisaniem wybierz „Zastosuj Steam App ID”, aby wczytać nowe dopasowanie.",
       "fetchFailedTitle": "Pobieranie nie powiodło się",
       "removedBody": "Usunięto metadane",
       "removeFailedTitle": "Usuwanie nie powiodło się",
@@ -570,26 +585,14 @@
     "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
   },
   "matchPicker": {
-    "help": "Wyszukaj grę w Steam, wybierz wynik, aby sprawdzić szczegóły, a następnie wybierz „Użyj tego dopasowania Steam”. Przeglądanie nie zmienia Twojej gry.",
+    "help": "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
     "searchAriaLabel": "Wyszukiwanie gry Steam",
     "search": "Szukaj w Steam",
     "searching": "Wyszukiwanie w Steam...",
     "idle": "Wpisz nazwę gry, aby znaleźć dopasowania Steam.",
-    "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj pola Steam App ID poniżej.",
+    "empty": "Nie znaleziono dopasowań Steam. Spróbuj innej nazwy lub użyj „Wprowadź Steam App ID” powyżej.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie",
-    "appIdSelected": "Steam App ID: {{appId}} · wybrane",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · bieżące dopasowanie · wybrane",
-    "loadingDetails": "Wczytywanie szczegółów Steam...",
-    "artworkAlt": "Grafika Steam gry {{title}}",
-    "developer": "Producent: {{names}}",
-    "developerUnavailable": "Producent niedostępny",
-    "release": "Wydanie: {{date}}",
-    "releaseUnavailable": "Data wydania niedostępna",
-    "steamType": "Typ Steam: {{type}}. Sprawdź, czy to gra lub edycja, której szukasz.",
-    "applyHelp": "Użycie tego dopasowania wczytuje jego Steam App ID i szczegóły do tego formularza. Zapiszesz je przyciskiem „Zapisz”. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
-    "apply": "Użyj tego dopasowania Steam",
-    "cancel": "Anuluj wybór"
+    "appIdCurrent": "Steam App ID: {{appId}} · bieżące dopasowanie"
   },
   "categories": {
     "singlePlayer": "Jednoosobowa",

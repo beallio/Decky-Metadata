@@ -1,7 +1,7 @@
 import {
+  ButtonItem,
   ConfirmModal,
   DialogControlsSection,
-  DialogControlsSectionHeader,
   Field,
   Focusable,
   DropdownItem,
@@ -11,7 +11,7 @@ import {
   useParams,
   showModal,
 } from "@decky/ui";
-import type { CSSProperties, ReactNode } from "react";
+import type { ComponentProps, ComponentType, CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { FaClock, FaCog, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
 import { SiSteamdeck } from "react-icons/si";
@@ -63,7 +63,7 @@ import {
 } from "./types";
 import { currentLocale, currentSteamLanguage, refreshLanguage, translateBackendError, useT } from "./i18n";
 import { toastError, toastSuccess, toastWarn } from "./toast";
-import { SteamMatchPicker } from "./SteamMatchPicker";
+import { SteamMatchPicker, type SteamSearchSnapshot } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
 import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { useHltbMatch, useHltbSnapshot } from "./hltb/gameView";
@@ -77,36 +77,34 @@ import {
   textToPersons,
 } from "./metadataForm";
 import {
-  editorAppIdButtonStyle,
-  editorAppIdRowStyle,
   editorFieldEditedLabelStyle,
-  editorFieldEditedStyle,
-  editorFieldMarkerBaseStyle,
   editorFieldMarkerTagStyle,
   editorFieldPreviewLabelStyle,
-  editorFieldPreviewStyle,
   editorFocusTargetClassName,
   editorInlineInputStyle,
+  editorIgnResultImageStyle,
   editorNativeInputFirstStyle,
   editorNativeInputGapStyle,
   editorNativeInputRowStyle,
   editorNativeInputSectionStyle,
   editorNativeInputTitleStyle,
   editorRootClassName,
-  editorRowActionStyle,
-  editorScopedCss,
   editorSearchButtonStyle,
-  editorSearchResultsSpacingStyle,
+  editorSearchInputStyle,
   editorSearchRowStyle,
+  editorSteamMatchImageStyle,
 } from "./metadataEditorStyles";
 import { changedDraftFields, changedFormFields } from "./metadataDraft";
+import { EditorScopedStyle } from "./editorScopedStyle";
 import type { DraftFieldKey, DraftFormState } from "./metadataDraft";
 import { EditorLayout } from "./editorLayout";
 import { dirtyPages, EDITOR_PAGE_ORDER, PAGE_OF_FIELD, type EditorPageId } from "./editorPages";
 import {
   draftFieldLabel,
   saveButtonLabel,
+  showMetadataReviewModal,
   showRemoveMetadataModal,
+  showSteamAppIdModal,
   showUnsavedChangesModal,
 } from "./editorDialogs";
 import { colors } from "./tokens";
@@ -116,6 +114,9 @@ import {
   FocusableButton,
   rowStackStyle,
 } from "./styles";
+const EditorButtonItem = ButtonItem as ComponentType<
+  ComponentProps<typeof ButtonItem> & { className?: string }
+>;
 
 // Shared look for the multiline Description field, applied to both the
 // gamepad-aware textarea and the plain fallback.
@@ -362,7 +363,7 @@ export const MetadataPage = () => {
   const [releaseText, setReleaseText] = useState("");
   const [ratingText, setRatingText] = useState("");
   const [query, setQuery] = useState(appName(appId));
-  const [results, setResults] = useState<MetadataSearchResult[]>([]);
+  const [results, setResults] = useState<MetadataSearchResult[] | null>(null);
   // The operation that owns the shared busy guard; only its control shows busy text.
   const [busy, setBusy] = useState<BusyOperation | false>(false);
   const [steamAppIdText, setSteamAppIdText] = useState("");
@@ -643,7 +644,7 @@ export const MetadataPage = () => {
     steamPreviewedFieldsRef.current.clear();
     // The editor stays mounted across games, so its search belongs to one entry (#43).
     setQuery(appName(appId));
-    setResults([]);
+    setResults(null);
     // An unsaved HLTB draft belongs to the game it was typed on.
     setHltbIdDraft(null);
     setPage("details");
@@ -798,6 +799,10 @@ export const MetadataPage = () => {
     [],
   );
   const [page, setPage] = useState<EditorPageId>("details");
+  // Steam search results outlive the Game Match page, as IGN results do.
+  const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
+  // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
+  const applySteamAppIdRef = useRef<(steamAppId: number | null) => Promise<void>>(async () => undefined);
   const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
   // The visible fields whose value differs from the stored record.
   const changed = changedDraftFields(savedRecordRef.current, {
@@ -816,11 +821,6 @@ export const MetadataPage = () => {
     const edited = changed.includes(key);
     const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
     return {
-      container: !edited
-        ? editorFieldMarkerBaseStyle
-        : fromSteam
-          ? editorFieldPreviewStyle
-          : editorFieldEditedStyle,
       label: !edited
         ? undefined
         : fromSteam
@@ -833,11 +833,9 @@ export const MetadataPage = () => {
           : t("editor.fieldEdited"),
     };
   };
-  // Stacked Steam-style headings sit flush left, so they mark edits with colour and tag only.
-  const renderMarkedLabel = (marker: ReturnType<typeof fieldMarker>, label: string, withBar = true) => (
+  const renderMarkedLabel = (marker: ReturnType<typeof fieldMarker>, label: string) => (
     <span
       style={{
-        ...(withBar ? marker.container : undefined),
         ...marker.label,
         display: "inline-flex",
         alignItems: "center",
@@ -847,8 +845,8 @@ export const MetadataPage = () => {
       {marker.tag ? <span style={editorFieldMarkerTagStyle}>{marker.tag}</span> : null}
     </span>
   );
-  const markedLabel = (key: DraftFieldKey, labelKey: string, withBar = true) =>
-    renderMarkedLabel(fieldMarker(key), t(labelKey), withBar);
+  const markedLabel = (key: DraftFieldKey, labelKey: string) =>
+    renderMarkedLabel(fieldMarker(key), t(labelKey));
   // Steam's Properties > Shortcut > Launch Options layout: heading above a full-width text box.
   const stackedTextField = (
     blockStyle: CSSProperties,
@@ -858,13 +856,14 @@ export const MetadataPage = () => {
     onChange: (value: string) => void,
   ) => (
     <div style={blockStyle}>
-      <div style={editorNativeInputTitleStyle}>{markedLabel(key, labelKey, false)}</div>
+      <div style={editorNativeInputTitleStyle}>{markedLabel(key, labelKey)}</div>
       <div style={editorNativeInputRowStyle}>
         <TextField
           className={editorFocusTargetClassName}
           aria-label={t(labelKey)}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          disabled={!nonSteam}
           style={fieldStyle}
         />
       </div>
@@ -912,6 +911,7 @@ export const MetadataPage = () => {
     draft: MetadataData,
     previewedSteamAppId: number,
     language?: string,
+    review?: { coverUrl: string | null },
   ): Promise<boolean> => {
     const baselineMetadata = metadataRef.current;
     const baselineText = formTextSnapshot();
@@ -922,6 +922,7 @@ export const MetadataPage = () => {
         toastWarn(t("editor.toast.fetchFailedTitle"), t("editor.steamTextUnavailable"));
         return false;
       }
+      if (review && !(await reviewFetched(requestedEntry, previewed, review.coverUrl))) return false;
       const beforeMerge = draftFormState();
       reconcileMetadataResponse(previewed, baselineMetadata, baselineText);
       previewedSteamAppIdRef.current = previewedSteamAppId;
@@ -980,16 +981,6 @@ export const MetadataPage = () => {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return false;
     }
-    // The text field is the requested match; only Apply loads it into the form.
-    const textSteamAppId = checkSteamAppIdText(steamAppIdText);
-    if (textSteamAppId === undefined) return false;
-    if (textSteamAppId !== normalizedSteamAppId(normalizedMetadata.steam_appid)) {
-      toastWarn(
-        t("editor.toast.steamAppIdNotAppliedTitle"),
-        t("editor.toast.steamAppIdNotAppliedBody"),
-      );
-      return false;
-    }
     if (!beginBusy(requestedEntry)) return false;
     const requestedRevision = formRevisionRef.current;
     try {
@@ -1036,6 +1027,11 @@ export const MetadataPage = () => {
     const editorPaths = [`/decky-metadata/${appId}`, `/routes/decky-metadata/${appId}`];
     return currentRoutePath().split(" ").some((path) => editorPaths.includes(path));
   };
+  /** Review fetched details; true only when Apply is chosen while this editor entry is still shown. */
+  const reviewFetched = async (requestedEntry: number, fetched: MetadataData, coverUrl: string | null): Promise<boolean> =>
+    stillOnEditor(requestedEntry) &&
+    (await showMetadataReviewModal({ metadata: fetched, coverUrl })) &&
+    stillOnEditor(requestedEntry);
 
   /** B leaves the editor; a draft asks before it is dropped. */
   const requestLeave = (): void => {
@@ -1067,7 +1063,8 @@ export const MetadataPage = () => {
     });
   };
 
-  const applySteamAppId = async (explicitSteamAppId?: number) => {
+  /** Load a Steam match (null clears it) into the form; picker results also pass review art. */
+  const applySteamAppId = async (steamAppId: number | null, review?: { coverUrl: string | null }) => {
     if (!nonSteam) {
       toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
       return;
@@ -1077,11 +1074,9 @@ export const MetadataPage = () => {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return;
     }
-    const steamAppId = explicitSteamAppId === undefined
-      ? checkSteamAppIdText(steamAppIdText)
-      : explicitSteamAppId;
-    if (steamAppId === undefined) return;
     const parsed = normalizedSteamAppId(steamAppId);
+    // Clearing a game that has no match has nothing to clear.
+    if (parsed === null && normalizedSteamAppId(normalizedMetadata.steam_appid) === null) return;
     if (!beginBusy(requestedEntry, "steam")) return;
     try {
       if (parsed === null) {
@@ -1127,12 +1122,29 @@ export const MetadataPage = () => {
       };
       if (changed) delete draft.steam_store_state;
       const requestedText = steamAppIdTextRef.current;
-      if (await previewSteamDraft(requestedEntry, draft, parsed)) {
+      if (await previewSteamDraft(requestedEntry, draft, parsed, undefined, review)) {
         if (steamAppIdTextRef.current === requestedText) setSteamAppIdInput(String(parsed));
       }
     } finally {
       endBusy(requestedEntry);
     }
+  };
+
+  applySteamAppIdRef.current = applySteamAppId;
+
+  /** Type a Steam App ID or URL in a dialog; an invalid entry warns and changes nothing. */
+  const enterSteamAppId = () => {
+    const requestedEntry = editorEntryToken;
+    showSteamAppIdModal({
+      initial: formSteamAppId === null ? "" : String(formSteamAppId),
+      onApply: (text) => {
+        // A dialog left open while the editor moved to another game or closed must not touch this form.
+        if (!stillOnEditor(requestedEntry)) return;
+        const steamAppId = checkSteamAppIdText(text);
+        if (steamAppId === undefined) return;
+        return applySteamAppIdRef.current(steamAppId);
+      },
+    });
   };
 
   /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
@@ -1170,26 +1182,28 @@ export const MetadataPage = () => {
 
   const search = async () => {
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry, "ign")) return;
+    if (!query.trim() || !beginBusy(requestedEntry, "ign")) return;
     try {
       const found = await searchMetadata(query, 8);
       if (!isCurrentEditorEntry(requestedEntry)) return;
       setResults(found);
     } catch (error) {
-      toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
+      toastError(t("editor.toast.fetchFailedTitle"), translateBackendError(error));
     } finally {
       endBusy(requestedEntry);
     }
   };
 
   const applyResult = async (result: MetadataSearchResult) => {
+    if (!nonSteam) return;
     const requestedEntry = editorEntryToken;
-    if (!beginBusy(requestedEntry, "ign")) return;
+    if (!beginBusy(requestedEntry, "other")) return;
     const baselineMetadata = metadataRef.current;
     const baselineText = formTextSnapshot();
     try {
       const fetched = await previewFetchedMetadata(normalizedMetadata, result.slug || result.url);
       if (!fetched || !isCurrentEditorEntry(requestedEntry)) return;
+      if (!(await reviewFetched(requestedEntry, fetched, result.cover_url ?? null))) return;
       // An IGN result fills the draft; its release date keeps the stored baseline.
       const beforeMerge = draftFormState();
       reconcileMetadataResponse(fetched, baselineMetadata, baselineText, false);
@@ -1413,14 +1427,11 @@ export const MetadataPage = () => {
         strTitle={t("editor.shortcut.useSteamNameTitle")}
         strOKButtonText={t("editor.shortcut.useSteamName")}
         onOK={() => void useSteamName()}
-      >
-        <div style={compactTextStyle}>
-          {t("editor.shortcut.useSteamNameBody", {
-            current: currentShortcutName,
-            target: savedSteamStoreName,
-          })}
-        </div>
-      </ConfirmModal>,
+        strDescription={t("editor.shortcut.useSteamNameBody", {
+          current: currentShortcutName,
+          target: savedSteamStoreName,
+        })}
+      />
     );
   };
 
@@ -1432,11 +1443,8 @@ export const MetadataPage = () => {
         strTitle={t("editor.shortcut.restoreTitle")}
         strOKButtonText={t("editor.shortcut.restore")}
         onOK={() => void restoreOriginalShortcutName()}
-      >
-        <div style={compactTextStyle}>
-          {t("editor.shortcut.restoreBody", { name: state.original_name })}
-        </div>
-      </ConfirmModal>,
+        strDescription={t("editor.shortcut.restoreBody", { name: state.original_name })}
+      />
     );
   };
 
@@ -1447,9 +1455,8 @@ export const MetadataPage = () => {
         strTitle={t("editor.shortcut.forgetTitle")}
         strOKButtonText={t("editor.shortcut.forgetAction")}
         onOK={() => void forgetShortcutNameHistory()}
-      >
-        <div style={compactTextStyle}>{t("editor.shortcut.forgetBody")}</div>
-      </ConfirmModal>,
+        strDescription={t("editor.shortcut.forgetBody")}
+      />
     );
   };
 
@@ -1469,9 +1476,11 @@ export const MetadataPage = () => {
       <>
         <DialogControlsSection>
           {!nonSteam ? (
-            <Field focusable={false} padding="none" bottomSeparator="none">
-              <div style={compactTextStyle}>{t("editor.nonSteamOnly")}</div>
-            </Field>
+            <Field
+              focusable={false}
+              description={t("editor.nonSteamOnly")}
+              bottomSeparator="none"
+            />
           ) : null}
           {stackedTextField(editorNativeInputFirstStyle, "title", "editor.field.title", metadata.title, (value) => {
             clearPreviewMarker("title");
@@ -1495,6 +1504,7 @@ export const MetadataPage = () => {
                   }));
                 }}
                 style={descriptionTextareaStyle}
+                disabled={!nonSteam}
               />
             ) : (
               <Focusable
@@ -1507,6 +1517,7 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   tabIndex={0}
                   value={metadata.short_description?.trim() ? metadata.short_description : metadata.description || ""}
+                  disabled={!nonSteam}
                   onChange={(e) => {
                     clearPreviewMarker("description");
                     updateMetadata((prev) => ({
@@ -1537,6 +1548,7 @@ export const MetadataPage = () => {
               className={editorFocusTargetClassName}
               aria-label={t("editor.field.releaseDate")}
               value={releaseText}
+              disabled={!nonSteam}
               onChange={(e) => {
                 markFormEdited();
                 clearPreviewMarker("releaseDate");
@@ -1551,6 +1563,7 @@ export const MetadataPage = () => {
               className={editorFocusTargetClassName}
               aria-label={t("editor.field.rating")}
               value={ratingText}
+              disabled={!nonSteam}
               onChange={(e) => {
                 markFormEdited();
                 clearPreviewMarker("rating");
@@ -1567,200 +1580,238 @@ export const MetadataPage = () => {
   }
 
   function renderSteamMatchPage() {
-    const loadLabelKey = !nonSteam
-      ? "editor.loadFromSteamSteamGame"
-      : !hasSteamMatch
-        ? "editor.loadFromSteamNoMatch"
-        : steamBusy
-          ? "editor.loadFromSteamBusy"
-          : "editor.loadFromSteam";
+    const loadDisabled = !nonSteam || !hasSteamMatch;
+    const loadLabelKey = steamBusy && !loadDisabled
+      ? "editor.loadFromSteamBusy"
+      : "editor.loadFromSteam";
+    const matchName = steamStoreName.trim();
+    const matchLabel = !nonSteam
+      ? t("editor.loadFromSteamSteamGame")
+      : formSteamAppId === null
+        ? t("editor.loadFromSteamNoMatch")
+        : matchName || t("matchPicker.appId", { appId: formSteamAppId });
+    const shownMatchId = nonSteam ? formSteamAppId : null;
+    const matchAppIdLine = shownMatchId !== null && matchName
+      ? t("matchPicker.appId", { appId: shownMatchId })
+      : null;
+    // shortcut: guessed Steam CDN capsule path; apps with hashed asset paths get no art (hidden), use Steam's app assets API if that matters.
+    // The img is keyed by URL so art hidden for one match does not stay hidden for the next.
+    const matchArtUrl = shownMatchId !== null
+      ? `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${shownMatchId}/capsule_231x87.jpg`
+      : null;
+    const steamDataChanged = changed.includes("steamData");
     return (
       <>
+        <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+          <div className="SettingsDialogSubHeader">{t("editor.currentMatch")}</div>
+          <EditorButtonItem
+            className={editorFocusTargetClassName}
+            label={renderMarkedLabel(fieldMarker("steamAppId"), matchLabel)}
+            description={matchAppIdLine || steamDataChanged ? (
+              <>
+                {matchAppIdLine}
+                {steamDataChanged ? (
+                  <>
+                    {matchAppIdLine ? <br /> : null}
+                    <span style={{ color: colors.warning }}>
+                      {t("editor.steamDataChanged")}
+                    </span>
+                  </>
+                ) : null}
+              </>
+            ) : undefined}
+            icon={matchArtUrl ? (
+              <img
+                key={matchArtUrl}
+                src={matchArtUrl}
+                alt=""
+                style={editorSteamMatchImageStyle}
+                onError={(event) => {
+                  event.currentTarget.style.display = "none";
+                }}
+              />
+            ) : undefined}
+            layout="inline"
+            disabled={entryBusy || loadDisabled || steamBusy}
+            onClick={() => {
+              if (!loadDisabled && !steamBusy) void refreshFromSteam();
+            }}
+          >
+            {t(loadLabelKey)}
+          </EditorButtonItem>
+          <EditorButtonItem
+            className={editorFocusTargetClassName}
+            label={t("editor.manualMatch.label")}
+            description={t("editor.manualMatch.help")}
+            layout="inline"
+            disabled={entryBusy || !nonSteam}
+            onClick={enterSteamAppId}
+            bottomSeparator={steamLanguageMismatch ? "standard" : "none"}
+          >
+            {t("editor.manualMatch.button")}
+          </EditorButtonItem>
+          {steamLanguageMismatch ? (
+            <EditorButtonItem
+              className={editorFocusTargetClassName}
+              label={t("editor.steamTextLanguage", { language: storedSteamLanguageLabel })}
+              description={t("editor.toast.steamPreviewBody")}
+              layout="inline"
+              disabled={entryBusy}
+              onClick={() => void refreshFromSteam(steamLanguage ?? undefined)}
+              bottomSeparator="none"
+            >
+              {t("editor.fetchSteamText", { language: currentSteamLanguageLabel })}
+            </EditorButtonItem>
+          ) : null}
+        </div>
         <SteamMatchPicker
           key={editorEntryToken}
           initialQuery={appName(appId)}
           matchedSteamAppId={savedSteamAppId}
           disabled={entryBusy || !nonSteam}
-          onApply={async (steamAppId) => {
+          savedSearch={steamSearchRef.current?.entry === editorEntryToken ? steamSearchRef.current.search : null}
+          onSearchChange={(search) => {
             if (!isCurrentEditorEntry(editorEntryToken)) return;
-            await applySteamAppId(steamAppId);
+            steamSearchRef.current = { entry: editorEntryToken, search };
+          }}
+          onApply={async (steamAppId, coverUrl) => {
+            if (!isCurrentEditorEntry(editorEntryToken)) return;
+            await applySteamAppId(steamAppId, { coverUrl });
           }}
         />
-        <DialogControlsSection>
+        <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+          <div className="SettingsDialogSubHeader">{t("editor.searchIgn")}</div>
           <Field
-            label={t("editor.currentMatch")}
-            description={formSteamAppId !== null ? t("matchPicker.appId", { appId: formSteamAppId }) : undefined}
-            bottomSeparator="standard"
-          >
-            <FocusableButton
-              className={`DialogButton ${editorFocusTargetClassName}`}
-              disabled={entryBusy || loadLabelKey !== "editor.loadFromSteam"}
-              onClick={() => {
-                if (loadLabelKey === "editor.loadFromSteam") void refreshFromSteam();
-              }}
-              style={editorRowActionStyle}
-            >
-              {t(loadLabelKey)}
-            </FocusableButton>
-          </Field>
-          <Field
-            label={markedLabel("steamAppId", "editor.steamAppId")}
-            description={
-              <>
-                <div style={compactTextStyle}>{t("editor.steamAppIdHelp")}</div>
-                {changed.includes("steamData") ? (
-                  <div style={{ ...compactTextStyle, color: colors.warning }}>
-                    {t("editor.steamDataChanged")}
-                  </div>
-                ) : null}
-              </>
-            }
+            label={t("editor.ign.gameName")}
+            description={t("editor.ign.help")}
             childrenLayout="below"
             childrenContainerWidth="max"
-            bottomSeparator={steamLanguageMismatch ? "standard" : "none"}
+            bottomSeparator="standard"
           >
-            <div style={{ ...editorAppIdRowStyle, display: "flex" }}>
-              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
+            <div style={editorSearchRowStyle}>
+              <div style={editorSearchInputStyle}>
                 <TextField
                   className={editorFocusTargetClassName}
-                  aria-label={t("editor.steamAppId")}
-                  value={steamAppIdText}
+                  aria-label={t("editor.ign.gameName")}
+                  value={query}
+                  disabled={entryBusy || !nonSteam}
                   onChange={(e) => {
-                    markFormEdited();
-                    clearPreviewMarker("steamAppId");
-                    setSteamAppIdInput(e.target.value);
+                    setQuery(e.target.value);
+                    setResults(null);
                   }}
                   style={{ ...fieldStyle, width: "100%" }}
                 />
               </div>
               <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName}`}
-                disabled={entryBusy}
-                onClick={() => applySteamAppId()}
-                style={{ ...editorAppIdButtonStyle, flex: "0 0 auto" }}
-              >
-                {t("editor.steamAppIdApply")}
-              </FocusableButton>
-            </div>
-          </Field>
-          {steamLanguageMismatch ? (
-            <Field
-              label={t("editor.steamTextLanguage", { language: storedSteamLanguageLabel })}
-              bottomSeparator="none"
-            >
-              <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName}`}
-                disabled={entryBusy}
-                onClick={() => void refreshFromSteam(steamLanguage ?? undefined)}
-                style={editorRowActionStyle}
-              >
-                {t("editor.fetchSteamText", { language: currentSteamLanguageLabel })}
-              </FocusableButton>
-            </Field>
-          ) : null}
-        </DialogControlsSection>
-        <DialogControlsSection>
-          <DialogControlsSectionHeader>{t("editor.searchIgn")}</DialogControlsSectionHeader>
-          <Field label={t("editor.ign.gameName")} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="standard">
-            <div style={{ ...editorSearchRowStyle, display: "flex", alignItems: "center" }}>
-              <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-                <TextField
-                  className={editorFocusTargetClassName}
-                  aria-label={t("editor.ign.gameName")}
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  style={{ ...fieldStyle, width: "100%" }}
-                />
-              </div>
-              <FocusableButton
-                className={`DialogButton ${editorFocusTargetClassName}`}
-                disabled={entryBusy}
+                className={editorFocusTargetClassName}
+                disabled={entryBusy || !nonSteam || !query.trim()}
                 onClick={search}
-                style={{ ...editorSearchButtonStyle, width: "auto", flex: "0 0 auto" }}
+                style={editorSearchButtonStyle}
               >
                 {ignBusy ? t("editor.searching") : t("editor.search")}
               </FocusableButton>
             </div>
           </Field>
-          <div style={{ ...rowStackStyle, ...editorSearchResultsSpacingStyle }}>
+          <div>
             {ignBusy ? (
-              <Field focusable={false} padding="none" bottomSeparator="none">
-                <div style={compactTextStyle}>{t("editor.searching")}</div>
-              </Field>
-            ) : null}
-            {!ignBusy && !results.length ? (
-              <Field focusable={false} padding="none" bottomSeparator="none">
-                <div style={compactTextStyle}>{t("editor.noResults")}</div>
-              </Field>
-            ) : null}
-            {results.map((result) => (
               <Field
-                key={result.slug || result.url}
-                className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
-                label={result.title}
-                description={result.description}
-                focusable={true}
-                highlightOnFocus={true}
-                bottomSeparator="standard"
-                onActivate={() => void applyResult(result)}
-                onClick={() => void applyResult(result)}
+                focusable={false}
+                description={<span aria-live="polite">{t("editor.searching")}</span>}
+                bottomSeparator="none"
               />
+            ) : null}
+            {!ignBusy && !results?.length ? (
+              <Field
+                focusable={false}
+                description={
+                  <span aria-live="polite">
+                    {results === null ? t("editor.noResults") : t("editor.ign.noResults")}
+                  </span>
+                }
+                bottomSeparator="none"
+              />
+            ) : null}
+            {(results ?? []).map((result) => (
+              // One wrapper per row, as in the Steam results, so both lists space their rows alike.
+              <div key={result.slug || result.url}>
+                <Field
+                  className={`decky-metadata-editor__result ${editorFocusTargetClassName}`}
+                  label={result.title}
+                  description={result.description}
+                  icon={result.cover_url ? <img src={result.cover_url} alt="" style={editorIgnResultImageStyle} /> : undefined}
+                  focusable={true}
+                  highlightOnFocus={true}
+                  disabled={entryBusy || !nonSteam}
+                  bottomSeparator="standard"
+                  onActivate={() => void applyResult(result)}
+                  onClick={() => void applyResult(result)}
+                />
+              </div>
             ))}
           </div>
-        </DialogControlsSection>
+        </div>
       </>
     );
   }
 
   function renderHltbPage() {
     return (
-      <DialogControlsSection>
-        <Field
-          label={markedLabel("hltb", "editor.page.hltb")}
-          description={t("editor.hltbHelp")}
-          childrenLayout="below"
-          childrenContainerWidth="max"
-          bottomSeparator="standard"
-        >
+      <>
+        <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+          <div className="SettingsDialogSubHeader">{t("editor.hltbSearchTitle")}</div>
           {hltbMatch?.game_name ? (
-            <div style={compactTextStyle}>
-              {hltbMatch.pinned_id_used
-                ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name })}
-            </div>
+            <Field
+              focusable={false}
+              description={
+                hltbMatch.pinned_id_used
+                  ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
+                  : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name })
+              }
+              bottomSeparator="none"
+            />
           ) : null}
           <HltbGameSearch
             key={editorEntryToken}
             initialQuery={appName(appId)}
-            disabled={entryBusy}
+            disabled={entryBusy || !nonSteam}
             onApply={(picked) => applyHltbGameId(picked)}
           />
-        </Field>
-        <Field focusable={false} childrenLayout="below" childrenContainerWidth="max" bottomSeparator="none">
-          <div style={{ ...editorAppIdRowStyle, display: "flex" }}>
-            <div style={{ flex: "1 1 auto", minWidth: 0 }}>
-              <TextField
+        </div>
+        <DialogControlsSection>
+          <Field
+            label={markedLabel("hltb", "editor.hltbGame")}
+            description={t("editor.hltbHelp")}
+            childrenLayout="below"
+            childrenContainerWidth="max"
+            bottomSeparator="standard"
+          >
+            <div style={editorSearchRowStyle}>
+              <div style={editorSearchInputStyle}>
+                <TextField
+                  className={editorFocusTargetClassName}
+                  aria-label={t("editor.hltbGame")}
+                  value={hltbIdText}
+                  disabled={!nonSteam}
+                  onChange={(e) => {
+                    markFormEdited();
+                    clearPreviewMarker("hltb");
+                    setHltbIdDraft(e.target.value);
+                  }}
+                  style={{ ...fieldStyle, width: "100%" }}
+                />
+              </div>
+              <FocusableButton
                 className={editorFocusTargetClassName}
-                value={hltbIdText}
-                onChange={(e) => {
-                  markFormEdited();
-                  clearPreviewMarker("hltb");
-                  setHltbIdDraft(e.target.value);
-                }}
-                style={{ ...fieldStyle, width: "100%" }}
-              />
+                disabled={entryBusy || !nonSteam}
+                onClick={() => applyHltbGameId()}
+                style={editorSearchButtonStyle}
+              >
+                {t("editor.hltbApply")}
+              </FocusableButton>
             </div>
-            <FocusableButton
-              className={`DialogButton ${editorFocusTargetClassName}`}
-              disabled={entryBusy}
-              onClick={() => applyHltbGameId()}
-              style={{ ...editorAppIdButtonStyle, flex: "0 0 auto" }}
-            >
-              {t("editor.hltbApply")}
-            </FocusableButton>
-          </div>
-        </Field>
-      </DialogControlsSection>
+          </Field>
+        </DialogControlsSection>
+      </>
     );
   }
 
@@ -1769,6 +1820,13 @@ export const MetadataPage = () => {
       <DialogControlsSection>
         <DropdownItem
           label={markedLabel("compatibility", "editor.compat.statusLabel")}
+          description={
+            <>
+              {t("editor.compatibilityHelp")}
+              <br />
+              {t("editor.compatibilityChoices")}
+            </>
+          }
           bottomSeparator="standard"
           rgOptions={compatibilityStatusOptions.map((data) => ({
             data,
@@ -1790,15 +1848,6 @@ export const MetadataPage = () => {
             )
           }
         />
-        <Field
-          focusable={false}
-          childrenLayout="below"
-          padding="none"
-          bottomSeparator="none"
-        >
-          <div style={compactTextStyle}>{t("editor.compatibilityHelp")}</div>
-          <div style={compactTextStyle}>{t("editor.compatibilityChoices")}</div>
-        </Field>
       </DialogControlsSection>
     );
   }
@@ -1808,10 +1857,10 @@ export const MetadataPage = () => {
     const savedCategories = new Set(saved?.store_categories ?? []);
     const formCategories = new Set(metadata.store_categories ?? []);
     const changedMarker = fieldMarker("categories");
-    const unchangedMarker = { container: editorFieldMarkerBaseStyle, label: undefined, tag: null };
+    const unchangedMarker = { label: undefined, tag: null };
     return (
-      <DialogControlsSection>
-        <DialogControlsSectionHeader>{t("editor.page.storeCategories")}</DialogControlsSectionHeader>
+      <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+        <div className="SettingsDialogSubHeader">{t("editor.page.storeCategories")}</div>
         {Object.keys(CATEGORY_LABELS).map((key) => {
           const category = Number(key);
           // Mark each toggle whose state differs from the stored record.
@@ -1823,63 +1872,116 @@ export const MetadataPage = () => {
               label={renderMarkedLabel(categoryChanged ? changedMarker : unchangedMarker, categoryLabel(category, t))}
               checked={formCategories.has(category)}
               onChange={(checked) => toggleCategory(category, checked)}
+              disabled={!nonSteam}
             />
           );
         })}
-      </DialogControlsSection>
+      </div>
     );
   }
 
   function renderShortcutNamePage() {
     return (
       <DialogControlsSection>
-        <Field focusable={false} padding="none" bottomSeparator="standard">
-          <div style={compactTextStyle}>{t("editor.shortcut.immediateNotice")}</div>
-        </Field>
         <Field
           focusable={false}
-          childrenLayout="below"
-          padding="standard"
+          description={t("editor.shortcut.immediateNotice")}
           bottomSeparator="standard"
-        >
-          <div style={rowStackStyle}>
-            <div style={compactTextStyle}>
-              {t("editor.shortcut.current", {
-                name: currentShortcutName ?? t("editor.shortcut.missingName"),
-              })}
-            </div>
-            {steamStoreName ? <div style={compactTextStyle}>{t("editor.shortcut.steamName", { name: steamStoreName })}</div> : null}
-            {steamNameLoading ? <div style={compactTextStyle}>{t("editor.shortcut.loadingSteamName")}</div> : null}
-            {steamNameUnavailable ? <div style={compactTextStyle}>{t("editor.shortcut.noOfficialName")}</div> : null}
-            {shortcutManagementError ? <div style={compactTextStyle}>{t("editor.shortcut.managementUnavailable")}</div> : null}
-            {!shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? <div style={compactTextStyle}>{t("editor.shortcut.apiUnavailable")}</div> : null}
-            {!shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? <div style={compactTextStyle}>{t("editor.shortcut.notFound")}</div> : null}
-            {!shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? <div style={compactTextStyle}>{t("editor.shortcut.derivedId")}</div> : null}
-            {!shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? <div style={compactTextStyle}>{t("editor.shortcut.alreadyMatches")}</div> : null}
-            {shortcutStatus === "diverged" ? <div style={compactTextStyle}>{t("editor.shortcut.diverged")}</div> : null}
-            {!steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? <div style={compactTextStyle}>{t("editor.shortcut.noOfficialName")}</div> : null}
-          </div>
+        />
+        <Field label={t("editor.shortcut.currentLabel")} focusable={false} bottomSeparator="standard">
+          {currentShortcutName ?? t("editor.shortcut.missingName")}
         </Field>
-        {canUseSteamName ? (
-          <Field focusable={false} padding="none" bottomSeparator="standard">
-            <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy} onClick={showUseSteamNameModal} style={editorAppIdButtonStyle}>
-              {t("editor.shortcut.useSteamName")}
-            </FocusableButton>
+        {steamStoreName ? (
+          <Field label={t("editor.shortcut.steamNameLabel")} focusable={false} bottomSeparator="standard">
+            {steamStoreName}
           </Field>
+        ) : null}
+        {steamNameLoading ? <Field focusable={false} description={t("editor.shortcut.loadingSteamName")} bottomSeparator="none" /> : null}
+        {steamNameUnavailable ? <Field focusable={false} description={t("editor.shortcut.noOfficialName")} bottomSeparator="none" /> : null}
+        {shortcutManagementError ? (
+          <Field
+            focusable={false}
+            description={<span style={{ color: colors.warning }}>{t("editor.shortcut.managementUnavailable")}</span>}
+            bottomSeparator="none"
+          />
+        ) : null}
+        {!shortcutManagementError && shortcutManagement?.eligible && !hasShortcutNameApi() ? (
+          <Field
+            focusable={false}
+            description={<span style={{ color: colors.warning }}>{t("editor.shortcut.apiUnavailable")}</span>}
+            bottomSeparator="none"
+          />
+        ) : null}
+        {!shortcutManagementError && shortcutManagement?.reason === "shortcut_not_found" ? (
+          <Field
+            focusable={false}
+            description={<span style={{ color: colors.warning }}>{t("editor.shortcut.notFound")}</span>}
+            bottomSeparator="none"
+          />
+        ) : null}
+        {!shortcutManagementError && shortcutManagement?.reason === "derived_shortcut_id" ? (
+          <Field
+            focusable={false}
+            description={<span style={{ color: colors.warning }}>{t("editor.shortcut.derivedId")}</span>}
+            bottomSeparator="none"
+          />
+        ) : null}
+        {!shortcutManagementError && shortcutManagement?.eligible && currentShortcutName === steamStoreName && steamStoreName ? (
+          <Field focusable={false} description={t("editor.shortcut.alreadyMatches")} bottomSeparator="none" />
+        ) : null}
+        {shortcutStatus === "diverged" ? (
+          <Field
+            focusable={false}
+            description={<span style={{ color: colors.warning }}>{t("editor.shortcut.diverged")}</span>}
+            bottomSeparator="none"
+          />
+        ) : null}
+        {!steamNameLoading && !steamStoreName && hasSteamMatch && !steamNameUnavailable ? (
+          <Field focusable={false} description={t("editor.shortcut.noOfficialName")} bottomSeparator="none" />
+        ) : null}
+        {canUseSteamName ? (
+          <EditorButtonItem
+            className={editorFocusTargetClassName}
+            label={t("editor.page.shortcutName")}
+            description={t("editor.shortcut.useSteamNameBody", {
+              current: currentShortcutName,
+              target: savedSteamStoreName,
+            })}
+            layout="inline"
+            disabled={entryBusy}
+            onClick={showUseSteamNameModal}
+            bottomSeparator="standard"
+          >
+            {t("editor.shortcut.useSteamName")}
+          </EditorButtonItem>
         ) : null}
         {shortcutManagement?.eligible && shortcutStatus === "managed" && shortcutManagement.state ? (
-          <Field focusable={false} padding="none" bottomSeparator="standard">
-            <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy || !hasShortcutNameApi()} onClick={showRestoreShortcutNameModal} style={editorAppIdButtonStyle}>
-              {t("editor.shortcut.restore")}
-            </FocusableButton>
-          </Field>
+          <EditorButtonItem
+            className={editorFocusTargetClassName}
+            label={t("editor.page.shortcutName")}
+            description={t("editor.shortcut.restoreBody", {
+              name: shortcutManagement.state.original_name,
+            })}
+            layout="inline"
+            disabled={entryBusy || !hasShortcutNameApi()}
+            onClick={showRestoreShortcutNameModal}
+            bottomSeparator="standard"
+          >
+            {t("editor.shortcut.restore")}
+          </EditorButtonItem>
         ) : null}
         {shortcutManagement?.eligible && shortcutStatus === "diverged" ? (
-          <Field focusable={false} padding="none" bottomSeparator="none">
-            <FocusableButton className={`DialogButton ${editorFocusTargetClassName}`} disabled={entryBusy} onClick={showForgetShortcutNameHistoryModal} style={editorAppIdButtonStyle}>
-              {t("editor.shortcut.forget")}
-            </FocusableButton>
-          </Field>
+          <EditorButtonItem
+            className={editorFocusTargetClassName}
+            label={t("editor.page.shortcutName")}
+            description={t("editor.shortcut.forgetBody")}
+            layout="inline"
+            disabled={entryBusy}
+            onClick={showForgetShortcutNameHistoryModal}
+            bottomSeparator="none"
+          >
+            {t("editor.shortcut.forget")}
+          </EditorButtonItem>
         ) : null}
       </DialogControlsSection>
     );
@@ -1888,18 +1990,19 @@ export const MetadataPage = () => {
   function renderAdvancedPage() {
     return (
       <DialogControlsSection>
-        <Field focusable={false} padding="none" bottomSeparator="none">
-          <FocusableButton
-            className={`DialogButton ${editorFocusTargetClassName}`}
-            onClick={() => showRemoveMetadataModal({
-              gameName: appName(appId),
-              onConfirm: () => void removeCurrent(),
-            })}
-            style={editorAppIdButtonStyle}
-          >
-            {t("editor.removeMetadata")}
-          </FocusableButton>
-        </Field>
+        <EditorButtonItem
+          className={editorFocusTargetClassName}
+          label={t("editor.removeMetadata")}
+          description={t("editor.removeConfirm.body", { name: appName(appId) })}
+          layout="inline"
+          onClick={() => showRemoveMetadataModal({
+            gameName: appName(appId),
+            onConfirm: () => void removeCurrent(),
+          })}
+          bottomSeparator="none"
+        >
+          {t("editor.removeMetadata")}
+        </EditorButtonItem>
       </DialogControlsSection>
     );
   }
@@ -1935,9 +2038,11 @@ export const MetadataPage = () => {
       onSecondaryActionDescription={saveLabel}
       onCancelButton={requestLeave}
     >
-      <style>{editorScopedCss}</style>
+      <EditorScopedStyle />
       <EditorLayout
         title={appName(appId)}
+        appId={appId}
+        steamAppId={normalizedSteamAppId(metadata.steam_appid)}
         pages={pages}
         page={page}
         onPageRequested={setPage}

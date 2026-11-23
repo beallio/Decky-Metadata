@@ -7,7 +7,6 @@ import {
   MetadataData,
   MetadataSearchResult,
   SteamMatchSearchResponse,
-  SteamMatchPreviewResponse,
   PluginUpdateCandidate,
   RevalidateResult,
   ScanProgress,
@@ -21,6 +20,7 @@ import {
   UpdateSettings,
   TrailerSettings,
   ProtonDbBadgeSettings,
+  EditorHeaderSettings,
   IgnTrailerResult,
   ProtonDbTier,
 } from "./types";
@@ -92,10 +92,6 @@ export const searchSteamMatches = callable<
   [query: string, limit?: number],
   SteamMatchSearchResponse
 >("search_steam_matches");
-export const getSteamMatchPreview = callable<
-  [steamAppId: number],
-  SteamMatchPreviewResponse
->("get_steam_match_preview");
 export const fetchMetadata = callable<[slugOrUrl: string], MetadataData | null>(
   "fetch_metadata"
 );
@@ -224,6 +220,13 @@ export const setProtonDbBadgeSettings = callable<
   [settings: ProtonDbBadgeSettings],
   ProtonDbBadgeSettings
 >("set_protondb_badge_settings");
+export const getEditorHeaderSettings = callable<[], EditorHeaderSettings>(
+  "get_editor_header_settings"
+);
+export const setEditorHeaderSettings = callable<
+  [settings: EditorHeaderSettings],
+  EditorHeaderSettings
+>("set_editor_header_settings");
 export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
 export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
 export type HltbTimes = { main: number; plus: number; complete: number; all: number };

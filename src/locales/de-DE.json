@@ -22,10 +22,6 @@
     "invalid_title": "ungültiger Titel",
     "invalid_search": "ungültige Suche",
     "steam_search_unavailable": "Steam-Suche ist nicht verfügbar. Versuche es erneut.",
-    "steam_details_unavailable": "Steam-Spieldetails sind nicht verfügbar",
-    "steam_title_unavailable": "Steam-Spieltitel ist nicht verfügbar",
-    "invalid_steam_game": "Wähle ein gültiges Steam-Spiel.",
-    "steam_preview_unavailable": "Steam-Details sind nicht verfügbar. Du kannst diese Zuordnung trotzdem verwenden.",
     "settings_unreadable": "Metadaten-Einstellungsdatei ist nicht lesbar; repariere oder entferne sie, bevor du Änderungen speicherst",
     "invalid_release_date": "release_date muss ein Kalenderdatum im Format YYYY-MM-DD oder null sein",
     "hltb_settings_unavailable": "HLTB-Einstellungen konnten nicht geladen werden",
@@ -34,6 +30,7 @@
     "trailer_settings_unavailable": "Trailer-Einstellungen konnten nicht geladen werden",
     "mini_achievements_settings_unavailable": "Einstellungen für Mini-Errungenschaften konnten nicht geladen werden",
     "protondb_settings_unavailable": "ProtonDB-Abzeichen-Einstellungen konnten nicht geladen werden",
+    "editor_header_settings_unavailable": "Einstellungen für den Editor-Kopfbereich konnten nicht geladen werden",
     "steam_ui_unavailable": "Steam-UI nicht verfügbar",
     "update_check_failed": "Update-Prüfung fehlgeschlagen",
     "rate_limited": "Ratenlimit überschritten",
@@ -215,6 +212,13 @@
       "enableLabel": "Mini-Errungenschaften aktivieren",
       "enableDescription": "Zeigt Steams kleinen Fortschrittsbalken für Errungenschaften neben der Spielzeit auf Spielseiten. Standardmäßig aus.",
       "footnote": "Dies nutzt Steams Errungenschaftsfortschritt für Steam-Spiele; für Nicht-Steam-Spiele wird keine Errungenschaftsverfolgung hinzugefügt."
+    },
+    "contextMenu": {
+      "title": "Kontextmenü",
+      "headerIconLabel": "Spielsymbol im Editor-Kopfbereich",
+      "headerIconDescription": "Zeigt das Spielsymbol neben dem Namen oben auf der Seite zum Bearbeiten der Metadaten an. Lange Namen laufen durch.",
+      "steamIconLabel": "Steam-Symbol verwenden, falls keines vorhanden ist",
+      "steamIconDescription": "Wenn das Spiel kein eigenes Symbol hat, wird das Symbol des zugeordneten Steam-Spiels verwendet. Gibt es keines, wird kein Symbol angezeigt."
     },
     "compat": {
       "title": "Kompatibilitätsstatus",
@@ -439,8 +443,8 @@
     },
     "currentMatch": "Aktuelle Zuordnung",
     "loadFromSteam": "Von Steam laden",
-    "loadFromSteamSteamGame": "Von Steam laden (für Steam-Spiele nicht verfügbar)",
-    "loadFromSteamNoMatch": "Von Steam laden (keine Steam-Zuordnung)",
+    "loadFromSteamSteamGame": "Für Steam-Spiele nicht verfügbar",
+    "loadFromSteamNoMatch": "Keine Steam-Zuordnung",
     "loadFromSteamBusy": "Von Steam laden (wird aktualisiert)",
     "fieldEdited": "Bearbeitet",
     "fieldFromSteam": "Von Steam, nicht gespeichert",
@@ -457,10 +461,18 @@
       "body": "Dies löscht alle gespeicherten Metadaten für {{name}}. Dies kann nicht rückgängig gemacht werden.",
       "cancel": "Abbrechen"
     },
+    "review": {
+      "title": "Spieldetails überprüfen",
+      "apply": "Anwenden",
+      "cancel": "Abbrechen",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Dieses Plugin ändert nur Nicht-Steam-Spiele.",
-    "searchIgn": "IGN-Metadaten durchsuchen",
+    "searchIgn": "IGN durchsuchen",
     "ign": {
-      "gameName": "Spielname"
+      "gameName": "Spielname",
+      "noResults": "Keine Ergebnisse.",
+      "help": "Durchsuche IGN und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie."
     },
     "search": "Suchen",
     "searching": "Suche...",
@@ -495,18 +507,23 @@
     "compatibilityHelp": "„Automatisch“ verwendet für jedes Spiel den Status des zugeordneten Steam-Spiels. „Globale Voreinstellung verwenden“ übernimmt diese Einstellung für dieses Spiel. „Valve folgen“ verwendet immer den Status von Valve. Wenn keine Valve-Daten verfügbar sind, behält „Valve folgen“ den ursprünglichen Steam-Status bei.",
     "compatibilityChoices": "Manuelle und Standard-Kategorien sind deine Auswahl, keine Valve-Zertifizierung oder ein Emulator-Leistungsergebnis.",
     "hltbGame": "HowLongToBeat-Spiel",
+    "hltbSearchTitle": "HowLongToBeat durchsuchen",
     "hltbHelp": "Durchsuche HowLongToBeat oder füge eine Spielnummer bzw. einen Spielelink ein, um die für dieses Spiel angezeigten Zeiten zu wählen. Leer lassen für automatische Zuordnung.",
     "hltbCurrentChosen": "Aktuelles Spiel: {{name}} (ausgewählt)",
     "hltbCurrentAutomatic": "Aktuelles Spiel: {{name}} (automatisch gefunden)",
     "hltbApply": "HLTB-Spiel anwenden",
     "steamAppId": "Steam-App-ID",
     "steamAppIdHelp": "Füge eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL ein. Leer lassen, um die festgelegte Steam-Zuordnung zu entfernen.",
-    "steamAppIdApply": "Steam-App-ID anwenden",
+    "manualMatch": {
+      "label": "Steam-App-ID eingeben",
+      "help": "Verwende eine Steam-App-ID, Shop-URL, Community-URL oder SteamDB-URL, wenn die Suche das Spiel nicht findet. Leer lassen, um die Zuordnung zu entfernen.",
+      "button": "ID eingeben..."
+    },
     "shortcut": {
       "immediateNotice": "Diese Aktionen werden sofort ausgeführt. „Speichern“ ist nicht nötig.",
-      "current": "Aktuell: {{name}}",
+      "currentLabel": "Aktueller Name",
       "missingName": "Steam hat keinen nativen Verknüpfungsnamen bereitgestellt",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Steam-Name",
       "loadingSteamName": "Steam-Name wird geladen...",
       "noOfficialName": "Steam hat keinen offiziellen Namen zurückgegeben",
       "managementUnavailable": "Verwaltung von Verknüpfungsnamen ist nicht verfügbar",
@@ -544,8 +561,6 @@
       "detailsLoadedTitle": "Details geladen",
       "steamPreviewBody": "Steam-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
       "ignPreviewBody": "IGN-Details sind in dieses Formular geladen. Speichern übernimmt sie.",
-      "steamAppIdNotAppliedTitle": "Steam-App-ID nicht angewendet",
-      "steamAppIdNotAppliedBody": "Wähle „Steam-App-ID anwenden“, um die neue Zuordnung vor dem Speichern zu laden.",
       "fetchFailedTitle": "Abrufen fehlgeschlagen",
       "removedBody": "Metadaten entfernt",
       "removeFailedTitle": "Entfernen fehlgeschlagen",
@@ -568,26 +583,14 @@
     "steamTextUnavailable": "Steam hat für dieses Spiel keinen Text zurückgegeben."
   },
   "matchPicker": {
-    "help": "Durchsuche Steam, wähle ein Ergebnis, um die Details zu prüfen, und wähle dann „Diese Steam-Zuordnung verwenden“. Das Durchsuchen ändert dein Spiel nicht.",
+    "help": "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
     "searchAriaLabel": "Steam-Spielsuche",
     "search": "Steam durchsuchen",
     "searching": "Steam wird durchsucht...",
     "idle": "Gib einen Spielnamen ein, um Steam-Zuordnungen zu finden.",
-    "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze das Feld „Steam-App-ID“ unten.",
+    "empty": "Keine Steam-Zuordnungen gefunden. Versuche einen anderen Namen oder nutze „Steam-App-ID eingeben“ oben.",
     "appId": "Steam-App-ID: {{appId}}",
-    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung",
-    "appIdSelected": "Steam-App-ID: {{appId}} · Ausgewählt",
-    "appIdCurrentSelected": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung · Ausgewählt",
-    "loadingDetails": "Steam-Details werden geladen...",
-    "artworkAlt": "Steam-Artwork für {{title}}",
-    "developer": "Entwickler: {{names}}",
-    "developerUnavailable": "Entwickler nicht verfügbar",
-    "release": "Veröffentlichung: {{date}}",
-    "releaseUnavailable": "Veröffentlichungsdatum nicht verfügbar",
-    "steamType": "Steam-Typ: {{type}}. Prüfe, ob dies das gewünschte Spiel bzw. die gewünschte Edition ist.",
-    "applyHelp": "Diese Zuordnung lädt ihre Steam-App-ID und Details in dieses Formular. Speichern übernimmt sie. Sie benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
-    "apply": "Diese Steam-Zuordnung verwenden",
-    "cancel": "Auswahl abbrechen"
+    "appIdCurrent": "Steam-App-ID: {{appId}} · Aktuelle Zuordnung"
   },
   "categories": {
     "singlePlayer": "Einzelspieler",

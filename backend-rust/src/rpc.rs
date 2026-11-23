@@ -30,6 +30,8 @@ pub const METHODS: &[&str] = &[
     "set_mini_achievements_enabled",
     "get_protondb_badge_settings",
     "set_protondb_badge_settings",
+    "get_editor_header_settings",
+    "set_editor_header_settings",
     "get_provider_cache",
     "put_protondb_cache",
     "get_hltb_settings",
@@ -52,7 +54,6 @@ pub const METHODS: &[&str] = &[
     "save_previewed_metadata",
     "search_metadata",
     "search_steam_matches",
-    "get_steam_match_preview",
     "fetch_metadata",
     "find_ign_trailer",
     "apply_fetched_metadata",
@@ -330,6 +331,22 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 )
                 .await
         }
+        "get_editor_header_settings" => {
+            arity(&args, 0, 0)?;
+            Ok(storage::normalize_editor_header_settings(
+                &loaded_store(&state, "editor_header_settings_unavailable").await?.data()["settings"]
+                    ["editor_header"],
+            ))
+        }
+        "set_editor_header_settings" => {
+            arity(&args, 1, 1)?;
+            state
+                .set_setting(
+                    "editor_header",
+                    storage::validate_editor_header_settings(&args[0])?,
+                )
+                .await
+        }
         "get_protondb_badge_settings" => {
             arity(&args, 0, 0)?;
             Ok(storage::normalize_protondb_badge_settings(
@@ -482,10 +499,6 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 )
                 .await,
             )
-        }
-        "get_steam_match_preview" => {
-            arity(&args, 1, 1)?;
-            Ok(steam::steam_match_preview(&state.http, &args[0]).await)
         }
         "fetch_metadata" => {
             arity(&args, 1, 1)?;

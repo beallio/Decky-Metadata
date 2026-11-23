@@ -26,10 +26,6 @@
     "invalid_title": "عنوان غير صالح",
     "invalid_search": "بحث غير صالح",
     "steam_search_unavailable": "بحث Steam غير متاح. أعد المحاولة.",
-    "steam_details_unavailable": "تفاصيل لعبة Steam غير متاحة",
-    "steam_title_unavailable": "عنوان لعبة Steam غير متاح",
-    "invalid_steam_game": "اختر لعبة Steam صالحة.",
-    "steam_preview_unavailable": "تفاصيل Steam غير متاحة. يمكنك استخدام هذه المطابقة رغم ذلك.",
     "settings_unreadable": "ملف إعدادات البيانات الوصفية غير قابل للقراءة؛ أصلحه أو احذفه قبل حفظ التغييرات",
     "invalid_release_date": "يجب أن يكون release_date تاريخًا تقويميًا بصيغة YYYY-MM-DD أو null",
     "hltb_settings_unavailable": "تعذّر تحميل إعدادات HLTB",
@@ -38,6 +34,7 @@
     "trailer_settings_unavailable": "تعذّر تحميل إعدادات المقاطع الدعائية",
     "mini_achievements_settings_unavailable": "تعذّر تحميل إعدادات الإنجازات المصغّرة",
     "protondb_settings_unavailable": "تعذّر تحميل إعدادات شارات ProtonDB",
+    "editor_header_settings_unavailable": "تعذّر تحميل إعدادات رأس المحرر",
     "steam_ui_unavailable": "واجهة Steam غير متاحة",
     "update_check_failed": "فشل التحقق من التحديثات",
     "rate_limited": "تم تجاوز حد الطلبات",
@@ -219,6 +216,13 @@
       "enableLabel": "تفعيل الإنجازات المصغّرة",
       "enableDescription": "إظهار شريط تقدّم الإنجازات الصغير في Steam بجانب وقت اللعب في صفحات التفاصيل. معطّل افتراضيًا.",
       "footnote": "يستخدم هذا تقدّم الإنجازات في Steam لألعاب Steam؛ ولا يضيف تتبّع إنجازات للألعاب غير التابعة لـ Steam."
+    },
+    "contextMenu": {
+      "title": "قائمة السياق",
+      "headerIconLabel": "أيقونة اللعبة في رأس المحرر",
+      "headerIconDescription": "إظهار أيقونة اللعبة بجانب اسمها أعلى صفحة تحرير البيانات الوصفية. يتم تمرير الأسماء الطويلة.",
+      "steamIconLabel": "استخدام أيقونة Steam عند عدم توفرها",
+      "steamIconDescription": "إذا لم تكن للعبة أيقونة خاصة بها، فاستخدم أيقونة لعبة Steam المطابقة. إذا لم تتوفر أيقونة، فلن يتم عرض أيقونة."
     },
     "compat": {
       "title": "حالة التوافق",
@@ -443,8 +447,8 @@
     },
     "currentMatch": "المطابقة الحالية",
     "loadFromSteam": "تحميل من Steam",
-    "loadFromSteamSteamGame": "تحميل من Steam (غير متاح لألعاب Steam)",
-    "loadFromSteamNoMatch": "تحميل من Steam (لا توجد مطابقة في Steam)",
+    "loadFromSteamSteamGame": "غير متاح لألعاب Steam",
+    "loadFromSteamNoMatch": "لا توجد مطابقة في Steam",
     "loadFromSteamBusy": "تحميل من Steam (جارٍ التحديث)",
     "fieldEdited": "معدّل",
     "fieldFromSteam": "من Steam، غير محفوظ",
@@ -461,10 +465,18 @@
       "body": "سيؤدي هذا إلى حذف جميع البيانات الوصفية المحفوظة لـ {{name}}. لا يمكن التراجع عن ذلك.",
       "cancel": "إلغاء"
     },
+    "review": {
+      "title": "مراجعة تفاصيل اللعبة",
+      "apply": "تطبيق",
+      "cancel": "إلغاء",
+      "genres": "الأنواع"
+    },
     "nonSteamOnly": "هذه الإضافة تغيّر الألعاب غير التابعة لـ Steam فقط.",
-    "searchIgn": "البحث في بيانات IGN الوصفية",
+    "searchIgn": "البحث في IGN",
     "ign": {
-      "gameName": "اسم اللعبة"
+      "gameName": "اسم اللعبة",
+      "noResults": "لا نتائج.",
+      "help": "ابحث في IGN، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ»."
     },
     "search": "بحث",
     "searching": "جارٍ البحث...",
@@ -499,18 +511,23 @@
     "compatibilityHelp": "يستخدم خيار «تلقائي» حالة التوافق في Steam للمطابقة الخاصة بكل لعبة. يرث خيار «استخدام الافتراضي العام» هذا الإعداد لهذه اللعبة. يستخدم خيار «اتّباع Valve» حالة Valve دائمًا. إذا لم تتوفر بيانات Valve، يُبقي خيار «اتّباع Valve» على حالة Steam الأصلية.",
     "compatibilityChoices": "الفئات اليدوية والافتراضية هي اختياراتك، وليست شهادة من Valve أو نتيجة أداء للمحاكي.",
     "hltbGame": "لعبة HowLongToBeat",
+    "hltbSearchTitle": "البحث في HowLongToBeat",
     "hltbHelp": "ابحث في HowLongToBeat أو الصق رقم لعبة أو رابط صفحة لعبة لاختيار الأوقات المعروضة لهذه اللعبة. اتركه فارغًا للمطابقة التلقائية.",
     "hltbCurrentChosen": "اللعبة الحالية: {{name}} (مختارة)",
     "hltbCurrentAutomatic": "اللعبة الحالية: {{name}} (عُثر عليها تلقائيًا)",
     "hltbApply": "تطبيق لعبة HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "الصق Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB. اتركه فارغًا لمسح مطابقة Steam المثبّتة.",
-    "steamAppIdApply": "تطبيق Steam App ID",
+    "manualMatch": {
+      "label": "أدخل Steam App ID",
+      "help": "استخدم Steam App ID أو رابط المتجر أو رابط المجتمع أو رابط SteamDB عندما لا يجد البحث اللعبة. اتركه فارغًا لإزالة المطابقة.",
+      "button": "أدخل ID..."
+    },
     "shortcut": {
       "immediateNotice": "تُطبّق هذه الإجراءات فورًا ولا تتطلب الضغط على «حفظ».",
-      "current": "الحالي: {{name}}",
+      "currentLabel": "الاسم الحالي",
       "missingName": "لم يكشف Steam عن اسم اختصار أصلي",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "اسم Steam",
       "loadingSteamName": "جارٍ تحميل اسم Steam...",
       "noOfficialName": "لم يُرجع Steam اسمًا رسميًا",
       "managementUnavailable": "إدارة أسماء الاختصارات غير متاحة",
@@ -548,8 +565,6 @@
       "detailsLoadedTitle": "تم تحميل التفاصيل",
       "steamPreviewBody": "تم تحميل تفاصيل Steam في هذا النموذج. يحفظها زر «حفظ».",
       "ignPreviewBody": "تم تحميل تفاصيل IGN في هذا النموذج. يحفظها زر «حفظ».",
-      "steamAppIdNotAppliedTitle": "لم يتم تطبيق Steam App ID",
-      "steamAppIdNotAppliedBody": "اختر «تطبيق Steam App ID» لتحميل المطابقة الجديدة قبل الحفظ.",
       "fetchFailedTitle": "فشل الجلب",
       "removedBody": "تمت إزالة البيانات الوصفية",
       "removeFailedTitle": "فشلت الإزالة",
@@ -572,26 +587,14 @@
     "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
   },
   "matchPicker": {
-    "help": "ابحث في Steam، واختر نتيجة لفحص تفاصيلها، ثم اختر «استخدام مطابقة Steam هذه». التصفح لا يغيّر لعبتك.",
+    "help": "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
     "searchAriaLabel": "بحث ألعاب Steam",
     "search": "البحث في Steam",
     "searching": "جارٍ البحث في Steam...",
     "idle": "أدخل اسم لعبة للعثور على مطابقات في Steam.",
-    "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم حقل Steam App ID أدناه.",
+    "empty": "لم يُعثر على مطابقات في Steam. جرّب اسمًا آخر أو استخدم «أدخل Steam App ID» أعلاه.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية",
-    "appIdSelected": "Steam App ID: {{appId}} · محدد",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · المطابقة الحالية · محدد",
-    "loadingDetails": "جارٍ تحميل تفاصيل Steam...",
-    "artworkAlt": "رسومات Steam لـ {{title}}",
-    "developer": "المطوّر: {{names}}",
-    "developerUnavailable": "المطوّر غير متاح",
-    "release": "الإصدار: {{date}}",
-    "releaseUnavailable": "تاريخ الإصدار غير متاح",
-    "steamType": "نوع Steam: {{type}}. تحقق من أن هذه هي اللعبة أو الإصدار الذي تريده.",
-    "applyHelp": "استخدام هذه المطابقة يحمّل Steam App ID الخاص بها وتفاصيلها في هذا النموذج. يحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
-    "apply": "استخدام مطابقة Steam هذه",
-    "cancel": "إلغاء التحديد"
+    "appIdCurrent": "Steam App ID: {{appId}} · المطابقة الحالية"
   },
   "categories": {
     "singlePlayer": "لاعب واحد",

@@ -97,6 +97,23 @@ describe("PluginUpdateSection", () => {
       install: vi.fn(),
     };
   });
+  it("disables both update-setting toggles until settings load", () => {
+    const componentProps = props();
+    componentProps.settingsLoaded = false;
+
+    const unloaded = children(PluginUpdateSection(componentProps)).filter(
+      (node) => node.type === "ToggleField"
+    );
+    expect(unloaded).toHaveLength(2);
+    expect(unloaded.every((toggle) => toggle.props.disabled)).toBe(true);
+
+    componentProps.settingsLoaded = true;
+    const loaded = children(PluginUpdateSection(componentProps)).filter(
+      (node) => node.type === "ToggleField"
+    );
+    expect(loaded.every((toggle) => toggle.props.disabled)).toBe(false);
+  });
+
 
   it("allows a local build to install a stable release", () => {
     controller.effectiveCurrentVersion = "0.3.1+local";

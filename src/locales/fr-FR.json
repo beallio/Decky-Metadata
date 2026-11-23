@@ -23,10 +23,6 @@
     "invalid_title": "titre invalide",
     "invalid_search": "recherche invalide",
     "steam_search_unavailable": "La recherche Steam est indisponible. Réessayez.",
-    "steam_details_unavailable": "Les détails du jeu Steam sont indisponibles",
-    "steam_title_unavailable": "Le titre du jeu Steam est indisponible",
-    "invalid_steam_game": "Sélectionnez un jeu Steam valide.",
-    "steam_preview_unavailable": "Les détails Steam sont indisponibles. Vous pouvez tout de même utiliser cette correspondance.",
     "settings_unreadable": "le fichier de paramètres des métadonnées est illisible ; corrigez-le ou supprimez-le avant d'enregistrer des modifications",
     "invalid_release_date": "release_date doit être une date calendaire AAAA-MM-JJ ou null",
     "hltb_settings_unavailable": "Les paramètres HLTB n'ont pas pu être chargés",
@@ -35,6 +31,7 @@
     "trailer_settings_unavailable": "les paramètres des bandes-annonces n'ont pas pu être chargés",
     "mini_achievements_settings_unavailable": "les paramètres des mini-succès n'ont pas pu être chargés",
     "protondb_settings_unavailable": "les paramètres des badges ProtonDB n'ont pas pu être chargés",
+    "editor_header_settings_unavailable": "les paramètres de l’en-tête de l’éditeur n’ont pas pu être chargés",
     "steam_ui_unavailable": "Interface Steam indisponible",
     "update_check_failed": "Échec de la recherche de mises à jour",
     "rate_limited": "Limite de requêtes dépassée",
@@ -216,6 +213,13 @@
       "enableLabel": "Activer les mini-succès",
       "enableDescription": "Affiche la petite barre de progression des succès Steam à côté du temps de jeu sur les pages de détails des jeux. Désactivé par défaut.",
       "footnote": "Utilise la progression des succès Steam pour les jeux Steam ; n'ajoute pas le suivi des succès aux jeux non Steam."
+    },
+    "contextMenu": {
+      "title": "Menu contextuel",
+      "headerIconLabel": "Icône du jeu dans l’en-tête de l’éditeur",
+      "headerIconDescription": "Affiche l’icône du jeu à côté de son nom en haut de la page de modification des métadonnées. Les noms longs défilent.",
+      "steamIconLabel": "Utiliser l’icône Steam si elle manque",
+      "steamIconDescription": "Si le jeu n’a pas sa propre icône, utilise celle du jeu Steam correspondant. Si aucune icône n’existe, aucune ne s’affiche."
     },
     "compat": {
       "title": "État de compatibilité",
@@ -440,8 +444,8 @@
     },
     "currentMatch": "Correspondance actuelle",
     "loadFromSteam": "Charger depuis Steam",
-    "loadFromSteamSteamGame": "Charger depuis Steam (indisponible pour les jeux Steam)",
-    "loadFromSteamNoMatch": "Charger depuis Steam (aucune correspondance sur Steam)",
+    "loadFromSteamSteamGame": "Indisponible pour les jeux Steam",
+    "loadFromSteamNoMatch": "Aucune correspondance sur Steam",
     "loadFromSteamBusy": "Charger depuis Steam (mise à jour en cours)",
     "fieldEdited": "Modifié",
     "fieldFromSteam": "Depuis Steam, non enregistré",
@@ -458,10 +462,18 @@
       "body": "Cela supprime toutes les métadonnées enregistrées pour {{name}}. Cette action est irréversible.",
       "cancel": "Annuler"
     },
+    "review": {
+      "title": "Vérifier les détails du jeu",
+      "apply": "Appliquer",
+      "cancel": "Annuler",
+      "genres": "Genres"
+    },
     "nonSteamOnly": "Ce plugin ne modifie que les jeux non Steam.",
-    "searchIgn": "Rechercher des métadonnées IGN",
+    "searchIgn": "Rechercher sur IGN",
     "ign": {
-      "gameName": "Nom du jeu"
+      "gameName": "Nom du jeu",
+      "noResults": "Aucun résultat.",
+      "help": "Recherchez sur IGN, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve."
     },
     "search": "Rechercher",
     "searching": "Recherche...",
@@ -496,18 +508,23 @@
     "compatibilityHelp": "« Automatique » utilise, pour chaque jeu, l’état du jeu correspondant sur Steam. « Utiliser la valeur globale par défaut » applique ce réglage à ce jeu. « Suivre Valve » utilise toujours l’état fourni par Valve. Si les données de Valve sont indisponibles, « Suivre Valve » conserve l’état Steam d’origine.",
     "compatibilityChoices": "Les catégories manuelles et par défaut sont vos choix, pas une certification Valve ni un résultat de performance d'émulateur.",
     "hltbGame": "Jeu HowLongToBeat",
+    "hltbSearchTitle": "Rechercher sur HowLongToBeat",
     "hltbHelp": "Recherchez sur HowLongToBeat, ou collez un numéro de jeu ou un lien de page, pour choisir les temps affichés pour ce jeu. Laissez vide pour associer automatiquement.",
     "hltbCurrentChosen": "Jeu actuel : {{name}} (choisi)",
     "hltbCurrentAutomatic": "Jeu actuel : {{name}} (trouvé automatiquement)",
     "hltbApply": "Appliquer le jeu HLTB",
     "steamAppId": "App ID Steam",
     "steamAppIdHelp": "Collez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB. Laissez vide pour effacer l'association Steam épinglée.",
-    "steamAppIdApply": "Appliquer l'App ID Steam",
+    "manualMatch": {
+      "label": "Saisir un App ID Steam",
+      "help": "Utilisez un App ID Steam, une URL de la boutique, une URL de la communauté ou une URL SteamDB lorsque la recherche ne trouve pas le jeu. Laissez vide pour supprimer l'association.",
+      "button": "Saisir l'ID..."
+    },
     "shortcut": {
       "immediateNotice": "Ces actions prennent effet immédiatement, sans avoir à sélectionner « Enregistrer ».",
-      "current": "Actuel : {{name}}",
+      "currentLabel": "Nom actuel",
       "missingName": "Steam n'a pas exposé de nom de raccourci natif",
-      "steamName": "Steam : {{name}}",
+      "steamNameLabel": "Nom Steam",
       "loadingSteamName": "Chargement du nom Steam...",
       "noOfficialName": "Steam n'a pas renvoyé de nom officiel",
       "managementUnavailable": "La gestion du nom du raccourci est indisponible",
@@ -545,8 +562,6 @@
       "detailsLoadedTitle": "Détails chargés",
       "steamPreviewBody": "Les détails Steam sont chargés dans ce formulaire. Enregistrer les conserve.",
       "ignPreviewBody": "Les détails IGN sont chargés dans ce formulaire. Enregistrer les conserve.",
-      "steamAppIdNotAppliedTitle": "App ID Steam non appliqué",
-      "steamAppIdNotAppliedBody": "Sélectionnez Appliquer l'App ID Steam pour charger la nouvelle correspondance avant d'enregistrer.",
       "fetchFailedTitle": "Échec de la récupération",
       "removedBody": "Métadonnées supprimées",
       "removeFailedTitle": "Échec de la suppression",
@@ -569,26 +584,14 @@
     "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu."
   },
   "matchPicker": {
-    "help": "Recherchez sur Steam, sélectionnez un résultat pour vérifier ses détails, puis choisissez « Utiliser cette correspondance Steam ». La navigation ne modifie pas votre jeu.",
+    "help": "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
     "searchAriaLabel": "Recherche de jeu Steam",
     "search": "Rechercher sur Steam",
     "searching": "Recherche sur Steam...",
     "idle": "Saisissez un nom de jeu pour trouver des correspondances Steam.",
-    "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez le champ App ID Steam ci-dessous.",
+    "empty": "Aucune correspondance Steam trouvée. Essayez un autre nom ou utilisez « Saisir un App ID Steam » ci-dessus.",
     "appId": "App ID Steam : {{appId}}",
-    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle",
-    "appIdSelected": "App ID Steam : {{appId}} · Sélectionné",
-    "appIdCurrentSelected": "App ID Steam : {{appId}} · Correspondance actuelle · Sélectionné",
-    "loadingDetails": "Chargement des détails Steam...",
-    "artworkAlt": "Jaquette Steam de {{title}}",
-    "developer": "Développeur : {{names}}",
-    "developerUnavailable": "Développeur indisponible",
-    "release": "Sortie : {{date}}",
-    "releaseUnavailable": "Date de sortie indisponible",
-    "steamType": "Type Steam : {{type}}. Vérifiez qu'il s'agit bien du jeu ou de l'édition souhaitée.",
-    "applyHelp": "Utiliser cette correspondance charge l'App ID Steam et ses détails dans ce formulaire. Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
-    "apply": "Utiliser cette correspondance Steam",
-    "cancel": "Annuler la sélection"
+    "appIdCurrent": "App ID Steam : {{appId}} · Correspondance actuelle"
   },
   "categories": {
     "singlePlayer": "Solo",

@@ -24,10 +24,6 @@
     "invalid_title": "neplatný název",
     "invalid_search": "neplatné hledání",
     "steam_search_unavailable": "Vyhledávání ve Steamu není dostupné. Zkuste to znovu.",
-    "steam_details_unavailable": "Podrobnosti hry ze Steamu nejsou dostupné",
-    "steam_title_unavailable": "Název hry ze Steamu není dostupný",
-    "invalid_steam_game": "Vyberte platnou hru ze Steamu.",
-    "steam_preview_unavailable": "Podrobnosti ze Steamu nejsou dostupné. Tuto shodu můžete přesto použít.",
     "settings_unreadable": "soubor nastavení metadat je nečitelný; před uložením změn ho opravte nebo odstraňte",
     "invalid_release_date": "release_date musí být kalendářní datum ve formátu RRRR-MM-DD nebo null",
     "hltb_settings_unavailable": "Nastavení HLTB se nepodařilo načíst",
@@ -36,6 +32,7 @@
     "trailer_settings_unavailable": "nastavení trailerů se nepodařilo načíst",
     "mini_achievements_settings_unavailable": "nastavení mini achievementů se nepodařilo načíst",
     "protondb_settings_unavailable": "nastavení odznaků ProtonDB se nepodařilo načíst",
+    "editor_header_settings_unavailable": "Nastavení záhlaví editoru se nepodařilo načíst",
     "steam_ui_unavailable": "Rozhraní Steam není dostupné",
     "update_check_failed": "Kontrola aktualizací se nezdařila",
     "rate_limited": "Překročen limit požadavků",
@@ -217,6 +214,13 @@
       "enableLabel": "Povolit mini achievementy",
       "enableDescription": "Zobrazovat malý pruh postupu achievementů Steam vedle odehrané doby na stránkách podrobností hry. Ve výchozím nastavení vypnuto.",
       "footnote": "Využívá postup achievementů Steam u her ze Steamu; u her mimo Steam sledování achievementů nepřidává."
+    },
+    "contextMenu": {
+      "title": "Kontextová nabídka",
+      "headerIconLabel": "Ikona hry v záhlaví editoru",
+      "headerIconDescription": "Zobrazit ikonu hry vedle jejího názvu v horní části stránky pro úpravu metadat. Dlouhé názvy se posouvají.",
+      "steamIconLabel": "Použít ikonu Steamu, pokud chybí",
+      "steamIconDescription": "Když hra nemá vlastní ikonu, použije se ikona odpovídající hry na Steamu. Pokud neexistuje ani jedna, nezobrazí se žádná ikona."
     },
     "compat": {
       "title": "Stav kompatibility",
@@ -441,8 +445,8 @@
     },
     "currentMatch": "Aktuální shoda",
     "loadFromSteam": "Načíst ze Steamu",
-    "loadFromSteamSteamGame": "Načíst ze Steamu (není dostupné pro hry ze Steamu)",
-    "loadFromSteamNoMatch": "Načíst ze Steamu (bez shody ve Steamu)",
+    "loadFromSteamSteamGame": "Není dostupné pro hry ze Steamu",
+    "loadFromSteamNoMatch": "Bez shody ve Steamu",
     "loadFromSteamBusy": "Načíst ze Steamu (probíhá aktualizace)",
     "fieldEdited": "Upraveno",
     "fieldFromSteam": "Ze Steamu, neuloženo",
@@ -459,10 +463,18 @@
       "body": "Tímto se smažou všechna uložená metadata pro {{name}}. Akci nelze vrátit zpět.",
       "cancel": "Zrušit"
     },
+    "review": {
+      "title": "Kontrola podrobností hry",
+      "apply": "Použít",
+      "cancel": "Zrušit",
+      "genres": "Žánry"
+    },
     "nonSteamOnly": "Tento plugin mění pouze hry mimo Steam.",
-    "searchIgn": "Hledat metadata na IGN",
+    "searchIgn": "Hledat na IGN",
     "ign": {
-      "gameName": "Název hry"
+      "gameName": "Název hry",
+      "noResults": "Žádné výsledky.",
+      "help": "Vyhledejte hru na IGN, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží."
     },
     "search": "Hledat",
     "searching": "Hledání...",
@@ -497,18 +509,23 @@
     "compatibilityHelp": "Volba „Automaticky“ používá pro každou hru stav odpovídající hry ve Steamu. Volba „Použít globální výchozí“ pro tuto hru převezme toto nastavení. Volba „Podle Valve“ používá vždy stav od Valve. Pokud údaje od Valve nejsou k dispozici, volba „Podle Valve“ zachová původní stav ze Steamu.",
     "compatibilityChoices": "Ruční a výchozí kategorie jsou vaše volby, nikoli certifikace Valve ani výsledek výkonu emulátoru.",
     "hltbGame": "Hra HowLongToBeat",
+    "hltbSearchTitle": "Hledat v HowLongToBeat",
     "hltbHelp": "Vyhledejte hru v HowLongToBeat nebo vložte číslo hry či odkaz na její stránku a vyberte časy zobrazované pro tuto hru. Nechte prázdné pro automatické spárování.",
     "hltbCurrentChosen": "Aktuální hra: {{name}} (vybráno)",
     "hltbCurrentAutomatic": "Aktuální hra: {{name}} (nalezeno automaticky)",
     "hltbApply": "Použít hru HLTB",
     "steamAppId": "Steam App ID",
     "steamAppIdHelp": "Vložte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB. Nechte prázdné pro zrušení připnuté shody Steam.",
-    "steamAppIdApply": "Použít Steam App ID",
+    "manualMatch": {
+      "label": "Zadejte Steam App ID",
+      "help": "Použijte Steam App ID, adresu URL obchodu, adresu URL komunity nebo adresu URL SteamDB, když hledání hru nenajde. Nechte prázdné pro odstranění shody.",
+      "button": "Zadat ID..."
+    },
     "shortcut": {
       "immediateNotice": "Tyto akce se projeví ihned, bez použití tlačítka „Uložit“.",
-      "current": "Aktuální: {{name}}",
+      "currentLabel": "Aktuální název",
       "missingName": "Steam neposkytl název nativního zástupce",
-      "steamName": "Steam: {{name}}",
+      "steamNameLabel": "Název ve službě Steam",
       "loadingSteamName": "Načítání názvu ze Steamu...",
       "noOfficialName": "Steam nevrátil oficiální název",
       "managementUnavailable": "Správa názvů zástupců není dostupná",
@@ -546,8 +563,6 @@
       "detailsLoadedTitle": "Podrobnosti načteny",
       "steamPreviewBody": "Podrobnosti Steam jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
       "ignPreviewBody": "Podrobnosti IGN jsou načteny do tohoto formuláře. Uložíte je tlačítkem „Uložit“.",
-      "steamAppIdNotAppliedTitle": "Steam App ID nebylo použito",
-      "steamAppIdNotAppliedBody": "Před uložením vyberte „Použít Steam App ID“, abyste načetli novou shodu.",
       "fetchFailedTitle": "Načtení se nezdařilo",
       "removedBody": "Metadata odstraněna",
       "removeFailedTitle": "Odstranění se nezdařilo",
@@ -570,26 +585,14 @@
     "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
   },
   "matchPicker": {
-    "help": "Vyhledejte hru ve Steamu, vyberte výsledek pro kontrolu podrobností a potom zvolte „Použít tuto shodu Steam“. Procházení vaši hru nezmění.",
+    "help": "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
     "searchAriaLabel": "Vyhledávání her Steam",
     "search": "Hledat ve Steamu",
     "searching": "Hledání ve Steamu...",
     "idle": "Zadejte název hry pro nalezení shod Steam.",
-    "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte pole Steam App ID níže.",
+    "empty": "Nebyly nalezeny žádné shody Steam. Zkuste jiný název nebo použijte „Zadejte Steam App ID“ výše.",
     "appId": "Steam App ID: {{appId}}",
-    "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda",
-    "appIdSelected": "Steam App ID: {{appId}} · vybráno",
-    "appIdCurrentSelected": "Steam App ID: {{appId}} · aktuální shoda · vybráno",
-    "loadingDetails": "Načítání podrobností ze Steamu...",
-    "artworkAlt": "Grafika Steam hry {{title}}",
-    "developer": "Vývojář: {{names}}",
-    "developerUnavailable": "Vývojář není dostupný",
-    "release": "Vydání: {{date}}",
-    "releaseUnavailable": "Datum vydání není dostupné",
-    "steamType": "Typ Steam: {{type}}. Zkontrolujte, zda je to hra nebo edice, kterou chcete.",
-    "applyHelp": "Použitím této shody se do tohoto formuláře načte její Steam App ID a podrobnosti. Uložíte je tlačítkem „Uložit“. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
-    "apply": "Použít tuto shodu Steam",
-    "cancel": "Zrušit výběr"
+    "appIdCurrent": "Steam App ID: {{appId}} · aktuální shoda"
   },
   "categories": {
     "singlePlayer": "Pro jednoho hráče",

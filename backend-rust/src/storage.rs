@@ -402,6 +402,7 @@ pub fn default_settings() -> Value {
         "game_trailers": default_trailer_settings(),
         "mini_achievements_enabled": false,
         "protondb_badges": default_protondb_badge_settings(),
+        "editor_header": default_editor_header_settings(),
     })
 }
 
@@ -430,6 +431,13 @@ pub fn default_protondb_badge_settings() -> Value {
     })
 }
 
+pub fn default_editor_header_settings() -> Value {
+    json!({
+        "gameIcon": false,
+        "steamIconFallback": true,
+    })
+}
+
 pub fn normalize_settings(saved: Option<&Value>) -> Value {
     normalize_settings_owned(saved.cloned())
 }
@@ -446,6 +454,7 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
     let compatibility = saved.remove("deck_compat_default");
     let mini_achievements = saved.remove("mini_achievements_enabled");
     let protondb = saved.remove("protondb_badges");
+    let editor_header = saved.remove("editor_header");
     let hltb = saved.remove("hltb");
     let has_scope = saved.contains_key("deck_compat_default_scope");
     let scope = saved.remove("deck_compat_default_scope");
@@ -486,6 +495,14 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
         );
     } else {
         normalized.remove("protondb_badges");
+    }
+    if let Some(value) = editor_header {
+        normalized.insert(
+            "editor_header".to_owned(),
+            normalize_editor_header_settings(&value),
+        );
+    } else {
+        normalized.remove("editor_header");
     }
     if let Some(value) = hltb {
         normalized.insert("hltb".to_owned(), normalize_hltb_settings(&value));
@@ -577,6 +594,20 @@ pub fn normalize_protondb_badge_settings(value: &Value) -> Value {
             "coverPosition".to_owned(),
             Value::String(position.to_owned()),
         );
+    }
+    Value::Object(normalized)
+}
+
+/// Every editor header setting is a boolean; unknown or non-boolean values keep their defaults.
+pub fn normalize_editor_header_settings(value: &Value) -> Value {
+    let mut normalized = default_editor_header_settings()
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    for (key, setting) in normalized.iter_mut() {
+        if let Some(saved) = value.get(key).filter(|saved| saved.is_boolean()) {
+            *setting = saved.clone();
+        }
     }
     Value::Object(normalized)
 }
@@ -757,6 +788,24 @@ pub fn validate_mini_achievements_enabled(value: &Value) -> Result<bool, String>
     value
         .as_bool()
         .ok_or_else(|| "invalid mini achievements setting".to_owned())
+}
+
+pub fn validate_editor_header_settings(value: &Value) -> Result<Value, String> {
+    let source = value
+        .as_object()
+        .ok_or_else(|| "invalid editor header settings".to_owned())?;
+    let expected = default_editor_header_settings()
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if source.len() != expected.len()
+        || expected
+            .keys()
+            .any(|key| !source.get(key).is_some_and(Value::is_boolean))
+    {
+        return Err("invalid editor header settings".to_owned());
+    }
+    Ok(value.clone())
 }
 
 pub fn validate_shortcut_name(value: &Value) -> Option<&str> {
@@ -1492,6 +1541,16 @@ mod tests {
         assert_eq!(compatibility_default(&json!(3)), Some(3));
         assert!(validate_compatibility_default(&json!("2")).is_err());
         assert!(validate_mini_achievements_enabled(&json!(1)).is_err());
+
+        let header = normalize_editor_header_settings(&json!({"gameIcon": true, "steamIconFallback": "no"}));
+        assert_eq!(header, json!({"gameIcon": true, "steamIconFallback": true}));
+        assert_eq!(validate_editor_header_settings(&header).unwrap(), header);
+        assert!(validate_editor_header_settings(&json!({"gameIcon": true})).is_err());
+        assert!(validate_editor_header_settings(&json!({"gameIcon": 1, "steamIconFallback": true})).is_err());
+        assert!(
+            validate_editor_header_settings(&json!({"gameIcon": true, "steamIconFallback": true, "x": true}))
+                .is_err()
+        );
     }
 
     #[test]

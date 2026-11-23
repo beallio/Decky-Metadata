@@ -10,20 +10,28 @@ type CollapsibleSectionProps = {
   defaultExpanded?: boolean;
 };
 
-const headingStyle: CSSProperties = {
-  alignItems: "center",
-  borderRadius: 4,
-  color: "#aeb8c4",
-  cursor: "pointer",
-  display: "flex",
-  fontSize: 16,
-  fontWeight: 700,
-  justifyContent: "space-between",
-  letterSpacing: "0.06em",
-  minHeight: 40,
-  padding: "8px 10px",
-  textTransform: "uppercase",
-};
+const headingClassName = "decky-metadata-qam-section-heading";
+// Look lives in CSS, not inline, so Steam's .gpfocus class (set by gamepad focus even when DOM focus lags, #55) can override the colour.
+const headingCss = `
+.${headingClassName} {
+  align-items: center;
+  border-radius: 4px;
+  color: #aeb8c4;
+  cursor: pointer;
+  display: flex;
+  font-size: 16px;
+  font-weight: 700;
+  justify-content: space-between;
+  letter-spacing: 0.06em;
+  min-height: 40px;
+  padding: 8px 10px;
+  text-transform: uppercase;
+}
+.${headingClassName}.gpfocus {
+  background: rgba(102, 182, 236, 0.18);
+  color: #fff;
+}
+`;
 
 const headingLabelStyle: CSSProperties = {
   alignItems: "center",
@@ -37,18 +45,10 @@ const headingIconStyle: CSSProperties = {
   flexShrink: 0,
 };
 
-const focusedHeadingStyle: CSSProperties = {
-  ...headingStyle,
-  background: "rgba(102, 182, 236, 0.18)",
-  color: "#fff",
-};
-
 export function CollapsibleSection({ title, icon, children, defaultExpanded = false }: CollapsibleSectionProps) {
   const [expanded, setExpanded] = useState(defaultExpanded);
-  const [focused, setFocused] = useState(false);
   const id = useId();
   const handleFocus = (target: EventTarget | null | undefined) => {
-    setFocused(true);
     const heading = target as HTMLElement | null | undefined;
     heading?.ownerDocument?.defaultView?.requestAnimationFrame?.(() => {
       if (heading.isConnected) heading.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -57,17 +57,16 @@ export function CollapsibleSection({ title, icon, children, defaultExpanded = fa
 
   return (
     <div style={{ marginTop: 8 }}>
+      <style>{headingCss}</style>
       <Focusable
         id={`${id}-heading`}
+        className={headingClassName}
         role="button"
         aria-expanded={expanded}
         aria-controls={id}
         onActivate={() => setExpanded(value => !value)}
-        onFocus={(event) => handleFocus(event?.currentTarget)}
+        onFocus={(event) => handleFocus(event.currentTarget)}
         onGamepadFocus={(event) => handleFocus(event?.currentTarget ?? event?.target)}
-        onBlur={() => setFocused(false)}
-        onGamepadBlur={() => setFocused(false)}
-        style={focused ? focusedHeadingStyle : headingStyle}
       >
         <span style={headingLabelStyle}>
           <span aria-hidden="true" style={headingIconStyle}>{icon}</span>
