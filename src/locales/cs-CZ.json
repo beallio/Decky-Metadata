@@ -21,6 +21,7 @@
       "no_activity": "Pro {{title}} nebyla nalezena aktivita Steam"
     },
     "hltb_busy": "Služba HowLongToBeat je zaneprázdněná. Zkuste to znovu za minutu.",
+    "metadata_scan_busy": "Probíhá aktualizace metadat. Zkuste to znovu, až skončí.",
     "invalid_title": "neplatný název",
     "invalid_search": "neplatné hledání",
     "steam_search_unavailable": "Vyhledávání ve Steamu není dostupné. Zkuste to znovu.",

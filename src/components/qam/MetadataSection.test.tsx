@@ -107,4 +107,13 @@ describe("Metadata delisted-games subsection", () => {
     expect(progress.props.nProgress).toBe(50);
     expect(progress.props.description).toBe("Scanning metadata");
   });
+  it("disables Clear cache while a metadata scan is busy", () => {
+    const onClearCache = vi.fn();
+    const clearButton = nodes(render({ scanBusy: true, onClearCache })).find(node =>
+      node.type === "ButtonItem" && node.props?.onClick === onClearCache
+    );
+
+    expect(clearButton.props.disabled).toBe(true);
+  });
+
 });

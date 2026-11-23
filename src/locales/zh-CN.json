@@ -18,6 +18,7 @@
       "no_activity": "未找到 {{title}} 的 Steam 动态"
     },
     "hltb_busy": "HowLongToBeat 正忙，请在一分钟后重试。",
+    "metadata_scan_busy": "元数据正在刷新。完成后请重试。",
     "invalid_title": "标题无效",
     "invalid_search": "搜索无效",
     "steam_search_unavailable": "Steam 搜索不可用，请重试。",

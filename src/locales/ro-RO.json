@@ -20,6 +20,7 @@
       "no_activity": "Nu s-a găsit nicio Activitate Steam pentru {{title}}"
     },
     "hltb_busy": "HowLongToBeat este ocupat. Încearcă din nou într-un minut.",
+    "metadata_scan_busy": "Metadatele se actualizează. Încearcă din nou după ce se termină.",
     "invalid_title": "titlu nevalid",
     "invalid_search": "căutare nevalidă",
     "steam_search_unavailable": "Căutarea Steam nu este disponibilă. Încearcă din nou.",

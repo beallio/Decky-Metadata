@@ -19,6 +19,7 @@
       "no_activity": "{{title}} için Steam Etkinliği bulunamadı"
     },
     "hltb_busy": "HowLongToBeat yoğun. Bir dakika sonra tekrar deneyin.",
+    "metadata_scan_busy": "Meta veriler yenileniyor. İşlem tamamlandığında tekrar deneyin.",
     "invalid_title": "geçersiz başlık",
     "invalid_search": "geçersiz arama",
     "steam_search_unavailable": "Steam araması kullanılamıyor. Tekrar deneyin.",

@@ -9,6 +9,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Debug Logging switch works again.** In the **Logs** section of the Quick
   Access Menu, turning **Debug Logging** on or off had no effect. It now saves
   the setting and turns detailed logging on or off at once.
+- **Metadata refresh stays visible.** A running **Refresh metadata** now keeps
+  its progress bar when the Quick Access Menu reopens, and **Clear cache**
+  stays off until the refresh finishes. Before, the panel could forget the
+  refresh, and clearing the cache during it let the refresh save old matches
+  again. The scan that starts after **Clear cache** now shows its progress too.
 
 ## [0.6.6] - 2026-11-22
 

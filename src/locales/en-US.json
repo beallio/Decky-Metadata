@@ -19,6 +19,7 @@
       "no_activity": "No Steam Activity found for {{title}}"
     },
     "hltb_busy": "HowLongToBeat is busy. Try again in a minute.",
+    "metadata_scan_busy": "A metadata refresh is running. Try again when it finishes.",
     "invalid_title": "invalid title",
     "invalid_search": "invalid search",
     "steam_search_unavailable": "Steam search is unavailable. Try again.",

@@ -23,6 +23,7 @@
       "no_activity": "لم يُعثر على نشاط Steam لـ {{title}}"
     },
     "hltb_busy": "HowLongToBeat مشغول. أعد المحاولة بعد دقيقة.",
+    "metadata_scan_busy": "يجري تحديث البيانات الوصفية. حاول مرة أخرى بعد اكتماله.",
     "invalid_title": "عنوان غير صالح",
     "invalid_search": "بحث غير صالح",
     "steam_search_unavailable": "بحث Steam غير متاح. أعد المحاولة.",

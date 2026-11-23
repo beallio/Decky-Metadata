@@ -371,18 +371,7 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "clear_metadata_cache" => {
             arity(&args, 0, 0)?;
-            let count = state
-                .change(|transaction| {
-                    let count = transaction
-                        .get(&["metadata"])
-                        .and_then(Value::as_object)
-                        .map_or(0, |metadata| metadata.len());
-                    transaction.set(&["metadata"], json!({}))?;
-                    // "Clear cache" lets every game be matched again, including removed ones.
-                    transaction.remove(&[metadata::REMOVED])?;
-                    Ok(count)
-                })
-                .await?;
+            let count = crate::scan_runner::clear_metadata_when_idle(&state).await?;
             logging::event(
                 "cache",
                 "metadata cache cleared",
