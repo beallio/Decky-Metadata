@@ -19,6 +19,7 @@
       "no_activity": "Steam-aktiviteettia ei löytynyt kohteelle {{title}}"
     },
     "hltb_busy": "HowLongToBeat on varattu. Yritä uudelleen minuutin kuluttua.",
+    "metadata_scan_busy": "Metatietoja päivitetään. Yritä uudelleen, kun päivitys on valmis.",
     "invalid_title": "virheellinen nimi",
     "invalid_search": "virheellinen haku",
     "steam_search_unavailable": "Steam-haku ei ole käytettävissä. Yritä uudelleen.",

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { TrailerControllerSnapshot } from "./trailers/controller";
 import type { ProtonDbBadgeSnapshot } from "./protondb/controller";
+import type * as MetadataScanModule from "./metadataScan";
 
 const harness = vi.hoisted(() => ({
   hookIndex: 0,
@@ -15,7 +16,6 @@ const backend = vi.hoisted(() => ({
   getMissingMetadataCount: vi.fn(),
   getPluginLogs: vi.fn(),
   getPluginVersion: vi.fn(),
-  getScanProgress: vi.fn(),
   getSystemVersions: vi.fn(),
   getUpdateSettings: vi.fn(),
   refreshDelistedIndex: vi.fn(),
@@ -24,6 +24,8 @@ const backend = vi.hoisted(() => ({
   setCompatibilityDefaultScope: vi.fn(),
   setDebugLogging: vi.fn(),
   setUpdateChannel: vi.fn(),
+  // The real metadataScan module (kept for its message helpers) builds its store from these at import.
+  getScanProgress: vi.fn(),
   startScanMissing: vi.fn(),
 }));
 
@@ -42,7 +44,22 @@ const steam = vi.hoisted(() => ({
   subscribeCompatibilityRevision: vi.fn(),
 }));
 
-const games = vi.hoisted(() => ({ loadGames: vi.fn() }));
+const games = vi.hoisted(() => ({
+  loadGames: vi.fn(),
+  detected: [] as Array<{ appid: number; name: string }>,
+}));
+const metadataScan = vi.hoisted(() => ({
+  snapshot: {
+    progress: null,
+    busy: false,
+    statusKind: "idle",
+    error: null,
+    completedRevision: 0,
+  } as MetadataScanModule.MetadataScanSnapshot,
+  start: vi.fn(),
+  getSnapshot: vi.fn(),
+  subscribe: vi.fn(() => () => undefined),
+}));
 const i18n = vi.hoisted(() => ({
   currentSteamLanguage: vi.fn(() => Promise.resolve("english")),
 }));
@@ -134,6 +151,14 @@ vi.mock("./log", () => ({
 }));
 vi.mock("./steam", () => steam);
 vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
+vi.mock("./metadataScan", async (importOriginal) => {
+  const actual = await importOriginal<typeof MetadataScanModule>();
+  return {
+    ...actual,
+    metadataScanStore: metadataScan,
+    useMetadataScan: () => metadataScan.snapshot,
+  };
+});
 vi.mock("./steam/miniAchievementsController", () => ({
   miniAchievementsController: {
     getSnapshot: () => ({
@@ -189,7 +214,7 @@ vi.mock("./i18n", async () => {
   };
 });
 vi.mock("./useNonSteamGames", () => ({
-  useNonSteamGames: () => ({ games: [], loadGames: games.loadGames }),
+  useNonSteamGames: () => ({ games: games.detected, loadGames: games.loadGames }),
 }));
 
 import { Content, takeCompatibilityDropdownFocus } from "./ContentPanel";
@@ -246,6 +271,8 @@ const compatibilitySection = (tree: any) =>
 
 const gameTrailersSection = (tree: any) =>
   children(tree).find((node) => node.type === "GameTrailersSection");
+const metadataSection = (tree: any) =>
+  children(tree).find((node) => node.type === "MetadataSection");
 
 const runEffects = () => {
   for (const effect of [...harness.effects]) effect();
@@ -474,6 +501,16 @@ describe("Content update settings", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    metadataScan.snapshot = {
+      progress: null,
+      busy: false,
+      statusKind: "idle",
+      error: null,
+      completedRevision: 0,
+    };
+    metadataScan.getSnapshot.mockImplementation(() => metadataScan.snapshot);
+    metadataScan.subscribe.mockReturnValue(() => undefined);
+    games.detected = [];
     i18n.currentSteamLanguage.mockResolvedValue("english");
     harness.hookIndex = 0;
     harness.hooks = [];
@@ -1106,46 +1143,68 @@ describe("Content update settings", () => {
     expect(compatibilityDropdownReturnOrigin()).toBe("scope");
   });
 
-  it("stops polling scan progress after an unmount or a failed poll", async () => {
-    vi.useFakeTimers();
-    vi.stubGlobal("window", {
-      setTimeout: (callback: () => void, ms: number) => setTimeout(callback, ms),
-      clearTimeout: (timer: ReturnType<typeof setTimeout>) => clearTimeout(timer),
-    });
-    try {
-      backend.startScanMissing.mockResolvedValue({ running: true });
-      backend.getScanProgress.mockResolvedValue({ running: true, completed: 0, total: 2, current: "", message: "" });
-      render();
-      const cleanups = harness.effects.map((effect) => effect()).filter((cleanup) => typeof cleanup === "function");
-      await flushPromises();
-      children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
-      await vi.advanceTimersByTimeAsync(800);
-      expect(backend.getScanProgress).toHaveBeenCalledTimes(1);
-      for (const cleanup of cleanups) (cleanup as () => void)();
-      await vi.advanceTimersByTimeAsync(4000);
-      expect(backend.getScanProgress).toHaveBeenCalledTimes(1);
+  it("maps a running scan snapshot to MetadataSection props", () => {
+    metadataScan.snapshot = {
+      progress: {
+        running: true,
+        status: "running",
+        total: 4,
+        completed: 2,
+        assigned: 1,
+        failed: 0,
+        current: "Scanning metadata",
+        message: "",
+      },
+      busy: true,
+      statusKind: "active",
+      error: null,
+      completedRevision: 0,
+    };
 
-      remount();
-      runEffects();
-      await flushPromises();
-      backend.getScanProgress.mockRejectedValue(new Error("backend stopped"));
-      children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
-      await vi.advanceTimersByTimeAsync(4000);
-      expect(backend.getScanProgress).toHaveBeenCalledTimes(2);
-      expect(children(render()).find((node) => node.type === "MetadataSection").props.scanBusy).toBe(false);
-    } finally {
-      vi.useRealTimers();
-    }
+    const section = metadataSection(render());
+    expect(section.props.scanBusy).toBe(true);
+    expect(section.props.scanCompleted).toBe(2);
+    expect(section.props.scanTotal).toBe(4);
+    expect(section.props.scanStatusKind).toBe("active");
+    expect(section.props.scanMessage).toBe("Scanning metadata");
   });
 
-  it("passes the current Steam language to a metadata scan", async () => {
-    backend.startScanMissing.mockRejectedValue(new Error("scan unavailable"));
+  it("passes the current Steam language getter to the shared metadata scan", async () => {
+    const game = { appid: 42, name: "Example" };
+    games.detected = [game];
     i18n.currentSteamLanguage.mockResolvedValueOnce("french");
 
-    render();
-    children(render()).find((node) => node.type === "MetadataSection").props.onRefreshMetadata();
+    metadataSection(render()).props.onRefreshMetadata();
+
+    expect(metadataScan.start).toHaveBeenCalledWith([game], i18n.currentSteamLanguage);
+    await expect(metadataScan.start.mock.calls[0][1]()).resolves.toBe("french");
+  });
+
+  it("does not start a refresh while the shared scan is busy", () => {
+    metadataScan.snapshot = { ...metadataScan.snapshot, busy: true };
+
+    metadataSection(render()).props.onRefreshMetadata();
+
+    expect(metadataScan.start).not.toHaveBeenCalled();
+  });
+
+  it("does not clear metadata while the shared scan is busy", () => {
+    metadataScan.snapshot = { ...metadataScan.snapshot, busy: true };
+
+    metadataSection(render()).props.onClearCache();
+
+    expect(backend.clearMetadataCache).not.toHaveBeenCalled();
+  });
+
+  it("starts a shared metadata scan after clearing the cache", async () => {
+    const game = { appid: 42, name: "Example" };
+    games.detected = [game];
+    backend.clearMetadataCache.mockResolvedValue(undefined);
+
+    metadataSection(render()).props.onClearCache();
     await flushPromises();
 
-    expect(backend.startScanMissing).toHaveBeenCalledWith([], "french");
+    expect(metadataScan.start).toHaveBeenCalledWith([game], i18n.currentSteamLanguage);
+    expect(backend.startScanMissing).not.toHaveBeenCalled();
   });
 });

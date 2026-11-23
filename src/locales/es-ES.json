@@ -20,6 +20,7 @@
       "no_activity": "No se encontró actividad de Steam de {{title}}"
     },
     "hltb_busy": "HowLongToBeat está ocupado. Inténtalo de nuevo en un minuto.",
+    "metadata_scan_busy": "Se están actualizando los metadatos. Inténtalo de nuevo cuando termine.",
     "invalid_title": "título no válido",
     "invalid_search": "búsqueda no válida",
     "steam_search_unavailable": "La búsqueda de Steam no está disponible. Inténtalo de nuevo.",

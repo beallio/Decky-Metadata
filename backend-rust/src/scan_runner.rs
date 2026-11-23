@@ -60,6 +60,30 @@ fn pipeline_job(state: &AppState, pipeline: Pipeline) -> &Mutex<PipelineJob> {
     }
 }
 
+fn job_busy(job: &PipelineJob) -> bool {
+    job.task.as_ref().is_some_and(|task| !task.is_finished())
+}
+
+// Holds the job lock across the write, so a scan cannot start between the busy check and the clear.
+pub async fn clear_metadata_when_idle(state: &AppState) -> Result<usize, String> {
+    let job = pipeline_job(state, Pipeline::Metadata).lock().await;
+    if job_busy(&job) {
+        return Err("metadata_scan_busy".into());
+    }
+    state
+        .change(|transaction| {
+            let count = transaction
+                .get(&["metadata"])
+                .and_then(Value::as_object)
+                .map_or(0, |metadata| metadata.len());
+            transaction.set(&["metadata"], json!({}))?;
+            // "Clear cache" lets every game be matched again, including removed ones.
+            transaction.remove(&[metadata::REMOVED])?;
+            Ok(count)
+        })
+        .await
+}
+
 fn new_progress(status: &str) -> Value {
     json!({
         "running": status == "running",
@@ -96,7 +120,7 @@ async fn start(
     if state.cancel.is_cancelled() {
         return Err("backend stopping".into());
     }
-    if job.task.as_ref().is_some_and(|task| !task.is_finished()) {
+    if job_busy(&job) {
         return Ok(job.progress.clone());
     }
     let games = game_inputs(games)?;
@@ -1160,6 +1184,55 @@ mod tests {
         assert_eq!(storage.data()["metadata"]["1"]["steam_appid"], 100);
         assert!(storage.data()["metadata"].get("2").is_none());
         drop(storage);
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn clear_metadata_cache_refuses_while_metadata_scan_runs() {
+        let fixtures = complete_steam_fixtures("Clear Guard", 100);
+        let (_directory, mut state) = test_state(fixtures).await;
+        set_record(&state, 9, json!({"name": "Preserved"})).await;
+        let gate = Arc::get_mut(&mut state).unwrap().http.gate_next_request();
+        let games = json!([{"appid": 1, "name": "Clear Guard"}]);
+        start_scan_missing(Arc::clone(&state), &games, "english")
+            .await
+            .unwrap();
+        tokio::time::timeout(Duration::from_secs(2), gate.started.notified())
+            .await
+            .unwrap();
+
+        let error = crate::rpc::dispatch(
+            Arc::clone(&state),
+            "clear_metadata_cache",
+            Vec::new(),
+        )
+        .await
+        .unwrap_err()
+        .to_string();
+        assert!(error.contains("metadata_scan_busy"));
+        let storage = state.store().await.unwrap();
+        assert_eq!(storage.data()["metadata"]["9"]["name"], "Preserved");
+        drop(storage);
+
+        gate.resume.notify_one();
+        state.jobs.drain().await;
+        assert_eq!(
+            crate::rpc::dispatch(
+                Arc::clone(&state),
+                "clear_metadata_cache",
+                Vec::new(),
+            )
+            .await
+            .unwrap(),
+            json!({"ok": true, "cleared": 2})
+        );
+        let progress = start_scan_missing(Arc::clone(&state), &games, "english")
+            .await
+            .unwrap();
+        assert_eq!(progress["status"], "running");
+        assert_eq!(progress["completed"], 0);
+        state.jobs.drain().await;
         state.http.assert_drained();
         state.shutdown().await.unwrap();
     }

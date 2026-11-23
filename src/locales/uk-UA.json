@@ -21,6 +21,7 @@
       "no_activity": "Активність Steam не знайдено для {{title}}"
     },
     "hltb_busy": "HowLongToBeat перевантажено. Спробуйте ще раз за хвилину.",
+    "metadata_scan_busy": "Триває оновлення метаданих. Спробуйте ще раз після завершення.",
     "invalid_title": "неприпустима назва",
     "invalid_search": "неприпустимий запит",
     "steam_search_unavailable": "Пошук у Steam недоступний. Спробуйте ще раз.",

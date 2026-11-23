@@ -2958,6 +2958,7 @@ var backend$o = {
 		no_activity: "لم يُعثر على نشاط Steam لـ {{title}}"
 	},
 	hltb_busy: "HowLongToBeat مشغول. أعد المحاولة بعد دقيقة.",
+	metadata_scan_busy: "يجري تحديث البيانات الوصفية. حاول مرة أخرى بعد اكتماله.",
 	invalid_title: "عنوان غير صالح",
 	invalid_search: "بحث غير صالح",
 	steam_search_unavailable: "بحث Steam غير متاح. أعد المحاولة.",
@@ -3591,6 +3592,7 @@ var backend$n = {
 		no_activity: "Не е намерена активност в Steam за {{title}}"
 	},
 	hltb_busy: "HowLongToBeat е зает. Опитайте отново след минута.",
+	metadata_scan_busy: "Метаданните се обновяват. Опитайте отново, когато обновяването приключи.",
 	invalid_title: "невалидно заглавие",
 	invalid_search: "невалидно търсене",
 	steam_search_unavailable: "Търсенето в Steam не е достъпно. Опитайте отново.",
@@ -4226,6 +4228,7 @@ var backend$m = {
 		no_activity: "Pro {{title}} nebyla nalezena aktivita Steam"
 	},
 	hltb_busy: "Služba HowLongToBeat je zaneprázdněná. Zkuste to znovu za minutu.",
+	metadata_scan_busy: "Probíhá aktualizace metadat. Zkuste to znovu, až skončí.",
 	invalid_title: "neplatný název",
 	invalid_search: "neplatné hledání",
 	steam_search_unavailable: "Vyhledávání ve Steamu není dostupné. Zkuste to znovu.",
@@ -4859,6 +4862,7 @@ var backend$l = {
 		no_activity: "Keine Steam-Aktivität für {{title}} gefunden"
 	},
 	hltb_busy: "HowLongToBeat ist ausgelastet. Versuche es in einer Minute erneut.",
+	metadata_scan_busy: "Metadaten werden gerade aktualisiert. Versuche es erneut, wenn der Vorgang abgeschlossen ist.",
 	invalid_title: "ungültiger Titel",
 	invalid_search: "ungültige Suche",
 	steam_search_unavailable: "Steam-Suche ist nicht verfügbar. Versuche es erneut.",
@@ -5492,6 +5496,7 @@ var backend$k = {
 		no_activity: "Δεν βρέθηκε δραστηριότητα Steam για {{title}}"
 	},
 	hltb_busy: "Το HowLongToBeat είναι απασχολημένο. Δοκιμάστε ξανά σε ένα λεπτό.",
+	metadata_scan_busy: "Η ανανέωση μεταδεδομένων βρίσκεται σε εξέλιξη. Δοκιμάστε ξανά όταν ολοκληρωθεί.",
 	invalid_title: "μη έγκυρος τίτλος",
 	invalid_search: "μη έγκυρη αναζήτηση",
 	steam_search_unavailable: "Η αναζήτηση Steam δεν είναι διαθέσιμη. Δοκιμάστε ξανά.",
@@ -6125,6 +6130,7 @@ var backend$j = {
 		no_activity: "No Steam Activity found for {{title}}"
 	},
 	hltb_busy: "HowLongToBeat is busy. Try again in a minute.",
+	metadata_scan_busy: "A metadata refresh is running. Try again when it finishes.",
 	invalid_title: "invalid title",
 	invalid_search: "invalid search",
 	steam_search_unavailable: "Steam search is unavailable. Try again.",
@@ -6759,6 +6765,7 @@ var backend$i = {
 		no_activity: "No se encontró actividad de Steam de {{title}}"
 	},
 	hltb_busy: "HowLongToBeat está ocupado. Inténtalo de nuevo en un minuto.",
+	metadata_scan_busy: "Se están actualizando los metadatos. Inténtalo de nuevo cuando termine.",
 	invalid_title: "título no válido",
 	invalid_search: "búsqueda no válida",
 	steam_search_unavailable: "La búsqueda de Steam no está disponible. Inténtalo de nuevo.",
@@ -7392,6 +7399,7 @@ var backend$h = {
 		no_activity: "Steam-aktiviteettia ei löytynyt kohteelle {{title}}"
 	},
 	hltb_busy: "HowLongToBeat on varattu. Yritä uudelleen minuutin kuluttua.",
+	metadata_scan_busy: "Metatietoja päivitetään. Yritä uudelleen, kun päivitys on valmis.",
 	invalid_title: "virheellinen nimi",
 	invalid_search: "virheellinen haku",
 	steam_search_unavailable: "Steam-haku ei ole käytettävissä. Yritä uudelleen.",
@@ -8026,6 +8034,7 @@ var backend$g = {
 		no_activity: "Aucune activité Steam trouvée pour {{title}}"
 	},
 	hltb_busy: "HowLongToBeat est occupé. Réessayez dans une minute.",
+	metadata_scan_busy: "L’actualisation des métadonnées est en cours. Réessayez une fois terminée.",
 	invalid_title: "titre invalide",
 	invalid_search: "recherche invalide",
 	steam_search_unavailable: "La recherche Steam est indisponible. Réessayez.",
@@ -8660,6 +8669,7 @@ var backend$f = {
 		no_activity: "Nessuna attività Steam trovata per {{title}}"
 	},
 	hltb_busy: "HowLongToBeat è occupato. Riprova tra un minuto.",
+	metadata_scan_busy: "Aggiornamento dei metadati in corso. Riprova al termine.",
 	invalid_title: "titolo non valido",
 	invalid_search: "ricerca non valida",
 	steam_search_unavailable: "La ricerca su Steam non è disponibile. Riprova.",
@@ -9292,6 +9302,7 @@ var backend$e = {
 		no_activity: "{{title}} の Steam アクティビティが見つかりません"
 	},
 	hltb_busy: "HowLongToBeat が混雑しています。1分ほど待ってから再試行してください。",
+	metadata_scan_busy: "メタデータを更新中です。完了してからもう一度お試しください。",
 	invalid_title: "無効なタイトル",
 	invalid_search: "無効な検索",
 	steam_search_unavailable: "Steam 検索を利用できません。再試行してください。",
@@ -9925,6 +9936,7 @@ var backend$d = {
 		no_activity: "{{title}}-ისთვის Steam აქტივობა ვერ მოიძებნა"
 	},
 	hltb_busy: "HowLongToBeat დატვირთულია. სცადეთ ხელახლა ერთ წუთში.",
+	metadata_scan_busy: "მეტამონაცემების განახლება მიმდინარეობს. დასრულების შემდეგ სცადეთ ხელახლა.",
 	invalid_title: "არასწორი სათაური",
 	invalid_search: "არასწორი ძებნა",
 	steam_search_unavailable: "Steam-ის ძებნა მიუწვდომელია. სცადეთ ხელახლა.",
@@ -10557,6 +10569,7 @@ var backend$c = {
 		no_activity: "{{title}}의 Steam 활동을 찾을 수 없습니다"
 	},
 	hltb_busy: "HowLongToBeat가 혼잡합니다. 1분 후에 다시 시도하세요.",
+	metadata_scan_busy: "메타데이터를 새로 고치는 중입니다. 완료되면 다시 시도하세요.",
 	invalid_title: "잘못된 제목",
 	invalid_search: "잘못된 검색",
 	steam_search_unavailable: "Steam 검색을 사용할 수 없습니다. 다시 시도하세요.",
@@ -11190,6 +11203,7 @@ var backend$b = {
 		no_activity: "Geen Steam-activiteit gevonden voor {{title}}"
 	},
 	hltb_busy: "HowLongToBeat is druk bezet. Probeer het over een minuut opnieuw.",
+	metadata_scan_busy: "Metadata wordt vernieuwd. Probeer het opnieuw zodra dit is afgerond.",
 	invalid_title: "ongeldige titel",
 	invalid_search: "ongeldige zoekopdracht",
 	steam_search_unavailable: "De Steam-zoekfunctie is niet beschikbaar. Probeer het opnieuw.",
@@ -11825,6 +11839,7 @@ var backend$a = {
 		no_activity: "Nie znaleziono aktywności Steam dla {{title}}"
 	},
 	hltb_busy: "HowLongToBeat jest zajęty. Spróbuj ponownie za minutę.",
+	metadata_scan_busy: "Trwa odświeżanie metadanych. Spróbuj ponownie po jego zakończeniu.",
 	invalid_title: "nieprawidłowy tytuł",
 	invalid_search: "nieprawidłowe wyszukiwanie",
 	steam_search_unavailable: "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
@@ -12459,6 +12474,7 @@ var backend$9 = {
 		no_activity: "Nenhuma Atividade Steam encontrada para {{title}}"
 	},
 	hltb_busy: "O HowLongToBeat está ocupado. Tente novamente em um minuto.",
+	metadata_scan_busy: "A atualização dos metadados está em andamento. Tente novamente quando terminar.",
 	invalid_title: "título inválido",
 	invalid_search: "busca inválida",
 	steam_search_unavailable: "A busca da Steam está indisponível. Tente novamente.",
@@ -13093,6 +13109,7 @@ var backend$8 = {
 		no_activity: "Nenhuma Atividade Steam encontrada para {{title}}"
 	},
 	hltb_busy: "O HowLongToBeat está ocupado. Tente novamente dentro de um minuto.",
+	metadata_scan_busy: "A atualização dos metadados está em curso. Tente novamente quando terminar.",
 	invalid_title: "título inválido",
 	invalid_search: "pesquisa inválida",
 	steam_search_unavailable: "A pesquisa na Steam está indisponível. Tente novamente.",
@@ -13727,6 +13744,7 @@ var backend$7 = {
 		no_activity: "Nu s-a găsit nicio Activitate Steam pentru {{title}}"
 	},
 	hltb_busy: "HowLongToBeat este ocupat. Încearcă din nou într-un minut.",
+	metadata_scan_busy: "Metadatele se actualizează. Încearcă din nou după ce se termină.",
 	invalid_title: "titlu nevalid",
 	invalid_search: "căutare nevalidă",
 	steam_search_unavailable: "Căutarea Steam nu este disponibilă. Încearcă din nou.",
@@ -14362,6 +14380,7 @@ var backend$6 = {
 		no_activity: "Активность Steam не найдена для {{title}}"
 	},
 	hltb_busy: "HowLongToBeat перегружен. Повторите попытку через минуту.",
+	metadata_scan_busy: "Выполняется обновление метаданных. Повторите попытку после его завершения.",
 	invalid_title: "недопустимое название",
 	invalid_search: "недопустимый запрос",
 	steam_search_unavailable: "Поиск в Steam недоступен. Повторите попытку.",
@@ -14995,6 +15014,7 @@ var backend$5 = {
 		no_activity: "Nuk u gjet aktivitet në Steam për {{title}}"
 	},
 	hltb_busy: "HowLongToBeat është i zënë. Provo përsëri pas një minute.",
+	metadata_scan_busy: "Përditësimi i metadatave po vazhdon. Provo përsëri pasi të përfundojë.",
 	invalid_title: "titull i pavlefshëm",
 	invalid_search: "kërkim i pavlefshëm",
 	steam_search_unavailable: "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",
@@ -15628,6 +15648,7 @@ var backend$4 = {
 		no_activity: "Ingen Steam-aktivitet hittades för {{title}}"
 	},
 	hltb_busy: "HowLongToBeat är upptagen. Försök igen om en minut.",
+	metadata_scan_busy: "Metadata uppdateras. Försök igen när uppdateringen är klar.",
 	invalid_title: "ogiltig titel",
 	invalid_search: "ogiltig sökning",
 	steam_search_unavailable: "Steamsökningen är inte tillgänglig. Försök igen.",
@@ -16261,6 +16282,7 @@ var backend$3 = {
 		no_activity: "{{title}} için Steam Etkinliği bulunamadı"
 	},
 	hltb_busy: "HowLongToBeat yoğun. Bir dakika sonra tekrar deneyin.",
+	metadata_scan_busy: "Meta veriler yenileniyor. İşlem tamamlandığında tekrar deneyin.",
 	invalid_title: "geçersiz başlık",
 	invalid_search: "geçersiz arama",
 	steam_search_unavailable: "Steam araması kullanılamıyor. Tekrar deneyin.",
@@ -16896,6 +16918,7 @@ var backend$2 = {
 		no_activity: "Активність Steam не знайдено для {{title}}"
 	},
 	hltb_busy: "HowLongToBeat перевантажено. Спробуйте ще раз за хвилину.",
+	metadata_scan_busy: "Триває оновлення метаданих. Спробуйте ще раз після завершення.",
 	invalid_title: "неприпустима назва",
 	invalid_search: "неприпустимий запит",
 	steam_search_unavailable: "Пошук у Steam недоступний. Спробуйте ще раз.",
@@ -17528,6 +17551,7 @@ var backend$1 = {
 		no_activity: "未找到 {{title}} 的 Steam 动态"
 	},
 	hltb_busy: "HowLongToBeat 正忙，请在一分钟后重试。",
+	metadata_scan_busy: "元数据正在刷新。完成后请重试。",
 	invalid_title: "标题无效",
 	invalid_search: "搜索无效",
 	steam_search_unavailable: "Steam 搜索不可用，请重试。",
@@ -18160,6 +18184,7 @@ var backend = {
 		no_activity: "找不到 {{title}} 的 Steam 動態"
 	},
 	hltb_busy: "HowLongToBeat 目前忙碌中，請於一分鐘後再試。",
+	metadata_scan_busy: "正在重新整理中繼資料。完成後請再試一次。",
 	invalid_title: "標題無效",
 	invalid_search: "搜尋無效",
 	steam_search_unavailable: "Steam 搜尋無法使用，請再試一次。",
@@ -35872,6 +35897,249 @@ class ProtonDbBadgeController {
 }
 const protonDbBadgeController = new ProtonDbBadgeController();
 
+// Consecutive getScanProgress failures before the store reports the scan as failed.
+const MAX_POLL_FAILURES = 3;
+class MetadataScanStore {
+    constructor(deps) {
+        Object.defineProperty(this, "deps", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: deps
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                progress: null,
+                busy: false,
+                statusKind: "idle",
+                error: null,
+                completedRevision: 0,
+            }
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "timer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "pollInFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "hydrationStarted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "startRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "pollFailures", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+    }
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        if (!this.hydrationStarted)
+            void this.hydrate();
+        return () => this.listeners.delete(listener);
+    }
+    async hydrate() {
+        if (this.hydrationStarted)
+            return;
+        this.hydrationStarted = true;
+        const generation = this.generation;
+        const startRevision = this.startRevision;
+        let progress;
+        try {
+            progress = await this.deps.getScanProgress();
+        }
+        catch {
+            // A failed check must not hide a running scan for good: the next subscribe checks again.
+            if (generation === this.generation)
+                this.hydrationStarted = false;
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        if (startRevision !== this.startRevision || !progress.running)
+            return;
+        this.publish({ progress, busy: true, statusKind: "active", error: null });
+        this.ensurePolling();
+    }
+    async start(games, getLanguage) {
+        this.startRevision += 1;
+        if (this.snapshot.busy)
+            return;
+        this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+        const generation = this.generation;
+        let language;
+        try {
+            language = await getLanguage();
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        try {
+            await this.deps.startScanMissing(games, language);
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.ensurePolling();
+    }
+    dispose() {
+        this.generation += 1;
+        if (this.timer !== null) {
+            this.deps.clearTimeout(this.timer);
+            this.timer = null;
+        }
+        this.pollInFlight = false;
+    }
+    ensurePolling() {
+        if (this.timer !== null || this.pollInFlight)
+            return;
+        this.timer = this.deps.setTimeout(() => {
+            this.timer = null;
+            void this.poll();
+        }, 800);
+    }
+    async poll() {
+        if (this.pollInFlight)
+            return;
+        const generation = this.generation;
+        this.pollInFlight = true;
+        let progress;
+        try {
+            progress = await this.deps.getScanProgress();
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.pollInFlight = false;
+            // The backend scan keeps running through a dropped RPC, so retry before giving up.
+            this.pollFailures += 1;
+            if (this.pollFailures < MAX_POLL_FAILURES) {
+                this.ensurePolling();
+                return;
+            }
+            this.pollFailures = 0;
+            this.hydrationStarted = false;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.pollFailures = 0;
+        this.publish({ progress, statusKind: "active" });
+        if (progress.running) {
+            this.pollInFlight = false;
+            this.ensurePolling();
+            return;
+        }
+        try {
+            await this.deps.refreshMetadataCache();
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.pollInFlight = false;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.pollInFlight = false;
+        this.publish({
+            busy: false,
+            statusKind: scanCompleteStatusKind(progress),
+            completedRevision: this.snapshot.completedRevision + 1,
+        });
+        this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+    }
+    fail(error) {
+        this.publish({ busy: false, statusKind: "error", error });
+        this.deps.toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
+    }
+    publish(update) {
+        this.snapshot = { ...this.snapshot, ...update };
+        for (const listener of this.listeners)
+            listener();
+    }
+}
+const metadataScanStore = new MetadataScanStore({
+    getScanProgress,
+    startScanMissing,
+    refreshMetadataCache,
+    toastSuccess,
+    toastError,
+    setTimeout: (fn, ms) => window.setTimeout(fn, ms),
+    clearTimeout: (id) => window.clearTimeout(id),
+});
+function useMetadataScan() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(metadataScanStore.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(metadataScanStore.getSnapshot());
+        const unsubscribe = metadataScanStore.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+const scanCompleteMessage = (progress) => {
+    const total = Number(progress.total || 0);
+    if (!total)
+        return t("panel.refreshComplete");
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed
+        ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
+        : t("panel.scanCompleteSaved", { assigned, total });
+};
+const scanCompleteStatusKind = (progress) => {
+    const total = Number(progress.total || 0);
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
+};
+
 // Version is fetched from the backend on mount; "" means not yet loaded.
 const PLUGIN_VERSION = "";
 // Keep retrying native focus while Steam rebuilds the navigation tree. The
@@ -35946,22 +36214,6 @@ const findScrollViewport = (element) => {
     }
     return null;
 };
-const scanCompleteMessage = (progress) => {
-    const total = Number(progress.total || 0);
-    if (!total)
-        return t("panel.refreshComplete");
-    const assigned = Number(progress.assigned || 0);
-    const failed = Number(progress.failed || 0);
-    return failed
-        ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
-        : t("panel.scanCompleteSaved", { assigned, total });
-};
-const scanCompleteStatusKind = (progress) => {
-    const total = Number(progress.total || 0);
-    const assigned = Number(progress.assigned || 0);
-    const failed = Number(progress.failed || 0);
-    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
 const epochToDate = (value) => {
     if (!value)
         return "";
@@ -36009,23 +36261,6 @@ const Content = () => {
     const { games, loadGames } = useNonSteamGames();
     const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
     const [missing, setMissing] = SP_REACT.useState(0);
-    const [busy, setBusy] = SP_REACT.useState(false);
-    const [scanMessage, setScanMessage] = SP_REACT.useState("");
-    const [scanCompleted, setScanCompleted] = SP_REACT.useState(0);
-    const [scanTotal, setScanTotal] = SP_REACT.useState(0);
-    const [scanStatusKind, setScanStatusKind] = SP_REACT.useState("idle");
-    // One scan-progress poll is pending at a time; unmounting the panel stops polling.
-    const scanPoll = SP_REACT.useRef({ timer: null, stopped: false });
-    SP_REACT.useEffect(() => {
-        const poll = scanPoll.current;
-        poll.stopped = false;
-        return () => {
-            poll.stopped = true;
-            if (poll.timer !== null)
-                window.clearTimeout(poll.timer);
-            poll.timer = null;
-        };
-    }, []);
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
     const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
@@ -36441,6 +36676,17 @@ const Content = () => {
             cancelled = true;
         };
     }, []);
+    // Appended after the existing hooks: the ContentPanel tests index hooks by call order.
+    const scan = useMetadataScan();
+    // The store refreshed the metadata cache before it bumped the revision; reload games for the counts.
+    SP_REACT.useEffect(() => {
+        if (scan.completedRevision === 0)
+            return;
+        void loadGames().then((loadedGames) => {
+            setMetadataCount(Object.keys(metadataCache).length);
+            updateMissingCount(loadedGames);
+        });
+    }, [scan.completedRevision]);
     const saveDebugLogging = async (enabled) => {
         if (debugLoggingBusy)
             return;
@@ -36573,61 +36819,13 @@ const Content = () => {
             warn("bridge", "automatic update setting save failed", error);
         }
     };
-    const scanMissing = async () => {
-        if (busy)
+    const scanMissing = () => {
+        if (scan.busy)
             return;
-        setBusy(true);
-        setScanMessage("");
-        setScanCompleted(0);
-        setScanTotal(0);
-        setScanStatusKind("active");
-        const failScan = (error) => {
-            setBusy(false);
-            setScanStatusKind("error");
-            setScanMessage(translateBackendError(error));
-            toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
-        };
-        try {
-            await startScanMissing(games, await currentSteamLanguage());
-        }
-        catch (error) {
-            failScan(error);
-            return;
-        }
-        const poll = scanPoll.current;
-        const pollProgress = async () => {
-            poll.timer = null;
-            try {
-                const progress = await getScanProgress();
-                if (poll.stopped)
-                    return;
-                setScanCompleted(Number(progress.completed || 0));
-                setScanTotal(Number(progress.total || 0));
-                setScanStatusKind("active");
-                setScanMessage(progress.current ||
-                    translateProgress(progress) ||
-                    `${progress.completed}/${progress.total}`);
-                if (progress.running) {
-                    poll.timer = window.setTimeout(pollProgress, 800);
-                    return;
-                }
-                await refresh();
-                if (poll.stopped)
-                    return;
-                setBusy(false);
-                setScanStatusKind(scanCompleteStatusKind(progress));
-                setScanMessage(scanCompleteMessage(progress));
-                toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
-            }
-            catch (error) {
-                if (!poll.stopped)
-                    failScan(error);
-            }
-        };
-        poll.timer = window.setTimeout(pollProgress, 800);
+        void metadataScanStore.start(games, currentSteamLanguage);
     };
     const clearCache = async () => {
-        if (cacheBusy || busy)
+        if (cacheBusy || scan.busy)
             return;
         setCacheBusy(true);
         try {
@@ -36635,11 +36833,8 @@ const Content = () => {
             // Clear cache takes every game off the removed list; HLTB must ask again.
             hltbStore.reset();
             await refreshMetadataCache();
-            if (games.length) {
-                void startScanMissing(games, await currentSteamLanguage()).catch((error) => {
-                    warn("bridge", "metadata scan start after clear cache failed", error);
-                });
-            }
+            if (games.length)
+                void metadataScanStore.start(games, currentSteamLanguage);
             setMetadataCount(Object.keys(metadataCache).length);
             updateMissingCount(games);
             toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
@@ -36698,7 +36893,18 @@ const Content = () => {
     const returningDropdown = hasCompatibilityDropdownReturn()
         ? compatibilityDropdownReturnOrigin()
         : null;
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: busy, scanCompleted: scanCompleted, scanTotal: scanTotal, scanMessage: scanMessage, scanStatusKind: scanStatusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
+    const completed = Number(scan.progress?.completed || 0);
+    const total = Number(scan.progress?.total || 0);
+    const message = scan.statusKind === "error"
+        ? translateBackendError(scan.error)
+        : scan.busy
+            ? scan.progress
+                ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
+                : ""
+            : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
+                ? scanCompleteMessage(scan.progress)
+                : "";
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: scan.busy, scanCompleted: completed, scanTotal: total, scanMessage: message, scanStatusKind: scan.statusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
                     requestCompatibilityDropdownReturn("protondb-cover-position");
                     noteCompatibilityDropdownControlUnmounted();
                     try {
@@ -40582,6 +40788,12 @@ var index = DFL.definePlugin(() => {
             hltbController.stop();
             stopPluginConflicts();
             resetProtonDbAppIdResolution();
+            try {
+                metadataScanStore.dispose();
+            }
+            catch (error$1) {
+                error("patch", "metadata scan stop failed", error$1);
+            }
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
             // the held Game Info intent before it does so during an in-place import.

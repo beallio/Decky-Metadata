@@ -19,6 +19,7 @@
       "no_activity": "Nuk u gjet aktivitet në Steam për {{title}}"
     },
     "hltb_busy": "HowLongToBeat është i zënë. Provo përsëri pas një minute.",
+    "metadata_scan_busy": "Përditësimi i metadatave po vazhdon. Provo përsëri pasi të përfundojë.",
     "invalid_title": "titull i pavlefshëm",
     "invalid_search": "kërkim i pavlefshëm",
     "steam_search_unavailable": "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",

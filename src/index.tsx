@@ -8,6 +8,7 @@ import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
 import { setNativeCssClasses } from "./steam/nativeCssClasses";
+import { metadataScanStore } from "./metadataScan";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
@@ -140,6 +141,11 @@ export default definePlugin(() => {
       hltbController.stop();
       stopPluginConflicts();
       resetProtonDbAppIdResolution();
+      try {
+        metadataScanStore.dispose();
+      } catch (error) {
+        log.error("patch", "metadata scan stop failed", error);
+      }
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
       // the held Game Info intent before it does so during an in-place import.

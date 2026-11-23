@@ -14,7 +14,6 @@ import {
   getMissingMetadataCount,
   getPluginLogs,
   getPluginVersion,
-  getScanProgress,
   getSystemVersions,
   getUpdateSettings,
   refreshDelistedIndex,
@@ -23,7 +22,6 @@ import {
   setCompatibilityDefaultScope,
   setDebugLogging,
   setUpdateChannel,
-  startScanMissing,
 } from "./backend";
 import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
@@ -83,7 +81,6 @@ import {
 } from "./qamCompatibilityFocus";
 import { qamPanelStyle } from "./styles";
 import { toastError, toastSuccess } from "./toast";
-import type { StatusKind } from "./tokens";
 import {
   GameOption,
   CompatibilityDefaultScope,
@@ -99,6 +96,7 @@ import { getConnectedControllerTypes } from "./steam";
 import { trailerController } from "./trailers/controller";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
+import { metadataScanStore, scanCompleteMessage, useMetadataScan } from "./metadataScan";
 
 // Version is fetched from the backend on mount; "" means not yet loaded.
 export const PLUGIN_VERSION = "";
@@ -187,31 +185,6 @@ const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
   return null;
 };
 
-const scanCompleteMessage = (progress: {
-  total?: number;
-  assigned?: number;
-  failed?: number;
-}) => {
-  const total = Number(progress.total || 0);
-  if (!total) return t("panel.refreshComplete");
-  const assigned = Number(progress.assigned || 0);
-  const failed = Number(progress.failed || 0);
-  return failed
-    ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
-    : t("panel.scanCompleteSaved", { assigned, total });
-};
-
-const scanCompleteStatusKind = (progress: {
-  total?: number;
-  assigned?: number;
-  failed?: number;
-}): StatusKind => {
-  const total = Number(progress.total || 0);
-  const assigned = Number(progress.assigned || 0);
-  const failed = Number(progress.failed || 0);
-  return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
-
 const epochToDate = (value?: number | null) => {
   if (!value) return "";
   const date = new Date(value * 1000);
@@ -259,22 +232,6 @@ export const Content = () => {
   const { games, loadGames } = useNonSteamGames();
   const [metadataCount, setMetadataCount] = useState(0);
   const [missing, setMissing] = useState(0);
-  const [busy, setBusy] = useState(false);
-  const [scanMessage, setScanMessage] = useState("");
-  const [scanCompleted, setScanCompleted] = useState(0);
-  const [scanTotal, setScanTotal] = useState(0);
-  const [scanStatusKind, setScanStatusKind] = useState<StatusKind>("idle");
-  // One scan-progress poll is pending at a time; unmounting the panel stops polling.
-  const scanPoll = useRef<{ timer: number | null; stopped: boolean }>({ timer: null, stopped: false });
-  useEffect(() => {
-    const poll = scanPoll.current;
-    poll.stopped = false;
-    return () => {
-      poll.stopped = true;
-      if (poll.timer !== null) window.clearTimeout(poll.timer);
-      poll.timer = null;
-    };
-  }, []);
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{
     count: number;
@@ -703,6 +660,16 @@ export const Content = () => {
       cancelled = true;
     };
   }, []);
+  // Appended after the existing hooks: the ContentPanel tests index hooks by call order.
+  const scan = useMetadataScan();
+  // The store refreshed the metadata cache before it bumped the revision; reload games for the counts.
+  useEffect(() => {
+    if (scan.completedRevision === 0) return;
+    void loadGames().then((loadedGames) => {
+      setMetadataCount(Object.keys(metadataCache).length);
+      updateMissingCount(loadedGames);
+    });
+  }, [scan.completedRevision]);
 
   const saveDebugLogging = async (enabled: boolean) => {
     if (debugLoggingBusy) return;
@@ -850,69 +817,20 @@ export const Content = () => {
     }
   };
 
-  const scanMissing = async () => {
-    if (busy) return;
-    setBusy(true);
-    setScanMessage("");
-    setScanCompleted(0);
-    setScanTotal(0);
-    setScanStatusKind("active");
-    const failScan = (error: unknown) => {
-      setBusy(false);
-      setScanStatusKind("error");
-      setScanMessage(translateBackendError(error));
-      toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
-    };
-    try {
-      await startScanMissing(games, await currentSteamLanguage());
-    } catch (error) {
-      failScan(error);
-      return;
-    }
-    const poll = scanPoll.current;
-    const pollProgress = async () => {
-      poll.timer = null;
-      try {
-        const progress = await getScanProgress();
-        if (poll.stopped) return;
-        setScanCompleted(Number(progress.completed || 0));
-        setScanTotal(Number(progress.total || 0));
-        setScanStatusKind("active");
-        setScanMessage(
-          progress.current ||
-            translateProgress(progress) ||
-            `${progress.completed}/${progress.total}`
-        );
-        if (progress.running) {
-          poll.timer = window.setTimeout(pollProgress, 800);
-          return;
-        }
-        await refresh();
-        if (poll.stopped) return;
-        setBusy(false);
-        setScanStatusKind(scanCompleteStatusKind(progress));
-        setScanMessage(scanCompleteMessage(progress));
-        toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
-      } catch (error) {
-        if (!poll.stopped) failScan(error);
-      }
-    };
-    poll.timer = window.setTimeout(pollProgress, 800);
+  const scanMissing = () => {
+    if (scan.busy) return;
+    void metadataScanStore.start(games, currentSteamLanguage);
   };
 
   const clearCache = async () => {
-    if (cacheBusy || busy) return;
+    if (cacheBusy || scan.busy) return;
     setCacheBusy(true);
     try {
       await clearMetadataCache();
       // Clear cache takes every game off the removed list; HLTB must ask again.
       hltbStore.reset();
       await refreshMetadataCache();
-      if (games.length) {
-        void startScanMissing(games, await currentSteamLanguage()).catch((error) => {
-          log.warn("bridge", "metadata scan start after clear cache failed", error);
-        });
-      }
+      if (games.length) void metadataScanStore.start(games, currentSteamLanguage);
       setMetadataCount(Object.keys(metadataCache).length);
       updateMissingCount(games);
       toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
@@ -972,6 +890,18 @@ export const Content = () => {
     ? compatibilityDropdownReturnOrigin()
     : null;
 
+  const completed = Number(scan.progress?.completed || 0);
+  const total = Number(scan.progress?.total || 0);
+  const message = scan.statusKind === "error"
+    ? translateBackendError(scan.error)
+    : scan.busy
+      ? scan.progress
+        ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
+        : ""
+      : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
+        ? scanCompleteMessage(scan.progress)
+        : "";
+
   return (
     <Focusable
       ref={focusPanel}
@@ -983,11 +913,11 @@ export const Content = () => {
         detectedCount={games.length}
         savedCount={metadataCount}
         missingCount={missing}
-        scanBusy={busy}
-        scanCompleted={scanCompleted}
-        scanTotal={scanTotal}
-        scanMessage={scanMessage}
-        scanStatusKind={scanStatusKind}
+        scanBusy={scan.busy}
+        scanCompleted={completed}
+        scanTotal={total}
+        scanMessage={message}
+        scanStatusKind={scan.statusKind}
         cacheBusy={cacheBusy}
         delistedCountText={delistedCountText}
         delistedDateText={delistedDateText}

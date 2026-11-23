@@ -18,6 +18,7 @@
       "no_activity": "{{title}} の Steam アクティビティが見つかりません"
     },
     "hltb_busy": "HowLongToBeat が混雑しています。1分ほど待ってから再試行してください。",
+    "metadata_scan_busy": "メタデータを更新中です。完了してからもう一度お試しください。",
     "invalid_title": "無効なタイトル",
     "invalid_search": "無効な検索",
     "steam_search_unavailable": "Steam 検索を利用できません。再試行してください。",
