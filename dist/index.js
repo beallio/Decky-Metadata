@@ -35897,6 +35897,8 @@ class ProtonDbBadgeController {
 }
 const protonDbBadgeController = new ProtonDbBadgeController();
 
+// Consecutive getScanProgress failures before the store reports the scan as failed.
+const MAX_POLL_FAILURES = 3;
 class MetadataScanStore {
     constructor(deps) {
         Object.defineProperty(this, "deps", {
@@ -35953,6 +35955,12 @@ class MetadataScanStore {
             writable: true,
             value: 0
         });
+        Object.defineProperty(this, "pollFailures", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
     }
     getSnapshot() {
         return this.snapshot;
@@ -35974,14 +35982,16 @@ class MetadataScanStore {
             progress = await this.deps.getScanProgress();
         }
         catch {
-            // A failed check leaves the store idle; the next start() still works.
+            // A failed check must not hide a running scan for good: the next subscribe checks again.
+            if (generation === this.generation)
+                this.hydrationStarted = false;
             return;
         }
         if (generation !== this.generation)
             return;
         if (startRevision !== this.startRevision || !progress.running)
             return;
-        this.publish({ progress, busy: true, statusKind: "active" });
+        this.publish({ progress, busy: true, statusKind: "active", error: null });
         this.ensurePolling();
     }
     async start(games, getLanguage) {
@@ -36036,33 +36046,53 @@ class MetadataScanStore {
             return;
         const generation = this.generation;
         this.pollInFlight = true;
+        let progress;
         try {
-            const progress = await this.deps.getScanProgress();
-            if (generation !== this.generation)
-                return;
-            this.publish({ progress, statusKind: "active" });
-            if (progress.running) {
-                this.pollInFlight = false;
-                this.ensurePolling();
-                return;
-            }
-            await this.deps.refreshMetadataCache();
+            progress = await this.deps.getScanProgress();
+        }
+        catch (error) {
             if (generation !== this.generation)
                 return;
             this.pollInFlight = false;
-            this.publish({
-                busy: false,
-                statusKind: scanCompleteStatusKind(progress),
-                completedRevision: this.snapshot.completedRevision + 1,
-            });
-            this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+            // The backend scan keeps running through a dropped RPC, so retry before giving up.
+            this.pollFailures += 1;
+            if (this.pollFailures < MAX_POLL_FAILURES) {
+                this.ensurePolling();
+                return;
+            }
+            this.pollFailures = 0;
+            this.hydrationStarted = false;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.pollFailures = 0;
+        this.publish({ progress, statusKind: "active" });
+        if (progress.running) {
+            this.pollInFlight = false;
+            this.ensurePolling();
+            return;
+        }
+        try {
+            await this.deps.refreshMetadataCache();
         }
         catch (error) {
             if (generation !== this.generation)
                 return;
             this.pollInFlight = false;
             this.fail(error);
+            return;
         }
+        if (generation !== this.generation)
+            return;
+        this.pollInFlight = false;
+        this.publish({
+            busy: false,
+            statusKind: scanCompleteStatusKind(progress),
+            completedRevision: this.snapshot.completedRevision + 1,
+        });
+        this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
     }
     fail(error) {
         this.publish({ busy: false, statusKind: "error", error });

@@ -25,6 +25,9 @@ export type MetadataScanDeps = {
   clearTimeout: (id: number) => void;
 };
 
+// Consecutive getScanProgress failures before the store reports the scan as failed.
+const MAX_POLL_FAILURES = 3;
+
 export class MetadataScanStore {
   private snapshot: MetadataScanSnapshot = {
     progress: null,
@@ -39,6 +42,7 @@ export class MetadataScanStore {
   private hydrationStarted = false;
   private generation = 0;
   private startRevision = 0;
+  private pollFailures = 0;
 
   constructor(private readonly deps: MetadataScanDeps) {}
 
@@ -61,12 +65,13 @@ export class MetadataScanStore {
     try {
       progress = await this.deps.getScanProgress();
     } catch {
-      // A failed check leaves the store idle; the next start() still works.
+      // A failed check must not hide a running scan for good: the next subscribe checks again.
+      if (generation === this.generation) this.hydrationStarted = false;
       return;
     }
     if (generation !== this.generation) return;
     if (startRevision !== this.startRevision || !progress.running) return;
-    this.publish({ progress, busy: true, statusKind: "active" });
+    this.publish({ progress, busy: true, statusKind: "active", error: null });
     this.ensurePolling();
   }
 
@@ -116,29 +121,47 @@ export class MetadataScanStore {
     if (this.pollInFlight) return;
     const generation = this.generation;
     this.pollInFlight = true;
+    let progress: ScanProgress;
     try {
-      const progress = await this.deps.getScanProgress();
+      progress = await this.deps.getScanProgress();
+    } catch (error) {
       if (generation !== this.generation) return;
-      this.publish({ progress, statusKind: "active" });
-      if (progress.running) {
-        this.pollInFlight = false;
+      this.pollInFlight = false;
+      // The backend scan keeps running through a dropped RPC, so retry before giving up.
+      this.pollFailures += 1;
+      if (this.pollFailures < MAX_POLL_FAILURES) {
         this.ensurePolling();
         return;
       }
-      await this.deps.refreshMetadataCache();
-      if (generation !== this.generation) return;
+      this.pollFailures = 0;
+      this.hydrationStarted = false;
+      this.fail(error);
+      return;
+    }
+    if (generation !== this.generation) return;
+    this.pollFailures = 0;
+    this.publish({ progress, statusKind: "active" });
+    if (progress.running) {
       this.pollInFlight = false;
-      this.publish({
-        busy: false,
-        statusKind: scanCompleteStatusKind(progress),
-        completedRevision: this.snapshot.completedRevision + 1,
-      });
-      this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+      this.ensurePolling();
+      return;
+    }
+    try {
+      await this.deps.refreshMetadataCache();
     } catch (error) {
       if (generation !== this.generation) return;
       this.pollInFlight = false;
       this.fail(error);
+      return;
     }
+    if (generation !== this.generation) return;
+    this.pollInFlight = false;
+    this.publish({
+      busy: false,
+      statusKind: scanCompleteStatusKind(progress),
+      completedRevision: this.snapshot.completedRevision + 1,
+    });
+    this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
   }
 
   private fail(error: unknown): void {

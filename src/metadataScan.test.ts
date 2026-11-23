@@ -169,21 +169,69 @@ describe("MetadataScanStore", () => {
     expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "scan failed");
   });
 
-  it("sets error state and shows one toast when polling fails", async () => {
+  it("fails after three poll errors in a row and checks again on the next subscribe", async () => {
     const setupResult = setup();
     const error = new Error("poll failed");
     setupResult.getScanProgress
       .mockResolvedValueOnce(scan(true))
-      .mockRejectedValueOnce(error);
+      .mockRejectedValueOnce(error)
+      .mockRejectedValueOnce(error)
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce(scan(true, { completed: 1 }));
+    setupResult.store.subscribe(vi.fn());
+    await flush();
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      setupResult.runNextTimer();
+      await flush();
+    }
+
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "error", error });
+    expect(setupResult.toastError).toHaveBeenCalledTimes(1);
+    expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "poll failed");
+    expect(setupResult.timers.size).toBe(0);
+
+    // The backend scan is still running: a new subscriber (QAM remount, Settings) picks it up again.
+    setupResult.store.subscribe(vi.fn());
+    await flush();
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active", error: null });
+    expect(setupResult.timers.size).toBe(1);
+  });
+
+  it("retries a dropped poll without losing the running scan", async () => {
+    const setupResult = setup();
+    setupResult.getScanProgress
+      .mockResolvedValueOnce(scan(true))
+      .mockRejectedValueOnce(new Error("socket closed"))
+      .mockResolvedValueOnce(scan(false));
     setupResult.store.subscribe(vi.fn());
     await flush();
 
     setupResult.runNextTimer();
     await flush();
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active" });
+    expect(setupResult.toastError).not.toHaveBeenCalled();
 
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "error", error });
-    expect(setupResult.toastError).toHaveBeenCalledTimes(1);
-    expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "poll failed");
+    setupResult.runNextTimer();
+    await flush();
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "success", completedRevision: 1 });
+    expect(setupResult.toastSuccess).toHaveBeenCalledTimes(1);
+  });
+
+  it("checks again on the next subscribe after a failed hydrate", async () => {
+    const setupResult = setup();
+    setupResult.getScanProgress
+      .mockRejectedValueOnce(new Error("backend not ready"))
+      .mockResolvedValueOnce(scan(true));
+    setupResult.store.subscribe(vi.fn());
+    await flush();
+    expect(setupResult.store.getSnapshot().busy).toBe(false);
+
+    setupResult.store.subscribe(vi.fn());
+    await flush();
+    expect(setupResult.getScanProgress).toHaveBeenCalledTimes(2);
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active" });
+    expect(setupResult.timers.size).toBe(1);
   });
 
   it("ignores an in-flight poll after dispose", async () => {
