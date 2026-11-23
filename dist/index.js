@@ -19454,7 +19454,7 @@ function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange
 
 function LogsSection({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
     const t = useT();
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy }) })] }));
+    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
 }
 
 function MiniAchievementsSection({ state, onEnabledChange }) {
