@@ -4,6 +4,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.6] - 2026-11-22
+
 Match Steam's own layout, colours and controls, and fix more Steam beta lookups
 
 ### Added
