@@ -1,6 +1,4 @@
 import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
-import { FaFileAlt } from "react-icons/fa";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { ButtonLabel } from "../../styles";
@@ -50,11 +48,3 @@ export function LogsBody({
   );
 }
 
-export function LogsSection(props: LogsSectionProps) {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.logs.title")} icon={<FaFileAlt size={16} />}>
-      <LogsBody {...props} />
-    </CollapsibleSection>
-  );
-}

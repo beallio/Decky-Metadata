@@ -1,28 +1,23 @@
 import { DropdownItem, Field, PanelSectionRow, ToggleField } from "@decky/ui";
-import { ProtonDbIcon } from "../../protondb/Icon";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { ProtonDbBadgeSnapshot } from "../../protondb/controller";
 import type { ProtonDbBadgeSettings } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
-import { CollapsibleSection } from "./CollapsibleSection";
 
-type ProtonDbBadgesSectionProps = {
-  initiallyExpanded?: boolean;
+type ProtonDbBadgesBodyProps = {
   snapshot: ProtonDbBadgeSnapshot;
   /** Applies to the latest published settings, so same-task changes do not overwrite each other. */
   onSettingsChange: (update: (current: ProtonDbBadgeSettings) => ProtonDbBadgeSettings) => void | Promise<unknown>;
   onCoverPositionChange: (position: ProtonDbBadgeSettings["coverPosition"]) => Promise<boolean>;
-  onCoverPositionMenuWillOpen: () => void;
-  onCoverPositionControlRef: (element: HTMLDivElement | null) => void;
 };
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
 
 export function ProtonDbBadgesBody({
-  snapshot, onSettingsChange, onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef,
-}: Omit<ProtonDbBadgesSectionProps, "initiallyExpanded">) {
+  snapshot, onSettingsChange, onCoverPositionChange,
+}: ProtonDbBadgesBodyProps) {
   const t = useT();
   const coverPositionOptions: Array<{
     data: ProtonDbBadgeSettings["coverPosition"];
@@ -98,7 +93,6 @@ export function ProtonDbBadgesBody({
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div ref={onCoverPositionControlRef}>
         <DropdownItem
           label={t("qam.protondb.positionLabel")}
           layout="below"
@@ -107,7 +101,6 @@ export function ProtonDbBadgesBody({
           rgOptions={coverPositionOptions}
           selectedOption={settings.coverPosition}
           disabled={dependentControlsDisabled}
-          onMenuWillOpen={onCoverPositionMenuWillOpen}
           onChange={(option) => { void onCoverPositionChange(option.data); }}
           renderButtonValue={() => (
             <span style={dropdownValueStyle}>
@@ -115,7 +108,6 @@ export function ProtonDbBadgesBody({
             </span>
           )}
         />
-        </div>
       </PanelSectionRow>
       {(!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (
         <PanelSectionRow>
@@ -136,9 +128,3 @@ export function ProtonDbBadgesBody({
   );
 }
 
-export function ProtonDbBadgesSection(props: ProtonDbBadgesSectionProps) {
-  const t = useT();
-  return <CollapsibleSection title={t("qam.protondb.title")} icon={<ProtonDbIcon size={16} />} defaultExpanded={props.initiallyExpanded}>
-    <ProtonDbBadgesBody {...props} />
-  </CollapsibleSection>;
-}

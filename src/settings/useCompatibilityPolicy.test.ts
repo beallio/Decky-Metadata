@@ -77,7 +77,7 @@ vi.mock("../toast", () => ui);
 vi.mock("../log", () => logs);
 
 import { useCompatibilityPolicy } from "./useCompatibilityPolicy";
-import { clearCompatibilityPolicySave } from "../qamCompatibilityFocus";
+import { clearCompatibilityPolicySave } from "../compatibilityPolicySave";
 
 const deferred = <T,>() => {
   const { promise, resolve, reject } = Promise.withResolvers<T>();

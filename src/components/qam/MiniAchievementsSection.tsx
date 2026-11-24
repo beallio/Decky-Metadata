@@ -1,10 +1,8 @@
 import { Field, PanelSectionRow, ToggleField } from "@decky/ui";
-import { FaTrophy } from "react-icons/fa";
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { MiniAchievementsSnapshot } from "../../steam/miniAchievementsController";
 import { featureConflictNotice } from "../../pluginConflicts";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 type MiniAchievementsSectionProps = {
   state: MiniAchievementsSnapshot;
@@ -40,11 +38,3 @@ export function MiniAchievementsBody({ state, onEnabledChange }: MiniAchievement
   );
 }
 
-export function MiniAchievementsSection(props: MiniAchievementsSectionProps) {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.miniAchievements.title")} icon={<FaTrophy size={16} />}>
-      <MiniAchievementsBody {...props} />
-    </CollapsibleSection>
-  );
-}

@@ -1,6 +1,4 @@
 import { ButtonItem, Field, PanelSectionRow, ProgressBarItem } from "@decky/ui";
-import { FaTags } from "react-icons/fa6";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import {
   ButtonLabel,
@@ -123,12 +121,3 @@ export function MetadataMaintenanceBody({
   );
 }
 
-export function MetadataSection(props: MetadataSectionProps) {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.metadata.title")} icon={<FaTags size={16} />}>
-      <MetadataScanBody {...props} />
-      <MetadataMaintenanceBody {...props} />
-    </CollapsibleSection>
-  );
-}

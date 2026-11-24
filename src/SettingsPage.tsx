@@ -47,9 +47,6 @@ const icons = {
   versions: <FaInfoCircle />,
 };
 
-// shortcut: no-op dropdown-focus props until the QAM focus-return code and these props are removed (slice 3f).
-const noop = () => undefined;
-
 export function SettingsPage() {
   const t = useT();
   const [page, setPage] = useState("metadata");
@@ -111,12 +108,7 @@ export function SettingsPage() {
       icon: icons.compat,
       content: (
         <DialogControlsSection>
-          <CompatibilityBody
-            {...compatibility}
-            onCompatibilityDefaultMenuWillOpen={noop}
-            onCompatibilityDefaultControlRef={noop}
-            onCompatibilityDefaultScopeControlRef={noop}
-          />
+          <CompatibilityBody {...compatibility} />
         </DialogControlsSection>
       ),
     },
@@ -132,8 +124,6 @@ export function SettingsPage() {
             onCoverPositionChange={(coverPosition) => protonDbBadgeController.setSettings({
               ...protonDbBadgeController.getSnapshot().settings, coverPosition,
             })}
-            onCoverPositionMenuWillOpen={noop}
-            onCoverPositionControlRef={noop}
           />
         </DialogControlsSection>
       ),
@@ -177,8 +167,6 @@ export function SettingsPage() {
             onDetailFadeInDelayChange={(seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds)}
             onHomeFadeInDelayChange={(seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds)}
             onQualityChange={(quality) => trailerController.setQuality(quality)}
-            onQualityMenuWillOpen={noop}
-            onQualityControlRef={noop}
           />
         </DialogControlsSection>
       ),

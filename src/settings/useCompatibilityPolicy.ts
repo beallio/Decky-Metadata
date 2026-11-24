@@ -22,7 +22,7 @@ import {
   hasPendingCompatibilityPolicySave,
   settleCompatibilityPolicySave,
   subscribeCompatibilityPolicySave,
-} from "../qamCompatibilityFocus";
+} from "../compatibilityPolicySave";
 import { t, translateBackendError } from "../i18n";
 import * as log from "../log";
 import { toastError, toastSuccess } from "../toast";

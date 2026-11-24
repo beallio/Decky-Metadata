@@ -8,7 +8,6 @@ vi.mock("@decky/ui", () => ({
   SliderField: "SliderField",
   ToggleField: "ToggleField",
 }));
-vi.mock("./CollapsibleSection", () => ({ CollapsibleSection: "CollapsibleSection" }));
 vi.mock("../../styles", () => ({ inlineStatusStyle: () => ({}), sectionHeadingStyle: {} }));
 vi.mock("../../pluginConflicts", () => ({ featureConflictNotice: () => null }));
 vi.mock("../../i18n", async (importOriginal) => {
@@ -64,8 +63,6 @@ const render = (state: TrailerControllerSnapshot) => GameTrailersBody({
   onDetailFadeInDelayChange: vi.fn(),
   onHomeFadeInDelayChange: vi.fn(),
   onQualityChange: vi.fn(),
-  onQualityMenuWillOpen: vi.fn(),
-  onQualityControlRef: vi.fn(),
 });
 
 const dependentControls = (tree: ReactNode) => {
@@ -77,7 +74,7 @@ const dependentControls = (tree: ReactNode) => {
   ];
 };
 
-describe("GameTrailersSection dependent controls", () => {
+describe("GameTrailersBody dependent controls", () => {
   it("disables every dependent control while trailers are off", () => {
     const tree = nodes(render(snapshot(false)));
     const toggles = tree.filter((node) => node.type === "ToggleField");

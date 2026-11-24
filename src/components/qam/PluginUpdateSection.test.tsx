@@ -11,7 +11,6 @@ vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
   Field: "Field",
-  PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
   Spinner: "Spinner",
   ToggleField: "ToggleField",
@@ -33,7 +32,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { PluginUpdateBody, PluginUpdateSection } from "./PluginUpdateSection";
+import { PluginUpdateBody } from "./PluginUpdateSection";
 
 const candidate = (
   action: PluginUpdateCandidate["action"] = "update",
@@ -71,7 +70,7 @@ function render(currentVersion = "0.3.1") {
   return PluginUpdateBody();
 }
 
-describe("PluginUpdateSection", () => {
+describe("PluginUpdateBody", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     controller = {
@@ -98,10 +97,6 @@ describe("PluginUpdateSection", () => {
       setUpdateChannel: vi.fn(async () => undefined),
       setAutomaticUpdateChecks: vi.fn(async () => undefined),
     };
-  });
-
-  it("wraps the shared update body in its collapsible section", () => {
-    expect(children(PluginUpdateSection()).some((node) => node.type === PluginUpdateBody)).toBe(true);
   });
 
   it("disables both update-setting toggles until settings load", () => {

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   Field: "Field",
-  PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({ compactTextStyle: {} }));
@@ -34,7 +33,7 @@ const nodes = (node: unknown): TestNode[] => {
 const fields = (tree: unknown): FieldNode[] =>
   nodes(tree).filter((node): node is FieldNode => node.type === "Field" && node.props !== undefined);
 
-describe("VersionsSection", () => {
+describe("VersionsBody", () => {
   const render = (controllerTypes: number[]) => VersionsBody({
     pluginVersion: "0.3.0",
     deckyVersion: "3.0",

@@ -7,9 +7,8 @@ import {
   showModal,
   ToggleField,
 } from "@decky/ui";
-import { FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
+import { FaExclamationTriangle } from "react-icons/fa";
 import { IoMdRefresh } from "react-icons/io";
-import { CollapsibleSection } from "./CollapsibleSection";
 import {
   UPDATE_CHECK_UI_TIMEOUT_MS,
   usePluginUpdateController,
@@ -17,15 +16,6 @@ import {
 import { PluginInstallAction } from "../../updater/installAction";
 import { formatDateTime, translateBackendError, useT } from "../../i18n";
 import { BusySpinner, inlineStatusStyle } from "../../styles";
-
-export function PluginUpdateSection() {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.update.title")} icon={<FaSyncAlt size={16} />}>
-      <PluginUpdateBody />
-    </CollapsibleSection>
-  );
-}
 
 export function PluginUpdateBody() {
   const t = useT();

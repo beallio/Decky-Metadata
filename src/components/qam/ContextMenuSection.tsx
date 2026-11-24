@@ -1,11 +1,9 @@
 import { Field, PanelSectionRow, ToggleField } from "@decky/ui";
 import { useEffect, useRef, useState } from "react";
-import { FaBars } from "react-icons/fa";
 import { getEditorHeaderSettings, setEditorHeaderSettings } from "../../backend";
 import { translateBackendError, useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { EditorHeaderSettings } from "../../types";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 /** Options for the Edit Metadata page that the game context menu opens. */
 export function ContextMenuBody() {
@@ -75,11 +73,3 @@ export function ContextMenuBody() {
   );
 }
 
-export function ContextMenuSection() {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.contextMenu.title")} icon={<FaBars size={16} />}>
-      <ContextMenuBody />
-    </CollapsibleSection>
-  );
-}

@@ -5,7 +5,7 @@ import {
   PanelSectionRow,
   showModal,
 } from "@decky/ui";
-import { PluginUpdateCandidate } from "../types";
+import type { PluginUpdateCandidate } from "../types";
 import { useT } from "../i18n";
 import { BusySpinner, ButtonLabel, inlineStatusStyle } from "../styles";
 import { isDeckyInstallerAvailable } from "./deckyInstaller";
@@ -19,6 +19,10 @@ export type PluginInstallActionProps = {
   onInstall: (candidate: PluginUpdateCandidate) => Promise<void>;
 };
 
+export function canInstallCandidate(candidate: PluginUpdateCandidate, currentVersion: string): boolean {
+  return isDeckyInstallerAvailable() && (!currentVersion.includes("+") || candidate.channel === "stable");
+}
+
 export function PluginInstallAction({
   candidate,
   currentVersion,
@@ -29,8 +33,7 @@ export function PluginInstallAction({
 }: PluginInstallActionProps) {
   const t = useT();
   const isLocalBuild = currentVersion.includes("+");
-  const canInstallCandidate =
-    isDeckyInstallerAvailable() && (!isLocalBuild || candidate.channel === "stable");
+  const canInstall = canInstallCandidate(candidate, currentVersion);
   const getActionText = () => {
     switch (candidate.action) {
       case "move_to_stable":
@@ -57,7 +60,7 @@ export function PluginInstallAction({
     }
   };
 
-  return canInstallCandidate ? (
+  return canInstall ? (
     <PanelSectionRow>
       <ButtonItem
         layout="below"

@@ -1,6 +1,4 @@
 import { Field, PanelSectionRow } from "@decky/ui";
-import { FaInfoCircle } from "react-icons/fa";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { formatConnectedControllerTypes } from "../../steam/controllerTypes";
@@ -52,11 +50,3 @@ export function VersionsBody({
   );
 }
 
-export function VersionsSection(props: VersionsSectionProps) {
-  const t = useT();
-  return (
-    <CollapsibleSection title={t("qam.versions.title")} icon={<FaInfoCircle size={16} />} defaultExpanded={true}>
-      <VersionsBody {...props} />
-    </CollapsibleSection>
-  );
-}

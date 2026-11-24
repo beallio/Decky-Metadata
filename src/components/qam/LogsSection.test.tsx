@@ -6,7 +6,6 @@ vi.mock("@decky/ui", () => ({
   PanelSectionRow: "PanelSectionRow",
   ToggleField: "ToggleField",
 }));
-vi.mock("./CollapsibleSection", () => ({ CollapsibleSection: "CollapsibleSection" }));
 vi.mock("../../styles", () => ({ ButtonLabel: "ButtonLabel" }));
 vi.mock("../../i18n", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();
@@ -23,7 +22,7 @@ const nodes = (node: ReactNode): ReactElement<ToggleProps>[] => {
   return [node, ...nodes(node.props.children)];
 };
 
-describe("LogsSection debug logging toggle", () => {
+describe("LogsBody debug logging toggle", () => {
   it("passes the new value to onToggleDebugLogging", () => {
     const onToggleDebugLogging = vi.fn();
     const tree = LogsBody({

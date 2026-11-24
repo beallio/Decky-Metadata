@@ -1,11 +1,10 @@
 import { routerHook } from "@decky/api";
-import { definePlugin, staticClasses } from "@decky/ui";
+import { definePlugin } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import { SettingsPage } from "./SettingsPage";
-import { SETTINGS_ROUTE } from "./settingsRoute";
-import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
+import { SETTINGS_ROUTE, SettingsTitleView } from "./settingsRoute";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
@@ -121,18 +120,7 @@ export default definePlugin(() => {
     // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
     name: "Decky Metadata",
     // Display label shown in the QAM header; kept human-readable on purpose.
-    titleView: (
-      <div
-        className={staticClasses.Title}
-        style={
-          staticClasses.Title
-            ? undefined
-            : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }
-        }
-      >
-        {"Decky Metadata"}
-      </div>
-    ),
+    titleView: <SettingsTitleView />,
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
@@ -175,13 +163,6 @@ export default definePlugin(() => {
         stopMetadataBootstrap?.();
       } catch (error) {
         log.error("patch", "metadata bootstrap stop failed", error);
-      }
-      try {
-        // Keep a native dropdown return request across an in-place bundle
-        // reload. A popup can reload the QAM while its selection is saving.
-        if (!reloading) clearCompatibilityDropdownReturn();
-      } catch (error) {
-        log.error("patch", "compatibility dropdown focus stop failed", error);
       }
       try {
         if (!reloading) {

@@ -66,7 +66,7 @@ const refreshButton = (tree: any) => nodes(tree).find(node =>
   node.type === "ButtonItem" && node.props?.onClick === refreshDelisted
 );
 
-describe("Metadata delisted-games subsection", () => {
+describe("MetadataMaintenanceBody delisted-games controls", () => {
   beforeEach(() => refreshDelisted.mockClear());
 
   it("shows the saved index count and date and refreshes that index", () => {

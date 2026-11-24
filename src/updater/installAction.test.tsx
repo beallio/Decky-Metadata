@@ -18,7 +18,7 @@ vi.mock("../i18n", async (importOriginal) => {
 });
 
 import { isDeckyInstallerAvailable } from "./deckyInstaller";
-import { PluginInstallAction } from "./installAction";
+import { canInstallCandidate, PluginInstallAction } from "./installAction";
 
 const candidate = (
   channel: "stable" | "development" = "stable",
@@ -54,6 +54,16 @@ describe("PluginInstallAction", () => {
     vi.clearAllMocks();
     vi.mocked(isDeckyInstallerAvailable).mockReturnValue(true);
   });
+  it("shares the installer and local-build rules with the QAM", () => {
+    const stable = candidate("stable");
+    const development = candidate("development");
+
+    expect(canInstallCandidate(stable, "0.3.1+local")).toBe(true);
+    expect(canInstallCandidate(development, "0.3.1+local")).toBe(false);
+    vi.mocked(isDeckyInstallerAvailable).mockReturnValue(false);
+    expect(canInstallCandidate(stable, "0.3.1")).toBe(false);
+  });
+
 
   it("asks for confirmation before installing a downgrade", () => {
     const update = candidate();

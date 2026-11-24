@@ -1,8 +1,6 @@
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "./types";
 
 type CompatibilityPolicySaveKind = "category" | "scope";
-type CompatibilityDropdownOrigin =
-  | "category" | "scope" | "quality" | "protondb-cover-position" | "hltb-style" | "hltb-blur";
 
 type CompatibilityPolicySave = {
   id: number;
@@ -14,14 +12,6 @@ type CompatibilityPolicySave = {
 };
 
 type CompatibilityQamRuntime = {
-  dropdown: {
-    returnPending: boolean;
-    controlUnmounted: boolean;
-    returnVisible: boolean;
-    selectionSaved: boolean;
-    focusAttempts: number;
-    origin: CompatibilityDropdownOrigin;
-  };
   policySaveId: number;
   policySave: CompatibilityPolicySave | null;
   policySaveListeners: Set<() => void>;
@@ -30,37 +20,21 @@ type CompatibilityQamRuntime = {
 const COMPATIBILITY_QAM_RUNTIME_KEY = "__deckyMetadataCompatibilityQamRuntime";
 
 const newCompatibilityQamRuntime = (): CompatibilityQamRuntime => ({
-  dropdown: {
-    returnPending: false,
-    controlUnmounted: false,
-    returnVisible: false,
-    selectionSaved: false,
-    focusAttempts: 0,
-    origin: "category",
-  },
   policySaveId: 0,
   policySave: null,
   policySaveListeners: new Set<() => void>(),
 });
 
-/**
- * A native popup can keep an old callback alive while Decky evaluates a new
- * bundle for the replacement QAM panel. Share that UI handoff state just like
- * the compatibility policy runtime, so both bundles observe one transaction.
- */
+/** Share policy transactions across bundles during the plugin's lifetime. */
 const compatibilityQamRuntime = (): CompatibilityQamRuntime => {
   const host = globalThis as Record<string, unknown>;
   const existing = host[COMPATIBILITY_QAM_RUNTIME_KEY] as Partial<CompatibilityQamRuntime> | undefined;
   if (
     existing
     && typeof existing === "object"
-    && existing.dropdown
     && existing.policySaveListeners instanceof Set
     && typeof existing.policySaveId === "number"
   ) {
-    if (typeof existing.dropdown.focusAttempts !== "number") {
-      existing.dropdown.focusAttempts = 0;
-    }
     return existing as CompatibilityQamRuntime;
   }
   const runtime = newCompatibilityQamRuntime();
@@ -153,78 +127,3 @@ export const clearCompatibilityPolicySave = () => {
   notifyCompatibilityPolicySave();
 };
 
-export const requestCompatibilityDropdownReturn = (origin: CompatibilityDropdownOrigin) => {
-  runtime.dropdown.returnPending = true;
-  runtime.dropdown.controlUnmounted = false;
-  runtime.dropdown.returnVisible = false;
-  runtime.dropdown.selectionSaved = false;
-  runtime.dropdown.focusAttempts = 0;
-  runtime.dropdown.origin = origin;
-};
-
-/** Count native-focus polling across panel remounts and rerenders. */
-export const claimCompatibilityDropdownFocusAttempt = (maximumAttempts: number) => {
-  if (
-    !runtime.dropdown.returnPending
-    || runtime.dropdown.focusAttempts >= maximumAttempts
-  ) return false;
-  runtime.dropdown.focusAttempts += 1;
-  return true;
-};
-
-export const hasCompatibilityDropdownReturn = () =>
-  runtime.dropdown.returnPending;
-
-export const compatibilityDropdownReturnOrigin = () => runtime.dropdown.origin;
-
-export const noteCompatibilityDropdownControlUnmounted = () => {
-  if (!runtime.dropdown.returnPending) return false;
-  runtime.dropdown.controlUnmounted = true;
-  return true;
-};
-
-export const noteCompatibilityDropdownReturnVisible = () => {
-  if (!runtime.dropdown.returnPending || !runtime.dropdown.controlUnmounted) {
-    return false;
-  }
-  runtime.dropdown.returnVisible = true;
-  return true;
-};
-
-/** Selection completes after the backend confirms the new global policy. */
-export const noteCompatibilityDropdownSelectionSaved = () => {
-  if (!runtime.dropdown.returnPending) return false;
-  runtime.dropdown.returnVisible = true;
-  runtime.dropdown.selectionSaved = true;
-  return true;
-};
-
-export const isCompatibilityDropdownSelectionReturn = () =>
-  runtime.dropdown.selectionSaved;
-
-export const isCompatibilityDropdownReturnReady = () =>
-  runtime.dropdown.returnPending && runtime.dropdown.returnVisible;
-
-/**
- * Complete the handoff after native focus succeeds or the user takes
- * navigation. Failed early attempts remain armed until the close handoff ends.
- */
-export const consumeCompatibilityDropdownReturn = () => {
-  const pending = runtime.dropdown.returnPending;
-  runtime.dropdown.returnPending = false;
-  runtime.dropdown.controlUnmounted = false;
-  runtime.dropdown.returnVisible = false;
-  runtime.dropdown.selectionSaved = false;
-  runtime.dropdown.focusAttempts = 0;
-  runtime.dropdown.origin = "category";
-  return pending;
-};
-
-export const clearCompatibilityDropdownReturn = () => {
-  runtime.dropdown.returnPending = false;
-  runtime.dropdown.controlUnmounted = false;
-  runtime.dropdown.returnVisible = false;
-  runtime.dropdown.selectionSaved = false;
-  runtime.dropdown.focusAttempts = 0;
-  runtime.dropdown.origin = "category";
-};
