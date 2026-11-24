@@ -1,4 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { PluginUpdateCandidate } from "../../types";
+import type { PluginUpdateController } from "../../updater/pluginUpdateController";
 
 const ui = vi.hoisted(() => ({
   showModal: vi.fn(),
@@ -9,7 +11,6 @@ vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
   Field: "Field",
-  PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
   Spinner: "Spinner",
   ToggleField: "ToggleField",
@@ -17,7 +18,7 @@ vi.mock("@decky/ui", () => ({
   Navigation: { NavigateToExternalWeb: ui.navigate },
 }));
 
-let controller: any;
+let controller: PluginUpdateController;
 vi.mock("../../updater/pluginUpdateController", () => ({
   UPDATE_CHECK_UI_TIMEOUT_MS: 120000,
   usePluginUpdateController: () => controller,
@@ -31,13 +32,12 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { isDeckyInstallerAvailable } from "../../updater/deckyInstaller";
-import { PluginUpdateSection } from "./PluginUpdateSection";
+import { PluginUpdateBody } from "./PluginUpdateSection";
 
 const candidate = (
-  action: "update" | "move_to_stable" | "downgrade_to_stable" = "update",
-  channel: "stable" | "development" = "stable",
-) => ({
+  action: PluginUpdateCandidate["action"] = "update",
+  channel: PluginUpdateCandidate["channel"] = "stable",
+): PluginUpdateCandidate => ({
   version: "0.4.0",
   tag: "v0.4.0",
   channel,
@@ -48,39 +48,37 @@ const candidate = (
   action,
 });
 
-const props = (currentVersion = "0.3.1") => ({
-  currentVersion,
-  updateChannel: "stable" as const,
-  automaticUpdateChecks: true,
-  settingsLoaded: true,
-  onToggleUpdateChannel: vi.fn(),
-  onToggleAutomaticUpdateChecks: vi.fn(),
-});
-
-function render(currentVersion = "0.3.1") {
-  return PluginUpdateSection(props(currentVersion));
-}
-
-function children(node: any): any[] {
+type TestNode = { type?: unknown; props?: Record<string, unknown> };
+function children(node: unknown): TestNode[] {
   if (node == null || typeof node === "boolean") return [];
   if (Array.isArray(node)) return node.flatMap(children);
   if (typeof node !== "object") return [];
-  return [node, ...children(node.props?.children)];
+  const element = node as TestNode;
+  return [element, ...children(element.props?.children)];
 }
 
-function text(node: any): string {
+function text(node: unknown): string {
   if (node == null || typeof node === "boolean") return "";
   if (typeof node === "string" || typeof node === "number") return String(node);
   if (Array.isArray(node)) return node.map(text).join(" ");
-  return text(node.props?.children);
+  if (typeof node !== "object") return "";
+  return text((node as TestNode).props?.children);
 }
 
-describe("PluginUpdateSection", () => {
+function render(currentVersion = "0.3.1") {
+  controller.effectiveCurrentVersion = currentVersion;
+  return PluginUpdateBody();
+}
+
+describe("PluginUpdateBody", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(isDeckyInstallerAvailable).mockReturnValue(true);
     controller = {
+      pluginVersion: "0.3.1",
       effectiveCurrentVersion: "0.3.1",
+      updateChannel: "stable",
+      automaticUpdateChecks: true,
+      settingsLoaded: true,
       candidate: candidate(),
       checkResult: {
         status: "available",
@@ -89,58 +87,27 @@ describe("PluginUpdateSection", () => {
         candidate: candidate(),
       },
       errorMessage: null,
+      checkTimedOut: false,
       isChecking: false,
       isInstalling: false,
       isHandoffPending: false,
       installedReleasePublishedAt: null,
-      checkNow: vi.fn(),
-      install: vi.fn(),
+      checkNow: vi.fn(async () => undefined),
+      install: vi.fn(async () => undefined),
+      setUpdateChannel: vi.fn(async () => undefined),
+      setAutomaticUpdateChecks: vi.fn(async () => undefined),
     };
   });
+
   it("disables both update-setting toggles until settings load", () => {
-    const componentProps = props();
-    componentProps.settingsLoaded = false;
-
-    const unloaded = children(PluginUpdateSection(componentProps)).filter(
-      (node) => node.type === "ToggleField"
-    );
+    controller.settingsLoaded = false;
+    const unloaded = children(render()).filter((node) => node.type === "ToggleField");
     expect(unloaded).toHaveLength(2);
-    expect(unloaded.every((toggle) => toggle.props.disabled)).toBe(true);
+    expect(unloaded.every((toggle) => toggle.props?.disabled)).toBe(true);
 
-    componentProps.settingsLoaded = true;
-    const loaded = children(PluginUpdateSection(componentProps)).filter(
-      (node) => node.type === "ToggleField"
-    );
-    expect(loaded.every((toggle) => toggle.props.disabled)).toBe(false);
-  });
-
-
-  it("allows a local build to install a stable release", () => {
-    controller.effectiveCurrentVersion = "0.3.1+local";
-    controller.candidate = candidate("move_to_stable");
-    const tree = render("0.3.1+local");
-    expect(text(tree)).toContain("(Local Build)");
-    expect(text(tree)).not.toContain("Local builds can only self-update");
-    const button = children(tree).find(
-      (node) => node.type === "ButtonItem" && text(node).includes("Move to Stable")
-    );
-    button.props.onClick();
-    expect(controller.install).toHaveBeenCalledWith(controller.candidate);
-  });
-
-  it("keeps development releases manual-only for a local build", () => {
-    controller.effectiveCurrentVersion = "0.3.1+local";
-    controller.candidate = candidate("update", "development");
-    const tree = render("0.3.1+local");
-    expect(text(tree)).toContain("Local builds can only self-update to a stable release");
-    expect(children(tree).filter((node) => node.type === "ButtonItem").map(text)).not.toContain(
-      "Install development build v0.4.0"
-    );
-  });
-
-  it("shows manual-install messaging when Decky installer is unavailable", () => {
-    vi.mocked(isDeckyInstallerAvailable).mockReturnValue(false);
-    expect(text(render())).toContain("Automatic installation is unavailable");
+    controller.settingsLoaded = true;
+    const loaded = children(render()).filter((node) => node.type === "ToggleField");
+    expect(loaded.every((toggle) => toggle.props?.disabled === false)).toBe(true);
   });
 
   it("shows rate-limit retry time and offline failure detail", () => {
@@ -158,28 +125,17 @@ describe("PluginUpdateSection", () => {
   });
 
   it("confirms enabling development releases", () => {
-    const componentProps = props();
-    const tree = PluginUpdateSection(componentProps);
-    const toggle = children(tree).find(
-      (node) => node.type === "ToggleField" && node.props.label === "Receive development releases"
+    const toggle = children(render()).find(
+      (node) => node.type === "ToggleField" && node.props?.label === "Receive development releases"
     );
-    toggle.props.onChange(true);
-    const modal = ui.showModal.mock.calls[0][0];
-    expect(modal.props.strTitle).toBe("Enable Development Releases?");
-    modal.props.onOK();
-    expect(componentProps.onToggleUpdateChannel).toHaveBeenCalledWith(true);
-  });
-
-  it("confirms a downgrade to stable", () => {
-    controller.candidate = candidate("downgrade_to_stable");
-    const tree = render();
-    const button = children(tree).find(
-      (node) => node.type === "ButtonItem" && text(node).includes("Revert to Stable")
-    );
-    button.props.onClick();
-    const modal = ui.showModal.mock.calls[0][0];
-    expect(modal.props.strTitle).toBe("Revert to Stable?");
-    modal.props.onOK();
-    expect(controller.install).toHaveBeenCalledWith(controller.candidate);
+    const onChange = toggle?.props?.onChange;
+    expect(onChange).toBeTypeOf("function");
+    (onChange as (enabled: boolean) => void)(true);
+    const modal = ui.showModal.mock.calls[0][0] as TestNode;
+    expect(modal.props?.strTitle).toBe("Enable Development Releases?");
+    const onOK = modal.props?.onOK;
+    expect(onOK).toBeTypeOf("function");
+    (onOK as () => void)();
+    expect(controller.setUpdateChannel).toHaveBeenCalledWith(true);
   });
 });

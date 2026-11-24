@@ -134,11 +134,11 @@ draws no row of its own.
 1. Use a Steam game with recorded achievement progress. With Decky UI Restored
    disabled and Metadata's toggle off, confirm the Play Time stat row has no
    achievement row.
-2. Open Metadata's **Mini achievements** section with D-pad/A. Confirm the new
-   preference starts off, the section starts closed, and conflict notices are readable.
-   Enable it on the already-mounted game page. Confirm the row appears beside
-   Play Time. Inspect the game page DOM: the row has Steam's `MiniAchievements`
-   class, and no node with the class `decky-metadata-mini-achievements` exists.
+2. Open **Settings > Mini achievements**. Confirm the new preference starts
+   off and conflict notices are readable. Enable it, then press B to return to
+   the game page, which Steam kept mounted. Confirm the row appears beside Play Time. Inspect the game page DOM:
+   the row has Steam's `MiniAchievements` class, and no node with the class
+   `decky-metadata-mini-achievements` exists.
    Confirm its `unlocked / total` equals Steam's own achievements page for the
    same game.
 3. Select the row with touch and with the mouse or trackpad. Confirm it opens
@@ -154,8 +154,8 @@ draws no row of its own.
    this by putting achievement data for the shortcut into Steam's
    `["achievements", appid, …]` query cache through CDP, then remove it.
 5. Disable and re-enable on a mounted page. Check that disabling removes the
-   row at once with no reload, that enabling does not duplicate it, and that a
-   QAM close/reopen does not change the saved preference. Open a game whose
+   row at once with no reload, that enabling does not duplicate it, and that
+   the saved preference remains after reloading Settings. Open a game whose
    stats row is full, for example **Install** with **Space Required** or an
    update status, and confirm Steam keeps the wrapped second line hidden.
    Enable Decky UI Restored in Loader and verify Metadata hides the row, returns
@@ -183,14 +183,15 @@ Decky UI Restored.
 Use a game with cached HLTB times. Back up the installed plugin and settings
 before testing, and restore them after the checks.
 
-1. Temporarily turn off **Detail view trailers** for a stable, real header image.
-   Opening QAM can replace the video element, so freezing one video does not
-   keep the same frame across settings changes.
+1. In **Settings > Game trailers**, temporarily turn off **Detail view trailers**
+   for a stable, real header image. Opening Settings can replace the video
+   element, so freezing one video does not keep the same frame across changes.
 2. Start with the native Play bar unblurred (**Transparent** in Clean Gameview).
    In **"Clean" Default**, select **None** and compare the rendered tint of both
-   bars. Then test **Blur** and **Match Play bar** through QAM, capturing each
-   state with `cdp.py screenshot`. Check the HLTB surface and its underlay against
-   the native Play section and its root: background and opacity must match.
+   bars. Then test **Blur** and **Match Play bar** in **Settings > HLTB times**,
+   capturing each state with `cdp.py screenshot`. Check the HLTB surface and
+   its underlay against the native Play section and its root: background and
+   opacity must match.
    HLTB never writes the native section's inline styles, and its bounds stay
    the same except in one case: in **"Clean" Default** with a blurred Play bar
    (Clean Gameview **Blur**), a blur selection other than **None**, and
@@ -308,7 +309,7 @@ that its object fit and position do not change.
 
 This check changes real plugin settings and may change real shortcut status.
 Get explicit approval for the current Deck and disposable fixtures before any
-deploy, package push, QAM selection, metadata removal, or shortcut creation.
+deploy, package push, Settings changes, metadata removal, or shortcut creation.
 Capture the native baseline first and restore every fixture and the original
 global setting at the end. Use a full package because this feature changes both
 the frontend and backend:
@@ -325,26 +326,27 @@ Prepare five disposable fixtures: a Steam-ID record with a known Valve
 category, an IGN-sourced record with a Steam ID if available, a saved manual or
 provider record without a Steam ID, a native shortcut with no metadata record,
 and one ordinary Steam game. Record their original packed category and visible
-Home/grid/Game Info state. Then, using the real QAM and editor controls:
+Home/grid/Game Info state. Then, using the real Settings page and editor controls:
 
-1. Set global **Verified**. Confirm matched, unmatched, and no-record shortcuts
-   show Verified; confirm the ordinary Steam game and its compatibility filter
-   membership do not change.
+1. In **Settings > Compatibility status**, set global **Verified**. Confirm
+   matched, unmatched, and no-record shortcuts show Verified; confirm the
+   ordinary Steam game and its compatibility filter membership do not change.
 2. Set a matched fixture to **Follow Valve** and confirm it shows its Valve
    category while another shortcut stays Verified. Test unavailable data and
    Valve Unknown; both must use native no-badge/original behavior as applicable.
 3. Set one fixed per-game status and confirm changing the global setting only
    changes inheriting shortcuts. Return to Automatic and confirm an unmatched
    inheriting shortcut returns to its captured native baseline.
-4. Keep a matched shortcut on **Game Info** with Automatic/Playable, set global
-   **Verified**, and close QAM. The active view must remain Playable with rich
-   content and links while other eligible shortcuts and their native filter
-   membership update. Change tabs and return to confirm Verified. Repeat back
-   to Automatic. Closing QAM or a context-menu overlay must not release the
-   held value; opening **Change Metadata...** must release it, and a later editor
-   Save must take priority. Repeat changes before exit and verify only the
-   latest result applies. Navigate from game A to game B, replace/delete only a
-   disposable pending fixture, and confirm no state leaks or recreation occur.
+4. Keep a matched shortcut on **Game Info** with Automatic/Playable. Open
+   **Settings > Compatibility status** from the QAM gear (this leaves Game
+   Info), set global **Verified**, then press B. Game Info must show Verified
+   with rich content and links, and other eligible shortcuts and their native
+   filter membership must update. Repeat back to Automatic. Repeat several
+   changes in one Settings visit and verify only the latest result applies.
+   Navigate from game A to game B, replace/delete only a disposable pending
+   fixture, and confirm no state leaks or recreation occur. The held-update
+   rules (S33, S34, S46) need a change that reaches an active Game Info without
+   leaving it; test them with a plugin reload that loads a new saved default.
 5. Verify a shortcut that appears after bootstrap inherits the current default
    once its real native overview exists. Clear only disposable metadata and
    confirm its Activity cleanup and inherited status.
@@ -354,21 +356,22 @@ Home/grid/Game Info state. Then, using the real QAM and editor controls:
 7. Reload through committed tooling while Game Info has a held update. Confirm
    it remains responsive, keeps links, and applies the current policy only
    after exit. Capture a controlled real unload that clears held work and
-   restores baselines. Drive QAM and editor order with `scripts/deck/cdp.py input`,
-   `scripts/deck/js/gpfocus_dump.js`, and `scripts/deck/js/focus_order.js`.
-8. With a numeric global default active, use **Apply default to**. Verify all
-   four choices in order and the complete selected label in narrow QAM. Check
-   Steam-matched, saved-no-ID, saved-metadata, and all-shortcuts membership in
-   both directions through Steam's compatibility filter or collection, not
-   only packed fields. An IGN record with a valid ID belongs to the Steam
-   scope. A manual record without an ID belongs to the no-ID scope. A no-record
-   shortcut belongs only to all shortcuts. Change a disposable record's ID,
-   remove its record, and confirm it moves to the correct fallback. Change the
-   scope while Game Info is active and confirm that view holds its value until
-   exit. Use controller input to select and cancel both dropdowns; focus must
-   return to the dropdown that opened the popup. Set the default to Automatic
-   and confirm the selector is unavailable but keeps its value through reload.
-   Restore the captured scope and fixtures.
+   restores baselines. Drive Settings and editor order with
+   `scripts/deck/cdp.py input`, `scripts/deck/js/gpfocus_dump.js`, and
+   `scripts/deck/js/focus_order.js`.
+8. With a numeric global default active, use **Apply default to** in
+   **Settings > Compatibility status**. Verify all four choices in order and
+   the complete selected label. Check Steam-matched, saved-no-ID,
+   saved-metadata, and all-shortcuts membership in both directions through
+   Steam's compatibility filter or collection, not only packed fields. An IGN
+   record with a valid ID belongs to the Steam scope. A manual record without
+   an ID belongs to the no-ID scope. A no-record shortcut belongs only to all
+   shortcuts. Change a disposable record's ID, remove its record, and confirm
+   it moves to the correct fallback. Change the scope while Game Info is active
+   and confirm that view holds its value until it exits. Use the controller to
+   select and cancel the selector. Set the default to Automatic and confirm
+   the selector is unavailable but keeps its value through reload. Restore the
+   captured scope and fixtures.
 
 Store screenshots and diagnostics below `$TMPDIR/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with

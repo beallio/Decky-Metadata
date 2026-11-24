@@ -1,5 +1,5 @@
-import { DialogBody, DialogButton, DialogHeader, findModuleExport, Focusable, Marquee } from "@decky/ui";
-import { createContext, useContext, useEffect, useMemo, useState, type ComponentType, type ReactNode } from "react";
+import { DialogBody, DialogButton, DialogHeader, Focusable, Marquee } from "@decky/ui";
+import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { getEditorHeaderSettings } from "./backend";
 import { resolveEditorIcon } from "./editorHeaderIcon";
 import type { EditorPageId } from "./editorPages";
@@ -7,6 +7,7 @@ import { translateBackendError, useT } from "./i18n";
 import * as log from "./log";
 import { colors } from "./tokens";
 import type { EditorHeaderSettings } from "./types";
+import { resolveNativePagedSettings, type NativePagedSettingsPageEntry } from "./nativePagedSettings";
 
 export interface EditorLayoutPage {
   id: EditorPageId;
@@ -88,39 +89,6 @@ const css = `
 }
 
 `;
-
-type NativePagedSettingsPage = {
-  identifier: EditorPageId;
-  title: ReactNode;
-  icon: ReactNode;
-  visible: boolean;
-  hideTitle: boolean;
-  content: ReactNode;
-};
-
-type NativePagedSettingsPageEntry = NativePagedSettingsPage | "separator";
-
-type NativePagedSettingsProps = {
-  pages: NativePagedSettingsPageEntry[];
-  page: EditorPageId;
-  onPageRequested(identifier: string): void;
-  title: ReactNode;
-  showTitle: boolean;
-  bottomControls: ReactNode;
-};
-
-const resolveNativePagedSettings = (): ComponentType<NativePagedSettingsProps> | null => {
-  try {
-    const component = findModuleExport((moduleExport: unknown) => {
-      if (typeof moduleExport !== "function") return false;
-      const source = String(moduleExport);
-      return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
-    });
-    return typeof component === "function" ? component as ComponentType<NativePagedSettingsProps> : null;
-  } catch {
-    return null;
-  }
-};
 
 const NativePagedSettings = resolveNativePagedSettings();
 const PageContentContext = createContext<EditorLayoutPage[]>([]);

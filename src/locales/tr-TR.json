@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Ayarları aç" },
   "common": {
     "hours_one": "{{value}} saat",
     "hours_other": "{{value}} saat",

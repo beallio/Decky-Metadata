@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Άνοιγμα ρυθμίσεων" },
   "common": {
     "hours_one": "{{value}} ώρα",
     "hours_other": "{{value}} ώρες",

@@ -81,151 +81,86 @@ function IconBase(props) {
 // THIS FILE IS AUTO GENERATED
 function FaTags (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M345 39.1L472.8 168.4c52.4 53 52.4 138.2 0 191.2L360.8 472.9c-9.3 9.4-24.5 9.5-33.9 .2s-9.5-24.5-.2-33.9L438.6 325.9c33.9-34.3 33.9-89.4 0-123.7L310.9 72.9c-9.3-9.4-9.2-24.6 .2-33.9s24.6-9.2 33.9 .2zM0 229.5L0 80C0 53.5 21.5 32 48 32l149.5 0c17 0 33.3 6.7 45.3 18.7l168 168c25 25 25 65.5 0 90.5L277.3 442.7c-25 25-65.5 25-90.5 0l-168-168C6.7 262.7 0 246.5 0 229.5zM144 144a32 32 0 1 0 -64 0 32 32 0 1 0 64 0z"},"child":[]}]})(props);
+}function FaGear (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M495.9 166.6c3.2 8.7 .5 18.4-6.4 24.6l-43.3 39.4c1.1 8.3 1.7 16.8 1.7 25.4s-.6 17.1-1.7 25.4l43.3 39.4c6.9 6.2 9.6 15.9 6.4 24.6c-4.4 11.9-9.7 23.3-15.8 34.3l-4.7 8.1c-6.6 11-14 21.4-22.1 31.2c-5.9 7.2-15.7 9.6-24.5 6.8l-55.7-17.7c-13.4 10.3-28.2 18.9-44 25.4l-12.5 57.1c-2 9.1-9 16.3-18.2 17.8c-13.8 2.3-28 3.5-42.5 3.5s-28.7-1.2-42.5-3.5c-9.2-1.5-16.2-8.7-18.2-17.8l-12.5-57.1c-15.8-6.5-30.6-15.1-44-25.4L83.1 425.9c-8.8 2.8-18.6 .3-24.5-6.8c-8.1-9.8-15.5-20.2-22.1-31.2l-4.7-8.1c-6.1-11-11.4-22.4-15.8-34.3c-3.2-8.7-.5-18.4 6.4-24.6l43.3-39.4C64.6 273.1 64 264.6 64 256s.6-17.1 1.7-25.4L22.4 191.2c-6.9-6.2-9.6-15.9-6.4-24.6c4.4-11.9 9.7-23.3 15.8-34.3l4.7-8.1c6.6-11 14-21.4 22.1-31.2c5.9-7.2 15.7-9.6 24.5-6.8l55.7 17.7c13.4-10.3 28.2-18.9 44-25.4l12.5-57.1c2-9.1 9-16.3 18.2-17.8C227.3 1.2 241.5 0 256 0s28.7 1.2 42.5 3.5c9.2 1.5 16.2 8.7 18.2 17.8l12.5 57.1c15.8 6.5 30.6 15.1 44 25.4l55.7-17.7c8.8-2.8 18.6-.3 24.5 6.8c8.1 9.8 15.5 20.2 22.1 31.2l4.7 8.1c6.1 11 11.4 22.4 15.8 34.3zM256 336a80 80 0 1 0 0-160 80 80 0 1 0 0 160z"},"child":[]}]})(props);
 }
 
-/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
-const getAllMetadata = callable("get_all_metadata");
-const getNativeCssClasses = callable("get_native_css_classes");
-const getMetadata = callable("get_metadata");
-const saveMetadata = callable("save_metadata");
-const savePreviewedMetadata = callable("save_previewed_metadata");
-/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
-const saveMetadataIfUnchanged = callable("save_metadata");
-const removeMetadata = callable("remove_metadata");
-const clearMetadataCache = callable("clear_metadata_cache");
-const getShortcutNameManagement = callable("get_shortcut_name_management");
-const saveShortcutNameState = callable("save_shortcut_name_state");
-const clearShortcutNameState = callable("clear_shortcut_name_state");
-const refreshDelistedIndex = callable("refresh_delisted_index");
-const getDelistedIndexStatus = callable("get_delisted_index_status");
-const frontendLog = callable("frontend_log");
-const searchMetadata = callable("search_metadata");
-const searchSteamMatches = callable("search_steam_matches");
-const fetchMetadata = callable("fetch_metadata");
-const applyFetchedMetadata = callable("apply_fetched_metadata");
-const previewFetchedMetadata = callable("preview_fetched_metadata");
-const getCommunityFallbackPage = callable("get_community_fallback_page");
-const autoFetchMetadata = callable("auto_fetch_metadata");
-const enrichSteamApp = callable("enrich_steam_app");
-const previewSteamMetadata = callable("preview_steam_metadata");
-const startScanMissing = callable("start_scan_missing");
-const getMissingMetadataCount = callable("get_missing_metadata_count");
-const getScanProgress = callable("get_scan_progress");
-const startRefreshSteamActivities = callable("start_refresh_steam_activities");
-const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
-const getActivityRefreshProgress = callable("get_activity_refresh_progress");
-const getLocalShortcuts = callable("get_local_shortcuts");
-const getPluginVersion = callable("get_plugin_version");
-const getSystemVersions = callable("get_system_versions");
-const getPluginLogs = callable("get_plugin_logs");
-const getDebugLogging = callable("get_debug_logging");
-const setDebugLogging = callable("set_debug_logging");
-const getCompatibilityDefault = callable("get_compatibility_default");
-const setCompatibilityDefault = callable("set_compatibility_default");
-const getCompatibilityDefaultScope = callable("get_compatibility_default_scope");
-const setCompatibilityDefaultScope = callable("set_compatibility_default_scope");
-const checkForPluginUpdate = callable("check_for_plugin_update");
-const revalidatePluginUpdate = callable("revalidate_plugin_update");
-const recordUpdateInstallRequested = callable("record_update_install_requested");
-const confirmUpdateInstallHandoff = callable("confirm_update_install_handoff");
-const clearPendingUpdateInstall = callable("clear_pending_update_install");
-const getUpdateCheckContext = callable("get_update_check_context");
-const getUpdateSettings = callable("get_update_settings");
-const setUpdateChannel = callable("set_update_channel");
-const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
-const getTrailerSettings = callable("get_trailer_settings");
-const setTrailerSettings = callable("set_trailer_settings");
-const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
-const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
-const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
-const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
-const getEditorHeaderSettings = callable("get_editor_header_settings");
-const setEditorHeaderSettings = callable("set_editor_header_settings");
-const getProviderCache = callable("get_provider_cache");
-const putProtonDbCache = callable("put_protondb_cache");
-const getHltbSettings = callable("get_hltb_settings");
-const setHltbSettings = callable("set_hltb_settings");
-const getHltbStats = callable("get_hltb_stats");
-const checkHltbGameId = callable("check_hltb_game_id");
-const searchHltbGames = callable("search_hltb_games");
-const clearHltbCache = callable("clear_hltb_cache");
-const findIgnTrailer = callable("find_ign_trailer");
-const evalInBigPicture = callable("eval_in_big_picture");
+// Semantic tokens follow Valve's SteamUI palette (steamui-watch VALVE_PALETTE).
+const colors = {
+    accent: "#1a9fff",
+    success: "#5ba32b",
+    warning: "#ffc53d",
+    error: "#ec5d5e",
+    textSecondary: "#b8bcbf",
+    surfaceKnockout: "#0e141b",
+};
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    md: 12};
+// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
+const fontSize = {
+    sm: 13,
+    lg: 16};
+const fontWeight = {
+    medium: 500};
+// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
+const fontFamily = '"Motiva Sans", Arial, sans-serif';
+const statusColor = (kind) => ({
+    active: colors.accent,
+    success: colors.success,
+    warning: colors.warning,
+    error: colors.error,
+    idle: colors.textSecondary,
+}[kind]);
 
-var backend$p = /*#__PURE__*/Object.freeze({
-    __proto__: null,
-    applyFetchedMetadata: applyFetchedMetadata,
-    autoFetchMetadata: autoFetchMetadata,
-    checkForPluginUpdate: checkForPluginUpdate,
-    checkHltbGameId: checkHltbGameId,
-    clearHltbCache: clearHltbCache,
-    clearMetadataCache: clearMetadataCache,
-    clearPendingUpdateInstall: clearPendingUpdateInstall,
-    clearShortcutNameState: clearShortcutNameState,
-    confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
-    enrichSteamApp: enrichSteamApp,
-    evalInBigPicture: evalInBigPicture,
-    fetchMetadata: fetchMetadata,
-    findIgnTrailer: findIgnTrailer,
-    frontendLog: frontendLog,
-    getActivityRefreshProgress: getActivityRefreshProgress,
-    getAllMetadata: getAllMetadata,
-    getCommunityFallbackPage: getCommunityFallbackPage,
-    getCompatibilityDefault: getCompatibilityDefault,
-    getCompatibilityDefaultScope: getCompatibilityDefaultScope,
-    getDebugLogging: getDebugLogging,
-    getDelistedIndexStatus: getDelistedIndexStatus,
-    getEditorHeaderSettings: getEditorHeaderSettings,
-    getHltbSettings: getHltbSettings,
-    getHltbStats: getHltbStats,
-    getLocalShortcuts: getLocalShortcuts,
-    getMetadata: getMetadata,
-    getMiniAchievementsEnabled: getMiniAchievementsEnabled,
-    getMissingMetadataCount: getMissingMetadataCount,
-    getNativeCssClasses: getNativeCssClasses,
-    getPluginLogs: getPluginLogs,
-    getPluginVersion: getPluginVersion,
-    getProtonDbBadgeSettings: getProtonDbBadgeSettings,
-    getProviderCache: getProviderCache,
-    getScanProgress: getScanProgress,
-    getShortcutNameManagement: getShortcutNameManagement,
-    getSystemVersions: getSystemVersions,
-    getTrailerSettings: getTrailerSettings,
-    getUpdateCheckContext: getUpdateCheckContext,
-    getUpdateSettings: getUpdateSettings,
-    previewFetchedMetadata: previewFetchedMetadata,
-    previewSteamMetadata: previewSteamMetadata,
-    putProtonDbCache: putProtonDbCache,
-    recordUpdateInstallRequested: recordUpdateInstallRequested,
-    refreshDelistedIndex: refreshDelistedIndex,
-    refreshSteamActivityForApp: refreshSteamActivityForApp,
-    removeMetadata: removeMetadata,
-    revalidatePluginUpdate: revalidatePluginUpdate,
-    saveMetadata: saveMetadata,
-    saveMetadataIfUnchanged: saveMetadataIfUnchanged,
-    savePreviewedMetadata: savePreviewedMetadata,
-    saveShortcutNameState: saveShortcutNameState,
-    searchHltbGames: searchHltbGames,
-    searchMetadata: searchMetadata,
-    searchSteamMatches: searchSteamMatches,
-    setAutomaticUpdateChecks: setAutomaticUpdateChecks,
-    setCompatibilityDefault: setCompatibilityDefault,
-    setCompatibilityDefaultScope: setCompatibilityDefaultScope,
-    setDebugLogging: setDebugLogging,
-    setEditorHeaderSettings: setEditorHeaderSettings,
-    setHltbSettings: setHltbSettings,
-    setMiniAchievementsEnabled: setMiniAchievementsEnabled,
-    setProtonDbBadgeSettings: setProtonDbBadgeSettings,
-    setTrailerSettings: setTrailerSettings,
-    setUpdateChannel: setUpdateChannel,
-    startRefreshSteamActivities: startRefreshSteamActivities,
-    startScanMissing: startScanMissing
+const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: !props.disabled, ...props }));
+const qamPanelStyle = {
+    width: "100%",
+    fontFamily,
+};
+const fieldStyle = {
+    width: "100%",
+    maxWidth: "100%",
+    minWidth: 0,
+    boxSizing: "border-box",
+};
+const compactTextStyle = {
+    color: colors.textSecondary,
+    fontSize: fontSize.sm,
+    lineHeight: 1.35,
+};
+const inlineStatusBaseStyle = {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    ...compactTextStyle,
+};
+const inlineStatusStyle = (kind) => ({
+    ...inlineStatusBaseStyle,
+    color: statusColor(kind),
 });
-
-// THIS FILE IS AUTO GENERATED
-function SiSteamdeck (props) {
-  return GenIcon({"attr":{"role":"img","viewBox":"0 0 24 24"},"child":[{"tag":"path","attr":{"d":"M8.999 0v4.309c4.242 0 7.694 3.45 7.694 7.691s-3.452 7.691-7.694 7.691V24c6.617 0 12-5.383 12-12s-5.383-12-12-12Zm0 6.011c-3.313 0-6 2.687-5.998 6a5.999 5.999 0 1 0 5.998-6z"},"child":[]}]})(props);
-}
+const busySpinnerStyle = {
+    width: "18px",
+    height: "18px",
+    color: colors.accent,
+};
+const buttonLabelStyle = {
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "10px",
+    minWidth: 136,
+};
+const sectionHeadingStyle = {
+    width: "100%",
+    paddingTop: space.md,
+    color: "#dcdedf",
+    fontSize: fontSize.lg,
+    fontWeight: fontWeight.medium,
+    lineHeight: "20px",
+};
+const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
+const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
 
 const isString$1 = obj => typeof obj === 'string';
 const defer = () => {
@@ -2934,6 +2869,9 @@ const useTranslation = (ns, props = {}) => {
   return ret;
 };
 
+var settings$o = {
+	open: "فتح الإعدادات"
+};
 var common$o = {
 	hours_zero: "{{value}} ساعة",
 	hours_one: "{{value}} ساعة",
@@ -2944,7 +2882,7 @@ var common$o = {
 	hoursShort: "{{value}} س",
 	unknown: "غير معروف"
 };
-var backend$o = {
+var backend$p = {
 	progress: {
 		matching_metadata: "مطابقة البيانات الوصفية لـ {{title}}",
 		refreshing_activity: "تحديث نشاط Steam لـ {{title}}",
@@ -3550,8 +3488,9 @@ var controllerLayouts$o = {
 	disabledBody: "تُستخدم واجهة تخطيطات وحدة التحكم القياسية في Steam حتى إعادة تحميل Decky Metadata."
 };
 var arAA = {
+	settings: settings$o,
 	common: common$o,
-	backend: backend$o,
+	backend: backend$p,
 	updater: updater$o,
 	hltb: hltb$o,
 	miniAchievements: miniAchievements$o,
@@ -3572,13 +3511,16 @@ var arAA = {
 	controllerLayouts: controllerLayouts$o
 };
 
+var settings$n = {
+	open: "Отваряне на настройките"
+};
 var common$n = {
 	hours_one: "{{value}} час",
 	hours_other: "{{value}} часа",
 	hoursShort: "{{value}} ч",
 	unknown: "Неизвестно"
 };
-var backend$n = {
+var backend$o = {
 	progress: {
 		matching_metadata: "Съпоставяне на метаданни за {{title}}",
 		refreshing_activity: "Обновяване на активността в Steam за {{title}}",
@@ -4184,8 +4126,9 @@ var controllerLayouts$n = {
 	disabledBody: "Използва се стандартният интерфейс за оформления на контролера на Steam, докато Decky Metadata не бъде презаредена."
 };
 var bgBG = {
+	settings: settings$n,
 	common: common$n,
-	backend: backend$n,
+	backend: backend$o,
 	updater: updater$n,
 	hltb: hltb$n,
 	miniAchievements: miniAchievements$n,
@@ -4206,6 +4149,9 @@ var bgBG = {
 	controllerLayouts: controllerLayouts$n
 };
 
+var settings$m = {
+	open: "Otevřít nastavení"
+};
 var common$m = {
 	hours_one: "{{value}} hodina",
 	hours_few: "{{value}} hodiny",
@@ -4214,7 +4160,7 @@ var common$m = {
 	hoursShort: "{{value}} h",
 	unknown: "Neznámé"
 };
-var backend$m = {
+var backend$n = {
 	progress: {
 		matching_metadata: "Párování metadat pro {{title}}",
 		refreshing_activity: "Obnovování aktivity Steam pro {{title}}",
@@ -4820,8 +4766,9 @@ var controllerLayouts$m = {
 	disabledBody: "Používá se standardní rozhraní rozvržení ovladače Steam, dokud nebude Decky Metadata znovu načten."
 };
 var csCZ = {
+	settings: settings$m,
 	common: common$m,
-	backend: backend$m,
+	backend: backend$n,
 	updater: updater$m,
 	hltb: hltb$m,
 	miniAchievements: miniAchievements$m,
@@ -4842,13 +4789,16 @@ var csCZ = {
 	controllerLayouts: controllerLayouts$m
 };
 
+var settings$l = {
+	open: "Einstellungen öffnen"
+};
 var common$l = {
 	hours_one: "{{value}} Stunde",
 	hours_other: "{{value}} Stunden",
 	hoursShort: "{{value}} Std.",
 	unknown: "Unbekannt"
 };
-var backend$l = {
+var backend$m = {
 	progress: {
 		matching_metadata: "Metadaten für {{title}} werden abgeglichen",
 		refreshing_activity: "Steam-Aktivität für {{title}} wird aktualisiert",
@@ -5454,8 +5404,9 @@ var controllerLayouts$l = {
 	disabledBody: "Bis Decky Metadata neu geladen wird, wird Steams Standardoberfläche für Controller-Layouts verwendet."
 };
 var deDE = {
+	settings: settings$l,
 	common: common$l,
-	backend: backend$l,
+	backend: backend$m,
 	updater: updater$l,
 	hltb: hltb$l,
 	miniAchievements: miniAchievements$l,
@@ -5476,13 +5427,16 @@ var deDE = {
 	controllerLayouts: controllerLayouts$l
 };
 
+var settings$k = {
+	open: "Άνοιγμα ρυθμίσεων"
+};
 var common$k = {
 	hours_one: "{{value}} ώρα",
 	hours_other: "{{value}} ώρες",
 	hoursShort: "{{value}} ώ",
 	unknown: "Άγνωστο"
 };
-var backend$k = {
+var backend$l = {
 	progress: {
 		matching_metadata: "Αντιστοίχιση μεταδεδομένων για {{title}}",
 		refreshing_activity: "Ανανέωση της δραστηριότητας Steam για {{title}}",
@@ -6088,8 +6042,9 @@ var controllerLayouts$k = {
 	disabledBody: "Χρησιμοποιείται η τυπική διεπαφή διατάξεων χειριστηρίου του Steam μέχρι να επαναφορτωθεί το Decky Metadata."
 };
 var elGR = {
+	settings: settings$k,
 	common: common$k,
-	backend: backend$k,
+	backend: backend$l,
 	updater: updater$k,
 	hltb: hltb$k,
 	miniAchievements: miniAchievements$k,
@@ -6110,13 +6065,16 @@ var elGR = {
 	controllerLayouts: controllerLayouts$k
 };
 
+var settings$j = {
+	open: "Open settings"
+};
 var common$j = {
 	hours_one: "{{value}} hour",
 	hours_other: "{{value}} hours",
 	hoursShort: "{{value}} h",
 	unknown: "Unknown"
 };
-var backend$j = {
+var backend$k = {
 	progress: {
 		matching_metadata: "Matching metadata for {{title}}",
 		refreshing_activity: "Refreshing Steam Activity for {{title}}",
@@ -6722,8 +6680,9 @@ var controllerLayouts$j = {
 	disabledBody: "Using Steam's standard controller layout UI until Decky Metadata is reloaded."
 };
 var enUS = {
+	settings: settings$j,
 	common: common$j,
-	backend: backend$j,
+	backend: backend$k,
 	updater: updater$j,
 	hltb: hltb$j,
 	miniAchievements: miniAchievements$j,
@@ -6744,6 +6703,9 @@ var enUS = {
 	controllerLayouts: controllerLayouts$j
 };
 
+var settings$i = {
+	open: "Abrir ajustes"
+};
 var common$i = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} horas",
@@ -6751,7 +6713,7 @@ var common$i = {
 	hoursShort: "{{value}} h",
 	unknown: "Desconocido"
 };
-var backend$i = {
+var backend$j = {
 	progress: {
 		matching_metadata: "Buscando metadatos de {{title}}",
 		refreshing_activity: "Actualizando la actividad de Steam de {{title}}",
@@ -7357,8 +7319,9 @@ var controllerLayouts$i = {
 	disabledBody: "Se usará la interfaz estándar de disposición del mando de Steam hasta que se recargue Decky Metadata."
 };
 var esES = {
+	settings: settings$i,
 	common: common$i,
-	backend: backend$i,
+	backend: backend$j,
 	updater: updater$i,
 	hltb: hltb$i,
 	miniAchievements: miniAchievements$i,
@@ -7379,13 +7342,16 @@ var esES = {
 	controllerLayouts: controllerLayouts$i
 };
 
+var settings$h = {
+	open: "Avaa asetukset"
+};
 var common$h = {
 	hours_one: "{{value}} tunti",
 	hours_other: "{{value}} tuntia",
 	hoursShort: "{{value}} h",
 	unknown: "Tuntematon"
 };
-var backend$h = {
+var backend$i = {
 	progress: {
 		matching_metadata: "Sovitetaan metatietoja kohteelle {{title}}",
 		refreshing_activity: "Päivitetään Steam-aktiviteettia kohteelle {{title}}",
@@ -7991,8 +7957,9 @@ var controllerLayouts$h = {
 	disabledBody: "Käytetään Steamin tavallista ohjainasettelujen käyttöliittymää, kunnes Decky Metadata ladataan uudelleen."
 };
 var fiFI = {
+	settings: settings$h,
 	common: common$h,
-	backend: backend$h,
+	backend: backend$i,
 	updater: updater$h,
 	hltb: hltb$h,
 	miniAchievements: miniAchievements$h,
@@ -8013,6 +7980,9 @@ var fiFI = {
 	controllerLayouts: controllerLayouts$h
 };
 
+var settings$g = {
+	open: "Ouvrir les paramètres"
+};
 var common$g = {
 	hours_one: "{{value}} heure",
 	hours_many: "{{value}} heures",
@@ -8020,7 +7990,7 @@ var common$g = {
 	hoursShort: "{{value}} h",
 	unknown: "Inconnu"
 };
-var backend$g = {
+var backend$h = {
 	progress: {
 		matching_metadata: "Association des métadonnées pour {{title}}",
 		refreshing_activity: "Actualisation de l'activité Steam pour {{title}}",
@@ -8626,8 +8596,9 @@ var controllerLayouts$g = {
 	disabledBody: "Utilisation de l'interface standard des configurations de manette de Steam jusqu'au rechargement de Decky Metadata."
 };
 var frFR = {
+	settings: settings$g,
 	common: common$g,
-	backend: backend$g,
+	backend: backend$h,
 	updater: updater$g,
 	hltb: hltb$g,
 	miniAchievements: miniAchievements$g,
@@ -8648,6 +8619,9 @@ var frFR = {
 	controllerLayouts: controllerLayouts$g
 };
 
+var settings$f = {
+	open: "Apri impostazioni"
+};
 var common$f = {
 	hours_one: "{{value}} ora",
 	hours_many: "{{value}} ore",
@@ -8655,7 +8629,7 @@ var common$f = {
 	hoursShort: "{{value}} h",
 	unknown: "Sconosciuto"
 };
-var backend$f = {
+var backend$g = {
 	progress: {
 		matching_metadata: "Ricerca dei metadati per {{title}}",
 		refreshing_activity: "Aggiornamento dell'attività Steam per {{title}}",
@@ -9261,8 +9235,9 @@ var controllerLayouts$f = {
 	disabledBody: "Viene usata l'interfaccia standard dei layout del controller di Steam fino al ricaricamento di Decky Metadata."
 };
 var itIT = {
+	settings: settings$f,
 	common: common$f,
-	backend: backend$f,
+	backend: backend$g,
 	updater: updater$f,
 	hltb: hltb$f,
 	miniAchievements: miniAchievements$f,
@@ -9283,12 +9258,15 @@ var itIT = {
 	controllerLayouts: controllerLayouts$f
 };
 
+var settings$e = {
+	open: "設定を開く"
+};
 var common$e = {
 	hours_other: "{{value}}時間",
 	hoursShort: "{{value}}時間",
 	unknown: "不明"
 };
-var backend$e = {
+var backend$f = {
 	progress: {
 		matching_metadata: "{{title}} のメタデータを照合中",
 		refreshing_activity: "{{title}} の Steam アクティビティを更新中",
@@ -9894,8 +9872,9 @@ var controllerLayouts$e = {
 	disabledBody: "Decky Metadata を再読み込みするまで、Steam 標準のコントローラーレイアウト UI を使用します。"
 };
 var jaJP = {
+	settings: settings$e,
 	common: common$e,
-	backend: backend$e,
+	backend: backend$f,
 	updater: updater$e,
 	hltb: hltb$e,
 	miniAchievements: miniAchievements$e,
@@ -9916,13 +9895,16 @@ var jaJP = {
 	controllerLayouts: controllerLayouts$e
 };
 
+var settings$d = {
+	open: "პარამეტრების გახსნა"
+};
 var common$d = {
 	hours_one: "{{value}} საათი",
 	hours_other: "{{value}} საათი",
 	hoursShort: "{{value}} სთ",
 	unknown: "უცნობი"
 };
-var backend$d = {
+var backend$e = {
 	progress: {
 		matching_metadata: "{{title}}-ისთვის მეტამონაცემების შესაბამება",
 		refreshing_activity: "{{title}}-ისთვის Steam აქტივობის განახლება",
@@ -10528,8 +10510,9 @@ var controllerLayouts$d = {
 	disabledBody: "Decky Metadata-ს გადატვირთვამდე გამოიყენება Steam-ის სტანდარტული კონტროლერის განლაგების ინტერფეისი."
 };
 var kaDZ = {
+	settings: settings$d,
 	common: common$d,
-	backend: backend$d,
+	backend: backend$e,
 	updater: updater$d,
 	hltb: hltb$d,
 	miniAchievements: miniAchievements$d,
@@ -10550,12 +10533,15 @@ var kaDZ = {
 	controllerLayouts: controllerLayouts$d
 };
 
+var settings$c = {
+	open: "설정 열기"
+};
 var common$c = {
 	hours_other: "{{value}}시간",
 	hoursShort: "{{value}}시간",
 	unknown: "알 수 없음"
 };
-var backend$c = {
+var backend$d = {
 	progress: {
 		matching_metadata: "{{title}}의 메타데이터 매칭 중",
 		refreshing_activity: "{{title}}의 Steam 활동 새로 고치는 중",
@@ -11161,8 +11147,9 @@ var controllerLayouts$c = {
 	disabledBody: "Decky Metadata를 다시 로드할 때까지 Steam의 표준 컨트롤러 레이아웃 UI를 사용합니다."
 };
 var koKR = {
+	settings: settings$c,
 	common: common$c,
-	backend: backend$c,
+	backend: backend$d,
 	updater: updater$c,
 	hltb: hltb$c,
 	miniAchievements: miniAchievements$c,
@@ -11183,13 +11170,16 @@ var koKR = {
 	controllerLayouts: controllerLayouts$c
 };
 
+var settings$b = {
+	open: "Instellingen openen"
+};
 var common$b = {
 	hours_one: "{{value}} uur",
 	hours_other: "{{value}} uur",
 	hoursShort: "{{value}} u",
 	unknown: "Onbekend"
 };
-var backend$b = {
+var backend$c = {
 	progress: {
 		matching_metadata: "Metadata voor {{title}} matchen",
 		refreshing_activity: "Steam-activiteit voor {{title}} vernieuwen",
@@ -11795,8 +11785,9 @@ var controllerLayouts$b = {
 	disabledBody: "Steams standaardinterface voor controllerindelingen wordt gebruikt totdat Decky Metadata opnieuw is geladen."
 };
 var nlNL = {
+	settings: settings$b,
 	common: common$b,
-	backend: backend$b,
+	backend: backend$c,
 	updater: updater$b,
 	hltb: hltb$b,
 	miniAchievements: miniAchievements$b,
@@ -11817,6 +11808,9 @@ var nlNL = {
 	controllerLayouts: controllerLayouts$b
 };
 
+var settings$a = {
+	open: "Otwórz ustawienia"
+};
 var common$a = {
 	hours_one: "{{value}} godzina",
 	hours_few: "{{value}} godziny",
@@ -11825,7 +11819,7 @@ var common$a = {
 	hoursShort: "{{value}} godz.",
 	unknown: "Nieznane"
 };
-var backend$a = {
+var backend$b = {
 	progress: {
 		matching_metadata: "Dopasowywanie metadanych dla {{title}}",
 		refreshing_activity: "Odświeżanie aktywności Steam dla {{title}}",
@@ -12431,8 +12425,9 @@ var controllerLayouts$a = {
 	disabledBody: "Używany jest standardowy interfejs układów kontrolera Steam, dopóki Decky Metadata nie zostanie przeładowana."
 };
 var plPL = {
+	settings: settings$a,
 	common: common$a,
-	backend: backend$a,
+	backend: backend$b,
 	updater: updater$a,
 	hltb: hltb$a,
 	miniAchievements: miniAchievements$a,
@@ -12453,6 +12448,9 @@ var plPL = {
 	controllerLayouts: controllerLayouts$a
 };
 
+var settings$9 = {
+	open: "Abrir configurações"
+};
 var common$9 = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} de horas",
@@ -12460,7 +12458,7 @@ var common$9 = {
 	hoursShort: "{{value}} h",
 	unknown: "Desconhecido"
 };
-var backend$9 = {
+var backend$a = {
 	progress: {
 		matching_metadata: "Buscando correspondência de metadados para {{title}}",
 		refreshing_activity: "Atualizando a Atividade Steam de {{title}}",
@@ -13066,8 +13064,9 @@ var controllerLayouts$9 = {
 	disabledBody: "Usando a interface padrão de layouts de controle da Steam até o Decky Metadata ser recarregado."
 };
 var ptBR = {
+	settings: settings$9,
 	common: common$9,
-	backend: backend$9,
+	backend: backend$a,
 	updater: updater$9,
 	hltb: hltb$9,
 	miniAchievements: miniAchievements$9,
@@ -13088,6 +13087,9 @@ var ptBR = {
 	controllerLayouts: controllerLayouts$9
 };
 
+var settings$8 = {
+	open: "Abrir definições"
+};
 var common$8 = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} de horas",
@@ -13095,7 +13097,7 @@ var common$8 = {
 	hoursShort: "{{value}} h",
 	unknown: "Desconhecido"
 };
-var backend$8 = {
+var backend$9 = {
 	progress: {
 		matching_metadata: "A procurar metadados correspondentes para {{title}}",
 		refreshing_activity: "A atualizar a Atividade Steam de {{title}}",
@@ -13701,8 +13703,9 @@ var controllerLayouts$8 = {
 	disabledBody: "A usar a interface predefinida de esquemas de comando da Steam até o Decky Metadata ser recarregado."
 };
 var ptPT = {
+	settings: settings$8,
 	common: common$8,
-	backend: backend$8,
+	backend: backend$9,
 	updater: updater$8,
 	hltb: hltb$8,
 	miniAchievements: miniAchievements$8,
@@ -13723,6 +13726,9 @@ var ptPT = {
 	controllerLayouts: controllerLayouts$8
 };
 
+var settings$7 = {
+	open: "Deschide setările"
+};
 var common$7 = {
 	hours_one: "{{value}} oră",
 	hours_few: "{{value}} ore",
@@ -13730,7 +13736,7 @@ var common$7 = {
 	hoursShort: "{{value}} h",
 	unknown: "Necunoscut"
 };
-var backend$7 = {
+var backend$8 = {
 	progress: {
 		matching_metadata: "Se caută metadate pentru {{title}}",
 		refreshing_activity: "Se actualizează Activitatea Steam pentru {{title}}",
@@ -14336,8 +14342,9 @@ var controllerLayouts$7 = {
 	disabledBody: "Se folosește interfața standard Steam pentru configurațiile controlerului până la reîncărcarea Decky Metadata."
 };
 var roRO = {
+	settings: settings$7,
 	common: common$7,
-	backend: backend$7,
+	backend: backend$8,
 	updater: updater$7,
 	hltb: hltb$7,
 	miniAchievements: miniAchievements$7,
@@ -14358,6 +14365,9 @@ var roRO = {
 	controllerLayouts: controllerLayouts$7
 };
 
+var settings$6 = {
+	open: "Открыть настройки"
+};
 var common$6 = {
 	hours_one: "{{value}} час",
 	hours_few: "{{value}} часа",
@@ -14366,7 +14376,7 @@ var common$6 = {
 	hoursShort: "{{value}} ч",
 	unknown: "Неизвестно"
 };
-var backend$6 = {
+var backend$7 = {
 	progress: {
 		matching_metadata: "Поиск метаданных для {{title}}",
 		refreshing_activity: "Обновление активности Steam для {{title}}",
@@ -14972,8 +14982,9 @@ var controllerLayouts$6 = {
 	disabledBody: "Используется стандартный интерфейс раскладок контроллера Steam, пока Decky Metadata не будет перезагружен."
 };
 var ruRU = {
+	settings: settings$6,
 	common: common$6,
-	backend: backend$6,
+	backend: backend$7,
 	updater: updater$6,
 	hltb: hltb$6,
 	miniAchievements: miniAchievements$6,
@@ -14994,13 +15005,16 @@ var ruRU = {
 	controllerLayouts: controllerLayouts$6
 };
 
+var settings$5 = {
+	open: "Hap cilësimet"
+};
 var common$5 = {
 	hours_one: "{{value}} orë",
 	hours_other: "{{value}} orë",
 	hoursShort: "{{value}} orë",
 	unknown: "E panjohur"
 };
-var backend$5 = {
+var backend$6 = {
 	progress: {
 		matching_metadata: "Përputhja e metadatave për {{title}}",
 		refreshing_activity: "Rifreskimi i aktivitetit në Steam për {{title}}",
@@ -15606,8 +15620,9 @@ var controllerLayouts$5 = {
 	disabledBody: "Po përdoret ndërfaqja standarde e paraqitjeve të kontrolluesit të Steam derisa Decky Metadata të ringarkohet."
 };
 var sqAL = {
+	settings: settings$5,
 	common: common$5,
-	backend: backend$5,
+	backend: backend$6,
 	updater: updater$5,
 	hltb: hltb$5,
 	miniAchievements: miniAchievements$5,
@@ -15628,13 +15643,16 @@ var sqAL = {
 	controllerLayouts: controllerLayouts$5
 };
 
+var settings$4 = {
+	open: "Öppna inställningar"
+};
 var common$4 = {
 	hours_one: "{{value}} timme",
 	hours_other: "{{value}} timmar",
 	hoursShort: "{{value}} h",
 	unknown: "Okänt"
 };
-var backend$4 = {
+var backend$5 = {
 	progress: {
 		matching_metadata: "Matchar metadata för {{title}}",
 		refreshing_activity: "Uppdaterar Steam-aktivitet för {{title}}",
@@ -16240,8 +16258,9 @@ var controllerLayouts$4 = {
 	disabledBody: "Steams vanliga gränssnitt för handkontrollslayouter används tills Decky Metadata läses in igen."
 };
 var svSE = {
+	settings: settings$4,
 	common: common$4,
-	backend: backend$4,
+	backend: backend$5,
 	updater: updater$4,
 	hltb: hltb$4,
 	miniAchievements: miniAchievements$4,
@@ -16262,13 +16281,16 @@ var svSE = {
 	controllerLayouts: controllerLayouts$4
 };
 
+var settings$3 = {
+	open: "Ayarları aç"
+};
 var common$3 = {
 	hours_one: "{{value}} saat",
 	hours_other: "{{value}} saat",
 	hoursShort: "{{value}} sa",
 	unknown: "Bilinmiyor"
 };
-var backend$3 = {
+var backend$4 = {
 	progress: {
 		matching_metadata: "{{title}} için meta veriler eşleştiriliyor",
 		refreshing_activity: "{{title}} için Steam Etkinliği yenileniyor",
@@ -16874,8 +16896,9 @@ var controllerLayouts$3 = {
 	disabledBody: "Decky Metadata yeniden yüklenene kadar Steam'in standart kontrolcü düzeni arayüzü kullanılıyor."
 };
 var trTR = {
+	settings: settings$3,
 	common: common$3,
-	backend: backend$3,
+	backend: backend$4,
 	updater: updater$3,
 	hltb: hltb$3,
 	miniAchievements: miniAchievements$3,
@@ -16896,6 +16919,9 @@ var trTR = {
 	controllerLayouts: controllerLayouts$3
 };
 
+var settings$2 = {
+	open: "Відкрити налаштування"
+};
 var common$2 = {
 	hours_one: "{{value}} година",
 	hours_few: "{{value}} години",
@@ -16904,7 +16930,7 @@ var common$2 = {
 	hoursShort: "{{value}} год",
 	unknown: "Невідомо"
 };
-var backend$2 = {
+var backend$3 = {
 	progress: {
 		matching_metadata: "Пошук метаданих для {{title}}",
 		refreshing_activity: "Оновлення активності Steam для {{title}}",
@@ -17510,8 +17536,9 @@ var controllerLayouts$2 = {
 	disabledBody: "Використовується стандартний інтерфейс розкладок контролера Steam, поки Decky Metadata не буде перезавантажено."
 };
 var ukUA = {
+	settings: settings$2,
 	common: common$2,
-	backend: backend$2,
+	backend: backend$3,
 	updater: updater$2,
 	hltb: hltb$2,
 	miniAchievements: miniAchievements$2,
@@ -17532,12 +17559,15 @@ var ukUA = {
 	controllerLayouts: controllerLayouts$2
 };
 
+var settings$1 = {
+	open: "打开设置"
+};
 var common$1 = {
 	hours_other: "{{value}} 小时",
 	hoursShort: "{{value}} 小时",
 	unknown: "未知"
 };
-var backend$1 = {
+var backend$2 = {
 	progress: {
 		matching_metadata: "正在为 {{title}} 匹配元数据",
 		refreshing_activity: "正在刷新 {{title}} 的 Steam 动态",
@@ -18143,8 +18173,9 @@ var controllerLayouts$1 = {
 	disabledBody: "在重新加载 Decky Metadata 前，将使用 Steam 的标准控制器布局界面。"
 };
 var zhCN = {
+	settings: settings$1,
 	common: common$1,
-	backend: backend$1,
+	backend: backend$2,
 	updater: updater$1,
 	hltb: hltb$1,
 	miniAchievements: miniAchievements$1,
@@ -18165,12 +18196,15 @@ var zhCN = {
 	controllerLayouts: controllerLayouts$1
 };
 
+var settings = {
+	open: "開啟設定"
+};
 var common = {
 	hours_other: "{{value}} 小時",
 	hoursShort: "{{value}} 小時",
 	unknown: "未知"
 };
-var backend = {
+var backend$1 = {
 	progress: {
 		matching_metadata: "正在為 {{title}} 比對中繼資料",
 		refreshing_activity: "正在重新整理 {{title}} 的 Steam 動態",
@@ -18776,8 +18810,9 @@ var controllerLayouts = {
 	disabledBody: "在 Decky Metadata 重新載入前，使用 Steam 的標準控制器配置介面。"
 };
 var zhTW = {
+	settings: settings,
 	common: common,
-	backend: backend,
+	backend: backend$1,
 	updater: updater,
 	hltb: hltb,
 	miniAchievements: miniAchievements,
@@ -19066,494 +19101,182 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-// Semantic tokens follow Valve's SteamUI palette (steamui-watch VALVE_PALETTE).
-const colors = {
-    accent: "#1a9fff",
-    success: "#5ba32b",
-    warning: "#ffc53d",
-    error: "#ec5d5e",
-    textSecondary: "#b8bcbf",
-    surfaceKnockout: "#0e141b",
-};
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    md: 12};
-// Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
-const fontSize = {
-    sm: 13,
-    lg: 16};
-const fontWeight = {
-    medium: 500};
-// Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
-const fontFamily = '"Motiva Sans", Arial, sans-serif';
-const statusColor = (kind) => ({
-    active: colors.accent,
-    success: colors.success,
-    warning: colors.warning,
-    error: colors.error,
-    idle: colors.textSecondary,
-}[kind]);
-
-const FocusableButton = (props) => (SP_JSX.jsx(DFL.DialogButton, { focusable: !props.disabled, ...props }));
-const qamPanelStyle = {
-    width: "100%",
-    fontFamily,
-};
-const fieldStyle = {
-    width: "100%",
-    maxWidth: "100%",
-    minWidth: 0,
-    boxSizing: "border-box",
-};
-const compactTextStyle = {
-    color: colors.textSecondary,
-    fontSize: fontSize.sm,
-    lineHeight: 1.35,
-};
-const inlineStatusBaseStyle = {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    ...compactTextStyle,
-};
-const inlineStatusStyle = (kind) => ({
-    ...inlineStatusBaseStyle,
-    color: statusColor(kind),
-});
-const busySpinnerStyle = {
-    width: "18px",
-    height: "18px",
-    color: colors.accent,
-};
-const buttonLabelStyle = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "10px",
-    minWidth: 136,
-};
-const sectionHeadingStyle = {
-    width: "100%",
-    paddingTop: space.md,
-    color: "#dcdedf",
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
-    lineHeight: "20px",
-};
-const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
-const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
-
-// THIS FILE IS AUTO GENERATED
-function FaSteam (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 496 512"},"child":[{"tag":"path","attr":{"d":"M496 256c0 137-111.2 248-248.4 248-113.8 0-209.6-76.3-239-180.4l95.2 39.3c6.4 32.1 34.9 56.4 68.9 56.4 39.2 0 71.9-32.4 70.2-73.5l84.5-60.2c52.1 1.3 95.8-40.9 95.8-93.5 0-51.6-42-93.5-93.7-93.5s-93.7 42-93.7 93.5v1.2L176.6 279c-15.5-.9-30.7 3.4-43.5 12.1L0 236.1C10.2 108.4 117.1 8 247.6 8 384.8 8 496 119 496 256zM155.7 384.3l-30.5-12.6a52.79 52.79 0 0 0 27.2 25.8c26.9 11.2 57.8-1.6 69-28.4 5.4-13 5.5-27.3.1-40.3-5.4-13-15.5-23.2-28.5-28.6-12.9-5.4-26.7-5.2-38.9-.6l31.5 13c19.8 8.2 29.2 30.9 20.9 50.7-8.3 19.9-31 29.2-50.8 21zm173.8-129.9c-34.4 0-62.4-28-62.4-62.3s28-62.3 62.4-62.3 62.4 28 62.4 62.3-27.9 62.3-62.4 62.3zm.1-15.6c25.9 0 46.9-21 46.9-46.8 0-25.9-21-46.8-46.9-46.8s-46.9 21-46.9 46.8c.1 25.8 21.1 46.8 46.9 46.8z"},"child":[]}]})(props);
-}function FaTrophy (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"},"child":[]}]})(props);
-}function FaSyncAlt (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
-}function FaPlayCircle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
-}function FaPencilAlt (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"},"child":[]}]})(props);
-}function FaInfoCircle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
-}function FaFileAlt (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
-}function FaExclamationTriangle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
-}function FaCog (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
-}function FaClock (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
-}function FaChevronUp (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M240.971 130.524l194.343 194.343c9.373 9.373 9.373 24.569 0 33.941l-22.667 22.667c-9.357 9.357-24.522 9.375-33.901.04L224 227.495 69.255 381.516c-9.379 9.335-24.544 9.317-33.901-.04l-22.667-22.667c-9.373-9.373-9.373-24.569 0-33.941L207.03 130.525c9.372-9.373 24.568-9.373 33.941-.001z"},"child":[]}]})(props);
-}function FaChevronDown (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"},"child":[]}]})(props);
-}function FaCheckCircle (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
-}function FaBars (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"},"child":[]}]})(props);
-}
-
-const headingClassName = "decky-metadata-qam-section-heading";
-// Look lives in CSS, not inline, so Steam's .gpfocus class (set by gamepad focus even when DOM focus lags, #55) can override the colour.
-const headingCss = `
-.${headingClassName} {
-  align-items: center;
-  border-radius: 4px;
-  color: #aeb8c4;
-  cursor: pointer;
-  display: flex;
-  font-size: 16px;
-  font-weight: 700;
-  justify-content: space-between;
-  letter-spacing: 0.06em;
-  min-height: 40px;
-  padding: 8px 10px;
-  text-transform: uppercase;
-}
-.${headingClassName}.gpfocus {
-  background: rgba(102, 182, 236, 0.18);
-  color: #fff;
-}
-`;
-const headingLabelStyle = {
-    alignItems: "center",
-    display: "inline-flex",
-    gap: 8,
-    minWidth: 0,
-};
-const headingIconStyle = {
-    display: "inline-flex",
-    flexShrink: 0,
-};
-function CollapsibleSection({ title, icon, children, defaultExpanded = false }) {
-    const [expanded, setExpanded] = SP_REACT.useState(defaultExpanded);
-    const id = SP_REACT.useId();
-    const handleFocus = (target) => {
-        const heading = target;
-        heading?.ownerDocument?.defaultView?.requestAnimationFrame?.(() => {
-            if (heading.isConnected)
-                heading.scrollIntoView({ block: "nearest", inline: "nearest" });
-        });
-    };
-    return (SP_JSX.jsxs("div", { style: { marginTop: 8 }, children: [SP_JSX.jsx("style", { children: headingCss }), SP_JSX.jsxs(DFL.Focusable, { id: `${id}-heading`, className: headingClassName, role: "button", "aria-expanded": expanded, "aria-controls": id, onActivate: () => setExpanded(value => !value), onFocus: (event) => handleFocus(event.currentTarget), onGamepadFocus: (event) => handleFocus(event?.currentTarget ?? event?.target), children: [SP_JSX.jsxs("span", { style: headingLabelStyle, children: [SP_JSX.jsx("span", { "aria-hidden": "true", style: headingIconStyle, children: icon }), SP_JSX.jsx("span", { children: title })] }), expanded ? SP_JSX.jsx(FaChevronUp, { size: 12 }) : SP_JSX.jsx(FaChevronDown, { size: 12 })] }), SP_JSX.jsx("div", { id: id, role: "region", "aria-labelledby": `${id}-heading`, children: expanded ? SP_JSX.jsx(DFL.PanelSection, { children: children }) : null })] }));
-}
-
-const compatibilityDefaultData = [null, 3, 2, 1, 0];
-const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
-const dropdownValueStyle$1 = { whiteSpace: "normal" };
-function CompatibilitySection({ initiallyExpanded = false, compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, onCompatibilityDefaultMenuWillOpen, onCompatibilityDefaultControlRef, onCompatibilityDefaultScopeControlRef, }) {
+function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, }) {
     const t = useT();
-    const categoryLabel = (category) => {
-        switch (category) {
-            case null:
-                return t("qam.compat.categoryAutomatic");
-            case 3:
-                return t("qam.compat.categoryVerified");
-            case 2:
-                return t("qam.compat.categoryPlayable");
-            case 1:
-                return t("qam.compat.categoryUnsupported");
-            case 0:
-                return t("qam.compat.categoryUnknown");
-        }
-    };
-    const scopeLabel = (scope) => {
-        switch (scope) {
-            case "steam":
-                return t("qam.compat.scopeSteam");
-            case "no-steam":
-                return t("qam.compat.scopeNoSteam");
-            case "metadata":
-                return t("qam.compat.scopeMetadata");
-            case "all":
-                return t("qam.compat.scopeAll");
-        }
-    };
-    const scopeDescription = (scope) => {
-        switch (scope) {
-            case "steam":
-                return t("qam.compat.scopeDescription.steam");
-            case "no-steam":
-                return t("qam.compat.scopeDescription.noSteam");
-            case "metadata":
-                return t("qam.compat.scopeDescription.metadata");
-            case "all":
-                return t("qam.compat.scopeDescription.all");
-        }
-    };
-    const compatibilityDefaultOptions = compatibilityDefaultData.map((data) => ({
-        data,
-        label: categoryLabel(data),
-    }));
-    const compatibilityDefaultScopeOptions = compatibilityDefaultScopeData.map((data) => ({
-        data,
-        label: scopeLabel(data),
-    }));
-    const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.compat.title"), icon: SP_JSX.jsx(SiSteamdeck, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onMenuWillOpen: () => {
-                            onCompatibilityDefaultMenuWillOpen("category");
-                        }, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCompatibilityDefaultScopeControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
-                            compatibilityDefaultBusy ||
-                            compatibilityDefaultScopeBusy ||
-                            compatibilityDefault === null, onMenuWillOpen: () => onCompatibilityDefaultMenuWillOpen("scope"), onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) }) })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage }) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null] }));
 }
-
-const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
-const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
-const KNOWN_CONFLICTS = {
-    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
-    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
-    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
-    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
-};
-const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
-const FALLBACK_POLL_MS = 1000;
-const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
-const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
-    typeof value.addEventListener === "function" && "removeEventListener" in value &&
-    typeof value.removeEventListener === "function";
-const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
-/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
-class PluginConflictMonitor {
-    constructor(getLoader = currentLoader) {
-        Object.defineProperty(this, "getLoader", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: getLoader
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "events", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                protondb: UNAVAILABLE,
-                trailers: UNAVAILABLE,
-                miniAchievements: UNAVAILABLE,
-                hltb: UNAVAILABLE,
-            }
-        });
-        Object.defineProperty(this, "handleUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.refresh()
-        });
-    }
-    getConflict(feature) {
-        return this.conflicts[feature];
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => { this.listeners.delete(listener); };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        this.refresh();
-    }
-    stop() {
-        this.mounted = false;
-        this.attachEvents(undefined);
-        this.setPolling(false);
-        this.publish(undefined, undefined);
-        this.listeners.clear();
-    }
-    attachEvents(events) {
-        if (events === this.events)
-            return;
-        try {
-            this.events?.removeEventListener("update", this.handleUpdate);
-        }
-        catch { /* Loader may be unloading. */ }
-        this.events = undefined;
-        try {
-            if (isStateEvents(events)) {
-                events.addEventListener("update", this.handleUpdate);
-                this.events = events;
-            }
-        }
-        catch { /* Poll when Loader state notifications are unavailable. */ }
-    }
-    setPolling(enabled) {
-        if (enabled && this.pollTimer === undefined) {
-            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
-        }
-        else if (!enabled && this.pollTimer !== undefined) {
-            window.clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
-    }
-    refresh() {
-        if (!this.mounted)
-            return;
-        let plugins;
-        let disabled;
-        try {
-            const loader = this.getLoader();
-            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
-                ? loader.deckyState : undefined;
-            if (state !== null && typeof state === "object") {
-                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
-                const inventory = "publicState" in state && typeof state.publicState === "function"
-                    ? state.publicState() : undefined;
-                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
-                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
-                    plugins = inventory.plugins;
-                    disabled = inventory.disabledPlugins;
-                }
-            }
-            else {
-                this.attachEvents(undefined);
-            }
-        }
-        catch {
-            this.attachEvents(undefined);
-        }
-        this.publish(plugins, disabled);
-        this.setPolling(!this.events || !plugins || !disabled);
-    }
-    publish(plugins, disabled) {
-        let changed = false;
-        for (const feature of FEATURES) {
-            const conflict = KNOWN_CONFLICTS[feature];
-            const next = !plugins || !disabled ? UNAVAILABLE
-                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
-                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
-            if (next === this.conflicts[feature])
-                continue;
-            this.conflicts[feature] = next;
-            changed = true;
-        }
-        if (!changed)
-            return;
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* One feature must not block another subscriber. */ }
-        }
-    }
-}
-function featureConflictNotice(conflict, feature, savedEnabled) {
-    if (conflict.pluginName) {
-        const notice = t("conflicts.pluginConflict", {
-            pluginName: conflict.pluginName,
-            feature,
-        });
-        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
-    }
-    return conflict.detectionAvailable ? ""
-        : t("conflicts.detectionUnavailable", { feature });
-}
-const pluginConflicts = new PluginConflictMonitor();
-function startPluginConflicts() {
-    pluginConflicts.mount();
-    return () => pluginConflicts.stop();
-}
-
-function GameTrailersSection({ initiallyExpanded = false, state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, onQualityMenuWillOpen, onQualityControlRef, }) {
-    const t = useT();
-    const qualityOptions = [
-        { data: "auto", label: t("qam.trailers.qualityAuto") },
-        { data: 720, label: "720p" },
-        { data: 1080, label: "1080p" },
-        { data: 1440, label: "1440p" },
-        { data: 2160, label: "2160p" },
-    ];
-    const disabled = !state.settingsLoaded || state.busy;
-    const dependentDisabled = disabled || !state.settings.enabled;
-    const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
-    const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
-    const display = state.displayWidth && state.displayHeight
-        ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
-        : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.trailers.title"), icon: SP_JSX.jsx(FaPlayCircle, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onQualityControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onMenuWillOpen: onQualityMenuWillOpen, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
-}
-
-function LogsSection({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
-    const t = useT();
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.logs.title"), icon: SP_JSX.jsx(FaFileAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
-}
-
-function MiniAchievementsSection({ state, onEnabledChange }) {
-    const t = useT();
-    const enableDisabled = !state.settingsLoaded || state.busy ||
-        (Boolean(state.conflict.pluginName) && !state.enabled);
-    const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.miniAchievements.title"), icon: SP_JSX.jsx(FaTrophy, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), (conflictNotice || state.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })) : null] }));
-}
-
-/** Options for the Edit Metadata page that the game context menu opens. */
-function ContextMenuSection() {
-    const t = useT();
-    const [settings, setSettings] = SP_REACT.useState(null);
-    const [error, setError] = SP_REACT.useState("");
-    // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
-    const latest = SP_REACT.useRef(null);
-    SP_REACT.useEffect(() => {
-        let current = true;
-        getEditorHeaderSettings().then((loaded) => {
-            if (!current)
-                return;
-            latest.current = loaded;
-            setSettings(loaded);
-        }, (loadError) => { if (current)
-            setError(translateBackendError(loadError)); });
-        return () => { current = false; };
-    }, []);
-    const update = (key, value) => {
-        const previous = latest.current;
-        if (!previous)
-            return;
-        const next = { ...previous, [key]: value };
-        latest.current = next;
-        setSettings(next);
-        setError("");
-        setEditorHeaderSettings(next).catch((saveError) => {
-            if (latest.current !== next)
-                return;
-            latest.current = previous;
-            setSettings(previous);
-            setError(translateBackendError(saveError));
-        });
-    };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.contextMenu.title"), icon: SP_JSX.jsx(FaBars, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => update("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => update("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
-}
-
-function MetadataSection({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onRefreshMetadata, onClearCache, onRefreshDelisted, }) {
+function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, }) {
     const t = useT();
     const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.metadata.title"), icon: SP_JSX.jsx(FaTags, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: detectedCount }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: savedCount }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: missingCount }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refresh")) }), !scanBusy && scanMessage ? (SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage })) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.cacheHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.clearCacheDescription"), bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") })) : (t("qam.metadata.clearCache")) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.delistedHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: delistedDescription, bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") })) : (t("qam.metadata.refreshDelisted")) }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.cacheHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.clearCacheDescription"), bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("qam.metadata.clearCache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.delistedHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: delistedDescription, bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refreshDelisted") }) })] }));
 }
 
-function PluginLogModal({ logs, closeModal }) {
+// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
+const SETTINGS_ROUTE = "/decky-metadata-settings";
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    // Current Steam has SteamUIStore and no Router global; older builds have Router.
+    const host = globalThis;
+    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
+    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+    if (path !== SETTINGS_ROUTE)
+        DFL.Navigation.Navigate(SETTINGS_ROUTE);
+};
+// QAM header: the Decky display name plus a gear that opens Settings.
+function SettingsTitleView() {
     const t = useT();
-    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: t("qam.logs.modalTitle"), strOKButtonText: t("qam.logs.ok"), onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx(DFL.ScrollPanelGroup, { children: SP_JSX.jsx(DFL.Focusable, { noFocusRing: true, style: {
-                    maxHeight: "60vh",
-                    overflowY: "auto",
-                    fontFamily: "monospace",
-                    fontSize: "12px",
-                    whiteSpace: "pre-wrap",
-                    overflowWrap: "anywhere",
-                    backgroundColor: colors.surfaceKnockout,
-                    color: colors.textSecondary,
-                    padding: "10px",
-                    borderRadius: "4px",
-                    userSelect: "text",
-                }, children: logs || t("qam.logs.modalEmpty") }) }) }));
+    return (SP_JSX.jsxs(DFL.Focusable, { className: DFL.staticClasses.Title, style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: 0,
+            boxShadow: "none",
+            ...(DFL.staticClasses.Title
+                ? {}
+                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
+        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: { height: "28px", width: "40px", minWidth: 0, padding: "10px 12px" }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
 }
 
-// THIS FILE IS AUTO GENERATED
-function IoMdRefresh (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
-}
+/** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
+const getAllMetadata = callable("get_all_metadata");
+const getNativeCssClasses = callable("get_native_css_classes");
+const getMetadata = callable("get_metadata");
+const saveMetadata = callable("save_metadata");
+const savePreviewedMetadata = callable("save_previewed_metadata");
+/** Saves only while the stored record still equals `expected` (null = absent); null if it changed. */
+const saveMetadataIfUnchanged = callable("save_metadata");
+const removeMetadata = callable("remove_metadata");
+const clearMetadataCache = callable("clear_metadata_cache");
+const getShortcutNameManagement = callable("get_shortcut_name_management");
+const saveShortcutNameState = callable("save_shortcut_name_state");
+const clearShortcutNameState = callable("clear_shortcut_name_state");
+const refreshDelistedIndex = callable("refresh_delisted_index");
+const getDelistedIndexStatus = callable("get_delisted_index_status");
+const frontendLog = callable("frontend_log");
+const searchMetadata = callable("search_metadata");
+const searchSteamMatches = callable("search_steam_matches");
+const fetchMetadata = callable("fetch_metadata");
+const applyFetchedMetadata = callable("apply_fetched_metadata");
+const previewFetchedMetadata = callable("preview_fetched_metadata");
+const getCommunityFallbackPage = callable("get_community_fallback_page");
+const autoFetchMetadata = callable("auto_fetch_metadata");
+const enrichSteamApp = callable("enrich_steam_app");
+const previewSteamMetadata = callable("preview_steam_metadata");
+const startScanMissing = callable("start_scan_missing");
+const getMissingMetadataCount = callable("get_missing_metadata_count");
+const getScanProgress = callable("get_scan_progress");
+const startRefreshSteamActivities = callable("start_refresh_steam_activities");
+const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
+const getActivityRefreshProgress = callable("get_activity_refresh_progress");
+const getLocalShortcuts = callable("get_local_shortcuts");
+const getPluginVersion = callable("get_plugin_version");
+const getSystemVersions = callable("get_system_versions");
+const getPluginLogs = callable("get_plugin_logs");
+const getDebugLogging = callable("get_debug_logging");
+const setDebugLogging = callable("set_debug_logging");
+const getCompatibilityDefault = callable("get_compatibility_default");
+const setCompatibilityDefault = callable("set_compatibility_default");
+const getCompatibilityDefaultScope = callable("get_compatibility_default_scope");
+const setCompatibilityDefaultScope = callable("set_compatibility_default_scope");
+const checkForPluginUpdate = callable("check_for_plugin_update");
+const revalidatePluginUpdate = callable("revalidate_plugin_update");
+const recordUpdateInstallRequested = callable("record_update_install_requested");
+const confirmUpdateInstallHandoff = callable("confirm_update_install_handoff");
+const clearPendingUpdateInstall = callable("clear_pending_update_install");
+const getUpdateCheckContext = callable("get_update_check_context");
+const getUpdateSettings = callable("get_update_settings");
+const setUpdateChannel = callable("set_update_channel");
+const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
+const getTrailerSettings = callable("get_trailer_settings");
+const setTrailerSettings = callable("set_trailer_settings");
+const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
+const setMiniAchievementsEnabled = callable("set_mini_achievements_enabled");
+const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
+const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
+const getEditorHeaderSettings = callable("get_editor_header_settings");
+const setEditorHeaderSettings = callable("set_editor_header_settings");
+const getProviderCache = callable("get_provider_cache");
+const putProtonDbCache = callable("put_protondb_cache");
+const getHltbSettings = callable("get_hltb_settings");
+const setHltbSettings = callable("set_hltb_settings");
+const getHltbStats = callable("get_hltb_stats");
+const checkHltbGameId = callable("check_hltb_game_id");
+const searchHltbGames = callable("search_hltb_games");
+const clearHltbCache = callable("clear_hltb_cache");
+const findIgnTrailer = callable("find_ign_trailer");
+const evalInBigPicture = callable("eval_in_big_picture");
+
+var backend = /*#__PURE__*/Object.freeze({
+    __proto__: null,
+    applyFetchedMetadata: applyFetchedMetadata,
+    autoFetchMetadata: autoFetchMetadata,
+    checkForPluginUpdate: checkForPluginUpdate,
+    checkHltbGameId: checkHltbGameId,
+    clearHltbCache: clearHltbCache,
+    clearMetadataCache: clearMetadataCache,
+    clearPendingUpdateInstall: clearPendingUpdateInstall,
+    clearShortcutNameState: clearShortcutNameState,
+    confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
+    enrichSteamApp: enrichSteamApp,
+    evalInBigPicture: evalInBigPicture,
+    fetchMetadata: fetchMetadata,
+    findIgnTrailer: findIgnTrailer,
+    frontendLog: frontendLog,
+    getActivityRefreshProgress: getActivityRefreshProgress,
+    getAllMetadata: getAllMetadata,
+    getCommunityFallbackPage: getCommunityFallbackPage,
+    getCompatibilityDefault: getCompatibilityDefault,
+    getCompatibilityDefaultScope: getCompatibilityDefaultScope,
+    getDebugLogging: getDebugLogging,
+    getDelistedIndexStatus: getDelistedIndexStatus,
+    getEditorHeaderSettings: getEditorHeaderSettings,
+    getHltbSettings: getHltbSettings,
+    getHltbStats: getHltbStats,
+    getLocalShortcuts: getLocalShortcuts,
+    getMetadata: getMetadata,
+    getMiniAchievementsEnabled: getMiniAchievementsEnabled,
+    getMissingMetadataCount: getMissingMetadataCount,
+    getNativeCssClasses: getNativeCssClasses,
+    getPluginLogs: getPluginLogs,
+    getPluginVersion: getPluginVersion,
+    getProtonDbBadgeSettings: getProtonDbBadgeSettings,
+    getProviderCache: getProviderCache,
+    getScanProgress: getScanProgress,
+    getShortcutNameManagement: getShortcutNameManagement,
+    getSystemVersions: getSystemVersions,
+    getTrailerSettings: getTrailerSettings,
+    getUpdateCheckContext: getUpdateCheckContext,
+    getUpdateSettings: getUpdateSettings,
+    previewFetchedMetadata: previewFetchedMetadata,
+    previewSteamMetadata: previewSteamMetadata,
+    putProtonDbCache: putProtonDbCache,
+    recordUpdateInstallRequested: recordUpdateInstallRequested,
+    refreshDelistedIndex: refreshDelistedIndex,
+    refreshSteamActivityForApp: refreshSteamActivityForApp,
+    removeMetadata: removeMetadata,
+    revalidatePluginUpdate: revalidatePluginUpdate,
+    saveMetadata: saveMetadata,
+    saveMetadataIfUnchanged: saveMetadataIfUnchanged,
+    savePreviewedMetadata: savePreviewedMetadata,
+    saveShortcutNameState: saveShortcutNameState,
+    searchHltbGames: searchHltbGames,
+    searchMetadata: searchMetadata,
+    searchSteamMatches: searchSteamMatches,
+    setAutomaticUpdateChecks: setAutomaticUpdateChecks,
+    setCompatibilityDefault: setCompatibilityDefault,
+    setCompatibilityDefaultScope: setCompatibilityDefaultScope,
+    setDebugLogging: setDebugLogging,
+    setEditorHeaderSettings: setEditorHeaderSettings,
+    setHltbSettings: setHltbSettings,
+    setMiniAchievementsEnabled: setMiniAchievementsEnabled,
+    setProtonDbBadgeSettings: setProtonDbBadgeSettings,
+    setTrailerSettings: setTrailerSettings,
+    setUpdateChannel: setUpdateChannel,
+    startRefreshSteamActivities: startRefreshSteamActivities,
+    startScanMissing: startScanMissing
+});
 
 // Must equal plugin.json "name" (Decky's find_plugin_folder identity). Space,
 // not hyphen — asset filenames stay hyphenated, this is the plugin identity.
@@ -19591,6 +19314,88 @@ async function invokeDeckyInstaller(url, version, sha256, installType, traceId) 
     }
     throw new Error("Decky Loader backend has no compatible RPC interface.");
 }
+
+function canInstallCandidate(candidate, currentVersion) {
+    return isDeckyInstallerAvailable() && (!currentVersion.includes("+") || candidate.channel === "stable");
+}
+function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalling, isHandoffPending, onInstall, }) {
+    const t = useT();
+    const isLocalBuild = currentVersion.includes("+");
+    const canInstall = canInstallCandidate(candidate, currentVersion);
+    const getActionText = () => {
+        switch (candidate.action) {
+            case "move_to_stable":
+                return t("qam.update.actionMoveToStable", { version: candidate.version });
+            case "downgrade_to_stable":
+                return t("qam.update.actionRevertToStable", { version: candidate.version });
+            default:
+                return candidate.channel === "development"
+                    ? t("qam.update.actionInstallDevelopment", { version: candidate.version })
+                    : t("qam.update.actionUpdate", { version: candidate.version });
+        }
+    };
+    const handleInstallClick = () => {
+        if (candidate.action === "downgrade_to_stable") {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: candidate.version }), onOK: () => onInstall(candidate) }));
+        }
+        else {
+            void onInstall(candidate);
+        }
+    };
+    return canInstall ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: handleInstallClick, disabled: isChecking || isInstalling, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling, children: isInstalling
+                    ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
+                    : getActionText() }) }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: isLocalBuild && candidate.channel !== "stable"
+                    ? t("qam.update.localBuildOnlyStable")
+                    : t("qam.update.manualInstallUnavailable") }) }) }));
+}
+
+// THIS FILE IS AUTO GENERATED
+function FaSteam (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 496 512"},"child":[{"tag":"path","attr":{"d":"M496 256c0 137-111.2 248-248.4 248-113.8 0-209.6-76.3-239-180.4l95.2 39.3c6.4 32.1 34.9 56.4 68.9 56.4 39.2 0 71.9-32.4 70.2-73.5l84.5-60.2c52.1 1.3 95.8-40.9 95.8-93.5 0-51.6-42-93.5-93.7-93.5s-93.7 42-93.7 93.5v1.2L176.6 279c-15.5-.9-30.7 3.4-43.5 12.1L0 236.1C10.2 108.4 117.1 8 247.6 8 384.8 8 496 119 496 256zM155.7 384.3l-30.5-12.6a52.79 52.79 0 0 0 27.2 25.8c26.9 11.2 57.8-1.6 69-28.4 5.4-13 5.5-27.3.1-40.3-5.4-13-15.5-23.2-28.5-28.6-12.9-5.4-26.7-5.2-38.9-.6l31.5 13c19.8 8.2 29.2 30.9 20.9 50.7-8.3 19.9-31 29.2-50.8 21zm173.8-129.9c-34.4 0-62.4-28-62.4-62.3s28-62.3 62.4-62.3 62.4 28 62.4 62.3-27.9 62.3-62.4 62.3zm.1-15.6c25.9 0 46.9-21 46.9-46.8 0-25.9-21-46.8-46.9-46.8s-46.9 21-46.9 46.8c.1 25.8 21.1 46.8 46.9 46.8z"},"child":[]}]})(props);
+}function FaTrophy (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"},"child":[]}]})(props);
+}function FaSyncAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
+}function FaPlayCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
+}function FaPencilAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"},"child":[]}]})(props);
+}function FaInfoCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
+}function FaFileAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
+}function FaExclamationTriangle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaCog (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
+}function FaClock (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
+}function FaCheckCircle (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
+}function FaBars (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"},"child":[]}]})(props);
+}
+
+const TITLE = "Decky Metadata";
+const DURATION = 3000;
+const toastLogoStyle = {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    height: "100%",
+};
+function notify(kind, heading, body) {
+    const logo = (SP_JSX.jsx("span", { style: toastLogoStyle, children: kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success, size: 28 })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error, size: 28 })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning, size: 28 })) }));
+    try {
+        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
+    }
+    catch {
+        // The Decky toaster may be unavailable outside the runtime.
+    }
+}
+const toastSuccess = (heading, body) => notify("success", heading, body);
+const toastWarn = (heading, body) => notify("warning", heading, body);
+const toastError = (heading, body) => notify("error", heading, body);
 
 const initialUpdateState = {
     phase: "hydrating",
@@ -19718,10 +19523,17 @@ function updateReducer(state, action) {
     }
 }
 
+const DEFAULT_UPDATE_SETTINGS = {
+    update_channel: "stable",
+    automatic_update_checks: true,
+};
+const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
+const resolveSavedUpdateSettings = (previous, result) => ("status" in result ? previous : result);
+
 function logUpdate(traceId, stage, details) {
     const detailsStr = details
         ? Object.entries(details)
-            .map(([k, v]) => `${k}=${v}`)
+            .map(([key, value]) => `${key}=${value}`)
             .join(", ")
         : "";
     const prefix = traceId ? `trace_id=${traceId}` : "trace_id=none";
@@ -19732,733 +19544,976 @@ function logUpdate(traceId, stage, details) {
     catch (_) { }
 }
 function generateUpdateTraceId() {
-    return "tr-" + Date.now() + "-" + Math.random().toString(36).substr(2, 9);
+    return `tr-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`;
 }
 const UPDATE_CHECK_UI_TIMEOUT_MS = 120000;
-function usePluginUpdateController({ currentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, onInstallVersionConfirmed }) {
-    const [state, dispatch] = SP_REACT.useReducer(updateReducer, initialUpdateState);
-    const hasChecked = SP_REACT.useRef(false);
-    const inFlightCheck = SP_REACT.useRef(null);
-    const hydratedPendingInstallVersion = SP_REACT.useRef(null);
-    const activeCheckId = SP_REACT.useRef(0);
-    const checkTimeoutRef = SP_REACT.useRef(null);
-    const skipInitialCheck = SP_REACT.useRef(false);
-    const automaticCheckToggleHydrated = SP_REACT.useRef(false);
-    const latestChannel = SP_REACT.useRef(updateChannel);
-    // Read at call time so toggling the preference does not re-create checkForUpdates.
-    const automaticUpdateChecksRef = SP_REACT.useRef(automaticUpdateChecks);
-    automaticUpdateChecksRef.current = automaticUpdateChecks;
-    if (latestChannel.current !== updateChannel) {
-        latestChannel.current = updateChannel;
-        activeCheckId.current += 1;
-        inFlightCheck.current = null;
+class PluginUpdateControllerStore {
+    constructor(deps) {
+        Object.defineProperty(this, "deps", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: deps
+        });
+        Object.defineProperty(this, "state", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: { ...initialUpdateState }
+        });
+        Object.defineProperty(this, "pluginVersion", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "updateChannel", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "stable"
+        });
+        Object.defineProperty(this, "automaticUpdateChecks", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: true
+        });
+        Object.defineProperty(this, "settingsLoaded", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                pluginVersion: "",
+                effectiveCurrentVersion: "",
+                updateChannel: "stable",
+                automaticUpdateChecks: true,
+                settingsLoaded: false,
+                candidate: null,
+                checkResult: null,
+                errorMessage: null,
+                checkTimedOut: false,
+                isChecking: false,
+                isInstalling: false,
+                isHandoffPending: false,
+                installedReleasePublishedAt: null,
+            }
+        });
+        Object.defineProperty(this, "initializationStarted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "activeCheckId", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "latestChannel", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: "stable"
+        });
+        Object.defineProperty(this, "inFlightCheck", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "checkTimeout", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "handoffTimeout", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "resolveHandoffTimeout", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "checkNow", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async () => {
+                await this.checkForUpdates({ force: true, notify: true, source: "manual" });
+            }
+        });
+        Object.defineProperty(this, "setUpdateChannel", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async (enabled) => {
+                const previous = this.currentSettings();
+                const generation = this.generation;
+                // Show the choice at once, but check only after the backend saved it: the backend checks the saved channel.
+                this.showSettings({ ...previous, update_channel: enabled ? "development" : "stable" });
+                try {
+                    const result = await this.deps.setUpdateChannel(enabled ? "development" : "stable");
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in result) {
+                        const rolledBack = resolveSavedUpdateSettings({
+                            update_channel: previous.update_channel,
+                            automatic_update_checks: this.automaticUpdateChecks,
+                        }, result);
+                        this.applySettings(rolledBack, previous);
+                        this.deps.toastError(t("panel.toast.updates"), result.message
+                            ? translateBackendError(result.message)
+                            : t("panel.updateChannelSaveError"));
+                        return;
+                    }
+                    this.applySettings(result, previous);
+                }
+                catch (error) {
+                    if (generation !== this.generation)
+                        return;
+                    this.applySettings({ ...this.currentSettings(), update_channel: previous.update_channel }, previous);
+                    logUpdate(null, "update_channel_save_failed", {
+                        message: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
+        });
+        Object.defineProperty(this, "setAutomaticUpdateChecks", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async (enabled) => {
+                const previous = this.currentSettings();
+                const generation = this.generation;
+                // As for the channel: show at once, start the automatic check only after the save is confirmed.
+                this.showSettings({ ...previous, automatic_update_checks: enabled });
+                try {
+                    const result = await this.deps.setAutomaticUpdateChecks(enabled);
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in result) {
+                        const rolledBack = resolveSavedUpdateSettings({
+                            update_channel: this.updateChannel,
+                            automatic_update_checks: previous.automatic_update_checks,
+                        }, result);
+                        this.applySettings(rolledBack, previous);
+                        this.deps.toastError(t("panel.toast.updates"), result.message
+                            ? translateBackendError(result.message)
+                            : t("panel.automaticUpdateSaveError"));
+                        return;
+                    }
+                    this.applySettings(result, previous);
+                }
+                catch (error) {
+                    if (generation !== this.generation)
+                        return;
+                    this.applySettings({ ...this.currentSettings(), automatic_update_checks: previous.automatic_update_checks }, previous);
+                    logUpdate(null, "automatic_update_setting_save_failed", {
+                        message: error instanceof Error ? error.message : String(error),
+                    });
+                }
+            }
+        });
+        Object.defineProperty(this, "install", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async (targetCandidate) => {
+                if (this.state.phase === "installing" || this.state.phase === "handoff_pending")
+                    return;
+                const generation = this.generation;
+                this.dispatch({ type: "INSTALL_START" });
+                const traceId = generateUpdateTraceId();
+                logUpdate(traceId, "install_clicked", { version: targetCandidate.version });
+                try {
+                    const revalidationStarted = performance.now();
+                    logUpdate(traceId, "revalidate_start", { tag: targetCandidate.tag });
+                    const revalidation = await this.deps.revalidatePluginUpdate(targetCandidate);
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in revalidation || !("version" in revalidation)) {
+                        const message = "message" in revalidation ? revalidation.message : "unknown";
+                        logUpdate(traceId, "revalidate_failed", {
+                            message: message || "unknown",
+                            elapsed_ms: Math.round(performance.now() - revalidationStarted),
+                        });
+                        throw new Error(message || t("updater.install.revalidationFailed"));
+                    }
+                    logUpdate(traceId, "revalidate_success", {
+                        version: revalidation.version,
+                        elapsed_ms: Math.round(performance.now() - revalidationStarted),
+                    });
+                    const installType = targetCandidate.action === "downgrade_to_stable"
+                        ? INSTALL_TYPE_DOWNGRADE
+                        : INSTALL_TYPE_UPDATE;
+                    const request = { ...revalidation, updateTraceId: traceId };
+                    const recordStarted = performance.now();
+                    logUpdate(traceId, "record_install_start", { version: revalidation.version });
+                    const recordResult = await this.deps.recordUpdateInstallRequested(request);
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in recordResult &&
+                        (recordResult.status === "failed" || recordResult.status === "skipped")) {
+                        throw new Error(recordResult.message || t("updater.install.recordFailed"));
+                    }
+                    logUpdate(traceId, "record_install_success", {
+                        version: revalidation.version,
+                        elapsed_ms: Math.round(performance.now() - recordStarted),
+                    });
+                    this.activeCheckId += 1;
+                    this.clearCheckTimeout();
+                    this.inFlightCheck = null;
+                    this.dispatch({
+                        type: "INSTALL_SUCCESS",
+                        version: revalidation.version,
+                        channel: revalidation.channel,
+                        preInstallVersion: this.pluginVersion,
+                    });
+                    const handoffStarted = performance.now();
+                    logUpdate(traceId, "handoff_start", {
+                        version: revalidation.version,
+                        sha256_prefix: revalidation.sha256 ? revalidation.sha256.slice(0, 8) : "none",
+                    });
+                    let handoffTimerFired = false;
+                    let resolveHandoffTimer;
+                    const handoffPromise = new Promise((resolve) => {
+                        resolveHandoffTimer = () => resolve(undefined);
+                    });
+                    this.resolveHandoffTimeout = resolveHandoffTimer;
+                    this.handoffTimeout = this.deps.setTimeout(() => {
+                        this.handoffTimeout = null;
+                        this.resolveHandoffTimeout = null;
+                        handoffTimerFired = true;
+                        resolveHandoffTimer();
+                    }, 3000);
+                    const installerPromise = this.deps.invokeDeckyInstaller(revalidation.artifact_url, revalidation.version, revalidation.sha256, installType, traceId);
+                    try {
+                        await Promise.race([installerPromise, handoffPromise]);
+                    }
+                    finally {
+                        this.clearHandoffTimeout();
+                    }
+                    if (generation !== this.generation)
+                        return;
+                    if (handoffTimerFired) {
+                        logUpdate(traceId, "handoff_pending", {
+                            status: "installer_handoff_pending",
+                            elapsed_ms: Math.round(performance.now() - handoffStarted),
+                        });
+                        this.dispatch({ type: "INSTALL_HANDOFF_PENDING" });
+                        void this.finishPendingHandoff(installerPromise, revalidation.version, revalidation.channel, traceId, handoffStarted, generation);
+                        return;
+                    }
+                    await installerPromise;
+                    if (generation !== this.generation)
+                        return;
+                    await this.handleHandoffSuccess(revalidation.version, revalidation.channel, traceId, handoffStarted, generation);
+                }
+                catch (error) {
+                    if (generation !== this.generation)
+                        return;
+                    await this.failInstall(error, targetCandidate.version, traceId, generation);
+                }
+            }
+        });
     }
-    const isHydrated = state.phase !== "hydrating";
-    const effectiveCurrentVersion = state.installedOverride?.version ?? currentVersion;
-    const clearCheckTimeout = SP_REACT.useCallback(() => {
-        if (checkTimeoutRef.current !== null) {
-            clearTimeout(checkTimeoutRef.current);
-            checkTimeoutRef.current = null;
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        if (!this.initializationStarted) {
+            this.initializationStarted = true;
+            void this.initialize();
         }
-    }, []);
-    const finishCheck = SP_REACT.useCallback((checkId) => {
-        if (checkId === activeCheckId.current) {
-            inFlightCheck.current = null;
-            clearCheckTimeout();
+        return () => this.listeners.delete(listener);
+    }
+    dispose() {
+        this.generation += 1;
+        this.activeCheckId += 1;
+        this.inFlightCheck = null;
+        this.clearCheckTimeout();
+        this.clearHandoffTimeout(true);
+    }
+    async initialize() {
+        const generation = this.generation;
+        const versionRequest = this.deps.getPluginVersion().catch((error) => {
+            logUpdate(null, "plugin_version_load_failed", {
+                message: error instanceof Error ? error.message : String(error),
+            });
+            return "";
+        });
+        const settingsRequest = this.deps.getUpdateSettings().catch((error) => {
+            logUpdate(null, "update_settings_load_failed", {
+                message: error instanceof Error ? error.message : String(error),
+            });
+            return null;
+        });
+        const contextRequest = this.deps.getUpdateCheckContext().catch((error) => {
+            logUpdate(null, "update_context_load_failed", {
+                message: error instanceof Error ? error.message : String(error),
+            });
+            return null;
+        });
+        const [version, settingsResult, contextResult] = await Promise.all([
+            versionRequest,
+            settingsRequest,
+            contextRequest,
+        ]);
+        if (generation !== this.generation)
+            return;
+        if (version)
+            this.pluginVersion = version;
+        const settings = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
+        this.updateChannel = settings.update_channel;
+        this.latestChannel = settings.update_channel;
+        this.automaticUpdateChecks = settings.automatic_update_checks;
+        this.settingsLoaded = true;
+        const context = contextResult && !("status" in contextResult) ? contextResult : null;
+        const pendingInstall = context?.pending_update_install;
+        const isPendingInstallCurrent = !!pendingInstall?.version &&
+            context?.effective_installed_version === pendingInstall.version;
+        if (context && isPendingInstallCurrent && pendingInstall) {
+            const pendingChannel = pendingInstall.channel === "development" ? "development" : "stable";
+            this.pluginVersion = pendingInstall.version;
+            this.dispatch({
+                type: "HYDRATION_COMPLETE",
+                installedReleasePublishedAt: context.installed_release_published_at || null,
+                pendingInstall: {
+                    version: pendingInstall.version,
+                    channel: pendingChannel,
+                    preInstallVersion: context.installed_version || this.pluginVersion,
+                },
+            });
         }
-    }, [clearCheckTimeout]);
-    const checkForUpdates = SP_REACT.useCallback(async (opts) => {
-        if (!effectiveCurrentVersion || effectiveCurrentVersion === "Loading...") {
+        else {
+            this.dispatch({
+                type: "HYDRATION_COMPLETE",
+                installedReleasePublishedAt: context?.installed_release_published_at || null,
+            });
+        }
+        if (isPendingInstallCurrent) {
+            logUpdate(null, "initial_check_skipped_hydration");
             return;
         }
-        if (opts.source === "automatic" && !settingsLoaded) {
-            return;
+        if (this.automaticUpdateChecks) {
+            void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
         }
-        if (opts.source === "automatic" && !automaticUpdateChecksRef.current) {
+    }
+    currentSettings() {
+        return { update_channel: this.updateChannel, automatic_update_checks: this.automaticUpdateChecks };
+    }
+    /** Optimistic display only: no check starts and in-flight checks keep running. */
+    showSettings(settings) {
+        this.updateChannel = settings.update_channel;
+        this.automaticUpdateChecks = settings.automatic_update_checks;
+        this.publish();
+    }
+    /** Apply settings the backend confirmed; checks follow the change from `previous`, the settings before the save. */
+    applySettings(settings, previous) {
+        const channelChanged = previous.update_channel !== settings.update_channel;
+        const automaticChecksEnabled = !previous.automatic_update_checks && settings.automatic_update_checks;
+        if (channelChanged) {
+            this.activeCheckId += 1;
+            this.inFlightCheck = null;
+            this.clearCheckTimeout();
+        }
+        this.updateChannel = settings.update_channel;
+        this.latestChannel = settings.update_channel;
+        this.automaticUpdateChecks = settings.automatic_update_checks;
+        this.publish();
+        if (channelChanged) {
+            void this.checkForUpdates({ force: true, notify: false, source: "automatic" });
+        }
+        else if (automaticChecksEnabled && this.settingsLoaded) {
+            void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
+        }
+    }
+    setPluginVersion(version) {
+        this.pluginVersion = version;
+        const installedOverride = this.state.installedOverride;
+        if (installedOverride &&
+            version &&
+            version !== "Loading..." &&
+            (version !== installedOverride.preInstallVersion ||
+                version === installedOverride.version)) {
+            this.dispatch({ type: "CLEAR_INSTALLED_OVERRIDE" });
+        }
+        else {
+            this.publish();
+        }
+    }
+    async checkForUpdates(options) {
+        const currentVersion = this.state.installedOverride?.version ?? this.pluginVersion;
+        if (!currentVersion || currentVersion === "Loading...")
+            return;
+        if (options.source === "automatic" && !this.settingsLoaded)
+            return;
+        if (options.source === "automatic" && !this.automaticUpdateChecks) {
             logUpdate(null, "automatic_check_suppressed_disabled");
             return;
         }
-        if (opts.source === "automatic" && (state.installedOverride || state.pendingInstallVersion)) {
+        if (options.source === "automatic" &&
+            (this.state.installedOverride || this.state.pendingInstallVersion)) {
             logUpdate(null, "automatic_check_suppressed_pending_install");
             return;
         }
-        const checkChannel = updateChannel;
-        if (inFlightCheck.current && latestChannel.current === checkChannel) {
-            logUpdate(null, "check_reuse", { channel: updateChannel, elapsed_ms: 0 });
-            return inFlightCheck.current;
+        const checkChannel = this.updateChannel;
+        if (this.inFlightCheck && this.latestChannel === checkChannel) {
+            logUpdate(null, "check_reuse", { channel: checkChannel, elapsed_ms: 0 });
+            return this.inFlightCheck;
         }
-        if (latestChannel.current !== checkChannel) {
-            activeCheckId.current += 1;
-            inFlightCheck.current = null;
-            clearCheckTimeout();
-            latestChannel.current = checkChannel;
+        if (this.latestChannel !== checkChannel) {
+            this.activeCheckId += 1;
+            this.inFlightCheck = null;
+            this.clearCheckTimeout();
+            this.latestChannel = checkChannel;
         }
-        activeCheckId.current += 1;
-        const checkId = activeCheckId.current;
-        const promise = (async () => {
-            const checkStart = performance.now();
-            dispatch({ type: "CHECK_START" });
-            logUpdate(null, "check_start", { channel: updateChannel });
-            clearCheckTimeout();
-            checkTimeoutRef.current = setTimeout(() => {
-                if (activeCheckId.current === checkId) {
-                    activeCheckId.current += 1;
-                    inFlightCheck.current = null;
-                    dispatch({ type: "CHECK_TIMEOUT", message: t("updater.check.interrupted") });
-                    logUpdate(null, "check_timeout", { checkId });
-                }
-            }, UPDATE_CHECK_UI_TIMEOUT_MS);
+        this.activeCheckId += 1;
+        const checkId = this.activeCheckId;
+        const generation = this.generation;
+        const checkStarted = performance.now();
+        this.dispatch({ type: "CHECK_START" });
+        logUpdate(null, "check_start", { channel: checkChannel });
+        this.clearCheckTimeout();
+        this.checkTimeout = this.deps.setTimeout(() => {
+            if (generation !== this.generation || this.activeCheckId !== checkId)
+                return;
+            this.activeCheckId += 1;
+            this.inFlightCheck = null;
+            this.checkTimeout = null;
+            this.dispatch({ type: "CHECK_TIMEOUT", message: t("updater.check.interrupted") });
+            logUpdate(null, "check_timeout", { checkId });
+        }, UPDATE_CHECK_UI_TIMEOUT_MS);
+        const request = (async () => {
             try {
-                const res = await checkForPluginUpdate(effectiveCurrentVersion, opts.force);
-                if (activeCheckId.current !== checkId ||
-                    latestChannel.current !== checkChannel ||
-                    (res.status !== "failed" && res.channel !== checkChannel)) {
+                const result = await this.deps.checkForPluginUpdate(currentVersion, options.force);
+                if (generation !== this.generation ||
+                    this.activeCheckId !== checkId ||
+                    this.latestChannel !== checkChannel ||
+                    (result.status !== "failed" && result.channel !== checkChannel)) {
                     return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
                 }
-                const elapsed_ms = Math.round(performance.now() - checkStart);
-                if (res.status === "failed") {
-                    const failureText = res.message ? translateBackendError(res.message) : t("updater.check.failed");
-                    logUpdate(null, "check_failed", { message: res.message || "unknown", elapsed_ms });
-                    dispatch({ type: "CHECK_FAILED", message: failureText, result: res });
-                    if (opts.notify && opts.force) {
-                        toaster.toast({
+                const elapsedMs = Math.round(performance.now() - checkStarted);
+                if (result.status === "failed") {
+                    const message = result.message
+                        ? translateBackendError(result.message)
+                        : t("updater.check.failed");
+                    logUpdate(null, "check_failed", {
+                        message: result.message || "unknown",
+                        elapsed_ms: elapsedMs,
+                    });
+                    this.dispatch({ type: "CHECK_FAILED", message, result });
+                    if (options.notify && options.force) {
+                        this.deps.toast({
                             title: t("updater.check.failedTitle"),
-                            body: failureText,
-                            duration: 3000
+                            body: message,
+                            duration: 3000,
                         });
                     }
                 }
-                else if (res.status === "available") {
-                    const candidateVersion = res.candidate?.version;
-                    const isStale = (state.installedOverride && candidateVersion === state.installedOverride.version) ||
-                        candidateVersion === state.pendingInstallVersion ||
-                        candidateVersion === effectiveCurrentVersion;
+                else if (result.status === "available") {
+                    const candidateVersion = result.candidate.version;
+                    const isStale = (this.state.installedOverride &&
+                        candidateVersion === this.state.installedOverride.version) ||
+                        candidateVersion === this.state.pendingInstallVersion ||
+                        candidateVersion === currentVersion;
                     if (isStale) {
-                        logUpdate(null, "check_success", { status: "current", stale_coerced: true, elapsed_ms });
-                        dispatch({ type: "CHECK_SUCCESS_CURRENT", result: { status: "current", checked_at: res.checked_at, channel: updateChannel } });
+                        logUpdate(null, "check_success", {
+                            status: "current",
+                            stale_coerced: true,
+                            elapsed_ms: elapsedMs,
+                        });
+                        this.dispatch({
+                            type: "CHECK_SUCCESS_CURRENT",
+                            result: {
+                                status: "current",
+                                checked_at: result.checked_at,
+                                channel: checkChannel,
+                            },
+                        });
                     }
                     else {
-                        logUpdate(null, "check_success", { status: "available", version: candidateVersion, elapsed_ms });
-                        dispatch({ type: "CHECK_SUCCESS_AVAILABLE", result: res, candidate: res.candidate });
+                        logUpdate(null, "check_success", {
+                            status: "available",
+                            version: candidateVersion,
+                            elapsed_ms: elapsedMs,
+                        });
+                        this.dispatch({
+                            type: "CHECK_SUCCESS_AVAILABLE",
+                            result,
+                            candidate: result.candidate,
+                        });
                     }
                 }
                 else {
-                    logUpdate(null, "check_success", { status: "current", elapsed_ms });
-                    dispatch({ type: "CHECK_SUCCESS_CURRENT", result: res });
+                    logUpdate(null, "check_success", { status: "current", elapsed_ms: elapsedMs });
+                    this.dispatch({ type: "CHECK_SUCCESS_CURRENT", result });
                 }
-                return res;
+                return result;
             }
-            catch (err) {
-                if (activeCheckId.current !== checkId ||
-                    latestChannel.current !== checkChannel) {
+            catch (error) {
+                if (generation !== this.generation ||
+                    this.activeCheckId !== checkId ||
+                    this.latestChannel !== checkChannel) {
                     return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
                 }
-                const elapsed_ms = Math.round(performance.now() - checkStart);
-                const msg = translateBackendError(err);
-                logUpdate(null, "check_failed", { message: msg, elapsed_ms });
-                dispatch({ type: "CHECK_FAILED", message: msg });
-                if (opts.notify && opts.force) {
-                    toaster.toast({
+                const elapsedMs = Math.round(performance.now() - checkStarted);
+                const message = translateBackendError(error);
+                logUpdate(null, "check_failed", { message, elapsed_ms: elapsedMs });
+                this.dispatch({ type: "CHECK_FAILED", message });
+                if (options.notify && options.force) {
+                    this.deps.toast({
                         title: t("updater.check.failedTitle"),
-                        body: msg,
-                        duration: 3000
+                        body: message,
+                        duration: 3000,
                     });
                 }
                 return {
                     status: "failed",
                     checked_at: new Date().toISOString(),
-                    message: msg
+                    message,
                 };
             }
             finally {
-                finishCheck(checkId);
+                if (generation === this.generation &&
+                    this.activeCheckId === checkId) {
+                    this.inFlightCheck = null;
+                    this.clearCheckTimeout();
+                }
             }
         })();
-        inFlightCheck.current = promise;
-        return promise;
-    }, [updateChannel, settingsLoaded, state.installedOverride, state.pendingInstallVersion, effectiveCurrentVersion, clearCheckTimeout, finishCheck]);
-    const checkNow = SP_REACT.useCallback(async () => {
-        await checkForUpdates({ force: true, notify: true, source: "manual" });
-    }, [checkForUpdates]);
-    const handleHandoffSuccess = SP_REACT.useCallback(async (version, channel, traceId, handoffStart) => {
-        activeCheckId.current += 1;
-        clearCheckTimeout();
-        inFlightCheck.current = null;
-        dispatch({ type: "INSTALL_SUCCESS", version, channel, preInstallVersion: currentVersion });
+        this.inFlightCheck = request;
+        return request;
+    }
+    async handleHandoffSuccess(version, channel, traceId, handoffStarted, generation) {
+        this.activeCheckId += 1;
+        this.clearCheckTimeout();
+        this.inFlightCheck = null;
+        this.dispatch({
+            type: "INSTALL_SUCCESS",
+            version,
+            channel,
+            preInstallVersion: this.pluginVersion,
+        });
         try {
-            const confirmRes = await confirmUpdateInstallHandoff(version);
-            if ("status" in confirmRes && (confirmRes.status === "failed" || confirmRes.status === "skipped")) {
-                throw new Error(confirmRes.message || "Failed to confirm handoff");
+            const result = await this.deps.confirmUpdateInstallHandoff(version);
+            if (generation !== this.generation)
+                return;
+            if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
+                throw new Error(result.message || "Failed to confirm handoff");
             }
         }
-        catch (err) {
-            const msg = err instanceof Error ? err.message : String(err);
-            logUpdate(traceId, "handoff_confirm_failed", { message: msg });
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            logUpdate(traceId, "handoff_confirm_failed", {
+                message: error instanceof Error ? error.message : String(error),
+            });
         }
-        logUpdate(traceId, "handoff_resolved", { status: "success", elapsed_ms: Math.round(performance.now() - handoffStart) });
-        onInstallVersionConfirmed?.(version);
-        toaster.toast({
+        if (generation !== this.generation)
+            return;
+        logUpdate(traceId, "handoff_resolved", {
+            status: "success",
+            elapsed_ms: Math.round(performance.now() - handoffStarted),
+        });
+        this.setPluginVersion(version);
+        this.deps.toast({
             title: t("updater.installation.startedTitle"),
             body: t("updater.installation.startedBody", { version }),
-            duration: 3000
+            duration: 3000,
         });
-    }, [currentVersion, onInstallVersionConfirmed, clearCheckTimeout]);
-    SP_REACT.useEffect(() => {
-        if (!state.installedOverride)
-            return;
-        if (currentVersion &&
-            currentVersion !== "Loading..." &&
-            (currentVersion !== state.installedOverride.preInstallVersion ||
-                currentVersion === state.installedOverride.version)) {
-            dispatch({ type: "CLEAR_INSTALLED_OVERRIDE" });
-        }
-    }, [currentVersion, state.installedOverride]);
-    SP_REACT.useEffect(() => {
-        return () => {
-            clearCheckTimeout();
-        };
-    }, [clearCheckTimeout]);
-    SP_REACT.useEffect(() => {
-        if (latestChannel.current !== updateChannel) {
-            latestChannel.current = updateChannel;
-            activeCheckId.current += 1;
-            inFlightCheck.current = null;
-            clearCheckTimeout();
-        }
-    }, [updateChannel, clearCheckTimeout]);
-    SP_REACT.useEffect(() => {
-        let active = true;
-        async function loadCache() {
-            try {
-                const result = await getUpdateCheckContext();
-                if (!active)
-                    return;
-                if (result && !("status" in result && (result.status === "failed" || result.status === "skipped"))) {
-                    const ctx = result;
-                    const pendingInstall = ctx.pending_update_install;
-                    if (pendingInstall?.version &&
-                        ctx.effective_installed_version === pendingInstall.version &&
-                        hydratedPendingInstallVersion.current !== pendingInstall.version) {
-                        const pendingChannel = pendingInstall.channel === "development" ? "development" : "stable";
-                        hydratedPendingInstallVersion.current = pendingInstall.version;
-                        activeCheckId.current += 1;
-                        clearCheckTimeout();
-                        inFlightCheck.current = null;
-                        dispatch({
-                            type: "HYDRATION_COMPLETE",
-                            installedReleasePublishedAt: ctx.installed_release_published_at || null,
-                            pendingInstall: {
-                                version: pendingInstall.version,
-                                channel: pendingChannel,
-                                preInstallVersion: ctx.installed_version ?? currentVersion
-                            }
-                        });
-                        onInstallVersionConfirmed?.(pendingInstall.version);
-                        skipInitialCheck.current = true;
-                    }
-                    else {
-                        dispatch({
-                            type: "HYDRATION_COMPLETE",
-                            installedReleasePublishedAt: ctx.installed_release_published_at || null,
-                        });
-                    }
-                    if (settingsLoaded &&
-                        ctx.last_checked_at &&
-                        ctx.last_checked_channel === updateChannel) {
-                        const hasPending = !!ctx.pending_update_install &&
-                            ctx.effective_installed_version === ctx.pending_update_install.version;
-                        if (ctx.last_available_tag && !hasPending) {
-                            void checkForUpdates({ force: false, notify: false, source: "automatic" });
-                        }
-                    }
-                }
-                else {
-                    dispatch({ type: "HYDRATION_COMPLETE", installedReleasePublishedAt: null });
-                }
-            }
-            catch (err) {
-                if (active) {
-                    dispatch({ type: "HYDRATION_COMPLETE", installedReleasePublishedAt: null });
-                }
-            }
-        }
-        void loadCache();
-        return () => {
-            active = false;
-        };
-    }, [currentVersion, onInstallVersionConfirmed, updateChannel, settingsLoaded, checkForUpdates, clearCheckTimeout]);
-    SP_REACT.useEffect(() => {
-        if (!isHydrated || !settingsLoaded) {
-            return;
-        }
-        if (!currentVersion || currentVersion === "Loading...") {
-            return;
-        }
-        const isFirstMount = !hasChecked.current;
-        hasChecked.current = true;
-        if (isFirstMount) {
-            if (skipInitialCheck.current) {
-                logUpdate(null, "initial_check_skipped_hydration");
-                return;
-            }
-            if (automaticUpdateChecks) {
-                void checkForUpdates({ force: false, notify: false, source: "automatic" });
-            }
-        }
-        else {
-            void checkForUpdates({ force: true, notify: false, source: "automatic" });
-        }
-    }, [updateChannel, currentVersion, isHydrated, settingsLoaded, automaticUpdateChecks, checkForUpdates]);
-    SP_REACT.useEffect(() => {
-        if (!isHydrated || !settingsLoaded) {
-            return;
-        }
-        if (!automaticCheckToggleHydrated.current) {
-            automaticCheckToggleHydrated.current = true;
-            return;
-        }
-        if (!automaticUpdateChecks || !currentVersion || currentVersion === "Loading...") {
-            return;
-        }
-        void checkForUpdates({ force: false, notify: false, source: "automatic" });
-    }, [automaticUpdateChecks, currentVersion, isHydrated, settingsLoaded, checkForUpdates]);
-    const install = SP_REACT.useCallback(async (targetCandidate) => {
-        if (state.phase === "installing" || state.phase === "handoff_pending")
-            return;
-        dispatch({ type: "INSTALL_START" });
-        const updateTraceId = generateUpdateTraceId();
-        logUpdate(updateTraceId, "install_clicked", { version: targetCandidate.version });
+    }
+    async finishPendingHandoff(installerPromise, version, channel, traceId, handoffStarted, generation) {
         try {
-            const revalStart = performance.now();
-            logUpdate(updateTraceId, "revalidate_start", { tag: targetCandidate.tag });
-            const revalRes = await revalidatePluginUpdate(targetCandidate);
-            const revalElapsed = Math.round(performance.now() - revalStart);
-            if (("status" in revalRes && revalRes.status === "failed") ||
-                !("version" in revalRes)) {
-                const msg = "message" in revalRes ? revalRes.message : "unknown";
-                logUpdate(updateTraceId, "revalidate_failed", { message: msg, elapsed_ms: revalElapsed });
-                throw new Error(msg || t("updater.install.revalidationFailed"));
-            }
-            logUpdate(updateTraceId, "revalidate_success", { version: revalRes.version, elapsed_ms: revalElapsed });
-            const installType = targetCandidate.action === "downgrade_to_stable"
-                ? INSTALL_TYPE_DOWNGRADE
-                : INSTALL_TYPE_UPDATE;
-            const payload = { ...revalRes, updateTraceId };
-            const recordStart = performance.now();
-            logUpdate(updateTraceId, "record_install_start", { version: revalRes.version });
-            const recordRes = await recordUpdateInstallRequested(payload);
-            if ("status" in recordRes && (recordRes.status === "failed" || recordRes.status === "skipped")) {
-                throw new Error(recordRes.message || t("updater.install.recordFailed"));
-            }
-            logUpdate(updateTraceId, "record_install_success", { version: revalRes.version, elapsed_ms: Math.round(performance.now() - recordStart) });
-            activeCheckId.current += 1;
-            clearCheckTimeout();
-            inFlightCheck.current = null;
-            dispatch({ type: "INSTALL_SUCCESS", version: revalRes.version, channel: revalRes.channel, preInstallVersion: currentVersion });
-            const handoffStart = performance.now();
-            logUpdate(updateTraceId, "handoff_start", {
-                version: revalRes.version,
-                sha256_prefix: revalRes.sha256 ? revalRes.sha256.slice(0, 8) : "none"
-            });
-            let handoffTimerFired = false;
-            const handoffTimer = new Promise((resolve) => {
-                setTimeout(() => {
-                    handoffTimerFired = true;
-                    resolve();
-                }, 3000);
-            });
-            const installerPromise = invokeDeckyInstaller(revalRes.artifact_url, revalRes.version, revalRes.sha256, installType, updateTraceId);
-            await Promise.race([installerPromise, handoffTimer]);
-            if (handoffTimerFired) {
-                logUpdate(updateTraceId, "handoff_pending", { status: "installer_handoff_pending", elapsed_ms: Math.round(performance.now() - handoffStart) });
-                dispatch({ type: "INSTALL_HANDOFF_PENDING" });
-                void (async () => {
-                    try {
-                        await installerPromise;
-                        await handleHandoffSuccess(revalRes.version, revalRes.channel, updateTraceId, handoffStart);
-                    }
-                    catch (err) {
-                        const msg = translateBackendError(err);
-                        logUpdate(updateTraceId, "handoff_rejected", { message: msg, elapsed_ms: Math.round(performance.now() - handoffStart) });
-                        try {
-                            const clearRes = await clearPendingUpdateInstall(revalRes.version);
-                            if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-                                throw new Error(clearRes.message || "Failed to clear pending install");
-                            }
-                        }
-                        catch (clearErr) {
-                            const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
-                            logUpdate(updateTraceId, "pending_clear_failed", { message: clearMsg });
-                        }
-                        void checkForUpdates({ force: false, notify: false, source: "automatic" });
-                        dispatch({ type: "INSTALL_FAILED", message: msg });
-                        toaster.toast({
-                            title: t("updater.installation.failedTitle"),
-                            body: msg,
-                            duration: 4000
-                        });
-                    }
-                })();
-            }
-            else {
-                await installerPromise;
-                await handleHandoffSuccess(revalRes.version, revalRes.channel, updateTraceId, handoffStart);
-            }
+            await installerPromise;
+            if (generation !== this.generation)
+                return;
+            await this.handleHandoffSuccess(version, channel, traceId, handoffStarted, generation);
         }
-        catch (err) {
-            const msg = translateBackendError(err);
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            const message = translateBackendError(error);
+            logUpdate(traceId, "handoff_rejected", {
+                message,
+                elapsed_ms: Math.round(performance.now() - handoffStarted),
+            });
             try {
-                const clearRes = await clearPendingUpdateInstall(targetCandidate.version);
-                if ("status" in clearRes && (clearRes.status === "failed" || clearRes.status === "skipped")) {
-                    throw new Error(clearRes.message || "Failed to clear pending install");
+                const result = await this.deps.clearPendingUpdateInstall(version);
+                if (generation !== this.generation)
+                    return;
+                if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
+                    throw new Error(result.message || "Failed to clear pending install");
                 }
             }
-            catch (clearErr) {
-                const clearMsg = clearErr instanceof Error ? clearErr.message : String(clearErr);
-                logUpdate(updateTraceId, "pending_clear_failed", { message: clearMsg });
+            catch (clearError) {
+                if (generation !== this.generation)
+                    return;
+                logUpdate(traceId, "pending_clear_failed", {
+                    message: clearError instanceof Error ? clearError.message : String(clearError),
+                });
             }
-            void checkForUpdates({ force: false, notify: false, source: "automatic" });
-            dispatch({ type: "INSTALL_FAILED", message: msg });
-            toaster.toast({
+            if (generation !== this.generation)
+                return;
+            void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
+            this.dispatch({ type: "INSTALL_FAILED", message });
+            this.deps.toast({
                 title: t("updater.installation.failedTitle"),
-                body: msg,
-                duration: 4000
+                body: message,
+                duration: 4000,
             });
         }
-    }, [state.phase, handleHandoffSuccess, checkForUpdates, currentVersion, clearCheckTimeout]);
+    }
+    async failInstall(error, candidateVersion, traceId, generation) {
+        const message = translateBackendError(error);
+        try {
+            const result = await this.deps.clearPendingUpdateInstall(candidateVersion);
+            if (generation !== this.generation)
+                return;
+            if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
+                throw new Error(result.message || "Failed to clear pending install");
+            }
+        }
+        catch (clearError) {
+            if (generation !== this.generation)
+                return;
+            logUpdate(traceId, "pending_clear_failed", {
+                message: clearError instanceof Error ? clearError.message : String(clearError),
+            });
+        }
+        if (generation !== this.generation)
+            return;
+        void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
+        this.dispatch({ type: "INSTALL_FAILED", message });
+        this.deps.toast({
+            title: t("updater.installation.failedTitle"),
+            body: message,
+            duration: 4000,
+        });
+    }
+    dispatch(action) {
+        this.state = updateReducer(this.state, action);
+        this.publish();
+    }
+    publish() {
+        this.snapshot = {
+            pluginVersion: this.pluginVersion,
+            effectiveCurrentVersion: this.state.installedOverride?.version ?? this.pluginVersion,
+            updateChannel: this.updateChannel,
+            automaticUpdateChecks: this.automaticUpdateChecks,
+            settingsLoaded: this.settingsLoaded,
+            candidate: this.state.candidate,
+            checkResult: this.state.checkResult,
+            errorMessage: this.state.errorMessage,
+            checkTimedOut: this.state.checkTimedOut,
+            isChecking: this.state.phase === "checking",
+            isInstalling: this.state.phase === "installing",
+            isHandoffPending: this.state.phase === "handoff_pending",
+            installedReleasePublishedAt: this.state.installedReleasePublishedAt,
+        };
+        for (const listener of this.listeners)
+            listener();
+    }
+    clearCheckTimeout() {
+        if (this.checkTimeout !== null) {
+            this.deps.clearTimeout(this.checkTimeout);
+            this.checkTimeout = null;
+        }
+    }
+    clearHandoffTimeout(resolveWaiter = false) {
+        if (this.handoffTimeout !== null) {
+            this.deps.clearTimeout(this.handoffTimeout);
+            this.handoffTimeout = null;
+        }
+        const resolve = this.resolveHandoffTimeout;
+        this.resolveHandoffTimeout = null;
+        if (resolveWaiter)
+            resolve?.();
+    }
+}
+const pluginUpdateController = new PluginUpdateControllerStore({
+    getPluginVersion,
+    getUpdateSettings,
+    getUpdateCheckContext,
+    checkForPluginUpdate,
+    setUpdateChannel,
+    setAutomaticUpdateChecks,
+    clearPendingUpdateInstall,
+    confirmUpdateInstallHandoff,
+    recordUpdateInstallRequested,
+    revalidatePluginUpdate,
+    invokeDeckyInstaller,
+    toast: (options) => toaster.toast(options),
+    toastError,
+    setTimeout: (fn, ms) => globalThis.setTimeout(fn, ms),
+    clearTimeout: (id) => globalThis.clearTimeout(id),
+});
+function usePluginUpdateController() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(pluginUpdateController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(pluginUpdateController.getSnapshot());
+        const unsubscribe = pluginUpdateController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
     return {
-        effectiveCurrentVersion,
-        candidate: state.candidate,
-        checkResult: state.checkResult,
-        errorMessage: state.errorMessage,
-        checkTimedOut: state.checkTimedOut,
-        isChecking: state.phase === "checking",
-        isInstalling: state.phase === "installing",
-        isHandoffPending: state.phase === "handoff_pending",
-        installedReleasePublishedAt: state.installedReleasePublishedAt,
-        checkNow,
-        install,
+        ...snapshot,
+        checkNow: pluginUpdateController.checkNow,
+        install: pluginUpdateController.install,
+        setUpdateChannel: pluginUpdateController.setUpdateChannel,
+        setAutomaticUpdateChecks: pluginUpdateController.setAutomaticUpdateChecks,
     };
 }
 
-function PluginUpdateSection({ currentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, onToggleUpdateChannel, onToggleAutomaticUpdateChecks, onInstallVersionConfirmed }) {
+function QamInstallRow() {
+    const update = usePluginUpdateController();
+    const candidate = update.candidate;
+    if (!candidate || !canInstallCandidate(candidate, update.effectiveCurrentVersion))
+        return null;
+    return (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: update.effectiveCurrentVersion, isChecking: update.isChecking, isInstalling: update.isInstalling, isHandoffPending: update.isHandoffPending, onInstall: update.install }));
+}
+function OpenSettingsButton() {
     const t = useT();
-    const { effectiveCurrentVersion, candidate, checkResult, errorMessage: errorMsg, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install: handleInstall, } = usePluginUpdateController({
-        currentVersion,
-        updateChannel,
-        automaticUpdateChecks,
-        settingsLoaded,
-        onInstallVersionConfirmed,
-    });
-    const handleToggleChannel = (checked) => {
-        if (checked) {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => onToggleUpdateChannel(true) }));
-        }
-        else {
-            onToggleUpdateChannel(false);
-        }
-    };
-    const handleInstallClick = (targetCandidate) => {
-        if (targetCandidate.action === "downgrade_to_stable") {
-            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: targetCandidate.version }), onOK: () => handleInstall(targetCandidate) }));
-        }
-        else {
-            void handleInstall(targetCandidate);
-        }
-    };
-    const isLocalBuild = effectiveCurrentVersion.includes("+");
-    const isDeckyAvailable = isDeckyInstallerAvailable();
-    const canInstallCandidate = isDeckyAvailable && (!isLocalBuild || candidate?.channel === "stable");
-    const getActionText = (c) => {
-        switch (c.action) {
-            case "move_to_stable":
-                return t("qam.update.actionMoveToStable", { version: c.version });
-            case "downgrade_to_stable":
-                return t("qam.update.actionRevertToStable", { version: c.version });
-            default:
-                if (c.channel === "development") {
-                    return t("qam.update.actionInstallDevelopment", { version: c.version });
-                }
-                return t("qam.update.actionUpdate", { version: c.version });
-        }
-    };
-    const getStatusContent = () => {
-        if (isChecking) {
-            return SP_JSX.jsxs("span", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
-        }
-        if (errorMsg) {
-            return (SP_JSX.jsx("span", { style: inlineStatusStyle("error"), children: checkTimedOut
-                    ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-                    : t("qam.update.checkFailed") }));
-        }
-        if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: inlineStatusStyle("success"), children: t("qam.update.upToDate") });
-        }
-        if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: inlineStatusStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
-                    ? t("qam.update.latestDevelopment")
-                    : t("qam.update.updateAvailable") }));
-        }
-        return SP_JSX.jsx("span", { style: inlineStatusStyle("idle"), children: t("qam.update.neverChecked") });
-    };
-    const lastCheckedText = checkResult?.checked_at
-        ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
-        : undefined;
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.update.title"), icon: SP_JSX.jsx(FaSyncAlt, { size: 16 }), children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), padding: "standard", focusable: true, highlightOnFocus: true, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded, onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded, onChange: onToggleAutomaticUpdateChecks }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: getStatusContent() }) }), errorMsg && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMsg) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px" }, children: [SP_JSX.jsx("div", { children: t("qam.update.newVersion", {
-                                    version: candidate.version,
-                                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                                }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: t("qam.update.downgradeWarning") }))] }) }) })), candidate && canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => handleInstallClick(candidate), disabled: isChecking || isInstalling, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling, children: isInstalling
-                            ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
-                            : getActionText(candidate) }) }) })), candidate && !canInstallCandidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: isLocalBuild && candidate.channel !== "stable"
-                            ? t("qam.update.localBuildOnlyStable")
-                            : t("qam.update.manualInstallUnavailable") }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.update.viewReleaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? (SP_JSX.jsx(BusySpinner, {})) : (SP_JSX.jsx(IoMdRefresh, {})), SP_JSX.jsx("span", { children: t("qam.update.checkNow") })] }) }) })] }));
+    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openSettings, children: t("settings.open") }) }));
 }
 
-const STEAM_DECK_CONTROLLER_TYPE = 4;
-const LEGION_GO_S_CONTROLLER_TYPE$1 = 102;
-const AFFLICTED_CONTROLLER_TYPES = new Set([
-    LEGION_GO_S_CONTROLLER_TYPE$1,
-]);
-const validControllerIndex$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
-const validControllerType = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
-const readControllerStore = (internals) => {
-    try {
-        const boundary = internals ?? globalThis;
-        const upper = boundary.ControllerStore;
-        if (upper && typeof upper.GetControllers === "function")
-            return upper;
-        const lower = boundary.controllerStore;
-        if (lower && typeof lower.GetControllers === "function")
-            return lower;
-        return null;
-    }
-    catch (_error) {
-        return null;
-    }
+let verbose = false;
+const setVerboseLogging = (enabled) => {
+    verbose = !!enabled;
 };
-const extractControllers = (store) => {
-    try {
-        if (!store)
-            return null;
-        const getControllers = store.GetControllers;
-        if (typeof getControllers !== "function")
-            return null;
-        const value = getControllers.call(store);
-        return Array.isArray(value) ? value : null;
-    }
-    catch (_error) {
+const isVerboseLogging = () => verbose;
+const prefix = (area) => `[Decky Metadata][${area}]`;
+const debug = (area, message, ...args) => {
+    if (verbose)
+        console.debug(prefix(area), message, ...args);
+};
+const info = (area, message, ...args) => {
+    if (verbose)
+        console.info(prefix(area), message, ...args);
+};
+const warn = (area, message, ...args) => {
+    console.warn(prefix(area), message, ...args);
+};
+const error = (area, message, ...args) => {
+    console.error(prefix(area), message, ...args);
+};
+
+const PLAYHUB_COMMUNITY_IGN_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAErpJREFUeJztnfl/E2Uex/dvkbK70nKI5T4FQQ6XSwQWBQERRVkRd1FxEUHkUBZc0UU8UEFEURABRVwvDkGuFSFN0jPpkaZpmzZtrjZn90mnhtJkZp65mpLv5/t6/8CrTOY5Zt4zzzPzzPP8wXRbHwDI8oeM5wCADAIBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASNNDBbDmj4i3traJh23ugoxnEmQBPVSA2p27JM5+Fp4vjmU8kyAL6KECtFis0gLEQyFz3/yM5xPc6vREAQpHjGuLxaUFYFG+5LGMZxXc6vREAZwvbZE9+1m4P9iX8axmN5b+g+2Lljk3bHZtf71m86sVj6+0DhmT8VzpS08RoGz2/LL7HxD+7f3+Rx4BwtVOYfvie6ZV/u1pU06eERmr3/Nh1OORwH/xkvZUCkeOdzy3tuHAQd/ps0FTQWuZPVTlCDmqdafyqdXy+emV61izLnj1WjwSSa321pJS146d5jzd2p/OjVsjtXVdYKk0HjxUOPwuo0+8zAtgf3BJ4NffWM3a5i8W/hJ2VPMIwKJw2Fi2vaXfoLZYLFReUf38i7pr0PDJZ9J5YN0V1TsvmTKTnfQs55zl1R6JKpLMku2vD7Xa7LL7ibjdVf9Yo0sN1+7YKZZKLBAoX/yooadfJgVgfnt/Ot0W72juW4eMZn+05I9I/kU27IseEXYVqqgU/tJiLSqb9VcdM2mQAJVPPBX87Tp/SfUKaQFqNr0SD6e56otF42eHC3r31VjDEgKwiLe2Fo2bbNxJmDEBHM+9EPX6kuWMNjYKfy9fupz/ANRs3ib8ynvqzI2/xmLuPXsL/thPl3zqLgBr6QWvF/CXUd+QEKBm63YVQjYd+5o1mbTUsLQALNhN0rjzMBMC5OQ1HjrSpZC+Mz8L/1v3xlsKav/rk8Kv3O/v7fJfgavXrINGas+tjgIU/Kl/w8cH49EofwF1DzEB7IuXxSMqM5a8DKlDVoDkxdEIulsAc+5A/8XLqYWsf3uPsAE7p/mrnrV8hF85Vj+f+r+sL6H97qmXAEV3TWIdO/6iGRRpBWBmhqudqvfJ+srFd09VXcOyArAw7oTsVgHY2R+8bkpbQseza4Vt2JVbSd3HC26/g/2qdNrstP8fcTdoOTZ6CWCbtzDq8Sgol2GRVgDXqzs07pb15SCAHL37Bi5dESuhfdEyYTOll6KiMRPb1bpTbINIbV3h8HEZFMC+8OGYP6CoUMZFWgFay2za92xf8DAEkMJz+Eux4oXKKzresPTKjYfDiuq9bM6Dwv5ZL0JsmxZrEbv5ZESAsplzY36/ohIZGqkCFI29R5c9h2zlrCkFAdLD6l2sbE3Hvjb3GyRslhgEoTAqn/x7Ryq9cl3bXhN7jtF48FD3C2AdPCpSV6+0RIZGqgASh0bxzv+5HgKkoXDk+JjPl7Zg9bvfNXV6kGy5Y1i4poa/xln3q3TG3M5pVa5Ylfb9JYvypcu7WYDAlV/5y9I9kSpA/bsfyP4q7OQ6KFGv15o/AgJ0xXf6bNpS1e9+L/URcuGwsS1FxXzV7SubNS81uYrHV7bFYqnbs4uxud/gbhPAte3fPKXoWiiPx3vqjPvDj+re3F375lu6Uzp9jtIChmtc7CLV8PGnPPmv37MXAtwE692mbZY0HT9hEnmJaOk/2P/LJZmjUu2UeMRZs+mVtL9ybX+9ewRgGscCCjq+rJdcu3NXyZSZBo1o0lLAVpudbcauHZGGRo6SxIon/kVRBrJcgOC166nlCVVUSV+MC/48gPUNxKqjxWwRxk1I0PzfH9IcnWCLReE9Wp0AEpnvGvF43a53LAOGGH0gVBdQEMDEPUo3+U6Tk2wWwDZ3QVt7Sz1YYGYV7dywqXzp46XT77cMGCr/81659e+8n6Z+T59ltwjZn5v7DCyZMsO+6BHHmhfce/b6L16OBYPs5zWbXtX3/EgVoGj0BM5nWeyaWnbffEMPgfYCJgVgd6fW4hKectkfeoQ/A9ksQMnkGSWTpqt7OibAnOncgmo8dKTg9gEq95aTVzR2Ytl9yobKqRCg4YDMT4RgbeuiUXcbWv+6FPCGAO3vNHiKFqqoZPdwzgxkswBisCaybf6iksnTeTZmndp4KMRqoW7X22Ldhpt2PnIcuwIVjb2HZ2NZFAuQkxdtlH/py25Hhg5y1LGAnQUwJcYdpn+k0SWq123kzECWC1DQu2/pjLnOjVs8h79k7ZBQlUM4m9vaR7pyDl22zVngeO4Fni2t+SNYEh37j0YjrtrA1WtNX33j2rHTvuBhFa/DlArA2ng850flilVG17xeBewiALuyJI+gRMR8fs7BiNkoQK9cdoF3f7g/eM0Ua5Ga3STa1KxxrE5nCvoMbLEWSiTHlGgtKWUqsvOP8x6tVACJF97J8J3+WeMQYh1RKgDDve9j2TKycO/dz5OBrBKgdNr9niPHIm43TwUJEXbWCB92aSUnz//LRf50Y4GA99SZikdXSJ+LSgXg6SaK9UPYxZUlZwT17+wpX/Jo2mesKgQw9x3EdYhjMZ5WblYJoO4Tp9biUu3PAZuOn1CRNAv7wqV6CcC6+2LvoW8UtrRMTLmy2fPVFYEz2Klc+pfZ2gVgVL/4Mk+K/nMXiAmgNgKXrqh/vJP4IGaf6qSln9kpEqBk6kzZ5FzbXhNLy2gB2hJv3PxdXlSpE4DdTFoKi3hSlJ29BgJ0RPPJ79S9B615ZbuWdHUUoPKJp+STe3BJBgVg4b9wUQcBbutje2AxT3LhKof0pQ0C3Aj3RweUpli1+vk2bR8Z6ihA9Xr5hoHE08/uEYBFYaf3D6oFYHh/PMWTnPOlzRCAN1zb/s2fHLu9xlvlH8lJh44CuLbK34usg0dlXADbvIW6CFA4egJP/ccCAYmhKxDgpuB83i9QOn1OLBDUmKKOAtRs2SabnMSp0H0CzF+kiwAm7t5Xw/5PIYB8uLbvVJqifdEy2Qcv0qFnE+iFDbLJFU+8N5sEMOflc330E4+XTJ0JAaSiYd8Bda+Hqv7+nJYZpnQUoOLRFbLJSUx1disKYOLTvi3R+b4MAUSj+cRJLVNZaZnXQEcBiifcK5tc3Zu7s0wAdtmSnc5eiIplT2S5AOpaI/6Ll1V/tJ7EvXe/iqTbbj4bNApgysmTXtiGRdjlEnvae6sK0D7vC0+64WqnMI1N1gpgHTrG+eLLwQIL13Foj5biEssdw3RIvVdus5JJtcLOmrqduyRa5GoEuK0PT9nF3j2b+w1mp6ZGHGvWyWZAdwEYzd9xzemd+j1GVgmQpGj0hMqV//AcPirdQ4rU1hYO020K7II/9fdfkBoOFPP7vT/8VL12A//Hh0oF4Pl2lkmiy1DttJRMnSWbASMEKBw5Pi458FGIWDBoHXrT0K/sFOCmqhl+l/3BJdXrNjZ+8nng6rWo19tRFz4/51DQyhVP1+7cxdNFNvcblBwQylojLYVFnqNf1Wz5V/nS5UXjpqg47ZQKYJv3kOzhZMHukwbVdqYEYNS/9wFP2Rs//bzzr7JfgFQsA4YUT5rGrhk8Gzs3bhG6Fp4vjvJ0lC13DmcngXXQKF2GHCv+IKZXLs8kIvFwmLX4jajbDApgzr0z4qqVTb0tHu88Ji+bBSh/eDnr+Fvu4PgCWIT6t/d0fsTpO3tO9dokBbcPYH21qtXKlnVQ8Ulk2k+ZUyPa7E2dpEQ7GRSAwdMDYRG48mvy8pTNApTee59QgLCr1n/xMruEu7a9VrH8ycKhHB8A5OQ1Hf0qtS4SU0JwfGqUWN9q8TLnS1vYAWbahMorhHnJq9cqm71MhQCWO0fEgi0850EsEKxa9Yy+dZ5ZAdhpHSww85S94rEnhZ9kswAM/4U0M/xE6t3WfKmT2NxnoP+8aHc2VFlVdNckFelGvb7kNIycqJsWpWE/1zRSQnh/OFU0eoJeFZ5hAdpXAOF5LxmucQnPvrNcgNKZc9NWh//8BbEGPbvAy441jzY2sj2LJVr/9ntpf+Vcv0lp/tUJYOk/JMozjdTvwTo53p9OV65YxZrRGis84wIwmr/9nqfUNVu3m7JeAJP4mheeI8dS+6nFd0/lnCGdNTPSTvfpXP9y2mWGQ/YKdmNRmnnVUyM6nl3LU4ouwUxgrbXA5f/5zp73nTmnAmHFQeno3P82QoDExHgcjcBYS0vRmIk8Xxjf2gKwNnGkoSFtwTxfHu98H7AOG6NsIYlotMv3JYlJEUU+Dyibu0BF5rVMjuvlezfU/SEsqmCcACbh6QVHJGYQk2svRZu9t7YAjIrH/iZWTv+lK8kpha1Dx/DUWue4Mb9ITl7DgYNiqdS99a66nGsRgPU3eJYc7eaIer2dl3Y0SAB2s2WtfF0yzO6Ht7wAJsm3JKxPnJjH6rb2BTLkxtJ0ieTdPGgSffiQ6G9wT1SmowAMdq2NuNPf/TIVjZ8dVlRAdQIwHM/8U5cM1+54IxsEYFdoib5R8tPp5LRWnCF83WfuP1hsg5DNbhk4XHW2tS+RVDJpulgLMCORXFPHaAESj0T1WBC2dFrXmSxuTQHa53wWWyvAsWadsI2yRSXicWHi0dJZ89L+P9NJ46RDuiySVzx+SshRraBchoX/wqUuDx4MFEA4LtoWAw/876qhk4h191CIxLznJ75NLaf794UVFEwszo5NmU34VXW6F5At1kLZWdS7RwCGJX+E7+fz/EUzItKuZ2qoAAxFQ3RTQ+lkxkrJxFigXrm1r/+ny4WBNdOF/6197Q3+2mk6erzjKKY8Sms++Z1F+Xowqch+aqNgpficPOeGTUo7OTpG5crVaQr4L5mVbDQKwNqfkdo6dRmu2/2e0WdjZgbDmRITbS/tPL1e1OcT7nT2hx7hryDnho75NnxnzyX/GI9EnetfNvXWZ6kV1seQXttdgQDtsG5x01ffqDgbNIZDZI14VsC0K0olQ6MAJmHuAuVLZTZ9862WifU5yZgApvZrQ8NHB5K3gsLhiQ8D2GWbv9WYfAkQ/r2FzUzQfdrxhv2fSORBqQACJVNner44Kq2WXhGpq7M9sFiqgJLfMGgXgFE6Y46iGWMbDhxU/eBOEZkUoONUmDy96cRJdtInv5MKlVdwVlNizHP7+Gf28+C164k9GNBhKujdt/Gzw2J5UCeAgHXwaMczz/vOnjfIhKinybV1u+zSgAV/7Nd46IjYTnQRoL2wozxHj8vmOVJXX7F8ZbedfpkXQKB4/JTiCR1fJzZ/81+eo5s8MIWjJyTeBhg84ThLwv3+Pt/5C4Fff+sMu5Br37k5L7901ryqp5+t3bnLc/hL7/c/+s/9og7vD6fY2Vyz+VXb3IWKLqJlsx9wf/CRP6WArMGmYzWWTJ7h3rM3zXPheNx/4VLVqmdUDFfRQk8RoDPVa9fzCNANPSRgFL1yWd+DXVPYTTuxVtCUmea+Kj/z0EhPFMCSP0K6WyaETXyWWQA46YkCMIK/pVlctXPEgsHUCTYAUEoPFUB2xvOGj0XnmgSAnx4qgLnf4JhfaqV1I76mBQTpoQIA0D1AAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAECa/wNL4ZWiPylAFAAAAABJRU5ErkJggg==";
+const PLAYHUB_COMMUNITY_RAWG_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGlQTFRFAAAABAQElJSU////9vb23NzcxcXFubm5s7OzZWVlEBAQCAgIjIyM/Pz86enpy8vLHh4e1tbWe3t7m5ub+fn5U1NTWVlZSEhIgYGBqampbW1t4+PjJSUlLCwsNjY2Ozs78PDwGBgY8/Pz0uSjuQAACCBJREFUeJztnXtbEzkUxk8oUJuWy4gWEBB3v/93WlYWlVsLYqcUKLPJgKurpT15cqZvMs37h/LocHL6ay4ntzOKFlwK7QBaCQDaAbQSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCYDv7xeqEHHk/zapqMLwxML8TSwJ1SJlZP/ILQKi9kDG7KxSvQ0UnaGAHzrXeflDe6hHt/bjz6cC+DcBkgFgZRBoysu/jeHOXS5kd6oCagK/a131LGGqsjIEDcCosXZZVrPKCggZgGkKWV8vXVv7lREIGQBl1NfNUb6+fF5dIwgawLNMTdg6qwpBDADM2KBapxVFRjEAyEYmSFAP1dSBGACQ2uybT9+4q8S2v4nqAXzX5qWdJMgOCVEBoHEZE4i2hagAqGJ1qLTsLCEmAJqaV5sXwnFhTACeNJY1Fx+At6eLXQOy/ptTSXvRATAxQfezpD1/E3NuAkbbn+Q6wigB7JwsOICsuBSzFSUAncuNhXECoOXVU6F4MEoAZiwsCqFOIEoAmZkdj4VC4igBmDZAq0L94PwA6Cn7HOV+iKPGMp1ACDWg3BFqjtwgSC2RzQ/A7uTHlLqlr2M7rE2rIpOKvXd6/CXND8B44g5X+W/2j03V6LuVK9MG5ghglr9b124f6N2x0+MvaJ41YLofhSp2zrX9mdUUdC4zKQwFQNkO2oOOopzdF7z9wnxwarH+JuQAGG92T1WLBSDr0/KIVfCMYv1NyDSB4vm40Z7D1zq5X3VTKAB+6PU9ezgcC+wXhgfAIbDa+8h98mWFBsB+o2+4AcGbM//5UGgALILmAzMq3BSYEIUHwKjBjYsFFoaCBPDhmAugjqOAVYMZDNW1BtA685hsbQHsM8P8mgJQxR8XvAnRTU37AFUwO4Ga1gALgPdgXQGUkYC4zclKAPxNJAAJAOuxBMDFZgLAe6ymAEwkyFzqqSkAou4jb1GotgDY02H/MwJBAti+YO6X1xOAKj4c82rA8qh+AOwe4f4Vc2dg79h/fzg4AHpA6wVzf3D3pI4bI6o14p6Yqd3OkN0gpOLDZc4hoPPsglXwjDL9TUgCMC1g45G7O9z6xip4Rpn+JkRrAK3lGXNnbLl1xXtwepn+JgT7ANVa+caMgVSrU7MTIrYCdC/ZZ8WkDkzP85DUS0FLeTbE9OdL7dzhrFz7a2ynxKZmRdlc6VHZs7G1dcZ/doqCaAIHt+p2UKZLcPhSYzsqO71uP/+vy2FRgYmQVQhnhZ1lc+5IHI+xihKAGQO3jhb5vkBG/Y2eUKqlKAGoYqMnZsvfBKAJCMUAVlECyL7ditmKEoC+kbMVHYBslNP7I7kL9NEBMB1A55OgtegAZLK35+MDoO9GC5tEpZTILYmfFBWAp1sii5xFJrsZtfMFTqREK6NCOr9kHACe1gkau3+TeH7RGACY6b+9TCibPue7YgBQRn+HJ8Ld/7MiAdB87MnX/lJRAJDZBJusGAC8/VJhZuUYANDW+YIDkE6h97PmuC8wYduHuRMkuQDyq+ZXAyZsenB3wvSwopy6NEcA5hP8iiDr8wjoJkmcBZks7N4g70CkbvY7104uOQgMgFeCIbD3saJGgASgite8L9bUk+1PFb1mAbw93h0yM6bY4wCRh8ITagAR936c6TAl8mVMELYJEO2ecc8EFI8uTrGFPiFy2GPmzVFKJnXWb3b9TfgdkeFmjdFUTTgIB0DLvLxBpJcqiQXQAEw/sMY9GFTJQIAGwL8pTrTRq2AcQAMwH2lnwE8eVsMaQOyAuDwdK04AD0AVr1a4KfTu7sRfOYUHYOLhS+7KwMER6zEXhQCAnTSG1IrUq/1+mPQ34Q/gcDBirgvIng6xCgIAHbA/lsg9oZ8VAgD7Fil2ae+OZUeCEAC0B/SKPdM5OIp1e3xaE1B7/INPQvcE/iva34TInaHmAzMg1rf3tWsCVp0he5NAdlocCgDi3hgnfS93UJjCAaB2b5qsYICEF8dCAUC095W7QCyUV/5J4QDgJ5Ol/Y9yI2EwAFThkFNacLs8GACk3v/DLVE/5nWsAQ7x8EqMN0ZmVlvVvGemjojzTVMMn9e4LxcQjAWCArD0mv2qGbFGEBQAbgYpTTR8YBU6WyEBMNNil3WByG6PszJI2KziXMV2fZ6XRGWbveKVrcqsDgYGgN8G9PJVZLfHeUN384GdRmMscn48MACqWGPuEqmisS2xPhoSAJtJRu0wc6OYoLFzXcNcYvyzg9TsSwTEQQEope/YX+rWeTE1Nw9H4QGgP88d3rRUu4ySJhzs8l+e0/1crz7AymldQCCVRnAA2gO1yn3REulX5+YXvPqB0ACUAxv//Gz7ftjOvfqB0ACUBLgHJkws0P3sOQ6EBqB87yD7uIAh8P4v5rMvFej36/Yqd4d3bMUlufr+LXuPYOek7bVE7F0DFBsAe8x2Ggh8Xzs5xybAb6zlG/e42vZbF/BuAuzpiMPExS2+84sGq7/1GbgSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCQDaAbQSALQDaC08gH8B8MCNH1oGk2wAAAAASUVORK5CYII=";
+const PLAYHUB_COMMUNITY_STEAM_ICON = "https://store.steampowered.com/favicon.ico";
+const pageFromValue = (value) => {
+    if (value == null || String(value).trim() === "")
+        return null;
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed))
+        return null;
+    return Math.max(1, Math.min(Math.trunc(parsed), 100));
+};
+const pageFromTransportValue = (value, depth = 0) => {
+    if (depth > 3 || value == null)
+        return null;
+    if (value instanceof URLSearchParams) {
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(value.get(key));
+            if (page)
+                return page;
+        }
         return null;
     }
-};
-const extractControllerType = (record) => {
-    try {
-        if (record === null || typeof record !== "object")
-            return null;
-        const value = record.eControllerType;
-        return validControllerType(value) ? value : null;
+    if (typeof value === "string") {
+        const query = value.includes("?") ? value.slice(value.indexOf("?") + 1) : value;
+        const params = new URLSearchParams(query);
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(params.get(key));
+            if (page)
+                return page;
+        }
+        const cursorPage = value.match(/(?:^|[^a-z])page[_:=/-]?(\d+)/i)?.[1];
+        return pageFromValue(cursorPage);
     }
-    catch (_error) {
-        return null;
-    }
-};
-const extractControllerIndex = (record) => {
-    try {
-        if (record === null || typeof record !== "object")
-            return null;
-        const value = record.nControllerIndex;
-        return validControllerIndex$1(value) ? value : null;
-    }
-    catch (_error) {
-        return null;
-    }
-};
-const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
-    for (const record of rawControllers) {
-        const index = extractControllerIndex(record);
-        if (index === null || index !== controllerIndex)
-            continue;
-        return extractControllerType(record);
+    if (typeof value === "object") {
+        const record = value;
+        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
+            const page = pageFromValue(record[key]);
+            if (page)
+                return page;
+        }
+        for (const key of ["body", "data", "params", "cursor"]) {
+            const page = pageFromTransportValue(record[key], depth + 1);
+            if (page)
+                return page;
+        }
     }
     return null;
 };
-const controllerTypeForIndex = (controllerIndex, internals) => {
-    try {
-        if (!validControllerIndex$1(controllerIndex))
-            return null;
-        const controllers = extractControllers(readControllerStore(internals));
-        if (!controllers)
-            return null;
-        return readControllerTypeAtIndex(controllerIndex, controllers);
+const requestedCommunityPage = (url, transportArgs = []) => {
+    for (const value of transportArgs) {
+        const page = pageFromTransportValue(value);
+        if (page)
+            return page;
     }
-    catch (_error) {
+    return pageFromTransportValue(url) || 1;
+};
+const nativeHubHasContent = (response) => Boolean(response && typeof response === "object" && Array.isArray(response.hub) && response.hub.length);
+const syntheticCommunityId = (appId, page, index) => {
+    const cleanAppId = String(Math.max(0, Math.trunc(Number(appId) || 0))).padStart(10, "0").slice(-10);
+    const cleanPage = String(Math.max(1, Math.min(Math.trunc(Number(page) || 1), 100))).padStart(3, "0");
+    const cleanIndex = String(Math.max(0, Math.trunc(Number(index) || 0))).padStart(2, "0").slice(-2);
+    return `90909${cleanAppId}${cleanPage}${cleanIndex}`;
+};
+const communityProviderIcon = (source) => {
+    const cleanSource = String(source || "").trim().toLowerCase();
+    if (cleanSource.includes("steam"))
+        return PLAYHUB_COMMUNITY_STEAM_ICON;
+    if (cleanSource.includes("rawg"))
+        return PLAYHUB_COMMUNITY_RAWG_ICON;
+    return PLAYHUB_COMMUNITY_IGN_ICON;
+};
+const communityCreator = (source, avatar) => ({
+    steamid: "76561197960287930",
+    name: source || "Playhub Metadata",
+    avatar,
+    avatar_url: avatar,
+    avatar_medium: avatar,
+    avatar_full: avatar,
+    avatarFullURL: avatar,
+});
+const fallbackPageToNativeHub = (appId, fallback) => ({
+    cached: fallback.source === "metadata",
+    hub: fallback.items.map((item, index) => {
+        const sourceLabel = fallback.source === "steam-scrape"
+            ? item.author ? t("community.steamAuthor", { author: item.author }) : t("community.steamCommunity")
+            : item.author || "Metadata";
+        const providerIcon = communityProviderIcon(fallback.source === "steam-scrape" ? "steam" : sourceLabel);
+        const itemLink = item.link || item.image_url;
+        const publishedFileId = syntheticCommunityId(appId, fallback.page, index);
+        return {
+            appid: appId,
+            consumer_appid: appId,
+            published_file_id: publishedFileId,
+            publishedfileid: publishedFileId,
+            type: 5,
+            title: item.title,
+            preview_image_url: item.image_url,
+            full_image_url: item.image_url,
+            image_width: item.width,
+            image_height: item.height,
+            url: itemLink,
+            link: itemLink,
+            external_url: itemLink,
+            strURL: itemLink,
+            avatar: providerIcon,
+            avatar_url: providerIcon,
+            creator_avatar_url: providerIcon,
+            author_avatar_url: providerIcon,
+            owner_avatar_url: providerIcon,
+            content_descriptorids: [],
+            spoiler_tag: false,
+            description: item.description,
+            creator: communityCreator(sourceLabel, providerIcon),
+            author: sourceLabel,
+            time_created: Math.floor(Date.now() / 1000) - index * 60,
+            votes_up: 0,
+            votes_down: 0,
+            num_comments_public: 0,
+            reactions: [],
+        };
+    }),
+});
+const resolveCommunityFeed = async ({ appId, page, originalArgs, rewrittenArgs, nativeRequest, fallbackRequest, onFallbackError, }) => {
+    const nativeArgs = rewrittenArgs || originalArgs;
+    let native;
+    let nativeError;
+    try {
+        native = await nativeRequest(nativeArgs);
+        if (nativeHubHasContent(native))
+            return native;
+    }
+    catch (error) {
+        nativeError = error;
+    }
+    try {
+        const fallback = await fallbackRequest(appId, page);
+        if (fallback.items.length)
+            return fallbackPageToNativeHub(appId, fallback);
+    }
+    catch (error) {
+        onFallbackError?.(error);
+        // Native preservation rules below intentionally handle fallback failures.
+    }
+    if (!nativeError)
+        return native;
+    if (rewrittenArgs)
+        return nativeRequest(originalArgs);
+    throw nativeError;
+};
+const resolveCommunityRequest = (options) => options.isNonSteam
+    ? resolveCommunityFeed(options)
+    : options.nativeRequest(options.originalArgs);
+
+// Dependency-free so tests/test_community_feed_passthrough.py can import it with plain node.
+const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
+    const cleanSteamAppId = Number(steamAppId || 0);
+    if (cleanSteamAppId <= 0)
         return null;
-    }
-};
-const getConnectedControllerTypes = (internals) => {
-    try {
-        const controllers = extractControllers(readControllerStore(internals));
-        if (!controllers)
-            return [];
-        const values = new Set();
-        for (const record of controllers) {
-            const type = extractControllerType(record);
-            if (type === null)
-                continue;
-            values.add(type);
-        }
-        return Array.from(values).sort((left, right) => left - right);
-    }
-    catch (_error) {
-        return [];
-    }
-};
-const sourceFilterForControllerType = (controllerType, requestedFilter) => {
-    if (!requestedFilter)
-        return false;
-    if (controllerType === null)
-        return requestedFilter;
-    return !AFFLICTED_CONTROLLER_TYPES.has(controllerType) && requestedFilter;
-};
-const KNOWN_CONTROLLER_TYPES = new Map([
-    [STEAM_DECK_CONTROLLER_TYPE, "Steam Deck"],
-    [LEGION_GO_S_CONTROLLER_TYPE$1, "Legion Go S"],
-]);
-const formatConnectedControllerTypes = (types) => {
-    if (!Array.isArray(types))
-        return t("common.unknown");
-    const sorted = Array.from(new Set(types.filter(validControllerType)))
-        .sort((left, right) => left - right);
-    if (sorted.length === 0)
-        return t("common.unknown");
-    const labels = [];
-    for (const type of sorted) {
-        const label = KNOWN_CONTROLLER_TYPES.get(type);
-        labels.push(label === undefined ? t("controllerTypes.type", { type }) : `${label} (${type})`);
-    }
-    return labels.join(", ");
+    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
+        return null;
+    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
 };
 
-function VersionsSection({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
-    const t = useT();
-    const unknown = t("common.unknown");
-    const marker = "\u0000";
-    const pluginLabel = t("qam.versions.plugin", { version: marker }).split(marker)[0].trimEnd();
-    const deckyLabel = t("qam.versions.decky", { version: marker }).split(marker)[0].trimEnd();
-    const steamosLabel = t("qam.versions.steamos", { version: marker }).split(marker)[0].trimEnd();
-    const controllerTypesLabel = t("qam.versions.controllerTypes", { types: marker }).split(marker)[0].trimEnd();
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.versions.title"), icon: SP_JSX.jsx(FaInfoCircle, { size: 16 }), defaultExpanded: true, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: pluginLabel, focusable: true, highlightOnFocus: true, children: pluginVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: deckyLabel, focusable: true, highlightOnFocus: true, children: deckyVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: steamosLabel, focusable: true, highlightOnFocus: true, children: steamosVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: controllerTypesLabel, focusable: true, highlightOnFocus: true, children: formatConnectedControllerTypes(controllerTypes) }) })] }));
-}
-
-const PROTONDB_COLORS = {
-    platinum: "#b4c7dc",
-    gold: "#cfb53b",
-    silver: "#a6a6a6",
-    bronze: "#cd7f32",
-    borked: "#ff0000",
-};
-/** Tiers are enum values, so each label needs its own literal key. */
-const protonDbTierLabel = (tier) => {
-    switch (tier) {
-        case "platinum": return t("protondb.tier.platinum");
-        case "gold": return t("protondb.tier.gold");
-        case "silver": return t("protondb.tier.silver");
-        case "bronze": return t("protondb.tier.bronze");
-        case "borked": return t("protondb.tier.borked");
-    }
-};
-function ProtonDbIcon({ tier, size }) {
-    const style = tier ? { color: PROTONDB_COLORS[tier] } : undefined;
-    return (SP_JSX.jsxs("svg", { viewBox: "0 0 32 32", width: size ?? "100%", height: size ?? "100%", style: style, "aria-hidden": "true", children: [SP_JSX.jsx("circle", { cx: "16", cy: "16", r: "2.3", fill: "currentColor" }), SP_JSX.jsxs("g", { fill: "none", stroke: "currentColor", strokeWidth: "1.7", children: [SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(60 16 16)" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(120 16 16)" })] })] }));
-}
-
-const dropdownValueStyle = { whiteSpace: "normal" };
-function ProtonDbBadgesSection({ initiallyExpanded = false, snapshot, onSettingsChange, onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef, }) {
-    const t = useT();
-    const coverPositionOptions = [
-        { data: "bottom-left", label: t("qam.protondb.positionBottomLeft") },
-        { data: "top-left", label: t("qam.protondb.positionTopLeft") },
-        { data: "top-right", label: t("qam.protondb.positionTopRight") },
-    ];
-    const { settings } = snapshot;
-    const controlsDisabled = !snapshot.settingsLoaded;
-    const dependentControlsDisabled = controlsDisabled || !settings.enabled;
-    const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
-    const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
-    const updateSetting = (key, value) => {
-        void onSettingsChange(current => ({ ...current, [key]: value }));
-    };
-    return (SP_JSX.jsxs(CollapsibleSection, { title: t("qam.protondb.title"), icon: SP_JSX.jsx(ProtonDbIcon, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onCoverPositionControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onMenuWillOpen: onCoverPositionMenuWillOpen, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })) : null] }));
-}
-
-const DEFAULT_HLTB_SETTINGS = {
-    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
-    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-    nativeDetailsCorners: false,
-    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
-};
-const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
-const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
-const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
-function normalizeHltbSettings(value) {
-    const stored = object(value);
-    const appearance = object(stored.appearance);
-    const defaults = DEFAULT_HLTB_SETTINGS;
-    const defaultAppearance = defaults.appearance;
-    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
-        ? stored.style : defaults.style;
-    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
-        ? appearance.blur : defaultAppearance.blur;
+const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
+const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) => {
+    const attempts = new Map();
+    const inFlight = new Set();
+    const isFresh = (timestampMs, nowMs) => typeof timestampMs === "number" && timestampMs > 0 && nowMs - timestampMs < intervalMs;
     return {
-        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
-        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
-        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
-        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
-        showMain: bool(stored.showMain, defaults.showMain),
-        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
-        showComplete: bool(stored.showComplete, defaults.showComplete),
-        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
-        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
-        appearance: {
-            custom: bool(appearance.custom, defaultAppearance.custom),
-            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
-            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
-            border: bool(appearance.border, defaultAppearance.border),
-            blur,
+        shouldAttempt: (appId, nowMs, enrichedAtSeconds) => {
+            if (!appId || inFlight.has(appId))
+                return false;
+            if (isFresh(attempts.get(appId), nowMs))
+                return false;
+            const enrichedAtMs = Number(enrichedAtSeconds || 0) * 1000;
+            if (isFresh(enrichedAtMs, nowMs))
+                return false;
+            return true;
+        },
+        markAttempt: (appId, nowMs) => {
+            if (!appId)
+                return;
+            attempts.set(appId, nowMs);
+            inFlight.add(appId);
+        },
+        markSettled: (appId) => {
+            inFlight.delete(appId);
         },
     };
-}
-
-function HltbSection({ initiallyExpanded = false, settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onStyleMenuWillOpen, onStyleControlRef, onBlurChange, onBlurMenuWillOpen, onBlurControlRef, }) {
-    const t = useT();
-    const styles = [
-        { data: "default", label: t("qam.hltb.styleDefault") }, { data: "clean", label: t("qam.hltb.styleClean") },
-        { data: "clean-left", label: t("qam.hltb.styleCleanLeft") }, { data: "clean-default", label: t("qam.hltb.styleCleanDefault") },
-    ];
-    const blurOptions = [
-        { data: "match", label: t("qam.hltb.blurMatchPlayBar") }, { data: "blur", label: t("qam.hltb.blurOn") }, { data: "none", label: t("qam.hltb.blurOff") },
-    ];
-    const statControls = [
-        ["showMain", t("qam.hltb.mainStatLabel"), t("qam.hltb.mainStatDescription")],
-        ["showMainPlus", t("qam.hltb.mainPlusStatLabel"), t("qam.hltb.mainPlusStatDescription")],
-        ["showComplete", t("qam.hltb.completionistStatLabel"), t("qam.hltb.completionistStatDescription")],
-        ["showAllStyles", t("qam.hltb.allStylesStatLabel"), t("qam.hltb.allStylesStatDescription")],
-    ];
-    const cacheStatusText = {
-        clearing: ["active", t("qam.hltb.cacheClearing")],
-        cleared: ["success", t("qam.hltb.cacheCleared")],
-        failed: ["error", t("qam.hltb.cacheFailed")],
-    };
-    const controlsDisabled = !settingsLoaded;
-    const disabled = controlsDisabled || !settings.enabled;
-    const appearance = settings.appearance;
-    const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
-    const update = (key, value) => { void onSettingsChange(current => ({ ...current, [key]: value })); };
-    const updateAppearance = (key, value) => {
-        void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
-    };
-    return SP_JSX.jsxs(CollapsibleSection, { title: t("qam.hltb.title"), icon: SP_JSX.jsx(FaClock, { size: 16 }), defaultExpanded: initiallyExpanded, children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onStyleControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: styles, selectedOption: settings.style, disabled: disabled, onMenuWillOpen: onStyleMenuWillOpen, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { ref: onBlurControlRef, children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onMenuWillOpen: onBlurMenuWillOpen, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
-}
+};
 
 const patchInstallStatus = {
     activity: "pending",
@@ -21297,1309 +21352,6 @@ const consumeRouteShield = (appId) => {
 };
 const clearRouteShield = () => {
     metadataState.routeShield = null;
-};
-
-const steamUiWindow = () => {
-    const candidates = [globalThis];
-    try {
-        const currentWindow = globalThis;
-        candidates.push(currentWindow.parent, currentWindow.top);
-    }
-    catch {
-        // A cross-origin frame can still use its own Decky module bridge.
-    }
-    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
-};
-const steamUiDocuments = () => {
-    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
-    // host bridge for every consumer so cards and Game Info inspect one ordered,
-    // deduplicated set of real browser documents.
-    const contexts = new Set([globalThis, steamUiWindow()]);
-    try {
-        const currentWindow = globalThis;
-        contexts.add(currentWindow.parent);
-        contexts.add(currentWindow.top);
-    }
-    catch {
-        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
-    }
-    const documents = new Set();
-    try {
-        for (const context of contexts) {
-            const windowStore = context?.SteamUIStore?.m_WindowStore;
-            const browserWindows = [
-                windowStore?.MainWindowInstance?.m_BrowserWindow,
-                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
-            ];
-            for (const browserWindow of browserWindows) {
-                const document = browserWindow?.document;
-                if (typeof document?.querySelector === "function")
-                    documents.add(document);
-            }
-        }
-    }
-    catch {
-        // Continue with context documents when a Steam private field changes.
-    }
-    for (const context of contexts) {
-        const document = context?.document;
-        if (typeof document?.querySelector === "function")
-            documents.add(document);
-    }
-    return Array.from(documents);
-};
-/** Find an element in Steam's real browser documents, not only Decky's global. */
-const findSteamUiDocumentMatch = (finder) => {
-    for (const document of steamUiDocuments()) {
-        try {
-            const match = finder(document);
-            if (match !== undefined)
-                return match;
-        }
-        catch {
-            // Private DOM access is optional. Try the next known SteamUI document.
-        }
-    }
-    return undefined;
-};
-
-const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;
-const GLOBAL_MIRROR_KEY = "__DECKY_METADATA_NATIVE_CLASSES__";
-let translatedClasses = {};
-const listeners = new Set();
-function isValidCssIdentifier(value) {
-    return typeof value === "string" && CSS_IDENTIFIER_RE.test(value);
-}
-function mirrorToSteamWindow(next) {
-    try {
-        const host = steamUiWindow();
-        if (host && typeof host === "object") {
-            host[GLOBAL_MIRROR_KEY] = { ...next };
-        }
-    }
-    catch {
-        // Steam UI window may not be attached yet in unit tests or early boot.
-    }
-    try {
-        globalThis[GLOBAL_MIRROR_KEY] = { ...next };
-    }
-    catch {
-        // Ignore read-only globals.
-    }
-}
-function setNativeCssClasses(raw) {
-    const next = {};
-    if (raw && typeof raw === "object") {
-        for (const [key, value] of Object.entries(raw)) {
-            if (isValidCssIdentifier(value)) {
-                next[key] = value;
-            }
-        }
-    }
-    translatedClasses = next;
-    mirrorToSteamWindow(next);
-    for (const listener of Array.from(listeners)) {
-        try {
-            listener();
-        }
-        catch {
-            // Listener errors must never block class hydration.
-        }
-    }
-}
-function getNativeCssClass(key) {
-    const value = translatedClasses[key];
-    return isValidCssIdentifier(value) ? value : undefined;
-}
-function resolveSteamCssClass(primary, key) {
-    if (isValidCssIdentifier(primary))
-        return primary;
-    return getNativeCssClass(key);
-}
-function subscribeNativeCssClasses(listener) {
-    listeners.add(listener);
-    return () => {
-        listeners.delete(listener);
-    };
-}
-
-let verbose = false;
-const setVerboseLogging = (enabled) => {
-    verbose = !!enabled;
-};
-const isVerboseLogging = () => verbose;
-const prefix = (area) => `[Decky Metadata][${area}]`;
-const debug = (area, message, ...args) => {
-    if (verbose)
-        console.debug(prefix(area), message, ...args);
-};
-const info = (area, message, ...args) => {
-    if (verbose)
-        console.info(prefix(area), message, ...args);
-};
-const warn = (area, message, ...args) => {
-    console.warn(prefix(area), message, ...args);
-};
-const error = (area, message, ...args) => {
-    console.error(prefix(area), message, ...args);
-};
-
-let pending;
-/** One saved-cache read shared by the features that seed from it at startup. */
-const loadProviderCache = () => {
-    pending ?? (pending = getProviderCache());
-    return pending;
-};
-/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
-const releaseProviderCache = () => {
-    pending = undefined;
-};
-
-const DAY_MS = 86400000;
-const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
-const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
-const isEntry = (value) => value.status === "matched" || value.status === "no_match";
-const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
-/** Saved HLTB results by app ID, available synchronously while a game page renders. */
-class HltbStore {
-    constructor(fetchStats = getHltbStats) {
-        Object.defineProperty(this, "fetchStats", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: fetchStats
-        });
-        Object.defineProperty(this, "entries", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "blocked", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "inFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "retryAt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-    }
-    /** Load saved entries; a result fetched during this session wins. */
-    seed(entries) {
-        for (const [id, entry] of Object.entries(entries)) {
-            const appId = Number(id);
-            if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId))
-                this.entries.set(appId, entry);
-        }
-    }
-    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
-    view(appId, inputs, now = Date.now()) {
-        if (this.blocked.get(appId) === inputsKey(inputs))
-            return { entry: null, needsFetch: false };
-        const entry = this.entries.get(appId);
-        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
-            entry.pinned_id_used !== inputs.pinned)
-            return { entry: null, needsFetch: true };
-        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
-        return { entry, needsFetch: now - entry.fetched_at >= ttl };
-    }
-    /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
-    request(appId, isShortcut, inputs, now = Date.now()) {
-        if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
-            return;
-        const request = {};
-        this.inFlight.set(appId, request);
-        const ownsRequest = () => this.inFlight.get(appId) === request;
-        void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
-            if (!ownsRequest())
-                return;
-            if (isEntry(result)) {
-                this.entries.set(appId, result);
-                this.blocked.delete(appId);
-            }
-            else if (result.status === "error") {
-                this.retryAt.set(appId, Date.now() + Math.max(1000, result.retry_after_ms));
-            }
-            else {
-                this.blocked.set(appId, inputsKey(inputs));
-            }
-            this.notify(appId);
-        }, () => {
-            if (ownsRequest())
-                this.retryAt.set(appId, Date.now() + 30000);
-        }).finally(() => {
-            if (ownsRequest())
-                this.inFlight.delete(appId);
-        });
-    }
-    subscribe(appId, listener) {
-        let set = this.listeners.get(appId);
-        if (!set)
-            this.listeners.set(appId, set = new Set());
-        set.add(listener);
-        return () => {
-            set.delete(listener);
-            if (set.size === 0)
-                this.listeners.delete(appId);
-        };
-    }
-    /** Forget one game after Remove metadata; its next view asks the backend again. */
-    forget(appId) {
-        this.entries.delete(appId);
-        this.blocked.delete(appId);
-        this.retryAt.delete(appId);
-        this.inFlight.delete(appId);
-        this.notify(appId);
-    }
-    /** Forget everything, e.g. after Clear cache or when the feature stops. */
-    reset() {
-        this.entries.clear();
-        this.blocked.clear();
-        this.inFlight.clear();
-        this.retryAt.clear();
-        for (const appId of [...this.listeners.keys()])
-            this.notify(appId);
-    }
-    notify(appId) {
-        for (const listener of this.listeners.get(appId) ?? []) {
-            try {
-                listener();
-            }
-            catch {
-                // One unmounting page must not block others.
-            }
-        }
-    }
-}
-const hltbStore = new HltbStore();
-
-/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
-class HltbController {
-    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }) {
-        Object.defineProperty(this, "runtime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: runtime
-        });
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: store
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "loadCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadCache
-        });
-        Object.defineProperty(this, "settingsStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: settingsStore
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "disposeRuntime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        /** Last settings the backend confirmed; a failed save shows these again. */
-        Object.defineProperty(this, "confirmed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Latest requested settings waiting for the in-flight save, plus their callers. */
-        Object.defineProperty(this, "queued", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "saving", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        this.snapshot = this.initialSnapshot();
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const generation = ++this.generation;
-        this.snapshot = { ...this.initialSnapshot(), busy: true };
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.publish({ conflict: this.conflicts.getConflict("hltb") });
-        });
-        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
-            this.store.seed(cache.hltb.entries); }, () => undefined);
-        void this.settingsStore.get().then((settings) => {
-            if (!this.isCurrent(generation))
-                return;
-            const saved = normalizeHltbSettings(settings);
-            this.confirmed = saved;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false });
-        }, (error) => {
-            if (!this.isCurrent(generation))
-                return;
-            warn("bridge", "HLTB settings load failed", error);
-            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
-        });
-    }
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.generation += 1;
-        this.queued?.settles.forEach((settle) => settle(false));
-        this.queued = undefined;
-        this.saving = false;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.publish({ settingsLoaded: false, busy: false });
-        this.store.reset();
-        this.listeners.clear();
-    }
-    async setSettings(next) {
-        const current = this.snapshot;
-        if (!this.mounted || !current.settingsLoaded)
-            return false;
-        const requested = normalizeHltbSettings(next);
-        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
-            return false;
-        // Publish optimistically: the section builds its next change from the snapshot,
-        // and controls must not dim while a save is in flight.
-        this.publish({ settings: requested, busy: true, settingsError: "" });
-        return new Promise((resolve) => {
-            if (this.queued) {
-                // Latest wins; earlier callers settle with this newer value's save.
-                this.queued.settings = requested;
-                this.queued.settles.push(resolve);
-            }
-            else {
-                this.queued = { settings: requested, settles: [resolve] };
-            }
-            if (this.saving)
-                return;
-            this.saving = true;
-            void this.drainSaves();
-        });
-    }
-    /** Saves one request at a time so a toggle pressed during a save is not lost. */
-    async drainSaves() {
-        const generation = this.generation;
-        while (this.queued && this.isCurrent(generation)) {
-            const { settings, settles } = this.queued;
-            this.queued = undefined;
-            let saved = false;
-            try {
-                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
-                if (this.isCurrent(generation)) {
-                    this.confirmed = confirmed;
-                    saved = true;
-                    // A newer request is queued; showing this value first would flash it.
-                    if (!this.queued)
-                        this.publish({ settings: confirmed, busy: false });
-                }
-            }
-            catch (error) {
-                if (this.isCurrent(generation)) {
-                    warn("bridge", "HLTB settings save failed", error);
-                    this.queued?.settles.forEach((settle) => settle(false));
-                    this.queued = undefined;
-                    this.publish({
-                        settings: this.confirmed ?? this.snapshot.settings,
-                        busy: false,
-                        settingsError: t("hltb.settingsError.saveFailed"),
-                    });
-                }
-            }
-            for (const settle of settles)
-                settle(saved);
-        }
-        // A remount may already own the save state; only the current generation clears it.
-        if (this.isCurrent(generation))
-            this.saving = false;
-    }
-    async clearCache() {
-        if (!this.mounted)
-            return false;
-        this.publish({ cacheStatus: "clearing" });
-        try {
-            await this.settingsStore.clear();
-            this.store.reset();
-            this.publish({ cacheStatus: "cleared" });
-            return true;
-        }
-        catch (error) {
-            warn("bridge", "HLTB cache clear failed", error);
-            this.publish({ cacheStatus: "failed" });
-            return false;
-        }
-    }
-    initialSnapshot() {
-        return Object.freeze({
-            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
-        });
-    }
-    isCurrent(generation) {
-        return this.mounted && generation === this.generation;
-    }
-    publish(update) {
-        const next = { ...this.snapshot, ...update };
-        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
-        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
-        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
-        if (changed)
-            this.applyRuntime(effectiveEnabled);
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // A closing QAM panel cannot block the feature.
-            }
-        }
-    }
-    applyRuntime(enabled) {
-        try {
-            if (enabled) {
-                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
-            }
-            else {
-                const dispose = this.disposeRuntime;
-                this.disposeRuntime = undefined;
-                dispose?.();
-            }
-        }
-        catch (error$1) {
-            error("patch", "HLTB runtime transition failed", error$1);
-            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
-        }
-    }
-}
-
-// Steam may register these CSS modules after the plugin loads.
-let detailsClassesCache;
-let menuButtonClassesCache;
-const detailsClasses = () => {
-    if (!detailsClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
-            if (found && typeof found === "object")
-                detailsClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return detailsClassesCache ?? {};
-};
-const menuButtonClasses = () => {
-    if (!menuButtonClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
-            if (found && typeof found === "object")
-                menuButtonClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return menuButtonClassesCache ?? {};
-};
-const css$1 = `
-/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
-#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
-.decky-metadata-hltb-info {
-  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
-  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
-  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
-}
-/* Sit on the bottom of the header instead of pushing the Play section down. */
-.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-/* "Push Play button down": take layout height below the header so Play moves down. */
-#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
-.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
-.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
-  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
-}
-.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
-/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
-.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
-.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
-.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
-.decky-metadata-hltb-info li { text-align: center; }
-.decky-metadata-hltb-info p { margin: 0; }
-.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
-.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
-:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
-:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
-:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
-.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
-`;
-function HltbStats({ stats, hltbId, settings, launching }) {
-    const t = useT();
-    if (!stats || launching || Object.values(stats).every(value => value <= 0))
-        return null;
-    const { appearance, style } = settings;
-    const vars = {};
-    if (appearance.custom) {
-        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
-        if (appearance.textShadow)
-            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
-        if (appearance.textScale !== 100)
-            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
-        if (!appearance.border)
-            vars["--hltb-border-width"] = "0";
-    }
-    const items = [
-        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
-        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
-        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
-        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
-    ];
-    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
-    const classes = [
-        style === "default" ? "decky-metadata-hltb-default" : "",
-        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
-        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
-        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
-        flow ? "decky-metadata-hltb-flow" : "",
-    ].filter(Boolean).join(" ");
-    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    const nativeDetailsClasses = detailsClasses();
-    const nativeMenuButtonClasses = menuButtonClasses();
-    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
-    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
-    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
-                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
-}
-
-const ROW_KEY = "decky-metadata-hltb-row";
-const JOINED_CLASS = "decky-metadata-hltb-joined";
-const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
-const px = (value) => String(Math.round(value * 100) / 100);
-/** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height, paddingTop) => {
-    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
-    if (inner && playSection)
-        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
-    if (playSection)
-        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
-    return `.${JOINED_CLASS} + * ${rule}`;
-};
-const findHeaderElement = (row) => {
-    const container = row.parentElement;
-    if (!container)
-        return undefined;
-    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
-    if (headerClass) {
-        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
-        if (matched)
-            return matched;
-    }
-    return row.previousElementSibling ?? undefined;
-};
-const findPlaySectionElement = (row) => {
-    const next = row.nextElementSibling;
-    if (!next)
-        return null;
-    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    if (playSectionClass) {
-        return next.querySelector(`.${playSectionClass}`);
-    }
-    return next.firstElementChild ?? next;
-};
-const positiveId = (value, maximum) => {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
-};
-/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
-const hltbInputs = (appId, isShortcut, title) => {
-    if (!isShortcut)
-        return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
-    const record = metadataCache[String(appId)];
-    return {
-        steam: positiveId(record?.steam_appid, 0x7fffffff),
-        title,
-        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
-    };
-};
-function useHltbSnapshot() {
-    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setSnapshot(hltbController.getSnapshot());
-        const unsubscribe = hltbController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    return snapshot;
-}
-/** Hide the row while Steam's header animates into a game launch. */
-function useLaunching(ref, active) {
-    const [launching, setLaunching] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        if (!active || !ref.current)
-            return;
-        const header = findHeaderElement(ref.current);
-        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
-        const capsule = topCapsuleClass
-            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
-            : header?.firstElementChild ?? undefined;
-        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
-        if (!capsule || !View)
-            return;
-        const observer = new View(() => {
-            const name = capsule.className;
-            const entering = [
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
-            ].some((value) => value && name.includes(value));
-            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
-            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
-        });
-        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
-        return () => observer.disconnect();
-    }, [active]);
-    return launching;
-}
-/**
- * The HLTB game a page shows for this app, looked up when missing or stale.
- * Nothing is looked up or returned unless `wanted` and the game has a title.
- */
-function useHltbMatch(appId, wanted) {
-    const [, rerender] = SP_REACT.useState(0);
-    const native = getNativeOverview(appId);
-    const isShortcut = isNativeNonSteamShortcut(native);
-    const title = String(native?.display_name ?? "").trim();
-    const inputs = hltbInputs(appId, isShortcut, title);
-    const active = wanted && title !== "";
-    const view = hltbStore.view(appId, inputs);
-    SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
-    SP_REACT.useEffect(() => {
-        if (active && view.needsFetch)
-            hltbStore.request(appId, isShortcut, inputs);
-    });
-    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
-}
-/**
- * Copy the native Play section's surface onto the row for the "Clean" styles, or
- * with clean-default on a blurred Play bar, extend that one blur over both rows:
- * the bar and underlay stay transparent and the Play rule supplies the surface.
- */
-function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
-    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
-    const padding = SP_REACT.useRef(0);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
-            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-            return;
-        }
-        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
-        const resize = { element: null, observer: null };
-        function update() {
-            const section = findPlaySectionElement(row);
-            const bar = row.querySelector(".decky-metadata-hltb-info");
-            if (!section) {
-                for (const name of names)
-                    row.style.removeProperty(name);
-                resize.observer?.disconnect();
-                resize.element = null;
-                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-                return;
-            }
-            const computed = view.getComputedStyle(section);
-            // Native padding is only readable while our own rule is not applied.
-            if (!row.classList.contains(JOINED_CLASS))
-                padding.current = parseFloat(computed.paddingTop) || 0;
-            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
-            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
-            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
-            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
-            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
-            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
-            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
-            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
-            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
-            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
-            if (bar !== resize.element) {
-                resize.observer?.disconnect();
-                resize.element = bar;
-                if (bar) {
-                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
-                    resize.observer.observe(bar);
-                }
-            }
-            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
-            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
-        }
-        update();
-        const observer = new view.MutationObserver(update);
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        observer.observe(row.parentElement, { childList: true, subtree: true });
-        return () => {
-            observer.disconnect();
-            resize.observer?.disconnect();
-            for (const name of names)
-                row.style.removeProperty(name);
-        };
-    }, [enabled, style, blur, pushPlayDown]);
-    return surface;
-}
-/**
- * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
- * the header art: pushing Play down would leave that bar without its backdrop.
- */
-function useStatusBandOverlay(ref, wanted) {
-    const [overlay, setOverlay] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setOverlay(false);
-            return;
-        }
-        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
-        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
-        let frame = 0;
-        const touching = () => {
-            const header = findHeaderElement(row);
-            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
-            const art = headerBgClass
-                ? header?.querySelector(`.${headerBgClass}`)
-                : header?.querySelector("img")?.parentElement ?? undefined;
-            if (!art)
-                return false;
-            const bounds = art.getBoundingClientRect();
-            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
-            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
-                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
-                .map((rect) => rect.bottom));
-            // Rect, not layout: Steam scales the page while it animates in.
-            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
-            const displacement = flow?.getBoundingClientRect().height ?? 0;
-            for (const bar of Array.from(container.querySelectorAll(selector))) {
-                const rect = bar.getBoundingClientRect();
-                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
-                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
-                    rect.top - bottom > displacement + 1)
-                    continue;
-                const own = view.getComputedStyle(bar);
-                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
-                    continue;
-                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
-                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
-                let visible = true;
-                for (let element = bar; element; element = element.parentElement) {
-                    const style = view.getComputedStyle(element);
-                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                        (!suppressed && Number(style.opacity) <= 0)) {
-                        visible = false;
-                        break;
-                    }
-                    if (element === container)
-                        break;
-                }
-                if (visible)
-                    return true;
-            }
-            return false;
-        };
-        const update = () => {
-            frame = 0;
-            const next = touching();
-            setOverlay((previous) => previous === next ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, {
-            childList: true, subtree: true, attributes: true,
-            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
-        });
-        // CSS Loader themes restyle the page from the head and the root element alone.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        const resize = new view.ResizeObserver(schedule);
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        schedule();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            view.removeEventListener("resize", schedule);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted && overlay;
-}
-/** A border box's layout top: unaffected by transforms and scroll position. */
-function layoutTop(element) {
-    let top = 0;
-    for (let node = element; node; node = node.offsetParent)
-        top += node.offsetTop;
-    return top;
-}
-/**
- * How far Play can move down before its button would go under Big Picture's footer.
- * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
- */
-function usePushRoom(ref, wanted) {
-    const [room, setRoom] = SP_REACT.useState(null);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setRoom((previous) => previous === null ? previous : null);
-            return;
-        }
-        let frame = 0;
-        let footer = null;
-        const resize = new view.ResizeObserver(() => schedule());
-        const footerResize = new view.ResizeObserver(() => schedule());
-        const measure = () => {
-            // The whole surface that moves Play down in flow mode, margins included. Never
-            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
-            const surface = row.querySelector("#decky-metadata-hltb");
-            const surfaceStyle = surface && view.getComputedStyle(surface);
-            const rowHeight = surface
-                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
-                : 0;
-            const section = findPlaySectionElement(row);
-            if (!rowHeight || !section)
-                return null;
-            let scroller = container.parentElement;
-            while (scroller) {
-                const style = view.getComputedStyle(scroller);
-                if (/(auto|scroll)/.test(style.overflowY))
-                    break;
-                scroller = scroller.parentElement;
-            }
-            if (!scroller || scroller.clientHeight <= 0)
-                return null;
-            const nextFooter = document.querySelector("#Footer");
-            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
-            if (nextFooter !== footer) {
-                footerResize.disconnect();
-                footer = nextFooter;
-                if (footer)
-                    footerResize.observe(footer);
-            }
-            const header = findHeaderElement(row);
-            if (!header)
-                return null;
-            // Layout, not rects: Steam scales and translates the page while it animates in,
-            // and a rect read mid-animation would stick until something else moved.
-            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
-            const artBottom = layoutTop(header) + header.offsetHeight;
-            // The visible bar's border box; the labels may overhang it but Play clears the bar.
-            const footerTop = footer && footer.offsetHeight > 0
-                ? layoutTop(footer)
-                : layoutTop(scroller) + scroller.clientHeight;
-            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
-            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
-            // The button face; the wrapper's AppActionButton class is the fallback.
-            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
-                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
-            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
-            const buttonBottom = button
-                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
-                : section.offsetHeight - lift;
-            const free = footerTop - 4 - artBottom - buttonBottom;
-            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
-        };
-        const update = () => {
-            frame = 0;
-            const next = measure();
-            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
-        // Themes restyle the page and the footer from the head and the root element.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        if (document.body)
-            observer.observe(document.body, { childList: true, subtree: true });
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        // Steam animates the page in without any resize or mutation: re-measure when it ends.
-        document.addEventListener("transitionend", schedule, true);
-        document.addEventListener("animationend", schedule, true);
-        update();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            footerResize.disconnect();
-            view.removeEventListener("resize", schedule);
-            document.removeEventListener("transitionend", schedule, true);
-            document.removeEventListener("animationend", schedule, true);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted ? room : null;
-}
-function HltbGameRow({ appId }) {
-    const snapshot = useHltbSnapshot();
-    const ref = SP_REACT.useRef(null);
-    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
-    const launching = useLaunching(ref, active);
-    const { settings } = snapshot;
-    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
-    const overlay = useStatusBandOverlay(ref, pushWanted);
-    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
-    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
-    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
-    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
-    if (!active)
-        return null;
-    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
-}
-/** True for the child that holds Steam's Play section (the row goes right above it). */
-const isPlaySection = (child) => {
-    const props = (child?.props ?? {});
-    const inner = props.children?.props ?? {};
-    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
-        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
-};
-function installHltbGameView() {
-    const unpatchers = [];
-    for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-            if (!routeProps)
-                return tree;
-            let appId = 0;
-            const handler = DFL.createReactTreePatcher([
-                (inner) => {
-                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                    appId = Number(children?.props?.overview?.appid) || 0;
-                    return children ?? null;
-                },
-            ], (_args, ret) => {
-                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                    node.props.children.some(isPlaySection)))?.props?.children;
-                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                    return ret;
-                const index = children.findIndex(isPlaySection);
-                if (index >= 0)
-                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
-                return ret;
-            });
-            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-            unpatchers.push(() => renderPatch.unpatch());
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
-    }
-    return () => {
-        for (const unpatch of unpatchers.splice(0)) {
-            try {
-                unpatch();
-            }
-            catch {
-                // Steam may already have released the route.
-            }
-        }
-    };
-}
-const hltbController = new HltbController({ install: installHltbGameView });
-
-const PLAYHUB_COMMUNITY_IGN_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAIAAADTED8xAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAErpJREFUeJztnfl/E2Uex/dvkbK70nKI5T4FQQ6XSwQWBQERRVkRd1FxEUHkUBZc0UU8UEFEURABRVwvDkGuFSFN0jPpkaZpmzZtrjZn90mnhtJkZp65mpLv5/t6/8CrTOY5Zt4zzzPzzPP8wXRbHwDI8oeM5wCADAIBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASNNDBbDmj4i3traJh23ugoxnEmQBPVSA2p27JM5+Fp4vjmU8kyAL6KECtFis0gLEQyFz3/yM5xPc6vREAQpHjGuLxaUFYFG+5LGMZxXc6vREAZwvbZE9+1m4P9iX8axmN5b+g+2Lljk3bHZtf71m86sVj6+0DhmT8VzpS08RoGz2/LL7HxD+7f3+Rx4BwtVOYfvie6ZV/u1pU06eERmr3/Nh1OORwH/xkvZUCkeOdzy3tuHAQd/ps0FTQWuZPVTlCDmqdafyqdXy+emV61izLnj1WjwSSa321pJS146d5jzd2p/OjVsjtXVdYKk0HjxUOPwuo0+8zAtgf3BJ4NffWM3a5i8W/hJ2VPMIwKJw2Fi2vaXfoLZYLFReUf38i7pr0PDJZ9J5YN0V1TsvmTKTnfQs55zl1R6JKpLMku2vD7Xa7LL7ibjdVf9Yo0sN1+7YKZZKLBAoX/yooadfJgVgfnt/Ot0W72juW4eMZn+05I9I/kU27IseEXYVqqgU/tJiLSqb9VcdM2mQAJVPPBX87Tp/SfUKaQFqNr0SD6e56otF42eHC3r31VjDEgKwiLe2Fo2bbNxJmDEBHM+9EPX6kuWMNjYKfy9fupz/ANRs3ib8ynvqzI2/xmLuPXsL/thPl3zqLgBr6QWvF/CXUd+QEKBm63YVQjYd+5o1mbTUsLQALNhN0rjzMBMC5OQ1HjrSpZC+Mz8L/1v3xlsKav/rk8Kv3O/v7fJfgavXrINGas+tjgIU/Kl/w8cH49EofwF1DzEB7IuXxSMqM5a8DKlDVoDkxdEIulsAc+5A/8XLqYWsf3uPsAE7p/mrnrV8hF85Vj+f+r+sL6H97qmXAEV3TWIdO/6iGRRpBWBmhqudqvfJ+srFd09VXcOyArAw7oTsVgHY2R+8bkpbQseza4Vt2JVbSd3HC26/g/2qdNrstP8fcTdoOTZ6CWCbtzDq8Sgol2GRVgDXqzs07pb15SCAHL37Bi5dESuhfdEyYTOll6KiMRPb1bpTbINIbV3h8HEZFMC+8OGYP6CoUMZFWgFay2za92xf8DAEkMJz+Eux4oXKKzresPTKjYfDiuq9bM6Dwv5ZL0JsmxZrEbv5ZESAsplzY36/ohIZGqkCFI29R5c9h2zlrCkFAdLD6l2sbE3Hvjb3GyRslhgEoTAqn/x7Ryq9cl3bXhN7jtF48FD3C2AdPCpSV6+0RIZGqgASh0bxzv+5HgKkoXDk+JjPl7Zg9bvfNXV6kGy5Y1i4poa/xln3q3TG3M5pVa5Ylfb9JYvypcu7WYDAlV/5y9I9kSpA/bsfyP4q7OQ6KFGv15o/AgJ0xXf6bNpS1e9+L/URcuGwsS1FxXzV7SubNS81uYrHV7bFYqnbs4uxud/gbhPAte3fPKXoWiiPx3vqjPvDj+re3F375lu6Uzp9jtIChmtc7CLV8PGnPPmv37MXAtwE692mbZY0HT9hEnmJaOk/2P/LJZmjUu2UeMRZs+mVtL9ybX+9ewRgGscCCjq+rJdcu3NXyZSZBo1o0lLAVpudbcauHZGGRo6SxIon/kVRBrJcgOC166nlCVVUSV+MC/48gPUNxKqjxWwRxk1I0PzfH9IcnWCLReE9Wp0AEpnvGvF43a53LAOGGH0gVBdQEMDEPUo3+U6Tk2wWwDZ3QVt7Sz1YYGYV7dywqXzp46XT77cMGCr/81659e+8n6Z+T59ltwjZn5v7DCyZMsO+6BHHmhfce/b6L16OBYPs5zWbXtX3/EgVoGj0BM5nWeyaWnbffEMPgfYCJgVgd6fW4hKectkfeoQ/A9ksQMnkGSWTpqt7OibAnOncgmo8dKTg9gEq95aTVzR2Ytl9yobKqRCg4YDMT4RgbeuiUXcbWv+6FPCGAO3vNHiKFqqoZPdwzgxkswBisCaybf6iksnTeTZmndp4KMRqoW7X22Ldhpt2PnIcuwIVjb2HZ2NZFAuQkxdtlH/py25Hhg5y1LGAnQUwJcYdpn+k0SWq123kzECWC1DQu2/pjLnOjVs8h79k7ZBQlUM4m9vaR7pyDl22zVngeO4Fni2t+SNYEh37j0YjrtrA1WtNX33j2rHTvuBhFa/DlArA2ng850flilVG17xeBewiALuyJI+gRMR8fs7BiNkoQK9cdoF3f7g/eM0Ua5Ga3STa1KxxrE5nCvoMbLEWSiTHlGgtKWUqsvOP8x6tVACJF97J8J3+WeMQYh1RKgDDve9j2TKycO/dz5OBrBKgdNr9niPHIm43TwUJEXbWCB92aSUnz//LRf50Y4GA99SZikdXSJ+LSgXg6SaK9UPYxZUlZwT17+wpX/Jo2mesKgQw9x3EdYhjMZ5WblYJoO4Tp9biUu3PAZuOn1CRNAv7wqV6CcC6+2LvoW8UtrRMTLmy2fPVFYEz2Klc+pfZ2gVgVL/4Mk+K/nMXiAmgNgKXrqh/vJP4IGaf6qSln9kpEqBk6kzZ5FzbXhNLy2gB2hJv3PxdXlSpE4DdTFoKi3hSlJ29BgJ0RPPJ79S9B615ZbuWdHUUoPKJp+STe3BJBgVg4b9wUQcBbutje2AxT3LhKof0pQ0C3Aj3RweUpli1+vk2bR8Z6ihA9Xr5hoHE08/uEYBFYaf3D6oFYHh/PMWTnPOlzRCAN1zb/s2fHLu9xlvlH8lJh44CuLbK34usg0dlXADbvIW6CFA4egJP/ccCAYmhKxDgpuB83i9QOn1OLBDUmKKOAtRs2SabnMSp0H0CzF+kiwAm7t5Xw/5PIYB8uLbvVJqifdEy2Qcv0qFnE+iFDbLJFU+8N5sEMOflc330E4+XTJ0JAaSiYd8Bda+Hqv7+nJYZpnQUoOLRFbLJSUx1disKYOLTvi3R+b4MAUSj+cRJLVNZaZnXQEcBiifcK5tc3Zu7s0wAdtmSnc5eiIplT2S5AOpaI/6Ll1V/tJ7EvXe/iqTbbj4bNApgysmTXtiGRdjlEnvae6sK0D7vC0+64WqnMI1N1gpgHTrG+eLLwQIL13Foj5biEssdw3RIvVdus5JJtcLOmrqduyRa5GoEuK0PT9nF3j2b+w1mp6ZGHGvWyWZAdwEYzd9xzemd+j1GVgmQpGj0hMqV//AcPirdQ4rU1hYO020K7II/9fdfkBoOFPP7vT/8VL12A//Hh0oF4Pl2lkmiy1DttJRMnSWbASMEKBw5Pi458FGIWDBoHXrT0K/sFOCmqhl+l/3BJdXrNjZ+8nng6rWo19tRFz4/51DQyhVP1+7cxdNFNvcblBwQylojLYVFnqNf1Wz5V/nS5UXjpqg47ZQKYJv3kOzhZMHukwbVdqYEYNS/9wFP2Rs//bzzr7JfgFQsA4YUT5rGrhk8Gzs3bhG6Fp4vjvJ0lC13DmcngXXQKF2GHCv+IKZXLs8kIvFwmLX4jajbDApgzr0z4qqVTb0tHu88Ji+bBSh/eDnr+Fvu4PgCWIT6t/d0fsTpO3tO9dokBbcPYH21qtXKlnVQ8Ulk2k+ZUyPa7E2dpEQ7GRSAwdMDYRG48mvy8pTNApTee59QgLCr1n/xMruEu7a9VrH8ycKhHB8A5OQ1Hf0qtS4SU0JwfGqUWN9q8TLnS1vYAWbahMorhHnJq9cqm71MhQCWO0fEgi0850EsEKxa9Yy+dZ5ZAdhpHSww85S94rEnhZ9kswAM/4U0M/xE6t3WfKmT2NxnoP+8aHc2VFlVdNckFelGvb7kNIycqJsWpWE/1zRSQnh/OFU0eoJeFZ5hAdpXAOF5LxmucQnPvrNcgNKZc9NWh//8BbEGPbvAy441jzY2sj2LJVr/9ntpf+Vcv0lp/tUJYOk/JMozjdTvwTo53p9OV65YxZrRGis84wIwmr/9nqfUNVu3m7JeAJP4mheeI8dS+6nFd0/lnCGdNTPSTvfpXP9y2mWGQ/YKdmNRmnnVUyM6nl3LU4ouwUxgrbXA5f/5zp73nTmnAmHFQeno3P82QoDExHgcjcBYS0vRmIk8Xxjf2gKwNnGkoSFtwTxfHu98H7AOG6NsIYlotMv3JYlJEUU+Dyibu0BF5rVMjuvlezfU/SEsqmCcACbh6QVHJGYQk2svRZu9t7YAjIrH/iZWTv+lK8kpha1Dx/DUWue4Mb9ITl7DgYNiqdS99a66nGsRgPU3eJYc7eaIer2dl3Y0SAB2s2WtfF0yzO6Ht7wAJsm3JKxPnJjH6rb2BTLkxtJ0ieTdPGgSffiQ6G9wT1SmowAMdq2NuNPf/TIVjZ8dVlRAdQIwHM/8U5cM1+54IxsEYFdoib5R8tPp5LRWnCF83WfuP1hsg5DNbhk4XHW2tS+RVDJpulgLMCORXFPHaAESj0T1WBC2dFrXmSxuTQHa53wWWyvAsWadsI2yRSXicWHi0dJZ89L+P9NJ46RDuiySVzx+SshRraBchoX/wqUuDx4MFEA4LtoWAw/876qhk4h191CIxLznJ75NLaf794UVFEwszo5NmU34VXW6F5At1kLZWdS7RwCGJX+E7+fz/EUzItKuZ2qoAAxFQ3RTQ+lkxkrJxFigXrm1r/+ny4WBNdOF/6197Q3+2mk6erzjKKY8Sms++Z1F+Xowqch+aqNgpficPOeGTUo7OTpG5crVaQr4L5mVbDQKwNqfkdo6dRmu2/2e0WdjZgbDmRITbS/tPL1e1OcT7nT2hx7hryDnho75NnxnzyX/GI9EnetfNvXWZ6kV1seQXttdgQDtsG5x01ffqDgbNIZDZI14VsC0K0olQ6MAJmHuAuVLZTZ9862WifU5yZgApvZrQ8NHB5K3gsLhiQ8D2GWbv9WYfAkQ/r2FzUzQfdrxhv2fSORBqQACJVNner44Kq2WXhGpq7M9sFiqgJLfMGgXgFE6Y46iGWMbDhxU/eBOEZkUoONUmDy96cRJdtInv5MKlVdwVlNizHP7+Gf28+C164k9GNBhKujdt/Gzw2J5UCeAgHXwaMczz/vOnjfIhKinybV1u+zSgAV/7Nd46IjYTnQRoL2wozxHj8vmOVJXX7F8ZbedfpkXQKB4/JTiCR1fJzZ/81+eo5s8MIWjJyTeBhg84ThLwv3+Pt/5C4Fff+sMu5Br37k5L7901ryqp5+t3bnLc/hL7/c/+s/9og7vD6fY2Vyz+VXb3IWKLqJlsx9wf/CRP6WArMGmYzWWTJ7h3rM3zXPheNx/4VLVqmdUDFfRQk8RoDPVa9fzCNANPSRgFL1yWd+DXVPYTTuxVtCUmea+Kj/z0EhPFMCSP0K6WyaETXyWWQA46YkCMIK/pVlctXPEgsHUCTYAUEoPFUB2xvOGj0XnmgSAnx4qgLnf4JhfaqV1I76mBQTpoQIA0D1AAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAEAaCABIAwEAaSAAIA0EAKSBAIA0EACQBgIA0kAAQBoIAEgDAQBpIAAgDQQApIEAgDQQAJAGAgDSQABAGggASAMBAGkgACANBACkgQCANBAAkAYCANJAAECa/wNL4ZWiPylAFAAAAABJRU5ErkJggg==";
-const PLAYHUB_COMMUNITY_RAWG_ICON = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAQAAAAEACAMAAABrrFhUAAAAAXNSR0IB2cksfwAAAAlwSFlzAAALEwAACxMBAJqcGAAAAGlQTFRFAAAABAQElJSU////9vb23NzcxcXFubm5s7OzZWVlEBAQCAgIjIyM/Pz86enpy8vLHh4e1tbWe3t7m5ub+fn5U1NTWVlZSEhIgYGBqampbW1t4+PjJSUlLCwsNjY2Ozs78PDwGBgY8/Pz0uSjuQAACCBJREFUeJztnXtbEzkUxk8oUJuWy4gWEBB3v/93WlYWlVsLYqcUKLPJgKurpT15cqZvMs37h/LocHL6ay4ntzOKFlwK7QBaCQDaAbQSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCYDv7xeqEHHk/zapqMLwxML8TSwJ1SJlZP/ILQKi9kDG7KxSvQ0UnaGAHzrXeflDe6hHt/bjz6cC+DcBkgFgZRBoysu/jeHOXS5kd6oCagK/a131LGGqsjIEDcCosXZZVrPKCggZgGkKWV8vXVv7lREIGQBl1NfNUb6+fF5dIwgawLNMTdg6qwpBDADM2KBapxVFRjEAyEYmSFAP1dSBGACQ2uybT9+4q8S2v4nqAXzX5qWdJMgOCVEBoHEZE4i2hagAqGJ1qLTsLCEmAJqaV5sXwnFhTACeNJY1Fx+At6eLXQOy/ptTSXvRATAxQfezpD1/E3NuAkbbn+Q6wigB7JwsOICsuBSzFSUAncuNhXECoOXVU6F4MEoAZiwsCqFOIEoAmZkdj4VC4igBmDZAq0L94PwA6Cn7HOV+iKPGMp1ACDWg3BFqjtwgSC2RzQ/A7uTHlLqlr2M7rE2rIpOKvXd6/CXND8B44g5X+W/2j03V6LuVK9MG5ghglr9b124f6N2x0+MvaJ41YLofhSp2zrX9mdUUdC4zKQwFQNkO2oOOopzdF7z9wnxwarH+JuQAGG92T1WLBSDr0/KIVfCMYv1NyDSB4vm40Z7D1zq5X3VTKAB+6PU9ezgcC+wXhgfAIbDa+8h98mWFBsB+o2+4AcGbM//5UGgALILmAzMq3BSYEIUHwKjBjYsFFoaCBPDhmAugjqOAVYMZDNW1BtA685hsbQHsM8P8mgJQxR8XvAnRTU37AFUwO4Ga1gALgPdgXQGUkYC4zclKAPxNJAAJAOuxBMDFZgLAe6ymAEwkyFzqqSkAou4jb1GotgDY02H/MwJBAti+YO6X1xOAKj4c82rA8qh+AOwe4f4Vc2dg79h/fzg4AHpA6wVzf3D3pI4bI6o14p6Yqd3OkN0gpOLDZc4hoPPsglXwjDL9TUgCMC1g45G7O9z6xip4Rpn+JkRrAK3lGXNnbLl1xXtwepn+JgT7ANVa+caMgVSrU7MTIrYCdC/ZZ8WkDkzP85DUS0FLeTbE9OdL7dzhrFz7a2ynxKZmRdlc6VHZs7G1dcZ/doqCaAIHt+p2UKZLcPhSYzsqO71uP/+vy2FRgYmQVQhnhZ1lc+5IHI+xihKAGQO3jhb5vkBG/Y2eUKqlKAGoYqMnZsvfBKAJCMUAVlECyL7ditmKEoC+kbMVHYBslNP7I7kL9NEBMB1A55OgtegAZLK35+MDoO9GC5tEpZTILYmfFBWAp1sii5xFJrsZtfMFTqREK6NCOr9kHACe1gkau3+TeH7RGACY6b+9TCibPue7YgBQRn+HJ8Ld/7MiAdB87MnX/lJRAJDZBJusGAC8/VJhZuUYANDW+YIDkE6h97PmuC8wYduHuRMkuQDyq+ZXAyZsenB3wvSwopy6NEcA5hP8iiDr8wjoJkmcBZks7N4g70CkbvY7104uOQgMgFeCIbD3saJGgASgite8L9bUk+1PFb1mAbw93h0yM6bY4wCRh8ITagAR936c6TAl8mVMELYJEO2ecc8EFI8uTrGFPiFy2GPmzVFKJnXWb3b9TfgdkeFmjdFUTTgIB0DLvLxBpJcqiQXQAEw/sMY9GFTJQIAGwL8pTrTRq2AcQAMwH2lnwE8eVsMaQOyAuDwdK04AD0AVr1a4KfTu7sRfOYUHYOLhS+7KwMER6zEXhQCAnTSG1IrUq/1+mPQ34Q/gcDBirgvIng6xCgIAHbA/lsg9oZ8VAgD7Fil2ae+OZUeCEAC0B/SKPdM5OIp1e3xaE1B7/INPQvcE/iva34TInaHmAzMg1rf3tWsCVp0he5NAdlocCgDi3hgnfS93UJjCAaB2b5qsYICEF8dCAUC095W7QCyUV/5J4QDgJ5Ol/Y9yI2EwAFThkFNacLs8GACk3v/DLVE/5nWsAQ7x8EqMN0ZmVlvVvGemjojzTVMMn9e4LxcQjAWCArD0mv2qGbFGEBQAbgYpTTR8YBU6WyEBMNNil3WByG6PszJI2KziXMV2fZ6XRGWbveKVrcqsDgYGgN8G9PJVZLfHeUN384GdRmMscn48MACqWGPuEqmisS2xPhoSAJtJRu0wc6OYoLFzXcNcYvyzg9TsSwTEQQEope/YX+rWeTE1Nw9H4QGgP88d3rRUu4ySJhzs8l+e0/1crz7AymldQCCVRnAA2gO1yn3REulX5+YXvPqB0ACUAxv//Gz7ftjOvfqB0ACUBLgHJkws0P3sOQ6EBqB87yD7uIAh8P4v5rMvFej36/Yqd4d3bMUlufr+LXuPYOek7bVE7F0DFBsAe8x2Ggh8Xzs5xybAb6zlG/e42vZbF/BuAuzpiMPExS2+84sGq7/1GbgSALQDaCUAaAfQSgDQDqCVAKAdQCsBQDuAVgKAdgCtBADtAFoJANoBtBIAtANoJQBoB9BKANAOoJUAoB1AKwFAO4BWAoB2AK0EAO0AWgkA2gG0EgC0A2glAGgH0EoA0A6glQCgHUArAUA7gFYCgHYArQQA7QBaCQDaAbQSALQDaC08gH8B8MCNH1oGk2wAAAAASUVORK5CYII=";
-const PLAYHUB_COMMUNITY_STEAM_ICON = "https://store.steampowered.com/favicon.ico";
-const pageFromValue = (value) => {
-    if (value == null || String(value).trim() === "")
-        return null;
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed))
-        return null;
-    return Math.max(1, Math.min(Math.trunc(parsed), 100));
-};
-const pageFromTransportValue = (value, depth = 0) => {
-    if (depth > 3 || value == null)
-        return null;
-    if (value instanceof URLSearchParams) {
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(value.get(key));
-            if (page)
-                return page;
-        }
-        return null;
-    }
-    if (typeof value === "string") {
-        const query = value.includes("?") ? value.slice(value.indexOf("?") + 1) : value;
-        const params = new URLSearchParams(query);
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(params.get(key));
-            if (page)
-                return page;
-        }
-        const cursorPage = value.match(/(?:^|[^a-z])page[_:=/-]?(\d+)/i)?.[1];
-        return pageFromValue(cursorPage);
-    }
-    if (typeof value === "object") {
-        const record = value;
-        for (const key of ["p", "page", "itemspage", "screenshotspage"]) {
-            const page = pageFromValue(record[key]);
-            if (page)
-                return page;
-        }
-        for (const key of ["body", "data", "params", "cursor"]) {
-            const page = pageFromTransportValue(record[key], depth + 1);
-            if (page)
-                return page;
-        }
-    }
-    return null;
-};
-const requestedCommunityPage = (url, transportArgs = []) => {
-    for (const value of transportArgs) {
-        const page = pageFromTransportValue(value);
-        if (page)
-            return page;
-    }
-    return pageFromTransportValue(url) || 1;
-};
-const nativeHubHasContent = (response) => Boolean(response && typeof response === "object" && Array.isArray(response.hub) && response.hub.length);
-const syntheticCommunityId = (appId, page, index) => {
-    const cleanAppId = String(Math.max(0, Math.trunc(Number(appId) || 0))).padStart(10, "0").slice(-10);
-    const cleanPage = String(Math.max(1, Math.min(Math.trunc(Number(page) || 1), 100))).padStart(3, "0");
-    const cleanIndex = String(Math.max(0, Math.trunc(Number(index) || 0))).padStart(2, "0").slice(-2);
-    return `90909${cleanAppId}${cleanPage}${cleanIndex}`;
-};
-const communityProviderIcon = (source) => {
-    const cleanSource = String(source || "").trim().toLowerCase();
-    if (cleanSource.includes("steam"))
-        return PLAYHUB_COMMUNITY_STEAM_ICON;
-    if (cleanSource.includes("rawg"))
-        return PLAYHUB_COMMUNITY_RAWG_ICON;
-    return PLAYHUB_COMMUNITY_IGN_ICON;
-};
-const communityCreator = (source, avatar) => ({
-    steamid: "76561197960287930",
-    name: source || "Playhub Metadata",
-    avatar,
-    avatar_url: avatar,
-    avatar_medium: avatar,
-    avatar_full: avatar,
-    avatarFullURL: avatar,
-});
-const fallbackPageToNativeHub = (appId, fallback) => ({
-    cached: fallback.source === "metadata",
-    hub: fallback.items.map((item, index) => {
-        const sourceLabel = fallback.source === "steam-scrape"
-            ? item.author ? t("community.steamAuthor", { author: item.author }) : t("community.steamCommunity")
-            : item.author || "Metadata";
-        const providerIcon = communityProviderIcon(fallback.source === "steam-scrape" ? "steam" : sourceLabel);
-        const itemLink = item.link || item.image_url;
-        const publishedFileId = syntheticCommunityId(appId, fallback.page, index);
-        return {
-            appid: appId,
-            consumer_appid: appId,
-            published_file_id: publishedFileId,
-            publishedfileid: publishedFileId,
-            type: 5,
-            title: item.title,
-            preview_image_url: item.image_url,
-            full_image_url: item.image_url,
-            image_width: item.width,
-            image_height: item.height,
-            url: itemLink,
-            link: itemLink,
-            external_url: itemLink,
-            strURL: itemLink,
-            avatar: providerIcon,
-            avatar_url: providerIcon,
-            creator_avatar_url: providerIcon,
-            author_avatar_url: providerIcon,
-            owner_avatar_url: providerIcon,
-            content_descriptorids: [],
-            spoiler_tag: false,
-            description: item.description,
-            creator: communityCreator(sourceLabel, providerIcon),
-            author: sourceLabel,
-            time_created: Math.floor(Date.now() / 1000) - index * 60,
-            votes_up: 0,
-            votes_down: 0,
-            num_comments_public: 0,
-            reactions: [],
-        };
-    }),
-});
-const resolveCommunityFeed = async ({ appId, page, originalArgs, rewrittenArgs, nativeRequest, fallbackRequest, onFallbackError, }) => {
-    const nativeArgs = rewrittenArgs || originalArgs;
-    let native;
-    let nativeError;
-    try {
-        native = await nativeRequest(nativeArgs);
-        if (nativeHubHasContent(native))
-            return native;
-    }
-    catch (error) {
-        nativeError = error;
-    }
-    try {
-        const fallback = await fallbackRequest(appId, page);
-        if (fallback.items.length)
-            return fallbackPageToNativeHub(appId, fallback);
-    }
-    catch (error) {
-        onFallbackError?.(error);
-        // Native preservation rules below intentionally handle fallback failures.
-    }
-    if (!nativeError)
-        return native;
-    if (rewrittenArgs)
-        return nativeRequest(originalArgs);
-    throw nativeError;
-};
-const resolveCommunityRequest = (options) => options.isNonSteam
-    ? resolveCommunityFeed(options)
-    : options.nativeRequest(options.originalArgs);
-
-// Dependency-free so tests/test_community_feed_passthrough.py can import it with plain node.
-const rewriteCommunityFeedUrlForSteamApp = (url, steamAppId) => {
-    const cleanSteamAppId = Number(steamAppId || 0);
-    if (cleanSteamAppId <= 0)
-        return null;
-    if (!/library\/appcommunityfeed\/\d+/.test(String(url || "")))
-        return null;
-    return String(url || "").replace(/appcommunityfeed\/\d+/, `appcommunityfeed/${cleanSteamAppId}`);
-};
-
-const ACTIVITY_REFRESH_INTERVAL_MS = 15 * 60 * 1000;
-const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) => {
-    const attempts = new Map();
-    const inFlight = new Set();
-    const isFresh = (timestampMs, nowMs) => typeof timestampMs === "number" && timestampMs > 0 && nowMs - timestampMs < intervalMs;
-    return {
-        shouldAttempt: (appId, nowMs, enrichedAtSeconds) => {
-            if (!appId || inFlight.has(appId))
-                return false;
-            if (isFresh(attempts.get(appId), nowMs))
-                return false;
-            const enrichedAtMs = Number(enrichedAtSeconds || 0) * 1000;
-            if (isFresh(enrichedAtMs, nowMs))
-                return false;
-            return true;
-        },
-        markAttempt: (appId, nowMs) => {
-            if (!appId)
-                return;
-            attempts.set(appId, nowMs);
-            inFlight.add(appId);
-        },
-        markSettled: (appId) => {
-            inFlight.delete(appId);
-        },
-    };
 };
 
 let ensureMetadataCacheFn = async () => undefined;
@@ -24273,6 +23025,130 @@ const nativeReleaseDate = (value) => {
     return Math.floor(date.getTime() / 1000);
 };
 
+const steamUiWindow = () => {
+    const candidates = [globalThis];
+    try {
+        const currentWindow = globalThis;
+        candidates.push(currentWindow.parent, currentWindow.top);
+    }
+    catch {
+        // A cross-origin frame can still use its own Decky module bridge.
+    }
+    return candidates.find((candidate) => candidate?.webpackChunksteamui || typeof candidate?.DFL?.findModuleChild === "function") ?? globalThis;
+};
+const steamUiDocuments = () => {
+    // SharedJSContext does not own Big Picture's DOM. Resolve the same SteamUI
+    // host bridge for every consumer so cards and Game Info inspect one ordered,
+    // deduplicated set of real browser documents.
+    const contexts = new Set([globalThis, steamUiWindow()]);
+    try {
+        const currentWindow = globalThis;
+        contexts.add(currentWindow.parent);
+        contexts.add(currentWindow.top);
+    }
+    catch {
+        // A cross-origin parent can still leave the SteamUI/webpack bridge usable.
+    }
+    const documents = new Set();
+    try {
+        for (const context of contexts) {
+            const windowStore = context?.SteamUIStore?.m_WindowStore;
+            const browserWindows = [
+                windowStore?.MainWindowInstance?.m_BrowserWindow,
+                windowStore?.GamepadUIMainWindowInstance?.m_BrowserWindow,
+            ];
+            for (const browserWindow of browserWindows) {
+                const document = browserWindow?.document;
+                if (typeof document?.querySelector === "function")
+                    documents.add(document);
+            }
+        }
+    }
+    catch {
+        // Continue with context documents when a Steam private field changes.
+    }
+    for (const context of contexts) {
+        const document = context?.document;
+        if (typeof document?.querySelector === "function")
+            documents.add(document);
+    }
+    return Array.from(documents);
+};
+/** Find an element in Steam's real browser documents, not only Decky's global. */
+const findSteamUiDocumentMatch = (finder) => {
+    for (const document of steamUiDocuments()) {
+        try {
+            const match = finder(document);
+            if (match !== undefined)
+                return match;
+        }
+        catch {
+            // Private DOM access is optional. Try the next known SteamUI document.
+        }
+    }
+    return undefined;
+};
+
+const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;
+const GLOBAL_MIRROR_KEY = "__DECKY_METADATA_NATIVE_CLASSES__";
+let translatedClasses = {};
+const listeners = new Set();
+function isValidCssIdentifier(value) {
+    return typeof value === "string" && CSS_IDENTIFIER_RE.test(value);
+}
+function mirrorToSteamWindow(next) {
+    try {
+        const host = steamUiWindow();
+        if (host && typeof host === "object") {
+            host[GLOBAL_MIRROR_KEY] = { ...next };
+        }
+    }
+    catch {
+        // Steam UI window may not be attached yet in unit tests or early boot.
+    }
+    try {
+        globalThis[GLOBAL_MIRROR_KEY] = { ...next };
+    }
+    catch {
+        // Ignore read-only globals.
+    }
+}
+function setNativeCssClasses(raw) {
+    const next = {};
+    if (raw && typeof raw === "object") {
+        for (const [key, value] of Object.entries(raw)) {
+            if (isValidCssIdentifier(value)) {
+                next[key] = value;
+            }
+        }
+    }
+    translatedClasses = next;
+    mirrorToSteamWindow(next);
+    for (const listener of Array.from(listeners)) {
+        try {
+            listener();
+        }
+        catch {
+            // Listener errors must never block class hydration.
+        }
+    }
+}
+function getNativeCssClass(key) {
+    const value = translatedClasses[key];
+    return isValidCssIdentifier(value) ? value : undefined;
+}
+function resolveSteamCssClass(primary, key) {
+    if (isValidCssIdentifier(primary))
+        return primary;
+    return getNativeCssClass(key);
+}
+function subscribeNativeCssClasses(listener) {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+}
+
 const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
     typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
 const collectSafeFunctionSources = (value) => {
@@ -25871,13 +24747,137 @@ const allNonSteamGames = async () => {
         // Continue with backend fallback.
     }
     try {
-        const localShortcuts = await Promise.resolve().then(function () { return backend$p; }).then((m) => m.getLocalShortcuts());
+        const localShortcuts = await Promise.resolve().then(function () { return backend; }).then((m) => m.getLocalShortcuts());
         localShortcuts.forEach(addEntry);
     }
     catch (_error) {
         // Optional fallback.
     }
     return Array.from(byId.values()).sort((a, b) => a.name.localeCompare(b.name));
+};
+
+const STEAM_DECK_CONTROLLER_TYPE = 4;
+const LEGION_GO_S_CONTROLLER_TYPE$1 = 102;
+const AFFLICTED_CONTROLLER_TYPES = new Set([
+    LEGION_GO_S_CONTROLLER_TYPE$1,
+]);
+const validControllerIndex$1 = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const validControllerType = (value) => typeof value === "number" && Number.isInteger(value) && value >= 0;
+const readControllerStore = (internals) => {
+    try {
+        const boundary = internals ?? globalThis;
+        const upper = boundary.ControllerStore;
+        if (upper && typeof upper.GetControllers === "function")
+            return upper;
+        const lower = boundary.controllerStore;
+        if (lower && typeof lower.GetControllers === "function")
+            return lower;
+        return null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllers = (store) => {
+    try {
+        if (!store)
+            return null;
+        const getControllers = store.GetControllers;
+        if (typeof getControllers !== "function")
+            return null;
+        const value = getControllers.call(store);
+        return Array.isArray(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllerType = (record) => {
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.eControllerType;
+        return validControllerType(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const extractControllerIndex = (record) => {
+    try {
+        if (record === null || typeof record !== "object")
+            return null;
+        const value = record.nControllerIndex;
+        return validControllerIndex$1(value) ? value : null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const readControllerTypeAtIndex = (controllerIndex, rawControllers) => {
+    for (const record of rawControllers) {
+        const index = extractControllerIndex(record);
+        if (index === null || index !== controllerIndex)
+            continue;
+        return extractControllerType(record);
+    }
+    return null;
+};
+const controllerTypeForIndex = (controllerIndex, internals) => {
+    try {
+        if (!validControllerIndex$1(controllerIndex))
+            return null;
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return null;
+        return readControllerTypeAtIndex(controllerIndex, controllers);
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const getConnectedControllerTypes = (internals) => {
+    try {
+        const controllers = extractControllers(readControllerStore(internals));
+        if (!controllers)
+            return [];
+        const values = new Set();
+        for (const record of controllers) {
+            const type = extractControllerType(record);
+            if (type === null)
+                continue;
+            values.add(type);
+        }
+        return Array.from(values).sort((left, right) => left - right);
+    }
+    catch (_error) {
+        return [];
+    }
+};
+const sourceFilterForControllerType = (controllerType, requestedFilter) => {
+    if (!requestedFilter)
+        return false;
+    if (controllerType === null)
+        return requestedFilter;
+    return !AFFLICTED_CONTROLLER_TYPES.has(controllerType) && requestedFilter;
+};
+const KNOWN_CONTROLLER_TYPES = new Map([
+    [STEAM_DECK_CONTROLLER_TYPE, "Steam Deck"],
+    [LEGION_GO_S_CONTROLLER_TYPE$1, "Legion Go S"],
+]);
+const formatConnectedControllerTypes = (types) => {
+    if (!Array.isArray(types))
+        return t("common.unknown");
+    const sorted = Array.from(new Set(types.filter(validControllerType)))
+        .sort((left, right) => left - right);
+    if (sorted.length === 0)
+        return t("common.unknown");
+    const labels = [];
+    for (const type of sorted) {
+        const label = KNOWN_CONTROLLER_TYPES.get(type);
+        labels.push(label === undefined ? t("controllerTypes.type", { type }) : `${label} (${type})`);
+    }
+    return labels.join(", ");
 };
 
 const POLL_INTERVAL_MS$1 = 100;
@@ -25954,27 +24954,6 @@ const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
         poll();
     });
 };
-
-const TITLE = "Decky Metadata";
-const DURATION = 3000;
-const toastLogoStyle = {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    height: "100%",
-};
-function notify(kind, heading, body) {
-    const logo = (SP_JSX.jsx("span", { style: toastLogoStyle, children: kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success, size: 28 })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error, size: 28 })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning, size: 28 })) }));
-    try {
-        toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
-    }
-    catch {
-        // The Decky toaster may be unavailable outside the runtime.
-    }
-}
-const toastSuccess = (heading, body) => notify("success", heading, body);
-const toastWarn = (heading, body) => notify("warning", heading, body);
-const toastError = (heading, body) => notify("error", heading, body);
 
 const DECKY_HIDE_APP_LINKS_CLASS = "decky-hide-applinks";
 const DECKY_HIDE_APP_LINKS_STYLE_ID = "decky-hide-applinks-style";
@@ -30484,179 +29463,520 @@ const installSteamPatches = () => {
     };
 };
 
-const COMPATIBILITY_QAM_RUNTIME_KEY = "__deckyMetadataCompatibilityQamRuntime";
-const newCompatibilityQamRuntime = () => ({
-    dropdown: {
-        returnPending: false,
-        controlUnmounted: false,
-        returnVisible: false,
-        selectionSaved: false,
-        focusAttempts: 0,
-        origin: "category",
-    },
-    policySaveId: 0,
-    policySave: null,
-    policySaveListeners: new Set(),
-});
-/**
- * A native popup can keep an old callback alive while Decky evaluates a new
- * bundle for the replacement QAM panel. Share that UI handoff state just like
- * the compatibility policy runtime, so both bundles observe one transaction.
- */
-const compatibilityQamRuntime = () => {
-    const host = globalThis;
-    const existing = host[COMPATIBILITY_QAM_RUNTIME_KEY];
-    if (existing
-        && typeof existing === "object"
-        && existing.dropdown
-        && existing.policySaveListeners instanceof Set
-        && typeof existing.policySaveId === "number") {
-        if (typeof existing.dropdown.focusAttempts !== "number") {
-            existing.dropdown.focusAttempts = 0;
+// Consecutive getScanProgress failures before the store reports the scan as failed.
+const MAX_POLL_FAILURES = 3;
+class MetadataScanStore {
+    constructor(deps) {
+        Object.defineProperty(this, "deps", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: deps
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                progress: null,
+                busy: false,
+                statusKind: "idle",
+                error: null,
+                completedRevision: 0,
+                savedCount: 0,
+                missingCount: 0,
+            }
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "timer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "pollInFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "hydrationStarted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "startRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "pollFailures", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "countRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        // Last game list from start() or a surface's refreshCounts(); a hydrated scan has no start() call.
+        Object.defineProperty(this, "scanGames", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+    }
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        if (!this.hydrationStarted)
+            void this.hydrate();
+        return () => this.listeners.delete(listener);
+    }
+    async hydrate() {
+        if (this.hydrationStarted)
+            return;
+        this.hydrationStarted = true;
+        const generation = this.generation;
+        const startRevision = this.startRevision;
+        let progress;
+        try {
+            progress = await this.deps.getScanProgress();
         }
-        return existing;
+        catch {
+            // A failed check must not hide a running scan for good: the next subscribe checks again.
+            if (generation === this.generation)
+                this.hydrationStarted = false;
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        if (startRevision !== this.startRevision || !progress.running)
+            return;
+        this.publish({ progress, busy: true, statusKind: "active", error: null });
+        this.ensurePolling();
     }
-    const runtime = newCompatibilityQamRuntime();
-    host[COMPATIBILITY_QAM_RUNTIME_KEY] = runtime;
-    return runtime;
-};
-const runtime = compatibilityQamRuntime();
-const notifyCompatibilityPolicySave = () => {
-    runtime.policySaveListeners.forEach((listener) => listener());
-};
-/** Keep one policy transaction alive while the native popup remounts QAM. */
-const compatibilityPolicySaveSnapshot = () => runtime.policySave;
-const subscribeCompatibilityPolicySave = (listener) => {
-    runtime.policySaveListeners.add(listener);
-    return () => runtime.policySaveListeners.delete(listener);
-};
-const hasPendingCompatibilityPolicySave = () => runtime.policySave !== null && runtime.policySave.pendingKind !== null;
-const beginCompatibilityPolicySave = (kind, lifecycleGeneration, category, scope) => {
-    const id = runtime.policySaveId + 1;
-    runtime.policySaveId = id;
-    runtime.policySave = {
-        id,
-        lifecycleGeneration,
-        category,
-        scope,
-        pendingKind: kind,
-        error: "",
-    };
-    notifyCompatibilityPolicySave();
-    return id;
-};
-/** Complete only the transaction from the current plugin lifetime. */
-const settleCompatibilityPolicySave = (id, lifecycleGeneration, category, scope, error = "") => {
-    if (!runtime.policySave
-        || runtime.policySave.id !== id
-        || runtime.policySave.lifecycleGeneration !== lifecycleGeneration) {
-        return false;
+    async refreshCounts(games) {
+        this.scanGames = games;
+        const generation = this.generation;
+        const revision = ++this.countRevision;
+        await this.deps.refreshMetadataCache();
+        if (generation !== this.generation || revision !== this.countRevision)
+            return;
+        const savedCount = Object.keys(metadataCache).length;
+        let missingCount = this.snapshot.missingCount;
+        try {
+            missingCount = await this.deps.getMissingMetadataCount(games);
+        }
+        catch (error) {
+            if (generation === this.generation && revision === this.countRevision) {
+                warn("bridge", "missing metadata count load failed", error);
+            }
+        }
+        if (generation !== this.generation || revision !== this.countRevision)
+            return;
+        this.publish({ savedCount, missingCount });
     }
-    runtime.policySave = {
-        id,
-        lifecycleGeneration,
-        category,
-        scope,
-        pendingKind: null,
-        error,
-    };
-    notifyCompatibilityPolicySave();
-    return true;
-};
-/** Invalidate an old plugin's transaction without letting it unlock a new mount. */
-const discardStaleCompatibilityPolicySave = (lifecycleGeneration) => {
-    if (!runtime.policySave
-        || runtime.policySave.lifecycleGeneration === lifecycleGeneration) {
-        return false;
+    async start(games, getLanguage) {
+        this.startRevision += 1;
+        if (this.snapshot.busy)
+            return;
+        this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+        this.scanGames = games;
+        const generation = this.generation;
+        let language;
+        try {
+            language = await getLanguage();
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        try {
+            await this.deps.startScanMissing(games, language);
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.ensurePolling();
     }
-    runtime.policySave = null;
-    runtime.policySaveId += 1;
-    notifyCompatibilityPolicySave();
-    return true;
-};
-const requestCompatibilityDropdownReturn = (origin) => {
-    runtime.dropdown.returnPending = true;
-    runtime.dropdown.controlUnmounted = false;
-    runtime.dropdown.returnVisible = false;
-    runtime.dropdown.selectionSaved = false;
-    runtime.dropdown.focusAttempts = 0;
-    runtime.dropdown.origin = origin;
-};
-/** Count native-focus polling across panel remounts and rerenders. */
-const claimCompatibilityDropdownFocusAttempt = (maximumAttempts) => {
-    if (!runtime.dropdown.returnPending
-        || runtime.dropdown.focusAttempts >= maximumAttempts)
-        return false;
-    runtime.dropdown.focusAttempts += 1;
-    return true;
-};
-const hasCompatibilityDropdownReturn = () => runtime.dropdown.returnPending;
-const compatibilityDropdownReturnOrigin = () => runtime.dropdown.origin;
-const noteCompatibilityDropdownControlUnmounted = () => {
-    if (!runtime.dropdown.returnPending)
-        return false;
-    runtime.dropdown.controlUnmounted = true;
-    return true;
-};
-const noteCompatibilityDropdownReturnVisible = () => {
-    if (!runtime.dropdown.returnPending || !runtime.dropdown.controlUnmounted) {
-        return false;
+    dispose() {
+        this.generation += 1;
+        if (this.timer !== null) {
+            this.deps.clearTimeout(this.timer);
+            this.timer = null;
+        }
+        this.pollInFlight = false;
     }
-    runtime.dropdown.returnVisible = true;
-    return true;
+    ensurePolling() {
+        if (this.timer !== null || this.pollInFlight)
+            return;
+        this.timer = this.deps.setTimeout(() => {
+            this.timer = null;
+            void this.poll();
+        }, 800);
+    }
+    async poll() {
+        if (this.pollInFlight)
+            return;
+        const generation = this.generation;
+        this.pollInFlight = true;
+        let progress;
+        try {
+            progress = await this.deps.getScanProgress();
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.pollInFlight = false;
+            // The backend scan keeps running through a dropped RPC, so retry before giving up.
+            this.pollFailures += 1;
+            if (this.pollFailures < MAX_POLL_FAILURES) {
+                this.ensurePolling();
+                return;
+            }
+            this.pollFailures = 0;
+            this.hydrationStarted = false;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.pollFailures = 0;
+        this.publish({ progress, statusKind: "active" });
+        if (progress.running) {
+            this.pollInFlight = false;
+            this.ensurePolling();
+            return;
+        }
+        try {
+            await this.refreshCounts(this.scanGames);
+        }
+        catch (error) {
+            if (generation !== this.generation)
+                return;
+            this.pollInFlight = false;
+            this.fail(error);
+            return;
+        }
+        if (generation !== this.generation)
+            return;
+        this.pollInFlight = false;
+        this.publish({
+            busy: false,
+            statusKind: scanCompleteStatusKind(progress),
+            completedRevision: this.snapshot.completedRevision + 1,
+        });
+        this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+    }
+    fail(error) {
+        this.publish({ busy: false, statusKind: "error", error });
+        this.deps.toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
+    }
+    publish(update) {
+        this.snapshot = { ...this.snapshot, ...update };
+        for (const listener of this.listeners)
+            listener();
+    }
+}
+const metadataScanStore = new MetadataScanStore({
+    getScanProgress,
+    startScanMissing,
+    refreshMetadataCache,
+    getMissingMetadataCount,
+    toastSuccess,
+    toastError,
+    setTimeout: (fn, ms) => window.setTimeout(fn, ms),
+    clearTimeout: (id) => window.clearTimeout(id),
+});
+function useMetadataScan() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(metadataScanStore.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(metadataScanStore.getSnapshot());
+        const unsubscribe = metadataScanStore.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+const scanCompleteMessage = (progress) => {
+    const total = Number(progress.total || 0);
+    if (!total)
+        return t("panel.refreshComplete");
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed
+        ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
+        : t("panel.scanCompleteSaved", { assigned, total });
 };
-/** Selection completes after the backend confirms the new global policy. */
-const noteCompatibilityDropdownSelectionSaved = () => {
-    if (!runtime.dropdown.returnPending)
-        return false;
-    runtime.dropdown.returnVisible = true;
-    runtime.dropdown.selectionSaved = true;
-    return true;
-};
-const isCompatibilityDropdownSelectionReturn = () => runtime.dropdown.selectionSaved;
-const isCompatibilityDropdownReturnReady = () => runtime.dropdown.returnPending && runtime.dropdown.returnVisible;
-/**
- * Complete the handoff after native focus succeeds or the user takes
- * navigation. Failed early attempts remain armed until the close handoff ends.
- */
-const consumeCompatibilityDropdownReturn = () => {
-    const pending = runtime.dropdown.returnPending;
-    runtime.dropdown.returnPending = false;
-    runtime.dropdown.controlUnmounted = false;
-    runtime.dropdown.returnVisible = false;
-    runtime.dropdown.selectionSaved = false;
-    runtime.dropdown.focusAttempts = 0;
-    runtime.dropdown.origin = "category";
-    return pending;
-};
-const clearCompatibilityDropdownReturn = () => {
-    runtime.dropdown.returnPending = false;
-    runtime.dropdown.controlUnmounted = false;
-    runtime.dropdown.returnVisible = false;
-    runtime.dropdown.selectionSaved = false;
-    runtime.dropdown.focusAttempts = 0;
-    runtime.dropdown.origin = "category";
+const scanCompleteStatusKind = (progress) => {
+    const total = Number(progress.total || 0);
+    const assigned = Number(progress.assigned || 0);
+    const failed = Number(progress.failed || 0);
+    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };
 
-const DEFAULT_UPDATE_SETTINGS = {
-    update_channel: "stable",
-    automatic_update_checks: true,
-};
-const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
-const resolveSavedUpdateSettings = (previous, result) => ("status" in result ? previous : result);
+// MetadataScanBody props from the shared scan snapshot; text is built at render time in the current language.
+function scanView(scan) {
+    const completed = Number(scan.progress?.completed || 0);
+    const total = Number(scan.progress?.total || 0);
+    const message = scan.statusKind === "error"
+        ? translateBackendError(scan.error)
+        : scan.busy
+            ? scan.progress
+                ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
+                : ""
+            : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
+                ? scanCompleteMessage(scan.progress)
+                : "";
+    return {
+        scanBusy: scan.busy,
+        scanCompleted: completed,
+        scanTotal: total,
+        scanMessage: message,
+        scanStatusKind: scan.statusKind,
+    };
+}
 
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState([]);
+    const [loaded, setLoaded] = SP_REACT.useState(false);
     const loadGames = SP_REACT.useCallback(async () => {
         const loadedGames = await allNonSteamGames();
         setGames(loadedGames);
+        setLoaded(true);
         return loadedGames;
     }, []);
     SP_REACT.useEffect(() => {
         void loadGames();
     }, [loadGames]);
-    return { games, loadGames };
+    return { games, loaded, loadGames };
 };
+
+/** Detected games plus the shared scan snapshot, with counts kept current for both QAM and Settings. */
+function useScanGames() {
+    const { games, loaded, loadGames } = useNonSteamGames();
+    const scan = useMetadataScan();
+    // Wait for the real list: counting [] would show 0 missing until the shortcuts load.
+    SP_REACT.useEffect(() => {
+        if (!loaded)
+            return;
+        metadataScanStore.refreshCounts(games).catch((error) => warn("bridge", "metadata count refresh failed", error));
+    }, [games, loaded]);
+    // Shortcuts can change while the QAM stays mounted; reload them after each scan, as the QAM did before.
+    SP_REACT.useEffect(() => {
+        if (scan.completedRevision > 0)
+            void loadGames();
+    }, [scan.completedRevision]);
+    return { games, scan };
+}
+
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        const notice = t("conflicts.pluginConflict", {
+            pluginName: conflict.pluginName,
+            feature,
+        });
+        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
+    }
+    return conflict.detectionAvailable ? ""
+        : t("conflicts.detectionUnavailable", { feature });
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
+}
 
 const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
 const isTrailerHomeRoute = (route) => {
@@ -34567,1590 +33887,6 @@ const startTrailerController = () => {
     return () => trailerController.stop();
 };
 
-// Shows Steam's own mini achievement stat beside Play Time. The Gaming Mode game
-// page passes no onSeek, and Valve's MiniAchievements row renders nothing without
-// it (ValveSoftware/steam-for-linux#13540), so one is supplied here. See NOTICE.
-const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000];
-const MAX_FIBER_DEPTH = 12;
-// Valve's row only checks this for truthiness and opens My Achievements itself.
-const NOOP_SEEK = () => { };
-// The play bar's CSS module. It is looked up on use: the module may not be
-// registered when the plugin loads.
-let statsClassesCache;
-const statsClasses = () => {
-    if (!statsClassesCache?.GameStatsSection) {
-        try {
-            const found = DFL.findClassModule((module) => module.GameStat && module.Playtime);
-            if (found && typeof found === "object")
-                statsClassesCache = found;
-        }
-        catch {
-            // A failed lookup keeps the previous classes and retries on the next use.
-        }
-    }
-    const translatedSection = getNativeCssClass("gameStatsSection");
-    const translatedPlayBar = getNativeCssClass("playBar");
-    if (!statsClassesCache?.GameStatsSection && translatedSection) {
-        return {
-            ...statsClassesCache,
-            GameStatsSection: translatedSection,
-            ...(translatedPlayBar ? { PlayBar: translatedPlayBar } : {}),
-        };
-    }
-    return statsClassesCache ?? {};
-};
-// Repeated reads must return the same object so prop comparisons stay stable.
-const seekProps = new WeakMap();
-// Shortcuts get the callback too: Valve's row hides itself when Steam has no
-// achievements for the app, and a plugin such as Emuchievements can supply them.
-const withSeek = (raw) => {
-    if (!raw || typeof raw !== "object")
-        return raw;
-    if (Reflect.get(raw, "onSeek"))
-        return raw;
-    const cached = seekProps.get(raw);
-    if (cached)
-        return cached;
-    const injected = { ...raw, onSeek: NOOP_SEEK };
-    seekProps.set(raw, injected);
-    return injected;
-};
-/** The mounted stats component that owns a rendered section, from its fiber. */
-const ownerInstance = (section) => {
-    if (!section || typeof section !== "object")
-        return undefined;
-    const key = Object.keys(section).find((name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"));
-    let fiber = key ? Reflect.get(section, key) : undefined;
-    for (let depth = 0; fiber && typeof fiber === "object" && depth < MAX_FIBER_DEPTH; depth += 1) {
-        const stateNode = Reflect.get(fiber, "stateNode");
-        if (stateNode &&
-            typeof stateNode === "object" &&
-            typeof Reflect.get(stateNode, "BUserHasContentToClaim") === "function" &&
-            typeof Reflect.get(stateNode, "forceUpdate") === "function") {
-            return stateNode;
-        }
-        fiber = Reflect.get(fiber, "return");
-    }
-    return undefined;
-};
-const rerender = (instance) => {
-    try {
-        instance.forceUpdate?.();
-    }
-    catch (error) {
-        debug("miniAchievements", "achievement stat rerender failed", error);
-    }
-};
-/** Install the onSeek supply and return its disposer. */
-function installMiniAchievementsPatch() {
-    const unpatchers = [];
-    const patched = new WeakSet();
-    const patchedStats = new Set();
-    let observer;
-    let observedSection;
-    let captureTimer;
-    let captureAttempt = 0;
-    let disposed = false;
-    const patchInstance = (instance) => {
-        if (patched.has(instance))
-            return;
-        // React owns this property; if it is not reassignable the accessor cannot survive.
-        const descriptor = Object.getOwnPropertyDescriptor(instance, "props");
-        if (!descriptor || !("value" in descriptor) || !descriptor.configurable) {
-            debug("miniAchievements", "achievement stat props are not patchable");
-            return;
-        }
-        let raw = descriptor.value;
-        try {
-            Object.defineProperty(instance, "props", {
-                configurable: true,
-                enumerable: true,
-                get: () => withSeek(raw),
-                set: (value) => {
-                    raw = value;
-                },
-            });
-        }
-        catch (error) {
-            debug("miniAchievements", "achievement stat props patch failed", error);
-            return;
-        }
-        patched.add(instance);
-        patchedStats.add({ instance: new WeakRef(instance), raw: () => raw });
-        rerender(instance);
-    };
-    const observeSection = (section) => {
-        if (section === observedSection)
-            return;
-        observer?.disconnect();
-        observedSection = section;
-        if (!section || typeof section !== "object")
-            return;
-        const ownerDocument = Reflect.get(section, "ownerDocument");
-        const view = ownerDocument && typeof ownerDocument === "object" ? Reflect.get(ownerDocument, "defaultView") : undefined;
-        const Constructor = view ? Reflect.get(view, "MutationObserver") : undefined;
-        if (typeof Constructor !== "function")
-            return;
-        const classes = statsClasses();
-        const closest = Reflect.get(section, "closest");
-        const playBar = classes.PlayBar && typeof closest === "function" ? closest.call(section, `.${classes.PlayBar}`) : null;
-        const scope = playBar ?? Reflect.get(section, "parentElement") ?? section;
-        observer = new Constructor(() => requestSync());
-        try {
-            // A subtree watch survives Steam replacing the stats section itself.
-            observer.observe(scope, { childList: true, subtree: true });
-        }
-        catch {
-            observer = undefined;
-        }
-    };
-    const sync = () => {
-        if (disposed)
-            return true;
-        try {
-            const sectionClass = statsClasses().GameStatsSection;
-            if (!sectionClass)
-                return false;
-            let found = false;
-            let firstSection = undefined;
-            for (const uiDocument of steamUiDocuments()) {
-                let sections;
-                try {
-                    sections = uiDocument.querySelectorAll(`.${sectionClass}`);
-                }
-                catch {
-                    continue;
-                }
-                const list = Array.from(sections);
-                if (firstSection === undefined)
-                    firstSection = list[0];
-                for (const section of list) {
-                    const instance = ownerInstance(section);
-                    if (!instance)
-                        continue;
-                    found = true;
-                    patchInstance(instance);
-                }
-            }
-            observeSection(firstSection);
-            for (const entry of patchedStats)
-                if (!entry.instance.deref())
-                    patchedStats.delete(entry);
-            return found;
-        }
-        catch (error) {
-            warn("miniAchievements", "achievement stat sync failed", error);
-            return true;
-        }
-    };
-    const scheduleSync = () => {
-        if (disposed || captureTimer !== undefined)
-            return;
-        const delay = CAPTURE_RETRY_DELAYS_MS[captureAttempt];
-        if (delay === undefined)
-            return;
-        captureTimer = setTimeout(() => {
-            captureTimer = undefined;
-            if (sync() || disposed)
-                return;
-            captureAttempt += 1;
-            scheduleSync();
-        }, delay);
-    };
-    /** A route render replaces the page, so its retry burst starts over at once. */
-    const requestSync = () => {
-        if (disposed)
-            return;
-        captureAttempt = 0;
-        if (captureTimer !== undefined) {
-            clearTimeout(captureTimer);
-            captureTimer = undefined;
-        }
-        scheduleSync();
-    };
-    const unsubscribeClasses = subscribeNativeCssClasses(() => {
-        if (!disposed)
-            requestSync();
-    });
-    unpatchers.push(unsubscribeClasses);
-    requestSync();
-    for (const route of GAME_DETAIL_ROUTES) {
-        try {
-            const patch = routerHook.addPatch(route, (tree) => {
-                try {
-                    const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-                    if (typeof routeProps?.renderFunc === "function") {
-                        const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, rendered) => {
-                            requestSync();
-                            return rendered;
-                        });
-                        unpatchers.push(() => renderPatch.unpatch());
-                    }
-                }
-                catch (error) {
-                    warn("miniAchievements", "achievement stat patch failed", error);
-                }
-                return tree;
-            });
-            unpatchers.push(() => routerHook.removePatch(route, patch));
-        }
-        catch (error) {
-            warn("miniAchievements", "achievement stat route hook failed", error);
-        }
-    }
-    return () => {
-        if (disposed)
-            return;
-        disposed = true;
-        observer?.disconnect();
-        observer = undefined;
-        observedSection = undefined;
-        if (captureTimer !== undefined) {
-            clearTimeout(captureTimer);
-            captureTimer = undefined;
-        }
-        for (const entry of patchedStats) {
-            const instance = entry.instance.deref();
-            if (!instance)
-                continue;
-            try {
-                // Hand the latest real props back so Valve's row hides without a reload.
-                Object.defineProperty(instance, "props", {
-                    value: entry.raw(),
-                    writable: true,
-                    configurable: true,
-                    enumerable: true,
-                });
-            }
-            catch (error) {
-                debug("miniAchievements", "achievement stat props restore failed", error);
-            }
-            rerender(instance);
-        }
-        patchedStats.clear();
-        for (const unpatch of unpatchers.splice(0)) {
-            try {
-                unpatch();
-            }
-            catch {
-                // Steam may already have released the route.
-            }
-        }
-    };
-}
-
-const initialSnapshot = (conflict) => ({
-    enabled: false,
-    conflict,
-    effectiveEnabled: false,
-    settingsLoaded: false,
-    busy: false,
-    settingsError: "",
-});
-/** Own the patch outside QAM so closing a section or panel cannot disable it. */
-class MiniAchievementsController {
-    constructor(conflicts = pluginConflicts) {
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "disposePatch", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        this.snapshot = initialSnapshot(conflicts.getConflict("miniAchievements"));
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const generation = ++this.generation;
-        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.snapshot = { ...this.snapshot, conflict: this.conflicts.getConflict("miniAchievements") };
-            this.applyRuntime();
-            this.emit();
-        });
-        this.emit();
-        void getMiniAchievementsEnabled().then((enabled) => {
-            if (!this.isCurrent(generation))
-                return;
-            this.snapshot = { ...this.snapshot, enabled, settingsLoaded: true };
-            this.applyRuntime();
-            this.emit();
-        }).catch((error) => {
-            if (!this.isCurrent(generation))
-                return;
-            this.snapshot = {
-                ...this.snapshot,
-                settingsError: t("miniAchievements.errors.loadFailed", { error: translateBackendError(error) }),
-            };
-            warn("bridge", "mini-achievements setting load failed", error);
-            this.emit();
-        });
-    }
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.generation += 1;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        const dispose = this.disposePatch;
-        this.disposePatch = undefined;
-        try {
-            dispose?.();
-        }
-        catch (error$1) {
-            error("patch", "mini-achievements cleanup failed", error$1);
-        }
-        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
-        this.emit();
-        this.listeners.clear();
-    }
-    async setEnabled(enabled) {
-        if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
-            return false;
-        if (enabled && !this.snapshot.enabled && this.snapshot.conflict.pluginName)
-            return false;
-        if (enabled === this.snapshot.enabled)
-            return true;
-        const generation = this.generation;
-        this.snapshot = { ...this.snapshot, busy: true, settingsError: "" };
-        this.emit();
-        try {
-            const confirmed = await setMiniAchievementsEnabled(enabled);
-            if (!this.isCurrent(generation))
-                return false;
-            this.snapshot = { ...this.snapshot, enabled: confirmed, busy: false };
-            const applied = this.applyRuntime();
-            this.emit();
-            return applied;
-        }
-        catch (error) {
-            if (!this.isCurrent(generation))
-                return false;
-            this.snapshot = {
-                ...this.snapshot,
-                busy: false,
-                settingsError: t("miniAchievements.errors.saveFailed", { error: translateBackendError(error) }),
-            };
-            warn("bridge", "mini-achievements setting save failed", error);
-            this.emit();
-            return false;
-        }
-    }
-    isCurrent(generation) {
-        return this.mounted && generation === this.generation;
-    }
-    applyRuntime() {
-        const effectiveEnabled = this.mounted && this.snapshot.settingsLoaded &&
-            this.snapshot.enabled && !this.snapshot.conflict.pluginName;
-        if (this.snapshot.effectiveEnabled !== effectiveEnabled) {
-            this.snapshot = { ...this.snapshot, effectiveEnabled };
-        }
-        try {
-            if (effectiveEnabled) {
-                this.disposePatch ?? (this.disposePatch = installMiniAchievementsPatch());
-            }
-            else {
-                const dispose = this.disposePatch;
-                this.disposePatch = undefined;
-                dispose?.();
-            }
-            return true;
-        }
-        catch (error$1) {
-            this.snapshot = {
-                ...this.snapshot,
-                settingsError: t("miniAchievements.errors.applyFailed", { error: translateBackendError(error$1) }),
-            };
-            error("patch", "mini-achievements runtime transition failed", error$1);
-            return false;
-        }
-    }
-    emit() {
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* A closing QAM panel cannot block the feature. */ }
-        }
-    }
-}
-const miniAchievementsController = new MiniAchievementsController();
-function startMiniAchievementsController() {
-    miniAchievementsController.mount();
-    return () => miniAchievementsController.stop();
-}
-
-const HTML_ENTITIES = {
-    amp: '&',
-    lt: '<',
-    gt: '>',
-    quot: '"',
-    apos: "'",
-    nbsp: ' ',
-    trade: '™',
-    reg: '®',
-    copy: '©'
-};
-function unescapeHtml(value) {
-    return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
-        if (entity[0] === '#') {
-            const hex = entity[1] === 'x' || entity[1] === 'X';
-            const code = parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
-            if (!Number.isFinite(code) || code < 0 || code > 0x10ffff)
-                return match;
-            try {
-                return String.fromCodePoint(code);
-            }
-            catch {
-                return match;
-            }
-        }
-        return HTML_ENTITIES[entity.toLowerCase()] ?? match;
-    });
-}
-/**
- * Normalise a game title for comparison against Steam search results.
- *
- * Ported from Decky-Metadata's backend/matching.py:normalise_match_title.
- * Drops bracketed segments, articles, edition/remaster wording and region or
- * version tokens, then collapses everything that is not alphanumeric.
- *
- * Unlike the Python original, a removal that would leave the title with no
- * letters is skipped: "Prototype" and "Prototype 2" are games, not version
- * markers, and stripping the word leaves nothing to match on.
- */
-const TITLE_REMOVALS = [
-    /\b(?:the|a|an)\b/g,
-    /\b(?:remaster(?:ed)?|hd|definitive|ultimate|complete|goty|edition)\b/g,
-    /\b(?:usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b/g
-];
-function normaliseMatchTitle(title) {
-    let text = unescapeHtml(String(title ?? ''))
-        .toLowerCase()
-        .replace(/[\u2122\u00ae\u00a9]/g, '')
-        .replace(/\[[^\]]+\]|\([^)]*\)/g, ' ');
-    for (const removal of TITLE_REMOVALS) {
-        const stripped = text.replace(removal, ' ');
-        if (/[a-z]/.test(stripped)) {
-            text = stripped;
-        }
-    }
-    return text
-        .replace(/[^a-z0-9]+/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim();
-}
-// Markers that identify a store entry as something other than the main game.
-// Ported from Decky-Metadata's NON_PRIMARY_STEAM_TITLE_PATTERNS.
-const NON_PRIMARY_PATTERNS = [
-    /\bdemo\b/,
-    /\bbeta\b/,
-    /\bplaytest\b/,
-    /\bprototype\b/,
-    /\bsoundtrack\b/,
-    /\bost\b/,
-    /\bseason\s+pass\b/,
-    /\bdlc\b/,
-    /\bpack\b/,
-    /\bbundle\b/,
-    /\bartbook\b/,
-    /\bart\s+book\b/,
-    /\btrailer\b/,
-    /\bdedicated\s+server\b/,
-    /\bserver\b/,
-    /\btest\b/
-];
-/**
- * Which "not the main game" markers a title carries.
- *
- * normaliseMatchTitle strips words like "demo" and "beta", so a demo entry can
- * normalise onto the base game's title. Comparing the markers of the query and
- * of the candidate keeps that apart, while still letting a title whose real
- * name contains a marker (Prototype, Test Drive) match itself.
- */
-function nonPrimaryMarkers(title) {
-    const text = unescapeHtml(String(title ?? '')).toLowerCase();
-    return NON_PRIMARY_PATTERNS.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
-}
-
-const SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
-const FETCH_TIMEOUT_MS$1 = 2000;
-const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
-const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
-const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
-async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS$1) {
-    const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
-    });
-    return Promise.race([fetchPromise, timeoutPromise]);
-}
-async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
-    const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/x-www-form-urlencoded',
-            'X-Algolia-Application-Id': ALGOLIA_APPLICATION_ID,
-            'X-Algolia-API-Key': ALGOLIA_SEARCH_KEY,
-            Origin: 'https://www.protondb.com',
-            Referer: 'https://www.protondb.com/'
-        },
-        body: JSON.stringify({
-            query: gameName,
-            facetFilters: [['appType:Game']],
-            restrictSearchableAttributes: ['name'],
-            attributesToRetrieve: ['name', 'objectID'],
-            attributesToHighlight: [],
-            attributesToSnippet: [],
-            hitsPerPage: 10
-        })
-    }));
-    if (res.status !== 200)
-        return null;
-    const hits = (await res.json())?.hits;
-    if (!Array.isArray(hits))
-        return null;
-    const match = hits.find((item) => typeof item?.name === 'string' &&
-        typeof item.objectID === 'string' &&
-        /^[1-9]\d*$/.test(item.objectID) &&
-        normaliseMatchTitle(item.name) === query &&
-        nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
-    return typeof match?.objectID === 'string' ? match.objectID : null;
-}
-/**
- * Resolve a non-Steam shortcut name to a Steam app ID.
- *
- * Uses the store search endpoint rather than the community autocomplete: it
- * returns full store titles ("Assassin's Creed™: Director's Cut Edition")
- * where the autocomplete only returns short ones ("Assassin's Creed"), so
- * more shortcuts normalise onto a candidate. Results are pinned to English so
- * the candidate names match what normaliseMatchTitle expects.
- * If Steam returns no acceptable match, try ProtonDB's SteamDB title index.
- * Transport errors do not trigger the fallback.
- */
-async function findSteamAppIdByName(gameName) {
-    const query = normaliseMatchTitle(gameName);
-    if (!query)
-        return null;
-    const queryMarkers = new Set(nonPrimaryMarkers(gameName));
-    try {
-        const params = new URLSearchParams({
-            term: gameName,
-            cc: 'US',
-            l: 'english'
-        });
-        const res = await fetchWithTimeout(fetchNoCors(`${SEARCH_URL}?${params.toString()}`, { method: 'GET' }));
-        if (res.status === 200) {
-            const items = (await res.json())?.items;
-            if (!Array.isArray(items))
-                return null;
-            const match = items.find((item) => item?.type === 'app' &&
-                item?.name &&
-                normaliseMatchTitle(item.name) === query &&
-                nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
-            if (typeof match?.id === 'number')
-                return String(match.id);
-            return await findAlgoliaAppIdByName(gameName, query, queryMarkers);
-        }
-    }
-    catch (error) {
-        console.error(error);
-    }
-    return null;
-}
-
-const resolutions = new Map();
-let generation = 0;
-let resolvedNameListener;
-const resetProtonDbAppIdResolution = () => {
-    generation += 1;
-    resolutions.clear();
-};
-/** Receives only found Steam IDs; a null search result is a miss or an error and is never reported. */
-const setResolvedNameListener = (listener) => {
-    resolvedNameListener = listener;
-};
-/** Load saved name lookups; a later rename of the shortcut makes its entry unused. */
-const seedProtonDbAppIdResolutions = (entries) => {
-    for (const [shortcutAppId, name, savedId] of entries) {
-        const id = steamAppId(savedId);
-        if (id === null || !Number.isSafeInteger(shortcutAppId) || shortcutAppId <= 0 ||
-            shortcutAppId > 0xffffffff || !name || resolutions.has(shortcutAppId))
-            continue;
-        resolutions.set(shortcutAppId, { name, promise: Promise.resolve(id), id });
-    }
-};
-const steamAppId = (value) => {
-    if (typeof value === "string" && !/^\d{1,10}$/.test(value))
-        return null;
-    if (typeof value !== "string" && typeof value !== "number")
-        return null;
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
-};
-const savedProtonDbAppId = (displayedAppId) => steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
-/** Read known identity without making navigation wait for an effect or Promise. */
-const getResolvedProtonDbAppId = (displayedAppId, overview) => {
-    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff)
-        return null;
-    if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
-        !("appid" in overview) || overview.appid !== displayedAppId)
-        return null;
-    const native = getNativeOverview(displayedAppId) ?? overview;
-    if (!("appid" in native) || native.appid !== displayedAppId ||
-        !("app_type" in native) || typeof native.app_type !== "number" ||
-        !Number.isSafeInteger(native.app_type))
-        return null;
-    try {
-        if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native))
-            return displayedAppId;
-        const savedId = savedProtonDbAppId(displayedAppId);
-        if (savedId !== null)
-            return savedId;
-        if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim())
-            return null;
-        const resolution = resolutions.get(displayedAppId);
-        return resolution?.name === native.display_name ? resolution.id : undefined;
-    }
-    catch {
-        return null;
-    }
-};
-/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
-const resolveProtonDbAppId = async (displayedAppId, overview) => {
-    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
-    if (knownId !== undefined)
-        return knownId;
-    const native = (getNativeOverview(displayedAppId) ?? overview);
-    const name = native.display_name;
-    const requestedGeneration = generation;
-    try {
-        let resolution = resolutions.get(displayedAppId);
-        if (resolution?.name !== name) {
-            const promise = findSteamAppIdByName(name).then(result => {
-                if (generation !== requestedGeneration)
-                    return null;
-                const current = getNativeOverview(displayedAppId);
-                if (current && current.display_name !== name)
-                    return null;
-                const id = steamAppId(result);
-                if (resolution)
-                    resolution.id = id;
-                if (id !== null) {
-                    try {
-                        resolvedNameListener?.(displayedAppId, name, id);
-                    }
-                    catch {
-                        // Saving is best effort.
-                    }
-                }
-                return id;
-            });
-            resolution = { name, promise };
-            resolutions.set(displayedAppId, resolution);
-        }
-        const result = await resolution.promise;
-        if (generation !== requestedGeneration)
-            return null;
-        return savedProtonDbAppId(displayedAppId) ?? result;
-    }
-    catch {
-        return null;
-    }
-};
-
-/** Collects saved-cache changes and sends them to the backend at most once per delay. */
-class ProtonDbCacheWriter {
-    constructor(put = putProtonDbCache, delayMs = 1000) {
-        Object.defineProperty(this, "put", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: put
-        });
-        Object.defineProperty(this, "delayMs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: delayMs
-        });
-        Object.defineProperty(this, "ratings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        Object.defineProperty(this, "nameIds", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {}
-        });
-        Object.defineProperty(this, "timer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-    }
-    rating(steamAppId, tier, updatedAt) {
-        this.ratings[String(steamAppId)] = { tier, updated_at: updatedAt };
-        this.schedule();
-    }
-    name(shortcutAppId, name, steamAppId, resolvedAt = Date.now()) {
-        this.nameIds[String(shortcutAppId)] = { name, steam_appid: steamAppId, resolved_at: resolvedAt };
-        this.schedule();
-    }
-    flush() {
-        if (this.timer !== undefined)
-            globalThis.clearTimeout(this.timer);
-        this.timer = undefined;
-        const ratings = this.ratings;
-        const nameIds = this.nameIds;
-        if (Object.keys(ratings).length === 0 && Object.keys(nameIds).length === 0)
-            return;
-        this.ratings = {};
-        this.nameIds = {};
-        // A failed save only costs a fetch after the next restart.
-        void this.put(ratings, nameIds).catch(() => undefined);
-    }
-    schedule() {
-        if (this.timer === undefined)
-            this.timer = globalThis.setTimeout(() => this.flush(), this.delayMs);
-    }
-}
-
-const PROTONDB_RATING_TTL_MS = 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 5000;
-const RETRY_COOLDOWN_MS = 30000;
-const SUMMARY_URL = "https://www.protondb.com/api/v1/reports/summaries";
-const protonDbTiers = {
-    platinum: true,
-    gold: true,
-    silver: true,
-    bronze: true,
-    borked: true,
-};
-const isProtonDbTier$1 = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(protonDbTiers, value);
-const fetchProtonDbTier = async (steamAppId) => {
-    const response = await fetchNoCors(`${SUMMARY_URL}/${steamAppId}.json`, { method: "GET" });
-    if (response.status === 404)
-        return null;
-    if (response.status !== 200) {
-        throw new Error(`ProtonDB summary request failed with HTTP ${response.status}`);
-    }
-    const payload = await response.json();
-    if (!payload || typeof payload !== "object" || Array.isArray(payload) || !("tier" in payload)) {
-        throw new Error("ProtonDB returned a malformed summary");
-    }
-    const tier = payload.tier;
-    if (tier === null || tier === "pending")
-        return null;
-    if (!isProtonDbTier$1(tier))
-        throw new Error("ProtonDB returned an invalid tier");
-    return tier;
-};
-const validSteamAppId = (steamAppId) => Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000;
-const ratingValue = (tier, status, updatedAt) => Object.freeze({ tier, status, updatedAt });
-const invalidRating = ratingValue(null, "idle", null);
-/** Shared in-memory ratings; fetches are owned by the currently visible subscribers. */
-class ProtonDbRatingCache {
-    constructor(fetchTier = fetchProtonDbTier) {
-        Object.defineProperty(this, "fetchTier", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: fetchTier
-        });
-        Object.defineProperty(this, "entries", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "lifecycle", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "enabled", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "resultListener", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-    }
-    /** Receives every successful lookup (including "no tier yet") so it can be saved. */
-    setResultListener(listener) {
-        this.resultListener = listener;
-    }
-    /** Load saved ratings; never replaces a newer or in-flight in-memory rating. */
-    seed(ratings) {
-        for (const [steamAppId, tier, updatedAt] of ratings) {
-            if (!validSteamAppId(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0)
-                continue;
-            if (tier !== null && !isProtonDbTier$1(tier))
-                continue;
-            const entry = this.getEntry(steamAppId);
-            if (entry.request || (entry.rating.updatedAt !== null && entry.rating.updatedAt >= updatedAt))
-                continue;
-            this.setRating(entry, tier, "ready", updatedAt);
-            this.clearExpiry(entry);
-            this.loadIfNeeded(steamAppId, entry);
-        }
-    }
-    getRating(steamAppId) {
-        if (!validSteamAppId(steamAppId))
-            return invalidRating;
-        return this.getEntry(steamAppId).rating;
-    }
-    subscribeRating(steamAppId, listener) {
-        if (!validSteamAppId(steamAppId))
-            return () => undefined;
-        const entry = this.getEntry(steamAppId);
-        entry.listeners.add(listener);
-        this.loadIfNeeded(steamAppId, entry);
-        return () => {
-            entry.listeners.delete(listener);
-            if (entry.listeners.size === 0)
-                this.clearExpiry(entry);
-        };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        if (this.enabled) {
-            for (const [steamAppId, entry] of this.entries)
-                this.loadIfNeeded(steamAppId, entry);
-        }
-    }
-    setEnabled(enabled) {
-        if (this.enabled === enabled)
-            return;
-        this.enabled = enabled;
-        if (!enabled) {
-            for (const entry of this.entries.values()) {
-                this.clearExpiry(entry);
-                this.cancelRequest(entry, true);
-            }
-            return;
-        }
-        if (this.mounted) {
-            for (const [steamAppId, entry] of this.entries)
-                this.loadIfNeeded(steamAppId, entry);
-        }
-    }
-    stop() {
-        this.lifecycle += 1;
-        this.mounted = false;
-        this.enabled = false;
-        for (const entry of this.entries.values()) {
-            this.clearExpiry(entry);
-            entry.listeners.clear();
-            this.cancelRequest(entry, false);
-            entry.retryAfter = 0;
-        }
-    }
-    getEntry(steamAppId) {
-        let entry = this.entries.get(steamAppId);
-        if (!entry) {
-            entry = { rating: ratingValue(null, "idle", null), listeners: new Set(), retryAfter: 0 };
-            this.entries.set(steamAppId, entry);
-        }
-        return entry;
-    }
-    isActive(entry) {
-        return this.mounted && this.enabled && entry.listeners.size > 0;
-    }
-    loadIfNeeded(steamAppId, entry) {
-        if (!this.isActive(entry) || entry.request)
-            return;
-        const now = Date.now();
-        const { status, updatedAt } = entry.rating;
-        if (updatedAt !== null && now - updatedAt < PROTONDB_RATING_TTL_MS) {
-            if (status === "ready") {
-                this.scheduleExpiry(steamAppId, entry);
-                return;
-            }
-            if (status === "error" && now < entry.retryAfter)
-                return;
-            if (status !== "error")
-                return;
-        }
-        else if (status === "error" && now < entry.retryAfter) {
-            return;
-        }
-        this.clearExpiry(entry);
-        const request = {
-            lifecycle: this.lifecycle,
-            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
-        };
-        entry.request = request;
-        this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
-        let pending;
-        try {
-            pending = this.fetchTier(steamAppId);
-        }
-        catch (error) {
-            this.failRequest(entry, request, error);
-            return;
-        }
-        void Promise.resolve(pending).then((tier) => this.completeRequest(steamAppId, entry, request, tier), (error) => this.failRequest(entry, request, error));
-    }
-    completeRequest(steamAppId, entry, request, tier) {
-        if (!this.isCurrentRequest(entry, request))
-            return;
-        globalThis.clearTimeout(request.timeout);
-        entry.request = undefined;
-        entry.retryAfter = 0;
-        this.setRating(entry, tier, "ready", Date.now());
-        try {
-            this.resultListener?.(steamAppId, tier, entry.rating.updatedAt);
-        }
-        catch {
-            // Saving is best effort; the in-memory rating is already current.
-        }
-        this.scheduleExpiry(steamAppId, entry);
-    }
-    failRequest(entry, request, _error) {
-        if (!this.isCurrentRequest(entry, request))
-            return;
-        globalThis.clearTimeout(request.timeout);
-        entry.request = undefined;
-        entry.retryAfter = Date.now() + RETRY_COOLDOWN_MS;
-        this.setRating(entry, entry.rating.tier, "error", entry.rating.updatedAt);
-    }
-    isCurrentRequest(entry, request) {
-        return this.lifecycle === request.lifecycle && entry.request === request && this.mounted && this.enabled;
-    }
-    scheduleExpiry(steamAppId, entry) {
-        if (!this.isActive(entry) || entry.rating.updatedAt === null || entry.expiryTimer !== undefined)
-            return;
-        const remaining = Math.max(0, entry.rating.updatedAt + PROTONDB_RATING_TTL_MS - Date.now());
-        entry.expiryTimer = globalThis.setTimeout(() => {
-            entry.expiryTimer = undefined;
-            this.loadIfNeeded(steamAppId, entry);
-        }, remaining);
-    }
-    clearExpiry(entry) {
-        if (entry.expiryTimer !== undefined) {
-            globalThis.clearTimeout(entry.expiryTimer);
-            entry.expiryTimer = undefined;
-        }
-    }
-    cancelRequest(entry, notify) {
-        const request = entry.request;
-        if (!request)
-            return;
-        globalThis.clearTimeout(request.timeout);
-        entry.request = undefined;
-        const { tier, updatedAt } = entry.rating;
-        const status = updatedAt === null ? "idle" : "ready";
-        this.setRating(entry, tier, status, updatedAt, notify);
-    }
-    setRating(entry, tier, status, updatedAt, notify = true) {
-        const previous = entry.rating;
-        if (previous.tier === tier && previous.status === status && previous.updatedAt === updatedAt)
-            return;
-        entry.rating = ratingValue(tier, status, updatedAt);
-        if (!notify)
-            return;
-        for (const listener of entry.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // One mounted surface must not prevent other rating subscribers from updating.
-            }
-        }
-    }
-}
-const protonDbRatingCache = new ProtonDbRatingCache();
-
-const DEFAULT_PROTON_DB_BADGE_SETTINGS = Object.freeze({
-    enabled: false,
-    home: true,
-    library: true,
-    gameView: true,
-    store: true,
-    focusOnly: false,
-    coverPosition: "bottom-left",
-});
-const backendSettingsStore = {
-    get: getProtonDbBadgeSettings,
-    set: setProtonDbBadgeSettings,
-};
-const copySettings = (settings) => Object.freeze({
-    enabled: settings.enabled,
-    home: settings.home,
-    library: settings.library,
-    gameView: settings.gameView,
-    store: settings.store,
-    focusOnly: settings.focusOnly,
-    coverPosition: settings.coverPosition,
-});
-const errorText = (error, fallback) => error instanceof Error && error.message ? translateBackendError(error) : fallback;
-class ProtonDbBadgeController {
-    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts, loadCache = loadProviderCache, writer = new ProtonDbCacheWriter()) {
-        Object.defineProperty(this, "settingsStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: settingsStore
-        });
-        Object.defineProperty(this, "ratings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: ratings
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "loadCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadCache
-        });
-        Object.defineProperty(this, "writer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: writer
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "lifecycle", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Last settings the backend confirmed; a failed save shows these again. */
-        Object.defineProperty(this, "confirmed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Latest requested settings waiting for the in-flight save, plus their callers. */
-        Object.defineProperty(this, "queued", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "saving", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        this.snapshot = Object.freeze({
-            settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
-            settingsLoaded: false,
-            busy: false,
-            settingsError: "",
-            conflict: conflicts.getConflict("protondb"),
-            effectiveEnabled: false,
-        });
-    }
-    getSnapshot() {
-        return this.snapshot;
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => this.listeners.delete(listener);
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const lifecycle = ++this.lifecycle;
-        this.ratings.mount();
-        this.ratings.setResultListener((id, tier, updatedAt) => this.writer.rating(id, tier, updatedAt));
-        setResolvedNameListener((shortcutId, name, steamId) => this.writer.name(shortcutId, name, steamId));
-        void this.loadCache().then((cache) => {
-            if (!this.isCurrent(lifecycle))
-                return;
-            const { ratings, name_ids: names } = cache.protondb;
-            this.ratings.seed(Object.entries(ratings).map(([id, entry]) => [Number(id), entry.tier, entry.updated_at]));
-            seedProtonDbAppIdResolutions(Object.entries(names).map(([id, entry]) => [Number(id), entry.name, entry.steam_appid]));
-        }, () => undefined);
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.publish({ conflict: this.conflicts.getConflict("protondb") });
-        });
-        this.publish({
-            busy: true, settingsLoaded: false, settingsError: "",
-            conflict: this.conflicts.getConflict("protondb"),
-        });
-        void this.settingsStore.get().then((settings) => {
-            if (!this.isCurrent(lifecycle))
-                return;
-            const saved = copySettings(settings);
-            this.confirmed = saved;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
-        }, (error) => {
-            if (!this.isCurrent(lifecycle))
-                return;
-            this.publish({
-                settingsLoaded: false,
-                busy: false,
-                settingsError: errorText(error, t("protondb.settingsLoadError")),
-            });
-        });
-    }
-    stop() {
-        this.mounted = false;
-        this.lifecycle += 1;
-        this.queued?.settles.forEach((settle) => settle(false));
-        this.queued = undefined;
-        this.saving = false;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.ratings.setResultListener(undefined);
-        setResolvedNameListener(undefined);
-        this.writer.flush();
-        this.ratings.stop();
-        this.publish({
-            settingsLoaded: false,
-            busy: false,
-            settingsError: "",
-        });
-        this.listeners.clear();
-    }
-    async setSettings(settings) {
-        if (!this.mounted || !this.snapshot.settingsLoaded)
-            return false;
-        const requested = copySettings(settings);
-        if (requested.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName)
-            return false;
-        // Publish optimistically: the section builds its next change from the snapshot,
-        // and controls must not dim while a save is in flight.
-        this.publish({ settings: requested, busy: true, settingsError: "" });
-        return new Promise((resolve) => {
-            if (this.queued) {
-                // Latest wins; earlier callers settle with this newer value's save.
-                this.queued.settings = requested;
-                this.queued.settles.push(resolve);
-            }
-            else {
-                this.queued = { settings: requested, settles: [resolve] };
-            }
-            if (this.saving)
-                return;
-            this.saving = true;
-            void this.drainSaves();
-        });
-    }
-    /** Saves one request at a time so a toggle pressed during a save is not lost. */
-    async drainSaves() {
-        const lifecycle = this.lifecycle;
-        while (this.queued && this.isCurrent(lifecycle)) {
-            const { settings, settles } = this.queued;
-            this.queued = undefined;
-            let saved = false;
-            try {
-                const confirmed = copySettings(await this.settingsStore.set(settings));
-                if (this.isCurrent(lifecycle)) {
-                    this.confirmed = confirmed;
-                    saved = true;
-                    // A newer request is queued; showing this value first would flash it.
-                    if (!this.queued)
-                        this.publish({ settings: confirmed, settingsLoaded: true, busy: false, settingsError: "" });
-                }
-            }
-            catch (error) {
-                if (this.isCurrent(lifecycle)) {
-                    this.queued?.settles.forEach((settle) => settle(false));
-                    this.queued = undefined;
-                    this.publish({
-                        settings: this.confirmed ?? this.snapshot.settings,
-                        busy: false,
-                        settingsError: errorText(error, t("protondb.settingsSaveError")),
-                    });
-                }
-            }
-            for (const settle of settles)
-                settle(saved);
-        }
-        // A remount may already own the save state; only the current generation clears it.
-        if (this.isCurrent(lifecycle))
-            this.saving = false;
-    }
-    getRating(steamAppId) {
-        return this.ratings.getRating(steamAppId);
-    }
-    subscribeRating(steamAppId, listener) {
-        return this.ratings.subscribeRating(steamAppId, listener);
-    }
-    isCurrent(lifecycle) {
-        return this.mounted && this.lifecycle === lifecycle;
-    }
-    publish(update) {
-        const settings = update.settings ?? this.snapshot.settings;
-        const conflict = update.conflict ?? this.snapshot.conflict;
-        const settingsLoaded = update.settingsLoaded ?? this.snapshot.settingsLoaded;
-        const effectiveEnabled = this.mounted && settingsLoaded && settings.enabled && !conflict.pluginName;
-        this.snapshot = Object.freeze({ ...this.snapshot, ...update, effectiveEnabled });
-        this.ratings.setEnabled(effectiveEnabled);
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // One settings consumer must not block the other mounted consumers.
-            }
-        }
-    }
-}
-const protonDbBadgeController = new ProtonDbBadgeController();
-
-// Consecutive getScanProgress failures before the store reports the scan as failed.
-const MAX_POLL_FAILURES = 3;
-class MetadataScanStore {
-    constructor(deps) {
-        Object.defineProperty(this, "deps", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: deps
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                progress: null,
-                busy: false,
-                statusKind: "idle",
-                error: null,
-                completedRevision: 0,
-            }
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "timer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "pollInFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "hydrationStarted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "startRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "pollFailures", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-    }
-    getSnapshot() {
-        return this.snapshot;
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        if (!this.hydrationStarted)
-            void this.hydrate();
-        return () => this.listeners.delete(listener);
-    }
-    async hydrate() {
-        if (this.hydrationStarted)
-            return;
-        this.hydrationStarted = true;
-        const generation = this.generation;
-        const startRevision = this.startRevision;
-        let progress;
-        try {
-            progress = await this.deps.getScanProgress();
-        }
-        catch {
-            // A failed check must not hide a running scan for good: the next subscribe checks again.
-            if (generation === this.generation)
-                this.hydrationStarted = false;
-            return;
-        }
-        if (generation !== this.generation)
-            return;
-        if (startRevision !== this.startRevision || !progress.running)
-            return;
-        this.publish({ progress, busy: true, statusKind: "active", error: null });
-        this.ensurePolling();
-    }
-    async start(games, getLanguage) {
-        this.startRevision += 1;
-        if (this.snapshot.busy)
-            return;
-        this.publish({ busy: true, statusKind: "active", progress: null, error: null });
-        const generation = this.generation;
-        let language;
-        try {
-            language = await getLanguage();
-        }
-        catch (error) {
-            if (generation !== this.generation)
-                return;
-            this.fail(error);
-            return;
-        }
-        if (generation !== this.generation)
-            return;
-        try {
-            await this.deps.startScanMissing(games, language);
-        }
-        catch (error) {
-            if (generation !== this.generation)
-                return;
-            this.fail(error);
-            return;
-        }
-        if (generation !== this.generation)
-            return;
-        this.ensurePolling();
-    }
-    dispose() {
-        this.generation += 1;
-        if (this.timer !== null) {
-            this.deps.clearTimeout(this.timer);
-            this.timer = null;
-        }
-        this.pollInFlight = false;
-    }
-    ensurePolling() {
-        if (this.timer !== null || this.pollInFlight)
-            return;
-        this.timer = this.deps.setTimeout(() => {
-            this.timer = null;
-            void this.poll();
-        }, 800);
-    }
-    async poll() {
-        if (this.pollInFlight)
-            return;
-        const generation = this.generation;
-        this.pollInFlight = true;
-        let progress;
-        try {
-            progress = await this.deps.getScanProgress();
-        }
-        catch (error) {
-            if (generation !== this.generation)
-                return;
-            this.pollInFlight = false;
-            // The backend scan keeps running through a dropped RPC, so retry before giving up.
-            this.pollFailures += 1;
-            if (this.pollFailures < MAX_POLL_FAILURES) {
-                this.ensurePolling();
-                return;
-            }
-            this.pollFailures = 0;
-            this.hydrationStarted = false;
-            this.fail(error);
-            return;
-        }
-        if (generation !== this.generation)
-            return;
-        this.pollFailures = 0;
-        this.publish({ progress, statusKind: "active" });
-        if (progress.running) {
-            this.pollInFlight = false;
-            this.ensurePolling();
-            return;
-        }
-        try {
-            await this.deps.refreshMetadataCache();
-        }
-        catch (error) {
-            if (generation !== this.generation)
-                return;
-            this.pollInFlight = false;
-            this.fail(error);
-            return;
-        }
-        if (generation !== this.generation)
-            return;
-        this.pollInFlight = false;
-        this.publish({
-            busy: false,
-            statusKind: scanCompleteStatusKind(progress),
-            completedRevision: this.snapshot.completedRevision + 1,
-        });
-        this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
-    }
-    fail(error) {
-        this.publish({ busy: false, statusKind: "error", error });
-        this.deps.toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
-    }
-    publish(update) {
-        this.snapshot = { ...this.snapshot, ...update };
-        for (const listener of this.listeners)
-            listener();
-    }
-}
-const metadataScanStore = new MetadataScanStore({
-    getScanProgress,
-    startScanMissing,
-    refreshMetadataCache,
-    toastSuccess,
-    toastError,
-    setTimeout: (fn, ms) => window.setTimeout(fn, ms),
-    clearTimeout: (id) => window.clearTimeout(id),
-});
-function useMetadataScan() {
-    const [snapshot, setSnapshot] = SP_REACT.useState(metadataScanStore.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setSnapshot(metadataScanStore.getSnapshot());
-        const unsubscribe = metadataScanStore.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    return snapshot;
-}
-const scanCompleteMessage = (progress) => {
-    const total = Number(progress.total || 0);
-    if (!total)
-        return t("panel.refreshComplete");
-    const assigned = Number(progress.assigned || 0);
-    const failed = Number(progress.failed || 0);
-    return failed
-        ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
-        : t("panel.scanCompleteSaved", { assigned, total });
-};
-const scanCompleteStatusKind = (progress) => {
-    const total = Number(progress.total || 0);
-    const assigned = Number(progress.assigned || 0);
-    const failed = Number(progress.failed || 0);
-    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
-
-// Version is fetched from the backend on mount; "" means not yet loaded.
-const PLUGIN_VERSION = "";
-// Keep retrying native focus while Steam rebuilds the navigation tree. The
-// shared attempt count keeps the handoff bounded across QAM remounts.
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 900;
-const COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES = 2;
-const COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES = 2;
-const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES = 12;
-const GAMEPAD_DIRECTION_BUTTONS = new Set([9, 10, 11, 12]);
-const GAMEPAD_BACK_BUTTON = 2;
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
@@ -36162,7 +33898,7 @@ const takeNativeFocus = (element) => {
             || ownerWindow.document !== ownerDocument
             || ownerDocument.visibilityState !== "visible")
             return false;
-        // Steam may leave the QAM context inactive after its native dropdown closes.
+        // Steam can leave the QAM context inactive while the panel is closed.
         // A focus node can then report success without painting gamepad focus.
         const focusNav = DFL.getFocusNavController();
         if (!focusNav?.m_ActiveContext && focusNav?.m_LastActiveContext) {
@@ -36189,21 +33925,6 @@ const takeNativeFocus = (element) => {
     }
     return false;
 };
-const compatibilityDropdownButton = (element) => element?.querySelector('button[role="combobox"]') || null;
-const takeCompatibilityDropdownFocus = (element) => {
-    const dropdown = compatibilityDropdownButton(element);
-    if (!dropdown || dropdown.disabled || !dropdown.isConnected)
-        return false;
-    return takeNativeFocus(dropdown);
-};
-const hasCompatibilityDropdownFocus = (element) => {
-    const dropdown = compatibilityDropdownButton(element);
-    if (!dropdown)
-        return false;
-    const classes = typeof dropdown.className === "string" ? dropdown.className : "";
-    return dropdown.ownerDocument.activeElement === dropdown
-        || /(^|\s)gpfocus(\s|$)/.test(classes);
-};
 const findScrollViewport = (element) => {
     let node = element.parentElement;
     while (node) {
@@ -36215,156 +33936,15 @@ const findScrollViewport = (element) => {
     }
     return null;
 };
-const epochToDate = (value) => {
-    if (!value)
-        return "";
-    const date = new Date(value * 1000);
-    if (Number.isNaN(date.getTime()))
-        return "";
-    return formatDate(date);
-};
 const Content = () => {
-    const t = useT();
     // Steam can change its UI language while QAM is closed.
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
-    const [trailerSnapshot, setTrailerSnapshot] = SP_REACT.useState(trailerController.getSnapshot());
-    SP_REACT.useEffect(() => trailerController.subscribe(() => {
-        setTrailerSnapshot(trailerController.getSnapshot());
-    }), []);
-    const [miniAchievementsSnapshot, setMiniAchievementsSnapshot] = SP_REACT.useState(miniAchievementsController.getSnapshot());
-    SP_REACT.useEffect(() => miniAchievementsController.subscribe(() => {
-        setMiniAchievementsSnapshot(miniAchievementsController.getSnapshot());
-    }), []);
-    const [protonDbSnapshot, setProtonDbSnapshot] = SP_REACT.useState(protonDbBadgeController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setProtonDbSnapshot(protonDbBadgeController.getSnapshot());
-        const unsubscribe = protonDbBadgeController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    const [hltbSnapshot, setHltbSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setHltbSnapshot(hltbController.getSnapshot());
-        const unsubscribe = hltbController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    const initialCompatibilityPolicySave = compatibilityPolicySaveSnapshot();
-    const initialPendingCompatibilityPolicySave = initialCompatibilityPolicySave
-        && initialCompatibilityPolicySave.pendingKind !== null
-        ? initialCompatibilityPolicySave
-        : null;
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
     const panelVisibilityCleanup = SP_REACT.useRef(null);
-    const { games, loadGames } = useNonSteamGames();
-    const [metadataCount, setMetadataCount] = SP_REACT.useState(0);
-    const [missing, setMissing] = SP_REACT.useState(0);
-    const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
-    const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
-    const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
-    const [logsBusy, setLogsBusy] = SP_REACT.useState(false);
-    const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
-    const [debugLoggingLoaded, setDebugLoggingLoaded] = SP_REACT.useState(false);
-    const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
-    const [pluginVersion, setPluginVersion] = SP_REACT.useState(PLUGIN_VERSION);
-    const [deckyVersion, setDeckyVersion] = SP_REACT.useState("");
-    const [steamosVersion, setSteamosVersion] = SP_REACT.useState("");
-    const [updateChannel, setUpdateChannelState] = SP_REACT.useState("stable");
-    const [automaticUpdateChecks, setAutomaticUpdateChecksState] = SP_REACT.useState(true);
-    const [settingsLoaded, setSettingsLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefault, setCompatibilityDefaultState] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.category ?? compatibilityDefaultSnapshot());
-    const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
-    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.pendingKind === "category");
-    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState(initialCompatibilityPolicySave?.error ?? "");
-    const [compatibilityDefaultScope, setCompatibilityDefaultScopeState] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.scope ?? compatibilityDefaultScopeSnapshot());
-    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialPendingCompatibilityPolicySave?.pendingKind === "scope");
-    const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
-    const [compatibilityDefaultControl, setCompatibilityDefaultControlState] = SP_REACT.useState(null);
-    const [compatibilityDefaultScopeControl, setCompatibilityDefaultScopeControlState] = SP_REACT.useState(null);
-    const [trailerQualityControl, setTrailerQualityControlState] = SP_REACT.useState(null);
-    const [protonDbCoverControl, setProtonDbCoverControlState] = SP_REACT.useState(null);
-    const [hltbStyleControl, setHltbStyleControlState] = SP_REACT.useState(null);
-    const [hltbBlurControl, setHltbBlurControlState] = SP_REACT.useState(null);
-    const [compatibilityDropdownReturnVersion, setCompatibilityDropdownReturnVersion] = SP_REACT.useState(0);
-    const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
-    const setCompatibilityDefaultControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setCompatibilityDefaultControlState(element);
-    }, []);
-    const setCompatibilityDefaultScopeControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setCompatibilityDefaultScopeControlState(element);
-    }, []);
-    const setTrailerQualityControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setTrailerQualityControlState(element);
-    }, []);
-    const setProtonDbCoverControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setProtonDbCoverControlState(element);
-    }, []);
-    const setHltbStyleControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setHltbStyleControlState(element);
-    }, []);
-    const setHltbBlurControl = SP_REACT.useCallback((element) => {
-        if (!element)
-            noteCompatibilityDropdownControlUnmounted();
-        setHltbBlurControlState(element);
-    }, []);
-    const synchronizeCompatibilityPolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
-        const shared = compatibilityPolicySaveSnapshot();
-        if (shared
-            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
-            && shared.pendingKind !== null) {
-            setCompatibilityDefaultState(shared.category);
-            setCompatibilityDefaultScopeState(shared.scope);
-            setCompatibilityDefaultBusy(shared.pendingKind === "category");
-            setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
-            setCompatibilityDefaultError(shared.error);
-            return;
-        }
-        setCompatibilityDefaultState(fallbackCategory);
-        setCompatibilityDefaultScopeState(fallbackScope);
-        setCompatibilityDefaultBusy(false);
-        setCompatibilityDefaultScopeBusy(false);
-        setCompatibilityDefaultError(shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()
-            ? shared.error
-            : "");
-    }, []);
-    SP_REACT.useEffect(() => {
-        const mountedControl = compatibilityDefaultControl || compatibilityDefaultScopeControl || trailerQualityControl ||
-            protonDbCoverControl || hltbStyleControl || hltbBlurControl;
-        if (!mountedControl)
-            return;
-        const qamDocument = mountedControl.ownerDocument;
-        const noteVisibleReturn = () => {
-            if (qamDocument.visibilityState !== "visible")
-                return;
-            if (!noteCompatibilityDropdownReturnVisible())
-                return;
-            setCompatibilityDropdownReturnVersion((version) => version + 1);
-        };
-        const observeVisibility = () => {
-            if (qamDocument.visibilityState === "hidden") {
-                noteCompatibilityDropdownControlUnmounted();
-            }
-            else {
-                noteVisibleReturn();
-            }
-        };
-        qamDocument.addEventListener("visibilitychange", observeVisibility);
-        observeVisibility();
-        return () => qamDocument.removeEventListener("visibilitychange", observeVisibility);
-    }, [compatibilityDefaultControl, compatibilityDefaultScopeControl, trailerQualityControl, protonDbCoverControl, hltbStyleControl, hltbBlurControl]);
+    const { games, scan } = useScanGames();
     const focusPanel = SP_REACT.useCallback((element) => {
         // QAM keeps this tree mounted while closed, so only its document reports visibility.
         panelVisibilityCleanup.current?.();
@@ -36386,10 +33966,10 @@ const Content = () => {
             window.cancelAnimationFrame(focusFrame.current);
             focusFrame.current = null;
         }
-        if (element && !initialPanelFocusComplete.current && !hasCompatibilityDropdownReturn()) {
+        if (element && !initialPanelFocusComplete.current) {
             focusFrame.current = window.requestAnimationFrame(() => {
                 focusFrame.current = null;
-                if (initialPanelFocusComplete.current || hasCompatibilityDropdownReturn())
+                if (initialPanelFocusComplete.current)
                     return;
                 initialPanelFocusComplete.current = true;
                 takeNativeFocus(element);
@@ -36404,566 +33984,13 @@ const Content = () => {
             });
         }
     }, []);
-    SP_REACT.useEffect(() => {
-        const origin = compatibilityDropdownReturnOrigin();
-        const control = origin === "scope"
-            ? compatibilityDefaultScopeControl
-            : origin === "quality" ? trailerQualityControl
-                : origin === "hltb-style" ? hltbStyleControl
-                    : origin === "hltb-blur" ? hltbBlurControl
-                        : origin === "protondb-cover-position" ? protonDbCoverControl : compatibilityDefaultControl;
-        const loaded = origin === "quality" ? trailerSnapshot.settingsLoaded
-            : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.settingsLoaded
-                : origin === "protondb-cover-position" ? protonDbSnapshot.settingsLoaded : compatibilityDefaultLoaded;
-        const busy = origin === "quality" ? trailerSnapshot.busy
-            : origin === "hltb-style" || origin === "hltb-blur" ? hltbSnapshot.busy
-                : origin === "protondb-cover-position" ? protonDbSnapshot.busy : compatibilityDefaultBusy || compatibilityDefaultScopeBusy;
-        if (!isCompatibilityDropdownReturnReady() || !control)
-            return;
-        let settleFramesRemaining = isCompatibilityDropdownSelectionReturn()
-            ? COMPATIBILITY_DROPDOWN_SELECTION_SETTLE_FRAMES
-            : COMPATIBILITY_DROPDOWN_RETURN_SETTLE_FRAMES;
-        let cancelled = false;
-        let frame = null;
-        let listenersAttached = false;
-        let stableFocusFrames = 0;
-        const qamDocument = control.ownerDocument;
-        const detachNavigationListeners = () => {
-            if (!listenersAttached)
-                return;
-            qamDocument.removeEventListener("keydown", handleUserNavigation, true);
-            qamDocument.removeEventListener("vgp_onbuttondown", handleUserNavigation, true);
-            qamDocument.removeEventListener("pointerdown", handleUserNavigation, true);
-            listenersAttached = false;
-        };
-        const releaseFocusLease = () => {
-            if (isCompatibilityDropdownReturnReady()) {
-                consumeCompatibilityDropdownReturn();
-                initialPanelFocusComplete.current = true;
-                if (frame !== null) {
-                    window.cancelAnimationFrame(frame);
-                    frame = null;
-                }
-            }
-            detachNavigationListeners();
-        };
-        const handleUserNavigation = (event) => {
-            if (event.type === "vgp_onbuttondown") {
-                const button = Number(event.detail?.button);
-                // B exits a visible QAM page; the native popup hides QAM while B cancels it.
-                if (GAMEPAD_DIRECTION_BUTTONS.has(button)
-                    || (button === GAMEPAD_BACK_BUTTON && qamDocument.visibilityState === "visible")) {
-                    releaseFocusLease();
-                }
-                return;
-            }
-            if (event.type === "pointerdown") {
-                releaseFocusLease();
-                return;
-            }
-            if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(event.key)) {
-                releaseFocusLease();
-            }
-        };
-        qamDocument.addEventListener("keydown", handleUserNavigation, true);
-        qamDocument.addEventListener("vgp_onbuttondown", handleUserNavigation, true);
-        qamDocument.addEventListener("pointerdown", handleUserNavigation, true);
-        listenersAttached = true;
-        const focusReturnedDropdown = () => {
-            frame = null;
-            if (cancelled)
-                return;
-            if (!isCompatibilityDropdownReturnReady()) {
-                detachNavigationListeners();
-                return;
-            }
-            const ownerWindow = qamDocument.defaultView;
-            if (!ownerWindow || ownerWindow.closed || ownerWindow.document !== qamDocument) {
-                detachNavigationListeners();
-                return;
-            }
-            if (qamDocument.visibilityState !== "visible") {
-                detachNavigationListeners();
-                return;
-            }
-            if (!loaded || busy)
-                return;
-            if (settleFramesRemaining > 0) {
-                settleFramesRemaining -= 1;
-                frame = window.requestAnimationFrame(focusReturnedDropdown);
-                return;
-            }
-            if (!claimCompatibilityDropdownFocusAttempt(COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES)) {
-                warn("qam", "compatibility dropdown return focus unavailable");
-                clearCompatibilityDropdownReturn();
-                detachNavigationListeners();
-                return;
-            }
-            // The native menu hides and unmounts QAM before the replacement
-            // combobox is registered in Steam's navigation tree. Keep restoring the
-            // returned control through trailer updates and combobox replacement.
-            if (hasCompatibilityDropdownFocus(control)) {
-                stableFocusFrames += 1;
-                if (stableFocusFrames >= COMPATIBILITY_DROPDOWN_RETURN_FOCUS_STABLE_FRAMES) {
-                    initialPanelFocusComplete.current = true;
-                }
-            }
-            else {
-                stableFocusFrames = 0;
-                takeCompatibilityDropdownFocus(control);
-            }
-            frame = window.requestAnimationFrame(focusReturnedDropdown);
-        };
-        frame = window.requestAnimationFrame(focusReturnedDropdown);
-        return () => {
-            cancelled = true;
-            if (frame !== null)
-                window.cancelAnimationFrame(frame);
-            detachNavigationListeners();
-        };
-    }, [
-        compatibilityDefaultBusy,
-        compatibilityDefaultControl,
-        compatibilityDefaultScopeBusy,
-        compatibilityDefaultScopeControl,
-        compatibilityDefaultLoaded,
-        compatibilityDropdownReturnVersion,
-        trailerQualityControl,
-        trailerSnapshot.busy,
-        trailerSnapshot.settingsLoaded,
-        protonDbCoverControl,
-        protonDbSnapshot.busy,
-        protonDbSnapshot.settingsLoaded,
-        hltbStyleControl,
-        hltbSnapshot.busy,
-        hltbSnapshot.settingsLoaded,
-    ]);
-    const updateMissingCount = SP_REACT.useCallback((currentGames) => {
-        void getMissingMetadataCount(currentGames)
-            .then(setMissing)
-            .catch((error) => warn("bridge", "missing metadata count load failed", error));
-    }, []);
-    const refresh = SP_REACT.useCallback(async () => {
-        await refreshMetadataCache();
-        const loadedGames = await loadGames();
-        setMetadataCount(Object.keys(metadataCache).length);
-        updateMissingCount(loadedGames);
-    }, [loadGames, updateMissingCount]);
-    SP_REACT.useEffect(() => {
-        void refresh();
-    }, [refresh]);
-    const loadDelistedStatus = SP_REACT.useCallback(async () => {
-        try {
-            setDelistedStatus(await getDelistedIndexStatus());
-        }
-        catch (error) {
-            warn("bridge", "delisted index status load failed", error);
-        }
-    }, []);
-    SP_REACT.useEffect(() => {
-        let cancelled = false;
-        discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
-        synchronizeCompatibilityPolicySave();
-        const requestVersion = compatibilityDefaultLoadVersion.current;
-        void ensureCompatibilityDefault()
-            .then((value) => {
-            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
-                return;
-            synchronizeCompatibilityPolicySave(value, compatibilityDefaultScopeSnapshot());
-            setCompatibilityDefaultLoaded(true);
-        })
-            .catch((error) => {
-            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
-                return;
-            const shared = compatibilityPolicySaveSnapshot();
-            if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
-                synchronizeCompatibilityPolicySave();
-                return;
-            }
-            setCompatibilityDefaultError(t("panel.compatibilityDefaultLoadError", {
-                error: translateBackendError(error),
-            }));
-            warn("bridge", "compatibility default load failed", error);
-        });
-        const unsubscribeRevision = subscribeCompatibilityRevision(() => {
-            if (cancelled || !compatibilityDefaultLoadedSnapshot())
-                return;
-            synchronizeCompatibilityPolicySave();
-            setCompatibilityDefaultLoaded(true);
-        });
-        const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
-            if (!cancelled)
-                synchronizeCompatibilityPolicySave();
-        });
-        return () => {
-            cancelled = true;
-            unsubscribeRevision();
-            unsubscribeSave();
-        };
-    }, [synchronizeCompatibilityPolicySave]);
-    SP_REACT.useEffect(() => {
-        void loadDelistedStatus();
-    }, [loadDelistedStatus]);
-    SP_REACT.useEffect(() => {
-        let cancelled = false;
-        void getPluginVersion()
-            .then((version) => {
-            if (!cancelled && version) {
-                setPluginVersion(version);
-            }
-        })
-            .catch((error) => warn("bridge", "plugin version load failed", error));
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    SP_REACT.useEffect(() => {
-        let cancelled = false;
-        void getUpdateSettings()
-            .then((settings) => {
-            if (cancelled)
-                return;
-            const resolved = resolveLoadedUpdateSettings(settings);
-            setUpdateChannelState(resolved.update_channel);
-            setAutomaticUpdateChecksState(resolved.automatic_update_checks);
-        })
-            .catch((error) => {
-            if (!cancelled) {
-                setUpdateChannelState("stable");
-                setAutomaticUpdateChecksState(true);
-                warn("bridge", "update settings load failed", error);
-            }
-        })
-            .finally(() => {
-            if (!cancelled)
-                setSettingsLoaded(true);
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    SP_REACT.useEffect(() => {
-        setControllerTypes(getConnectedControllerTypes());
-    }, []);
-    SP_REACT.useEffect(() => {
-        let cancelled = false;
-        void getSystemVersions()
-            .then((versions) => {
-            if (!cancelled) {
-                setDeckyVersion(versions.decky || "");
-                setSteamosVersion(versions.steamos || "");
-            }
-        })
-            .catch((error) => warn("bridge", "system versions load failed", error));
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    SP_REACT.useEffect(() => {
-        let cancelled = false;
-        void getDebugLogging()
-            .then((enabled) => {
-            if (!cancelled) {
-                setDebugLoggingState(enabled);
-                setVerboseLogging(enabled);
-            }
-        })
-            .catch((error) => warn("bridge", "debug logging setting load failed", error))
-            .finally(() => {
-            if (!cancelled)
-                setDebugLoggingLoaded(true);
-        });
-        return () => {
-            cancelled = true;
-        };
-    }, []);
-    // Appended after the existing hooks: the ContentPanel tests index hooks by call order.
-    const scan = useMetadataScan();
-    // The store refreshed the metadata cache before it bumped the revision; reload games for the counts.
-    SP_REACT.useEffect(() => {
-        if (scan.completedRevision === 0)
-            return;
-        void loadGames().then((loadedGames) => {
-            setMetadataCount(Object.keys(metadataCache).length);
-            updateMissingCount(loadedGames);
-        });
-    }, [scan.completedRevision]);
-    const saveDebugLogging = async (enabled) => {
-        if (debugLoggingBusy)
-            return;
-        setDebugLoggingBusy(true);
-        setDebugLoggingState(enabled);
-        setVerboseLogging(enabled);
-        try {
-            const saved = await setDebugLogging(enabled);
-            setDebugLoggingState(saved);
-            setVerboseLogging(saved);
-            info("bridge", "debug logging setting updated", saved);
-        }
-        catch (error) {
-            warn("bridge", "debug logging setting update failed", error);
-        }
-        finally {
-            setDebugLoggingBusy(false);
-        }
-    };
-    const saveCompatibilityDefault = async (category) => {
-        if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded)
-            return;
-        const previous = compatibilityDefault;
-        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-        const saveId = beginCompatibilityPolicySave("category", lifecycleGeneration, previous, compatibilityDefaultScope);
-        compatibilityDefaultLoadVersion.current += 1;
-        try {
-            const saved = await setCompatibilityDefault(category);
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
-            if (noteCompatibilityDropdownSelectionSaved()) {
-                setCompatibilityDropdownReturnVersion((version) => version + 1);
-            }
-            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilitySaved"));
-        }
-        catch (error) {
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            const message = t("panel.compatibilitySaveError", {
-                error: translateBackendError(error),
-            });
-            settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
-            toastError(t("panel.toast.compatibility"), message);
-            warn("bridge", "compatibility default save failed", error);
-        }
-    };
-    const saveCompatibilityDefaultScope = async (scope) => {
-        if (hasPendingCompatibilityPolicySave() ||
-            !compatibilityDefaultLoaded ||
-            compatibilityDefault === null)
-            return;
-        const previous = compatibilityDefaultScope;
-        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-        const saveId = beginCompatibilityPolicySave("scope", lifecycleGeneration, compatibilityDefault, scope);
-        compatibilityDefaultLoadVersion.current += 1;
-        try {
-            const saved = await setCompatibilityDefaultScope(scope);
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
-            if (noteCompatibilityDropdownSelectionSaved()) {
-                setCompatibilityDropdownReturnVersion((version) => version + 1);
-            }
-            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilityScopeSaved"));
-        }
-        catch (error) {
-            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                return;
-            const message = t("panel.compatibilityScopeSaveError", {
-                error: translateBackendError(error),
-            });
-            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
-            toastError(t("panel.toast.compatibility"), message);
-            warn("bridge", "compatibility default scope save failed", error);
-        }
-    };
-    const saveUpdateChannel = async (enabled) => {
-        const previous = updateChannel;
-        const requested = enabled ? "development" : "stable";
-        setUpdateChannelState(requested);
-        try {
-            const saved = await setUpdateChannel(requested);
-            if ("status" in saved) {
-                const rolledBack = resolveSavedUpdateSettings({
-                    update_channel: previous,
-                    automatic_update_checks: automaticUpdateChecks,
-                }, saved);
-                setUpdateChannelState(rolledBack.update_channel);
-                toastError(t("panel.toast.updates"), saved.message
-                    ? translateBackendError(saved.message)
-                    : t("panel.updateChannelSaveError"));
-                return;
-            }
-            setUpdateChannelState(saved.update_channel);
-            setAutomaticUpdateChecksState(saved.automatic_update_checks);
-        }
-        catch (error) {
-            setUpdateChannelState(previous);
-            warn("bridge", "update channel save failed", error);
-        }
-    };
-    const saveAutomaticUpdateChecks = async (enabled) => {
-        const previous = automaticUpdateChecks;
-        setAutomaticUpdateChecksState(enabled);
-        try {
-            const saved = await setAutomaticUpdateChecks(enabled);
-            if ("status" in saved) {
-                const rolledBack = resolveSavedUpdateSettings({
-                    update_channel: updateChannel,
-                    automatic_update_checks: previous,
-                }, saved);
-                setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
-                toastError(t("panel.toast.updates"), saved.message
-                    ? translateBackendError(saved.message)
-                    : t("panel.automaticUpdateSaveError"));
-                return;
-            }
-            setUpdateChannelState(saved.update_channel);
-            setAutomaticUpdateChecksState(saved.automatic_update_checks);
-        }
-        catch (error) {
-            setAutomaticUpdateChecksState(previous);
-            warn("bridge", "automatic update setting save failed", error);
-        }
-    };
-    const scanMissing = () => {
-        if (scan.busy)
-            return;
-        void metadataScanStore.start(games, currentSteamLanguage);
-    };
-    const clearCache = async () => {
-        if (cacheBusy || scan.busy)
-            return;
-        setCacheBusy(true);
-        try {
-            await clearMetadataCache();
-            // Clear cache takes every game off the removed list; HLTB must ask again.
-            hltbStore.reset();
-            await refreshMetadataCache();
-            if (games.length)
-                void metadataScanStore.start(games, currentSteamLanguage);
-            setMetadataCount(Object.keys(metadataCache).length);
-            updateMissingCount(games);
-            toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
-        }
-        catch (error) {
-            toastError(t("panel.toast.cacheClearFailed"), translateBackendError(error));
-        }
-        finally {
-            setCacheBusy(false);
-        }
-    };
-    const refreshDelisted = async () => {
-        if (delistedBusy)
-            return;
-        setDelistedBusy(true);
-        try {
-            const result = await refreshDelistedIndex();
-            if (!result.ok) {
-                throw new Error("Delisted index refresh failed");
-            }
-            toastSuccess(t("panel.toast.delisted"), t("panel.delistedUpdated"));
-            await loadDelistedStatus();
-        }
-        catch (error) {
-            warn("bridge", "delisted index refresh failed", error);
-            toastError(t("panel.toast.delisted"), t("panel.delistedRefreshFailed"));
-        }
-        finally {
-            setDelistedBusy(false);
-        }
-    };
-    const viewLogs = async () => {
-        if (logsBusy)
-            return;
-        setLogsBusy(true);
-        try {
-            const logs = await getPluginLogs();
-            let modal;
-            modal = DFL.showModal(SP_JSX.jsx(PluginLogModal, { logs: logs, closeModal: () => modal?.Close() }));
-        }
-        catch (error) {
-            warn("bridge", "plugin log load failed", error);
-            toastError(t("panel.toast.logs"), t("panel.logsLoadFailed"));
-        }
-        finally {
-            setLogsBusy(false);
-        }
-    };
-    const delistedCountText = delistedStatus?.count && delistedStatus.fetched_at
-        ? t("panel.delistedCount", { value: formatNumber(delistedStatus.count) })
-        : t("panel.delistedNotDownloaded");
-    const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
-        ? t("panel.delistedLastUpdated", { date: epochToDate(delistedStatus.fetched_at) })
-        : "";
-    // A native dropdown remounts QAM; reopen its section before restoring focus.
-    const returningDropdown = hasCompatibilityDropdownReturn()
-        ? compatibilityDropdownReturnOrigin()
-        : null;
-    const completed = Number(scan.progress?.completed || 0);
-    const total = Number(scan.progress?.total || 0);
-    const message = scan.statusKind === "error"
-        ? translateBackendError(scan.error)
-        : scan.busy
-            ? scan.progress
-                ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
-                : ""
-            : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
-                ? scanCompleteMessage(scan.progress)
-                : "";
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataSection, { detectedCount: games.length, savedCount: metadataCount, missingCount: missing, scanBusy: scan.busy, scanCompleted: completed, scanTotal: total, scanMessage: message, scanStatusKind: scan.statusKind, cacheBusy: cacheBusy, delistedCountText: delistedCountText, delistedDateText: delistedDateText, delistedBusy: delistedBusy, onRefreshMetadata: () => void scanMissing(), onClearCache: () => void clearCache(), onRefreshDelisted: () => void refreshDelisted() }), SP_JSX.jsx(CompatibilitySection, { initiallyExpanded: returningDropdown === "category" || returningDropdown === "scope", compatibilityDefault: compatibilityDefault, compatibilityDefaultLoaded: compatibilityDefaultLoaded, compatibilityDefaultBusy: compatibilityDefaultBusy, compatibilityDefaultError: compatibilityDefaultError, compatibilityDefaultScope: compatibilityDefaultScope, compatibilityDefaultScopeBusy: compatibilityDefaultScopeBusy, onCompatibilityDefaultChange: (category) => void saveCompatibilityDefault(category), onCompatibilityDefaultScopeChange: (scope) => void saveCompatibilityDefaultScope(scope), onCompatibilityDefaultMenuWillOpen: requestCompatibilityDropdownReturn, onCompatibilityDefaultControlRef: setCompatibilityDefaultControl, onCompatibilityDefaultScopeControlRef: setCompatibilityDefaultScopeControl }), SP_JSX.jsx(ProtonDbBadgesSection, { initiallyExpanded: returningDropdown === "protondb-cover-position", snapshot: protonDbSnapshot, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: async (coverPosition) => {
-                    requestCompatibilityDropdownReturn("protondb-cover-position");
-                    noteCompatibilityDropdownControlUnmounted();
-                    try {
-                        return await protonDbBadgeController.setSettings({
-                            ...protonDbBadgeController.getSnapshot().settings, coverPosition,
-                        });
-                    }
-                    finally {
-                        if (noteCompatibilityDropdownSelectionSaved()) {
-                            setCompatibilityDropdownReturnVersion(version => version + 1);
-                        }
-                    }
-                }, onCoverPositionMenuWillOpen: () => {
-                    requestCompatibilityDropdownReturn("protondb-cover-position");
-                    noteCompatibilityDropdownControlUnmounted();
-                }, onCoverPositionControlRef: setProtonDbCoverControl }), SP_JSX.jsx(HltbSection, { initiallyExpanded: returningDropdown === "hltb-style" || returningDropdown === "hltb-blur", settings: hltbSnapshot.settings, settingsLoaded: hltbSnapshot.settingsLoaded, conflict: hltbSnapshot.conflict, settingsError: hltbSnapshot.settingsError, cacheStatus: hltbSnapshot.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: async (style) => {
-                    requestCompatibilityDropdownReturn("hltb-style");
-                    noteCompatibilityDropdownControlUnmounted();
-                    try {
-                        return await hltbController.setSettings({ ...hltbController.getSnapshot().settings, style });
-                    }
-                    finally {
-                        if (noteCompatibilityDropdownSelectionSaved())
-                            setCompatibilityDropdownReturnVersion((version) => version + 1);
-                    }
-                }, onStyleMenuWillOpen: () => {
-                    requestCompatibilityDropdownReturn("hltb-style");
-                    noteCompatibilityDropdownControlUnmounted();
-                }, onStyleControlRef: setHltbStyleControl, onBlurChange: async (blur) => {
-                    requestCompatibilityDropdownReturn("hltb-blur");
-                    noteCompatibilityDropdownControlUnmounted();
-                    try {
-                        const current = hltbController.getSnapshot().settings;
-                        return await hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
-                    }
-                    finally {
-                        if (noteCompatibilityDropdownSelectionSaved())
-                            setCompatibilityDropdownReturnVersion((version) => version + 1);
-                    }
-                }, onBlurMenuWillOpen: () => {
-                    requestCompatibilityDropdownReturn("hltb-blur");
-                    noteCompatibilityDropdownControlUnmounted();
-                }, onBlurControlRef: setHltbBlurControl }), SP_JSX.jsx(GameTrailersSection, { initiallyExpanded: returningDropdown === "quality", state: trailerSnapshot, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: async (quality) => {
-                    requestCompatibilityDropdownReturn("quality");
-                    noteCompatibilityDropdownControlUnmounted();
-                    try {
-                        return await trailerController.setQuality(quality);
-                    }
-                    finally {
-                        if (noteCompatibilityDropdownSelectionSaved()) {
-                            setCompatibilityDropdownReturnVersion((version) => version + 1);
-                        }
-                    }
-                }, onQualityMenuWillOpen: () => {
-                    requestCompatibilityDropdownReturn("quality");
-                    noteCompatibilityDropdownControlUnmounted();
-                }, onQualityControlRef: setTrailerQualityControl }), SP_JSX.jsx(MiniAchievementsSection, { state: miniAchievementsSnapshot, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }), SP_JSX.jsx(ContextMenuSection, {}), SP_JSX.jsx(LogsSection, { logsBusy: logsBusy, debugLogging: debugLogging, debugLoggingLoaded: debugLoggingLoaded, debugLoggingBusy: debugLoggingBusy, onViewLogs: () => void viewLogs(), onToggleDebugLogging: (enabled) => void saveDebugLogging(enabled) }), SP_JSX.jsx(PluginUpdateSection, { currentVersion: pluginVersion, updateChannel: updateChannel, automaticUpdateChecks: automaticUpdateChecks, settingsLoaded: settingsLoaded, onToggleUpdateChannel: (enabled) => void saveUpdateChannel(enabled), onToggleAutomaticUpdateChecks: (enabled) => void saveAutomaticUpdateChecks(enabled), onInstallVersionConfirmed: setPluginVersion }), SP_JSX.jsx(VersionsSection, { pluginVersion: pluginVersion, deckyVersion: deckyVersion, steamosVersion: steamosVersion, controllerTypes: controllerTypes })] }));
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }));
 };
+
+// THIS FILE IS AUTO GENERATED
+function SiSteamdeck (props) {
+  return GenIcon({"attr":{"role":"img","viewBox":"0 0 24 24"},"child":[{"tag":"path","attr":{"d":"M8.999 0v4.309c4.242 0 7.694 3.45 7.694 7.691s-3.452 7.691-7.694 7.691V24c6.617 0 12-5.383 12-12s-5.383-12-12-12Zm0 6.011c-3.313 0-6 2.687-5.998 6a5.999 5.999 0 1 0 5.998-6z"},"child":[]}]})(props);
+}
 
 /*
  * Resolve Steam's gamepad-aware <textarea> so the metadata editor's Description
@@ -37329,6 +34356,1012 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
 
+let pending;
+/** One saved-cache read shared by the features that seed from it at startup. */
+const loadProviderCache = () => {
+    pending ?? (pending = getProviderCache());
+    return pending;
+};
+/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
+const releaseProviderCache = () => {
+    pending = undefined;
+};
+
+const DEFAULT_HLTB_SETTINGS = {
+    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
+    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    nativeDetailsCorners: false,
+    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
+};
+const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
+const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
+function normalizeHltbSettings(value) {
+    const stored = object(value);
+    const appearance = object(stored.appearance);
+    const defaults = DEFAULT_HLTB_SETTINGS;
+    const defaultAppearance = defaults.appearance;
+    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
+        ? stored.style : defaults.style;
+    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+        ? appearance.blur : defaultAppearance.blur;
+    return {
+        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
+        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
+        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
+        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
+        showMain: bool(stored.showMain, defaults.showMain),
+        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
+        showComplete: bool(stored.showComplete, defaults.showComplete),
+        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
+        appearance: {
+            custom: bool(appearance.custom, defaultAppearance.custom),
+            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
+            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
+            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
+            border: bool(appearance.border, defaultAppearance.border),
+            blur,
+        },
+    };
+}
+
+const DAY_MS = 86400000;
+const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
+const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
+const isEntry = (value) => value.status === "matched" || value.status === "no_match";
+const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Saved HLTB results by app ID, available synchronously while a game page renders. */
+class HltbStore {
+    constructor(fetchStats = getHltbStats) {
+        Object.defineProperty(this, "fetchStats", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchStats
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "blocked", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "inFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "retryAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    /** Load saved entries; a result fetched during this session wins. */
+    seed(entries) {
+        for (const [id, entry] of Object.entries(entries)) {
+            const appId = Number(id);
+            if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId))
+                this.entries.set(appId, entry);
+        }
+    }
+    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
+    view(appId, inputs, now = Date.now()) {
+        if (this.blocked.get(appId) === inputsKey(inputs))
+            return { entry: null, needsFetch: false };
+        const entry = this.entries.get(appId);
+        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
+            entry.pinned_id_used !== inputs.pinned)
+            return { entry: null, needsFetch: true };
+        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
+        return { entry, needsFetch: now - entry.fetched_at >= ttl };
+    }
+    /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
+    request(appId, isShortcut, inputs, now = Date.now()) {
+        if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
+            return;
+        const request = {};
+        this.inFlight.set(appId, request);
+        const ownsRequest = () => this.inFlight.get(appId) === request;
+        void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
+            if (!ownsRequest())
+                return;
+            if (isEntry(result)) {
+                this.entries.set(appId, result);
+                this.blocked.delete(appId);
+            }
+            else if (result.status === "error") {
+                this.retryAt.set(appId, Date.now() + Math.max(1000, result.retry_after_ms));
+            }
+            else {
+                this.blocked.set(appId, inputsKey(inputs));
+            }
+            this.notify(appId);
+        }, () => {
+            if (ownsRequest())
+                this.retryAt.set(appId, Date.now() + 30000);
+        }).finally(() => {
+            if (ownsRequest())
+                this.inFlight.delete(appId);
+        });
+    }
+    subscribe(appId, listener) {
+        let set = this.listeners.get(appId);
+        if (!set)
+            this.listeners.set(appId, set = new Set());
+        set.add(listener);
+        return () => {
+            set.delete(listener);
+            if (set.size === 0)
+                this.listeners.delete(appId);
+        };
+    }
+    /** Forget one game after Remove metadata; its next view asks the backend again. */
+    forget(appId) {
+        this.entries.delete(appId);
+        this.blocked.delete(appId);
+        this.retryAt.delete(appId);
+        this.inFlight.delete(appId);
+        this.notify(appId);
+    }
+    /** Forget everything, e.g. after Clear cache or when the feature stops. */
+    reset() {
+        this.entries.clear();
+        this.blocked.clear();
+        this.inFlight.clear();
+        this.retryAt.clear();
+        for (const appId of [...this.listeners.keys()])
+            this.notify(appId);
+    }
+    notify(appId) {
+        for (const listener of this.listeners.get(appId) ?? []) {
+            try {
+                listener();
+            }
+            catch {
+                // One unmounting page must not block others.
+            }
+        }
+    }
+}
+const hltbStore = new HltbStore();
+
+/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
+class HltbController {
+    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }) {
+        Object.defineProperty(this, "runtime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: runtime
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: store
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposeRuntime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = this.initialSnapshot();
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = { ...this.initialSnapshot(), busy: true };
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("hltb") });
+        });
+        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
+            this.store.seed(cache.hltb.entries); }, () => undefined);
+        void this.settingsStore.get().then((settings) => {
+            if (!this.isCurrent(generation))
+                return;
+            const saved = normalizeHltbSettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false });
+        }, (error) => {
+            if (!this.isCurrent(generation))
+                return;
+            warn("bridge", "HLTB settings load failed", error);
+            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.publish({ settingsLoaded: false, busy: false });
+        this.store.reset();
+        this.listeners.clear();
+    }
+    async setSettings(next) {
+        const current = this.snapshot;
+        if (!this.mounted || !current.settingsLoaded)
+            return false;
+        const requested = normalizeHltbSettings(next);
+        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
+            return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const generation = this.generation;
+        while (this.queued && this.isCurrent(generation)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(generation)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, busy: false });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(generation)) {
+                    warn("bridge", "HLTB settings save failed", error);
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: t("hltb.settingsError.saveFailed"),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(generation))
+            this.saving = false;
+    }
+    async clearCache() {
+        if (!this.mounted)
+            return false;
+        this.publish({ cacheStatus: "clearing" });
+        try {
+            await this.settingsStore.clear();
+            this.store.reset();
+            this.publish({ cacheStatus: "cleared" });
+            return true;
+        }
+        catch (error) {
+            warn("bridge", "HLTB cache clear failed", error);
+            this.publish({ cacheStatus: "failed" });
+            return false;
+        }
+    }
+    initialSnapshot() {
+        return Object.freeze({
+            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
+        });
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    publish(update) {
+        const next = { ...this.snapshot, ...update };
+        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
+        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
+        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
+        if (changed)
+            this.applyRuntime(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // A closing QAM panel cannot block the feature.
+            }
+        }
+    }
+    applyRuntime(enabled) {
+        try {
+            if (enabled) {
+                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
+            }
+            else {
+                const dispose = this.disposeRuntime;
+                this.disposeRuntime = undefined;
+                dispose?.();
+            }
+        }
+        catch (error$1) {
+            error("patch", "HLTB runtime transition failed", error$1);
+            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
+        }
+    }
+}
+
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache;
+let menuButtonClassesCache;
+const detailsClasses = () => {
+    if (!detailsClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+            if (found && typeof found === "object")
+                detailsClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return detailsClassesCache ?? {};
+};
+const menuButtonClasses = () => {
+    if (!menuButtonClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+            if (found && typeof found === "object")
+                menuButtonClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return menuButtonClassesCache ?? {};
+};
+const css$2 = `
+/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
+#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
+.decky-metadata-hltb-info {
+  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
+  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
+  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
+}
+/* Sit on the bottom of the header instead of pushing the Play section down. */
+.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
+/* "Push Play button down": take layout height below the header so Play moves down. */
+#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
+.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
+.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
+  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
+}
+.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
+/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
+.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
+.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
+.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
+.decky-metadata-hltb-info li { text-align: center; }
+.decky-metadata-hltb-info p { margin: 0; }
+.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
+.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
+.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
+`;
+function HltbStats({ stats, hltbId, settings, launching }) {
+    const t = useT();
+    if (!stats || launching || Object.values(stats).every(value => value <= 0))
+        return null;
+    const { appearance, style } = settings;
+    const vars = {};
+    if (appearance.custom) {
+        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
+        if (appearance.textShadow)
+            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
+        if (appearance.textScale !== 100)
+            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
+        if (!appearance.border)
+            vars["--hltb-border-width"] = "0";
+    }
+    const items = [
+        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
+        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
+        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
+        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
+    ];
+    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
+    const classes = [
+        style === "default" ? "decky-metadata-hltb-default" : "",
+        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
+        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
+        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+        flow ? "decky-metadata-hltb-flow" : "",
+    ].filter(Boolean).join(" ");
+    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+    const nativeDetailsClasses = detailsClasses();
+    const nativeMenuButtonClasses = menuButtonClasses();
+    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
+}
+
+const ROW_KEY = "decky-metadata-hltb-row";
+const JOINED_CLASS = "decky-metadata-hltb-joined";
+const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
+const px = (value) => String(Math.round(value * 100) / 100);
+/** One blur surface: the Play section's own, grown up over the HLTB bar. */
+const joinedRule = (height, paddingTop) => {
+    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+    if (inner && playSection)
+        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+    if (playSection)
+        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+    return `.${JOINED_CLASS} + * ${rule}`;
+};
+const findHeaderElement = (row) => {
+    const container = row.parentElement;
+    if (!container)
+        return undefined;
+    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
+    if (headerClass) {
+        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+        if (matched)
+            return matched;
+    }
+    return row.previousElementSibling ?? undefined;
+};
+const findPlaySectionElement = (row) => {
+    const next = row.nextElementSibling;
+    if (!next)
+        return null;
+    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    if (playSectionClass) {
+        return next.querySelector(`.${playSectionClass}`);
+    }
+    return next.firstElementChild ?? next;
+};
+const positiveId = (value, maximum) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
+};
+/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
+const hltbInputs = (appId, isShortcut, title) => {
+    if (!isShortcut)
+        return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
+    const record = metadataCache[String(appId)];
+    return {
+        steam: positiveId(record?.steam_appid, 0x7fffffff),
+        title,
+        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
+    };
+};
+function useHltbSnapshot() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+/** Hide the row while Steam's header animates into a game launch. */
+function useLaunching(ref, active) {
+    const [launching, setLaunching] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (!active || !ref.current)
+            return;
+        const header = findHeaderElement(ref.current);
+        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+        const capsule = topCapsuleClass
+            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+            : header?.firstElementChild ?? undefined;
+        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
+        if (!capsule || !View)
+            return;
+        const observer = new View(() => {
+            const name = capsule.className;
+            const entering = [
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
+            ].some((value) => value && name.includes(value));
+            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
+        });
+        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, [active]);
+    return launching;
+}
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+function useHltbMatch(appId, wanted) {
+    const [, rerender] = SP_REACT.useState(0);
+    const native = getNativeOverview(appId);
+    const isShortcut = isNativeNonSteamShortcut(native);
+    const title = String(native?.display_name ?? "").trim();
+    const inputs = hltbInputs(appId, isShortcut, title);
+    const active = wanted && title !== "";
+    const view = hltbStore.view(appId, inputs);
+    SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
+    SP_REACT.useEffect(() => {
+        if (active && view.needsFetch)
+            hltbStore.request(appId, isShortcut, inputs);
+    });
+    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+/**
+ * Copy the native Play section's surface onto the row for the "Clean" styles, or
+ * with clean-default on a blurred Play bar, extend that one blur over both rows:
+ * the bar and underlay stay transparent and the Play rule supplies the surface.
+ */
+function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
+    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
+    const padding = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
+            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+            return;
+        }
+        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
+        const resize = { element: null, observer: null };
+        function update() {
+            const section = findPlaySectionElement(row);
+            const bar = row.querySelector(".decky-metadata-hltb-info");
+            if (!section) {
+                for (const name of names)
+                    row.style.removeProperty(name);
+                resize.observer?.disconnect();
+                resize.element = null;
+                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+                return;
+            }
+            const computed = view.getComputedStyle(section);
+            // Native padding is only readable while our own rule is not applied.
+            if (!row.classList.contains(JOINED_CLASS))
+                padding.current = parseFloat(computed.paddingTop) || 0;
+            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
+            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
+            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
+            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
+            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
+            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
+            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
+            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
+            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
+            if (bar !== resize.element) {
+                resize.observer?.disconnect();
+                resize.element = bar;
+                if (bar) {
+                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
+                    resize.observer.observe(bar);
+                }
+            }
+            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
+            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
+        }
+        update();
+        const observer = new view.MutationObserver(update);
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        observer.observe(row.parentElement, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+            resize.observer?.disconnect();
+            for (const name of names)
+                row.style.removeProperty(name);
+        };
+    }, [enabled, style, blur, pushPlayDown]);
+    return surface;
+}
+/**
+ * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
+ * the header art: pushing Play down would leave that bar without its backdrop.
+ */
+function useStatusBandOverlay(ref, wanted) {
+    const [overlay, setOverlay] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setOverlay(false);
+            return;
+        }
+        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
+        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
+        let frame = 0;
+        const touching = () => {
+            const header = findHeaderElement(row);
+            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+            const art = headerBgClass
+                ? header?.querySelector(`.${headerBgClass}`)
+                : header?.querySelector("img")?.parentElement ?? undefined;
+            if (!art)
+                return false;
+            const bounds = art.getBoundingClientRect();
+            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
+            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
+                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
+                .map((rect) => rect.bottom));
+            // Rect, not layout: Steam scales the page while it animates in.
+            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
+            const displacement = flow?.getBoundingClientRect().height ?? 0;
+            for (const bar of Array.from(container.querySelectorAll(selector))) {
+                const rect = bar.getBoundingClientRect();
+                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
+                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
+                    rect.top - bottom > displacement + 1)
+                    continue;
+                const own = view.getComputedStyle(bar);
+                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
+                    continue;
+                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
+                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
+                let visible = true;
+                for (let element = bar; element; element = element.parentElement) {
+                    const style = view.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                        (!suppressed && Number(style.opacity) <= 0)) {
+                        visible = false;
+                        break;
+                    }
+                    if (element === container)
+                        break;
+                }
+                if (visible)
+                    return true;
+            }
+            return false;
+        };
+        const update = () => {
+            frame = 0;
+            const next = touching();
+            setOverlay((previous) => previous === next ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, {
+            childList: true, subtree: true, attributes: true,
+            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
+        });
+        // CSS Loader themes restyle the page from the head and the root element alone.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        const resize = new view.ResizeObserver(schedule);
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        schedule();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            view.removeEventListener("resize", schedule);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted && overlay;
+}
+/** A border box's layout top: unaffected by transforms and scroll position. */
+function layoutTop(element) {
+    let top = 0;
+    for (let node = element; node; node = node.offsetParent)
+        top += node.offsetTop;
+    return top;
+}
+/**
+ * How far Play can move down before its button would go under Big Picture's footer.
+ * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
+ */
+function usePushRoom(ref, wanted) {
+    const [room, setRoom] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setRoom((previous) => previous === null ? previous : null);
+            return;
+        }
+        let frame = 0;
+        let footer = null;
+        const resize = new view.ResizeObserver(() => schedule());
+        const footerResize = new view.ResizeObserver(() => schedule());
+        const measure = () => {
+            // The whole surface that moves Play down in flow mode, margins included. Never
+            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
+            const surface = row.querySelector("#decky-metadata-hltb");
+            const surfaceStyle = surface && view.getComputedStyle(surface);
+            const rowHeight = surface
+                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
+                : 0;
+            const section = findPlaySectionElement(row);
+            if (!rowHeight || !section)
+                return null;
+            let scroller = container.parentElement;
+            while (scroller) {
+                const style = view.getComputedStyle(scroller);
+                if (/(auto|scroll)/.test(style.overflowY))
+                    break;
+                scroller = scroller.parentElement;
+            }
+            if (!scroller || scroller.clientHeight <= 0)
+                return null;
+            const nextFooter = document.querySelector("#Footer");
+            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+            if (nextFooter !== footer) {
+                footerResize.disconnect();
+                footer = nextFooter;
+                if (footer)
+                    footerResize.observe(footer);
+            }
+            const header = findHeaderElement(row);
+            if (!header)
+                return null;
+            // Layout, not rects: Steam scales and translates the page while it animates in,
+            // and a rect read mid-animation would stick until something else moved.
+            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+            const artBottom = layoutTop(header) + header.offsetHeight;
+            // The visible bar's border box; the labels may overhang it but Play clears the bar.
+            const footerTop = footer && footer.offsetHeight > 0
+                ? layoutTop(footer)
+                : layoutTop(scroller) + scroller.clientHeight;
+            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
+            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
+            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
+            // The button face; the wrapper's AppActionButton class is the fallback.
+            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
+                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
+            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+            const buttonBottom = button
+                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+                : section.offsetHeight - lift;
+            const free = footerTop - 4 - artBottom - buttonBottom;
+            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
+        };
+        const update = () => {
+            frame = 0;
+            const next = measure();
+            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+        // Themes restyle the page and the footer from the head and the root element.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        if (document.body)
+            observer.observe(document.body, { childList: true, subtree: true });
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        // Steam animates the page in without any resize or mutation: re-measure when it ends.
+        document.addEventListener("transitionend", schedule, true);
+        document.addEventListener("animationend", schedule, true);
+        update();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            footerResize.disconnect();
+            view.removeEventListener("resize", schedule);
+            document.removeEventListener("transitionend", schedule, true);
+            document.removeEventListener("animationend", schedule, true);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted ? room : null;
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useHltbSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
+    const launching = useLaunching(ref, active);
+    const { settings } = snapshot;
+    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+    const overlay = useStatusBandOverlay(ref, pushWanted);
+    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
+    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
+    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
+    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
+    if (!active)
+        return null;
+    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
+}
+/** True for the child that holds Steam's Play section (the row goes right above it). */
+const isPlaySection = (child) => {
+    const props = (child?.props ?? {});
+    const inner = props.children?.props ?? {};
+    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
+        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
+};
+function installHltbGameView() {
+    const unpatchers = [];
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+            if (!routeProps)
+                return tree;
+            let appId = 0;
+            const handler = DFL.createReactTreePatcher([
+                (inner) => {
+                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                    appId = Number(children?.props?.overview?.appid) || 0;
+                    return children ?? null;
+                },
+            ], (_args, ret) => {
+                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                    node.props.children.some(isPlaySection)))?.props?.children;
+                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                    return ret;
+                const index = children.findIndex(isPlaySection);
+                if (index >= 0)
+                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+                return ret;
+            });
+            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
+            unpatchers.push(() => renderPatch.unpatch());
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    }
+    return () => {
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+const hltbController = new HltbController({ install: installHltbGameView });
+
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
     if (!s)
@@ -37618,8 +35651,23 @@ const resolveEditorIcon = async (appId, steamAppId, isCurrent) => {
     return (await waitForOwnIcon(appId, isCurrent)) ?? (steamIcon ? await steamIcon : null);
 };
 
+const resolveNativePagedSettings = () => {
+    try {
+        const component = DFL.findModuleExport((moduleExport) => {
+            if (typeof moduleExport !== "function")
+                return false;
+            const source = String(moduleExport);
+            return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
+        });
+        return typeof component === "function" ? component : null;
+    }
+    catch {
+        return null;
+    }
+};
+
 const layout = "decky-metadata-editor-layout";
-const css = `
+const css$1 = `
 .${layout}__tab-title {
   display: inline-flex;
   align-items: center;
@@ -37674,24 +35722,10 @@ const css = `
 }
 
 `;
-const resolveNativePagedSettings = () => {
-    try {
-        const component = DFL.findModuleExport((moduleExport) => {
-            if (typeof moduleExport !== "function")
-                return false;
-            const source = String(moduleExport);
-            return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
-        });
-        return typeof component === "function" ? component : null;
-    }
-    catch {
-        return null;
-    }
-};
-const NativePagedSettings = resolveNativePagedSettings();
-const PageContentContext = SP_REACT.createContext([]);
-function CurrentPageContent({ id }) {
-    const pages = SP_REACT.useContext(PageContentContext);
+const NativePagedSettings$1 = resolveNativePagedSettings();
+const PageContentContext$1 = SP_REACT.createContext([]);
+function CurrentPageContent$1({ id }) {
+    const pages = SP_REACT.useContext(PageContentContext$1);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
 function EditorTitle({ title, appId, steamAppId }) {
@@ -37733,16 +35767,16 @@ function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageReque
                 visible: editorPage.visible,
                 hideTitle: true,
                 // Steam's settings pages use DialogHeader + DialogBody; native CSS supplies their spacing.
-                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: editorPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id) })] })),
+                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: editorPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent$1, { id: editorPage.id }, editorPage.id) })] })),
             });
         }
         return mapped;
     }, pageDependencies);
-    return (SP_JSX.jsxs(PageContentContext.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
+    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
 }
 function EditorLayout(props) {
     const t = useT();
-    return NativePagedSettings
+    return NativePagedSettings$1
         ? SP_JSX.jsx(NativeEditorLayout, { ...props })
         : (
         // Focusable so B reaches the editor root and leaves; there is nothing else to focus.
@@ -39391,6 +37425,2147 @@ const MetadataPage = () => {
         }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
+const compatibilityDefaultData = [null, 3, 2, 1, 0];
+const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
+const dropdownValueStyle$1 = { whiteSpace: "normal" };
+function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, }) {
+    const t = useT();
+    const categoryLabel = (category) => {
+        switch (category) {
+            case null:
+                return t("qam.compat.categoryAutomatic");
+            case 3:
+                return t("qam.compat.categoryVerified");
+            case 2:
+                return t("qam.compat.categoryPlayable");
+            case 1:
+                return t("qam.compat.categoryUnsupported");
+            case 0:
+                return t("qam.compat.categoryUnknown");
+        }
+    };
+    const scopeLabel = (scope) => {
+        switch (scope) {
+            case "steam":
+                return t("qam.compat.scopeSteam");
+            case "no-steam":
+                return t("qam.compat.scopeNoSteam");
+            case "metadata":
+                return t("qam.compat.scopeMetadata");
+            case "all":
+                return t("qam.compat.scopeAll");
+        }
+    };
+    const scopeDescription = (scope) => {
+        switch (scope) {
+            case "steam":
+                return t("qam.compat.scopeDescription.steam");
+            case "no-steam":
+                return t("qam.compat.scopeDescription.noSteam");
+            case "metadata":
+                return t("qam.compat.scopeDescription.metadata");
+            case "all":
+                return t("qam.compat.scopeDescription.all");
+        }
+    };
+    const compatibilityDefaultOptions = compatibilityDefaultData.map((data) => ({
+        data,
+        label: categoryLabel(data),
+    }));
+    const compatibilityDefaultScopeOptions = compatibilityDefaultScopeData.map((data) => ({
+        data,
+        label: scopeLabel(data),
+    }));
+    const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                        compatibilityDefaultBusy ||
+                        compatibilityDefaultScopeBusy ||
+                        compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) }) })) : null] }));
+}
+
+/** Options for the Edit Metadata page that the game context menu opens. */
+function ContextMenuBody({ settings, error, onChange }) {
+    const t = useT();
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => onChange("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => onChange("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
+}
+
+function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, }) {
+    const t = useT();
+    const qualityOptions = [
+        { data: "auto", label: t("qam.trailers.qualityAuto") },
+        { data: 720, label: "720p" },
+        { data: 1080, label: "1080p" },
+        { data: 1440, label: "1440p" },
+        { data: 2160, label: "2160p" },
+    ];
+    const disabled = !state.settingsLoaded || state.busy;
+    const dependentDisabled = disabled || !state.settings.enabled;
+    const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
+    const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
+    const display = state.displayWidth && state.displayHeight
+        ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
+        : t("qam.trailers.displayUnavailable");
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
+}
+
+function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onBlurChange, }) {
+    const t = useT();
+    const styles = [
+        { data: "default", label: t("qam.hltb.styleDefault") }, { data: "clean", label: t("qam.hltb.styleClean") },
+        { data: "clean-left", label: t("qam.hltb.styleCleanLeft") }, { data: "clean-default", label: t("qam.hltb.styleCleanDefault") },
+    ];
+    const blurOptions = [
+        { data: "match", label: t("qam.hltb.blurMatchPlayBar") }, { data: "blur", label: t("qam.hltb.blurOn") }, { data: "none", label: t("qam.hltb.blurOff") },
+    ];
+    const statControls = [
+        ["showMain", t("qam.hltb.mainStatLabel"), t("qam.hltb.mainStatDescription")],
+        ["showMainPlus", t("qam.hltb.mainPlusStatLabel"), t("qam.hltb.mainPlusStatDescription")],
+        ["showComplete", t("qam.hltb.completionistStatLabel"), t("qam.hltb.completionistStatDescription")],
+        ["showAllStyles", t("qam.hltb.allStylesStatLabel"), t("qam.hltb.allStylesStatDescription")],
+    ];
+    const cacheStatusText = {
+        clearing: ["active", t("qam.hltb.cacheClearing")],
+        cleared: ["success", t("qam.hltb.cacheCleared")],
+        failed: ["error", t("qam.hltb.cacheFailed")],
+    };
+    const controlsDisabled = !settingsLoaded;
+    const disabled = controlsDisabled || !settings.enabled;
+    const appearance = settings.appearance;
+    const notice = featureConflictNotice(conflict, t("qam.hltb.conflictFeature"), settings.enabled);
+    const update = (key, value) => { void onSettingsChange(current => ({ ...current, [key]: value })); };
+    const updateAppearance = (key, value) => {
+        void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
+    };
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+}
+
+function LogsBody({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
+    const t = useT();
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+}
+
+function MiniAchievementsBody({ state, onEnabledChange }) {
+    const t = useT();
+    const enableDisabled = !state.settingsLoaded || state.busy ||
+        (Boolean(state.conflict.pluginName) && !state.enabled);
+    const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), (conflictNotice || state.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })) : null] }));
+}
+
+// THIS FILE IS AUTO GENERATED
+function IoMdRefresh (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
+}
+
+function PluginUpdateBody() {
+    const t = useT();
+    const { effectiveCurrentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, } = usePluginUpdateController();
+    const isLocalBuild = effectiveCurrentVersion.includes("+");
+    const handleToggleChannel = (checked) => {
+        if (checked) {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => void setUpdateChannel(true) }));
+        }
+        else {
+            void setUpdateChannel(false);
+        }
+    };
+    const getStatusContent = () => {
+        if (isChecking) {
+            return SP_JSX.jsxs("span", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
+        }
+        if (errorMessage) {
+            return (SP_JSX.jsx("span", { style: inlineStatusStyle("error"), children: checkTimedOut
+                    ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+                    : t("qam.update.checkFailed") }));
+        }
+        if (checkResult?.status === "current") {
+            return SP_JSX.jsx("span", { style: inlineStatusStyle("success"), children: t("qam.update.upToDate") });
+        }
+        if (checkResult?.status === "available") {
+            return (SP_JSX.jsx("span", { style: inlineStatusStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+                    ? t("qam.update.latestDevelopment")
+                    : t("qam.update.updateAvailable") }));
+        }
+        return SP_JSX.jsx("span", { style: inlineStatusStyle("idle"), children: t("qam.update.neverChecked") });
+    };
+    const lastCheckedText = checkResult?.checked_at
+        ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
+        : undefined;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), padding: "standard", focusable: true, highlightOnFocus: true, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded, onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: getStatusContent() }) }), errorMessage && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px" }, children: [SP_JSX.jsx("div", { children: t("qam.update.newVersion", {
+                                    version: candidate.version,
+                                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+                                }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: t("qam.update.downgradeWarning") }))] }) }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: effectiveCurrentVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.update.viewReleaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => void checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? SP_JSX.jsx(BusySpinner, {}) : SP_JSX.jsx(IoMdRefresh, {}), SP_JSX.jsx("span", { children: t("qam.update.checkNow") })] }) }) })] }));
+}
+
+const dropdownValueStyle = { whiteSpace: "normal" };
+function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange, }) {
+    const t = useT();
+    const coverPositionOptions = [
+        { data: "bottom-left", label: t("qam.protondb.positionBottomLeft") },
+        { data: "top-left", label: t("qam.protondb.positionTopLeft") },
+        { data: "top-right", label: t("qam.protondb.positionTopRight") },
+    ];
+    const { settings } = snapshot;
+    const controlsDisabled = !snapshot.settingsLoaded;
+    const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
+    const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
+    const updateSetting = (key, value) => {
+        void onSettingsChange(current => ({ ...current, [key]: value }));
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })) : null] }));
+}
+
+function VersionsBody({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
+    const t = useT();
+    const unknown = t("common.unknown");
+    const marker = "\u0000";
+    const pluginLabel = t("qam.versions.plugin", { version: marker }).split(marker)[0].trimEnd();
+    const deckyLabel = t("qam.versions.decky", { version: marker }).split(marker)[0].trimEnd();
+    const steamosLabel = t("qam.versions.steamos", { version: marker }).split(marker)[0].trimEnd();
+    const controllerTypesLabel = t("qam.versions.controllerTypes", { types: marker }).split(marker)[0].trimEnd();
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: pluginLabel, focusable: true, highlightOnFocus: true, children: pluginVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: deckyLabel, focusable: true, highlightOnFocus: true, children: deckyVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: steamosLabel, focusable: true, highlightOnFocus: true, children: steamosVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: controllerTypesLabel, focusable: true, highlightOnFocus: true, children: formatConnectedControllerTypes(controllerTypes) }) })] }));
+}
+
+const HTML_ENTITIES = {
+    amp: '&',
+    lt: '<',
+    gt: '>',
+    quot: '"',
+    apos: "'",
+    nbsp: ' ',
+    trade: '™',
+    reg: '®',
+    copy: '©'
+};
+function unescapeHtml(value) {
+    return value.replace(/&(#x?[0-9a-f]+|[a-z]+);/gi, (match, entity) => {
+        if (entity[0] === '#') {
+            const hex = entity[1] === 'x' || entity[1] === 'X';
+            const code = parseInt(entity.slice(hex ? 2 : 1), hex ? 16 : 10);
+            if (!Number.isFinite(code) || code < 0 || code > 0x10ffff)
+                return match;
+            try {
+                return String.fromCodePoint(code);
+            }
+            catch {
+                return match;
+            }
+        }
+        return HTML_ENTITIES[entity.toLowerCase()] ?? match;
+    });
+}
+/**
+ * Normalise a game title for comparison against Steam search results.
+ *
+ * Ported from Decky-Metadata's backend/matching.py:normalise_match_title.
+ * Drops bracketed segments, articles, edition/remaster wording and region or
+ * version tokens, then collapses everything that is not alphanumeric.
+ *
+ * Unlike the Python original, a removal that would leave the title with no
+ * letters is skipped: "Prototype" and "Prototype 2" are games, not version
+ * markers, and stripping the word leaves nothing to match on.
+ */
+const TITLE_REMOVALS = [
+    /\b(?:the|a|an)\b/g,
+    /\b(?:remaster(?:ed)?|hd|definitive|ultimate|complete|goty|edition)\b/g,
+    /\b(?:usa|europe|eur|japan|jp|world|rev|revision|beta|proto|prototype|demo|sample|en|fr|de|es|it|pt|br|v\d+(?:\.\d+)*)\b/g
+];
+function normaliseMatchTitle(title) {
+    let text = unescapeHtml(String(title ?? ''))
+        .toLowerCase()
+        .replace(/[\u2122\u00ae\u00a9]/g, '')
+        .replace(/\[[^\]]+\]|\([^)]*\)/g, ' ');
+    for (const removal of TITLE_REMOVALS) {
+        const stripped = text.replace(removal, ' ');
+        if (/[a-z]/.test(stripped)) {
+            text = stripped;
+        }
+    }
+    return text
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+// Markers that identify a store entry as something other than the main game.
+// Ported from Decky-Metadata's NON_PRIMARY_STEAM_TITLE_PATTERNS.
+const NON_PRIMARY_PATTERNS = [
+    /\bdemo\b/,
+    /\bbeta\b/,
+    /\bplaytest\b/,
+    /\bprototype\b/,
+    /\bsoundtrack\b/,
+    /\bost\b/,
+    /\bseason\s+pass\b/,
+    /\bdlc\b/,
+    /\bpack\b/,
+    /\bbundle\b/,
+    /\bartbook\b/,
+    /\bart\s+book\b/,
+    /\btrailer\b/,
+    /\bdedicated\s+server\b/,
+    /\bserver\b/,
+    /\btest\b/
+];
+/**
+ * Which "not the main game" markers a title carries.
+ *
+ * normaliseMatchTitle strips words like "demo" and "beta", so a demo entry can
+ * normalise onto the base game's title. Comparing the markers of the query and
+ * of the candidate keeps that apart, while still letting a title whose real
+ * name contains a marker (Prototype, Test Drive) match itself.
+ */
+function nonPrimaryMarkers(title) {
+    const text = unescapeHtml(String(title ?? '')).toLowerCase();
+    return NON_PRIMARY_PATTERNS.filter((pattern) => pattern.test(text)).map((pattern) => pattern.source);
+}
+
+const SEARCH_URL = 'https://store.steampowered.com/api/storesearch/';
+const FETCH_TIMEOUT_MS$1 = 2000;
+const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
+const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
+const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
+async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS$1) {
+    const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+    });
+    return Promise.race([fetchPromise, timeoutPromise]);
+}
+async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
+    const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-Algolia-Application-Id': ALGOLIA_APPLICATION_ID,
+            'X-Algolia-API-Key': ALGOLIA_SEARCH_KEY,
+            Origin: 'https://www.protondb.com',
+            Referer: 'https://www.protondb.com/'
+        },
+        body: JSON.stringify({
+            query: gameName,
+            facetFilters: [['appType:Game']],
+            restrictSearchableAttributes: ['name'],
+            attributesToRetrieve: ['name', 'objectID'],
+            attributesToHighlight: [],
+            attributesToSnippet: [],
+            hitsPerPage: 10
+        })
+    }));
+    if (res.status !== 200)
+        return null;
+    const hits = (await res.json())?.hits;
+    if (!Array.isArray(hits))
+        return null;
+    const match = hits.find((item) => typeof item?.name === 'string' &&
+        typeof item.objectID === 'string' &&
+        /^[1-9]\d*$/.test(item.objectID) &&
+        normaliseMatchTitle(item.name) === query &&
+        nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+    return typeof match?.objectID === 'string' ? match.objectID : null;
+}
+/**
+ * Resolve a non-Steam shortcut name to a Steam app ID.
+ *
+ * Uses the store search endpoint rather than the community autocomplete: it
+ * returns full store titles ("Assassin's Creed™: Director's Cut Edition")
+ * where the autocomplete only returns short ones ("Assassin's Creed"), so
+ * more shortcuts normalise onto a candidate. Results are pinned to English so
+ * the candidate names match what normaliseMatchTitle expects.
+ * If Steam returns no acceptable match, try ProtonDB's SteamDB title index.
+ * Transport errors do not trigger the fallback.
+ */
+async function findSteamAppIdByName(gameName) {
+    const query = normaliseMatchTitle(gameName);
+    if (!query)
+        return null;
+    const queryMarkers = new Set(nonPrimaryMarkers(gameName));
+    try {
+        const params = new URLSearchParams({
+            term: gameName,
+            cc: 'US',
+            l: 'english'
+        });
+        const res = await fetchWithTimeout(fetchNoCors(`${SEARCH_URL}?${params.toString()}`, { method: 'GET' }));
+        if (res.status === 200) {
+            const items = (await res.json())?.items;
+            if (!Array.isArray(items))
+                return null;
+            const match = items.find((item) => item?.type === 'app' &&
+                item?.name &&
+                normaliseMatchTitle(item.name) === query &&
+                nonPrimaryMarkers(item.name).every((marker) => queryMarkers.has(marker)));
+            if (typeof match?.id === 'number')
+                return String(match.id);
+            return await findAlgoliaAppIdByName(gameName, query, queryMarkers);
+        }
+    }
+    catch (error) {
+        console.error(error);
+    }
+    return null;
+}
+
+const resolutions = new Map();
+let generation = 0;
+let resolvedNameListener;
+const resetProtonDbAppIdResolution = () => {
+    generation += 1;
+    resolutions.clear();
+};
+/** Receives only found Steam IDs; a null search result is a miss or an error and is never reported. */
+const setResolvedNameListener = (listener) => {
+    resolvedNameListener = listener;
+};
+/** Load saved name lookups; a later rename of the shortcut makes its entry unused. */
+const seedProtonDbAppIdResolutions = (entries) => {
+    for (const [shortcutAppId, name, savedId] of entries) {
+        const id = steamAppId(savedId);
+        if (id === null || !Number.isSafeInteger(shortcutAppId) || shortcutAppId <= 0 ||
+            shortcutAppId > 0xffffffff || !name || resolutions.has(shortcutAppId))
+            continue;
+        resolutions.set(shortcutAppId, { name, promise: Promise.resolve(id), id });
+    }
+};
+const steamAppId = (value) => {
+    if (typeof value === "string" && !/^\d{1,10}$/.test(value))
+        return null;
+    if (typeof value !== "string" && typeof value !== "number")
+        return null;
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id < 0x80000000 ? id : null;
+};
+const savedProtonDbAppId = (displayedAppId) => steamAppId(metadataCache[String(displayedAppId)]?.steam_appid);
+/** Read known identity without making navigation wait for an effect or Promise. */
+const getResolvedProtonDbAppId = (displayedAppId, overview) => {
+    if (!Number.isSafeInteger(displayedAppId) || displayedAppId <= 0 || displayedAppId > 0xffffffff)
+        return null;
+    if (!overview || typeof overview !== "object" || Array.isArray(overview) ||
+        !("appid" in overview) || overview.appid !== displayedAppId)
+        return null;
+    const native = getNativeOverview(displayedAppId) ?? overview;
+    if (!("appid" in native) || native.appid !== displayedAppId ||
+        !("app_type" in native) || typeof native.app_type !== "number" ||
+        !Number.isSafeInteger(native.app_type))
+        return null;
+    try {
+        if (displayedAppId < 0x80000000 && !isNativeNonSteamShortcut(native))
+            return displayedAppId;
+        const savedId = savedProtonDbAppId(displayedAppId);
+        if (savedId !== null)
+            return savedId;
+        if (!("display_name" in native) || typeof native.display_name !== "string" || !native.display_name.trim())
+            return null;
+        const resolution = resolutions.get(displayedAppId);
+        return resolution?.name === native.display_name ? resolution.id : undefined;
+    }
+    catch {
+        return null;
+    }
+};
+/** Native Steam IDs are direct; shortcuts prefer a saved ID before fork name search. */
+const resolveProtonDbAppId = async (displayedAppId, overview) => {
+    const knownId = getResolvedProtonDbAppId(displayedAppId, overview);
+    if (knownId !== undefined)
+        return knownId;
+    const native = (getNativeOverview(displayedAppId) ?? overview);
+    const name = native.display_name;
+    const requestedGeneration = generation;
+    try {
+        let resolution = resolutions.get(displayedAppId);
+        if (resolution?.name !== name) {
+            const promise = findSteamAppIdByName(name).then(result => {
+                if (generation !== requestedGeneration)
+                    return null;
+                const current = getNativeOverview(displayedAppId);
+                if (current && current.display_name !== name)
+                    return null;
+                const id = steamAppId(result);
+                if (resolution)
+                    resolution.id = id;
+                if (id !== null) {
+                    try {
+                        resolvedNameListener?.(displayedAppId, name, id);
+                    }
+                    catch {
+                        // Saving is best effort.
+                    }
+                }
+                return id;
+            });
+            resolution = { name, promise };
+            resolutions.set(displayedAppId, resolution);
+        }
+        const result = await resolution.promise;
+        if (generation !== requestedGeneration)
+            return null;
+        return savedProtonDbAppId(displayedAppId) ?? result;
+    }
+    catch {
+        return null;
+    }
+};
+
+/** Collects saved-cache changes and sends them to the backend at most once per delay. */
+class ProtonDbCacheWriter {
+    constructor(put = putProtonDbCache, delayMs = 1000) {
+        Object.defineProperty(this, "put", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: put
+        });
+        Object.defineProperty(this, "delayMs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: delayMs
+        });
+        Object.defineProperty(this, "ratings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "nameIds", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {}
+        });
+        Object.defineProperty(this, "timer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+    }
+    rating(steamAppId, tier, updatedAt) {
+        this.ratings[String(steamAppId)] = { tier, updated_at: updatedAt };
+        this.schedule();
+    }
+    name(shortcutAppId, name, steamAppId, resolvedAt = Date.now()) {
+        this.nameIds[String(shortcutAppId)] = { name, steam_appid: steamAppId, resolved_at: resolvedAt };
+        this.schedule();
+    }
+    flush() {
+        if (this.timer !== undefined)
+            globalThis.clearTimeout(this.timer);
+        this.timer = undefined;
+        const ratings = this.ratings;
+        const nameIds = this.nameIds;
+        if (Object.keys(ratings).length === 0 && Object.keys(nameIds).length === 0)
+            return;
+        this.ratings = {};
+        this.nameIds = {};
+        // A failed save only costs a fetch after the next restart.
+        void this.put(ratings, nameIds).catch(() => undefined);
+    }
+    schedule() {
+        if (this.timer === undefined)
+            this.timer = globalThis.setTimeout(() => this.flush(), this.delayMs);
+    }
+}
+
+const PROTONDB_RATING_TTL_MS = 24 * 60 * 60 * 1000;
+const FETCH_TIMEOUT_MS = 5000;
+const RETRY_COOLDOWN_MS = 30000;
+const SUMMARY_URL = "https://www.protondb.com/api/v1/reports/summaries";
+const protonDbTiers = {
+    platinum: true,
+    gold: true,
+    silver: true,
+    bronze: true,
+    borked: true,
+};
+const isProtonDbTier$1 = (value) => typeof value === "string" && Object.prototype.hasOwnProperty.call(protonDbTiers, value);
+const fetchProtonDbTier = async (steamAppId) => {
+    const response = await fetchNoCors(`${SUMMARY_URL}/${steamAppId}.json`, { method: "GET" });
+    if (response.status === 404)
+        return null;
+    if (response.status !== 200) {
+        throw new Error(`ProtonDB summary request failed with HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    if (!payload || typeof payload !== "object" || Array.isArray(payload) || !("tier" in payload)) {
+        throw new Error("ProtonDB returned a malformed summary");
+    }
+    const tier = payload.tier;
+    if (tier === null || tier === "pending")
+        return null;
+    if (!isProtonDbTier$1(tier))
+        throw new Error("ProtonDB returned an invalid tier");
+    return tier;
+};
+const validSteamAppId = (steamAppId) => Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000;
+const ratingValue = (tier, status, updatedAt) => Object.freeze({ tier, status, updatedAt });
+const invalidRating = ratingValue(null, "idle", null);
+/** Shared in-memory ratings; fetches are owned by the currently visible subscribers. */
+class ProtonDbRatingCache {
+    constructor(fetchTier = fetchProtonDbTier) {
+        Object.defineProperty(this, "fetchTier", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchTier
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "lifecycle", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "enabled", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "resultListener", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+    }
+    /** Receives every successful lookup (including "no tier yet") so it can be saved. */
+    setResultListener(listener) {
+        this.resultListener = listener;
+    }
+    /** Load saved ratings; never replaces a newer or in-flight in-memory rating. */
+    seed(ratings) {
+        for (const [steamAppId, tier, updatedAt] of ratings) {
+            if (!validSteamAppId(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0)
+                continue;
+            if (tier !== null && !isProtonDbTier$1(tier))
+                continue;
+            const entry = this.getEntry(steamAppId);
+            if (entry.request || (entry.rating.updatedAt !== null && entry.rating.updatedAt >= updatedAt))
+                continue;
+            this.setRating(entry, tier, "ready", updatedAt);
+            this.clearExpiry(entry);
+            this.loadIfNeeded(steamAppId, entry);
+        }
+    }
+    getRating(steamAppId) {
+        if (!validSteamAppId(steamAppId))
+            return invalidRating;
+        return this.getEntry(steamAppId).rating;
+    }
+    subscribeRating(steamAppId, listener) {
+        if (!validSteamAppId(steamAppId))
+            return () => undefined;
+        const entry = this.getEntry(steamAppId);
+        entry.listeners.add(listener);
+        this.loadIfNeeded(steamAppId, entry);
+        return () => {
+            entry.listeners.delete(listener);
+            if (entry.listeners.size === 0)
+                this.clearExpiry(entry);
+        };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        if (this.enabled) {
+            for (const [steamAppId, entry] of this.entries)
+                this.loadIfNeeded(steamAppId, entry);
+        }
+    }
+    setEnabled(enabled) {
+        if (this.enabled === enabled)
+            return;
+        this.enabled = enabled;
+        if (!enabled) {
+            for (const entry of this.entries.values()) {
+                this.clearExpiry(entry);
+                this.cancelRequest(entry, true);
+            }
+            return;
+        }
+        if (this.mounted) {
+            for (const [steamAppId, entry] of this.entries)
+                this.loadIfNeeded(steamAppId, entry);
+        }
+    }
+    stop() {
+        this.lifecycle += 1;
+        this.mounted = false;
+        this.enabled = false;
+        for (const entry of this.entries.values()) {
+            this.clearExpiry(entry);
+            entry.listeners.clear();
+            this.cancelRequest(entry, false);
+            entry.retryAfter = 0;
+        }
+    }
+    getEntry(steamAppId) {
+        let entry = this.entries.get(steamAppId);
+        if (!entry) {
+            entry = { rating: ratingValue(null, "idle", null), listeners: new Set(), retryAfter: 0 };
+            this.entries.set(steamAppId, entry);
+        }
+        return entry;
+    }
+    isActive(entry) {
+        return this.mounted && this.enabled && entry.listeners.size > 0;
+    }
+    loadIfNeeded(steamAppId, entry) {
+        if (!this.isActive(entry) || entry.request)
+            return;
+        const now = Date.now();
+        const { status, updatedAt } = entry.rating;
+        if (updatedAt !== null && now - updatedAt < PROTONDB_RATING_TTL_MS) {
+            if (status === "ready") {
+                this.scheduleExpiry(steamAppId, entry);
+                return;
+            }
+            if (status === "error" && now < entry.retryAfter)
+                return;
+            if (status !== "error")
+                return;
+        }
+        else if (status === "error" && now < entry.retryAfter) {
+            return;
+        }
+        this.clearExpiry(entry);
+        const request = {
+            lifecycle: this.lifecycle,
+            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
+        };
+        entry.request = request;
+        this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
+        let pending;
+        try {
+            pending = this.fetchTier(steamAppId);
+        }
+        catch (error) {
+            this.failRequest(entry, request, error);
+            return;
+        }
+        void Promise.resolve(pending).then((tier) => this.completeRequest(steamAppId, entry, request, tier), (error) => this.failRequest(entry, request, error));
+    }
+    completeRequest(steamAppId, entry, request, tier) {
+        if (!this.isCurrentRequest(entry, request))
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        entry.retryAfter = 0;
+        this.setRating(entry, tier, "ready", Date.now());
+        try {
+            this.resultListener?.(steamAppId, tier, entry.rating.updatedAt);
+        }
+        catch {
+            // Saving is best effort; the in-memory rating is already current.
+        }
+        this.scheduleExpiry(steamAppId, entry);
+    }
+    failRequest(entry, request, _error) {
+        if (!this.isCurrentRequest(entry, request))
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        entry.retryAfter = Date.now() + RETRY_COOLDOWN_MS;
+        this.setRating(entry, entry.rating.tier, "error", entry.rating.updatedAt);
+    }
+    isCurrentRequest(entry, request) {
+        return this.lifecycle === request.lifecycle && entry.request === request && this.mounted && this.enabled;
+    }
+    scheduleExpiry(steamAppId, entry) {
+        if (!this.isActive(entry) || entry.rating.updatedAt === null || entry.expiryTimer !== undefined)
+            return;
+        const remaining = Math.max(0, entry.rating.updatedAt + PROTONDB_RATING_TTL_MS - Date.now());
+        entry.expiryTimer = globalThis.setTimeout(() => {
+            entry.expiryTimer = undefined;
+            this.loadIfNeeded(steamAppId, entry);
+        }, remaining);
+    }
+    clearExpiry(entry) {
+        if (entry.expiryTimer !== undefined) {
+            globalThis.clearTimeout(entry.expiryTimer);
+            entry.expiryTimer = undefined;
+        }
+    }
+    cancelRequest(entry, notify) {
+        const request = entry.request;
+        if (!request)
+            return;
+        globalThis.clearTimeout(request.timeout);
+        entry.request = undefined;
+        const { tier, updatedAt } = entry.rating;
+        const status = updatedAt === null ? "idle" : "ready";
+        this.setRating(entry, tier, status, updatedAt, notify);
+    }
+    setRating(entry, tier, status, updatedAt, notify = true) {
+        const previous = entry.rating;
+        if (previous.tier === tier && previous.status === status && previous.updatedAt === updatedAt)
+            return;
+        entry.rating = ratingValue(tier, status, updatedAt);
+        if (!notify)
+            return;
+        for (const listener of entry.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // One mounted surface must not prevent other rating subscribers from updating.
+            }
+        }
+    }
+}
+const protonDbRatingCache = new ProtonDbRatingCache();
+
+const DEFAULT_PROTON_DB_BADGE_SETTINGS = Object.freeze({
+    enabled: false,
+    home: true,
+    library: true,
+    gameView: true,
+    store: true,
+    focusOnly: false,
+    coverPosition: "bottom-left",
+});
+const backendSettingsStore = {
+    get: getProtonDbBadgeSettings,
+    set: setProtonDbBadgeSettings,
+};
+const copySettings = (settings) => Object.freeze({
+    enabled: settings.enabled,
+    home: settings.home,
+    library: settings.library,
+    gameView: settings.gameView,
+    store: settings.store,
+    focusOnly: settings.focusOnly,
+    coverPosition: settings.coverPosition,
+});
+const errorText = (error, fallback) => error instanceof Error && error.message ? translateBackendError(error) : fallback;
+class ProtonDbBadgeController {
+    constructor(settingsStore = backendSettingsStore, ratings = protonDbRatingCache, conflicts = pluginConflicts, loadCache = loadProviderCache, writer = new ProtonDbCacheWriter()) {
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "ratings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ratings
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "writer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: writer
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "lifecycle", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.snapshot = Object.freeze({
+            settings: copySettings(DEFAULT_PROTON_DB_BADGE_SETTINGS),
+            settingsLoaded: false,
+            busy: false,
+            settingsError: "",
+            conflict: conflicts.getConflict("protondb"),
+            effectiveEnabled: false,
+        });
+    }
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => this.listeners.delete(listener);
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const lifecycle = ++this.lifecycle;
+        this.ratings.mount();
+        this.ratings.setResultListener((id, tier, updatedAt) => this.writer.rating(id, tier, updatedAt));
+        setResolvedNameListener((shortcutId, name, steamId) => this.writer.name(shortcutId, name, steamId));
+        void this.loadCache().then((cache) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            const { ratings, name_ids: names } = cache.protondb;
+            this.ratings.seed(Object.entries(ratings).map(([id, entry]) => [Number(id), entry.tier, entry.updated_at]));
+            seedProtonDbAppIdResolutions(Object.entries(names).map(([id, entry]) => [Number(id), entry.name, entry.steam_appid]));
+        }, () => undefined);
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("protondb") });
+        });
+        this.publish({
+            busy: true, settingsLoaded: false, settingsError: "",
+            conflict: this.conflicts.getConflict("protondb"),
+        });
+        void this.settingsStore.get().then((settings) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            const saved = copySettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false, settingsError: "" });
+        }, (error) => {
+            if (!this.isCurrent(lifecycle))
+                return;
+            this.publish({
+                settingsLoaded: false,
+                busy: false,
+                settingsError: errorText(error, t("protondb.settingsLoadError")),
+            });
+        });
+    }
+    stop() {
+        this.mounted = false;
+        this.lifecycle += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.ratings.setResultListener(undefined);
+        setResolvedNameListener(undefined);
+        this.writer.flush();
+        this.ratings.stop();
+        this.publish({
+            settingsLoaded: false,
+            busy: false,
+            settingsError: "",
+        });
+        this.listeners.clear();
+    }
+    async setSettings(settings) {
+        if (!this.mounted || !this.snapshot.settingsLoaded)
+            return false;
+        const requested = copySettings(settings);
+        if (requested.enabled && !this.snapshot.settings.enabled && this.snapshot.conflict.pluginName)
+            return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const lifecycle = this.lifecycle;
+        while (this.queued && this.isCurrent(lifecycle)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = copySettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(lifecycle)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, settingsLoaded: true, busy: false, settingsError: "" });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(lifecycle)) {
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: errorText(error, t("protondb.settingsSaveError")),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(lifecycle))
+            this.saving = false;
+    }
+    getRating(steamAppId) {
+        return this.ratings.getRating(steamAppId);
+    }
+    subscribeRating(steamAppId, listener) {
+        return this.ratings.subscribeRating(steamAppId, listener);
+    }
+    isCurrent(lifecycle) {
+        return this.mounted && this.lifecycle === lifecycle;
+    }
+    publish(update) {
+        const settings = update.settings ?? this.snapshot.settings;
+        const conflict = update.conflict ?? this.snapshot.conflict;
+        const settingsLoaded = update.settingsLoaded ?? this.snapshot.settingsLoaded;
+        const effectiveEnabled = this.mounted && settingsLoaded && settings.enabled && !conflict.pluginName;
+        this.snapshot = Object.freeze({ ...this.snapshot, ...update, effectiveEnabled });
+        this.ratings.setEnabled(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // One settings consumer must not block the other mounted consumers.
+            }
+        }
+    }
+}
+const protonDbBadgeController = new ProtonDbBadgeController();
+
+const PROTONDB_COLORS = {
+    platinum: "#b4c7dc",
+    gold: "#cfb53b",
+    silver: "#a6a6a6",
+    bronze: "#cd7f32",
+    borked: "#ff0000",
+};
+/** Tiers are enum values, so each label needs its own literal key. */
+const protonDbTierLabel = (tier) => {
+    switch (tier) {
+        case "platinum": return t("protondb.tier.platinum");
+        case "gold": return t("protondb.tier.gold");
+        case "silver": return t("protondb.tier.silver");
+        case "bronze": return t("protondb.tier.bronze");
+        case "borked": return t("protondb.tier.borked");
+    }
+};
+function ProtonDbIcon({ tier, size }) {
+    const style = tier ? { color: PROTONDB_COLORS[tier] } : undefined;
+    return (SP_JSX.jsxs("svg", { viewBox: "0 0 32 32", width: size ?? "100%", height: size ?? "100%", style: style, "aria-hidden": "true", children: [SP_JSX.jsx("circle", { cx: "16", cy: "16", r: "2.3", fill: "currentColor" }), SP_JSX.jsxs("g", { fill: "none", stroke: "currentColor", strokeWidth: "1.7", children: [SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(60 16 16)" }), SP_JSX.jsx("ellipse", { cx: "16", cy: "16", rx: "13", ry: "5.2", transform: "rotate(120 16 16)" })] })] }));
+}
+
+const COMPATIBILITY_QAM_RUNTIME_KEY = "__deckyMetadataCompatibilityQamRuntime";
+const newCompatibilityQamRuntime = () => ({
+    policySaveId: 0,
+    policySave: null,
+    policySaveListeners: new Set(),
+});
+/** Share policy transactions across bundles during the plugin's lifetime. */
+const compatibilityQamRuntime = () => {
+    const host = globalThis;
+    const existing = host[COMPATIBILITY_QAM_RUNTIME_KEY];
+    if (existing
+        && typeof existing === "object"
+        && existing.policySaveListeners instanceof Set
+        && typeof existing.policySaveId === "number") {
+        return existing;
+    }
+    const runtime = newCompatibilityQamRuntime();
+    host[COMPATIBILITY_QAM_RUNTIME_KEY] = runtime;
+    return runtime;
+};
+const runtime = compatibilityQamRuntime();
+const notifyCompatibilityPolicySave = () => {
+    runtime.policySaveListeners.forEach((listener) => listener());
+};
+/** One policy transaction shared by the QAM and Settings bundles, so both show the same pending save. */
+const compatibilityPolicySaveSnapshot = () => runtime.policySave;
+const subscribeCompatibilityPolicySave = (listener) => {
+    runtime.policySaveListeners.add(listener);
+    return () => runtime.policySaveListeners.delete(listener);
+};
+const hasPendingCompatibilityPolicySave = () => runtime.policySave !== null && runtime.policySave.pendingKind !== null;
+const beginCompatibilityPolicySave = (kind, lifecycleGeneration, category, scope) => {
+    const id = runtime.policySaveId + 1;
+    runtime.policySaveId = id;
+    runtime.policySave = {
+        id,
+        lifecycleGeneration,
+        category,
+        scope,
+        pendingKind: kind,
+        error: "",
+    };
+    notifyCompatibilityPolicySave();
+    return id;
+};
+/** Complete only the transaction from the current plugin lifetime. */
+const settleCompatibilityPolicySave = (id, lifecycleGeneration, category, scope, error = "") => {
+    if (!runtime.policySave
+        || runtime.policySave.id !== id
+        || runtime.policySave.lifecycleGeneration !== lifecycleGeneration) {
+        return false;
+    }
+    runtime.policySave = {
+        id,
+        lifecycleGeneration,
+        category,
+        scope,
+        pendingKind: null,
+        error,
+    };
+    notifyCompatibilityPolicySave();
+    return true;
+};
+/** Invalidate an old plugin's transaction without letting it unlock a new mount. */
+const discardStaleCompatibilityPolicySave = (lifecycleGeneration) => {
+    if (!runtime.policySave
+        || runtime.policySave.lifecycleGeneration === lifecycleGeneration) {
+        return false;
+    }
+    runtime.policySave = null;
+    runtime.policySaveId += 1;
+    notifyCompatibilityPolicySave();
+    return true;
+};
+
+function useCompatibilityPolicy() {
+    const initialSave = compatibilityPolicySaveSnapshot();
+    const initialPendingSave = initialSave?.pendingKind ? initialSave : null;
+    const [compatibilityDefault, setCompatibilityDefault$1] = SP_REACT.useState(initialPendingSave ? initialPendingSave.category : compatibilityDefaultSnapshot());
+    const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
+    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialPendingSave?.pendingKind === "category");
+    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState(initialSave?.error ?? "");
+    const [compatibilityDefaultScope, setCompatibilityDefaultScope$1] = SP_REACT.useState(initialPendingSave ? initialPendingSave.scope : compatibilityDefaultScopeSnapshot());
+    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialPendingSave?.pendingKind === "scope");
+    const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
+    const synchronizePolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
+        const shared = compatibilityPolicySaveSnapshot();
+        if (shared
+            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+            && shared.pendingKind !== null) {
+            setCompatibilityDefault$1(shared.category);
+            setCompatibilityDefaultScope$1(shared.scope);
+            setCompatibilityDefaultBusy(shared.pendingKind === "category");
+            setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
+            setCompatibilityDefaultError(shared.error);
+            return;
+        }
+        setCompatibilityDefault$1(fallbackCategory);
+        setCompatibilityDefaultScope$1(fallbackScope);
+        setCompatibilityDefaultBusy(false);
+        setCompatibilityDefaultScopeBusy(false);
+        setCompatibilityDefaultError(shared?.lifecycleGeneration === compatibilityLifecycleSnapshot() ? shared.error : "");
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
+        synchronizePolicySave();
+        const requestVersion = compatibilityDefaultLoadVersion.current;
+        void ensureCompatibilityDefault()
+            .then((value) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            synchronizePolicySave(value, compatibilityDefaultScopeSnapshot());
+            setCompatibilityDefaultLoaded(true);
+        })
+            .catch((error) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            const shared = compatibilityPolicySaveSnapshot();
+            if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+                synchronizePolicySave();
+                return;
+            }
+            setCompatibilityDefaultError(t("panel.compatibilityDefaultLoadError", {
+                error: translateBackendError(error),
+            }));
+            warn("bridge", "compatibility default load failed", error);
+        });
+        const unsubscribeRevision = subscribeCompatibilityRevision(() => {
+            if (cancelled || !compatibilityDefaultLoadedSnapshot())
+                return;
+            synchronizePolicySave();
+            setCompatibilityDefaultLoaded(true);
+        });
+        const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
+            if (!cancelled)
+                synchronizePolicySave();
+        });
+        return () => {
+            cancelled = true;
+            unsubscribeRevision();
+            unsubscribeSave();
+        };
+    }, [synchronizePolicySave]);
+    const onCompatibilityDefaultChange = async (category) => {
+        if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded)
+            return;
+        const previous = compatibilityDefault;
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        const saveId = beginCompatibilityPolicySave("category", lifecycleGeneration, previous, compatibilityDefaultScope);
+        compatibilityDefaultLoadVersion.current += 1;
+        try {
+            const saved = await setCompatibilityDefault(category);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
+            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilitySaved"));
+        }
+        catch (error) {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const message = t("panel.compatibilitySaveError", {
+                error: translateBackendError(error),
+            });
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
+            toastError(t("panel.toast.compatibility"), message);
+            warn("bridge", "compatibility default save failed", error);
+        }
+    };
+    const onCompatibilityDefaultScopeChange = async (scope) => {
+        if (hasPendingCompatibilityPolicySave()
+            || !compatibilityDefaultLoaded
+            || compatibilityDefault === null)
+            return;
+        const previous = compatibilityDefaultScope;
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        const saveId = beginCompatibilityPolicySave("scope", lifecycleGeneration, compatibilityDefault, scope);
+        compatibilityDefaultLoadVersion.current += 1;
+        try {
+            const saved = await setCompatibilityDefaultScope(scope);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
+            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilityScopeSaved"));
+        }
+        catch (error) {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const message = t("panel.compatibilityScopeSaveError", {
+                error: translateBackendError(error),
+            });
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
+            toastError(t("panel.toast.compatibility"), message);
+            warn("bridge", "compatibility default scope save failed", error);
+        }
+    };
+    return {
+        compatibilityDefault,
+        compatibilityDefaultLoaded,
+        compatibilityDefaultBusy,
+        compatibilityDefaultError,
+        compatibilityDefaultScope,
+        compatibilityDefaultScopeBusy,
+        onCompatibilityDefaultChange,
+        onCompatibilityDefaultScopeChange,
+    };
+}
+
+/** Edit Metadata header options: ContextMenuBody props. */
+function useContextMenuSettings() {
+    const [settings, setSettings] = SP_REACT.useState(null);
+    const [error, setError] = SP_REACT.useState("");
+    // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
+    const latest = SP_REACT.useRef(null);
+    SP_REACT.useEffect(() => {
+        let current = true;
+        getEditorHeaderSettings().then((loaded) => {
+            if (!current)
+                return;
+            latest.current = loaded;
+            setSettings(loaded);
+        }, (loadError) => { if (current)
+            setError(translateBackendError(loadError)); });
+        return () => { current = false; };
+    }, []);
+    const onChange = (key, value) => {
+        const previous = latest.current;
+        if (!previous)
+            return;
+        const next = { ...previous, [key]: value };
+        latest.current = next;
+        setSettings(next);
+        setError("");
+        setEditorHeaderSettings(next).catch((saveError) => {
+            if (latest.current !== next)
+                return;
+            latest.current = previous;
+            setSettings(previous);
+            setError(translateBackendError(saveError));
+        });
+    };
+    return { settings, error, onChange };
+}
+
+function PluginLogModal({ logs, closeModal }) {
+    const t = useT();
+    return (SP_JSX.jsx(DFL.ConfirmModal, { bAlertDialog: true, strTitle: t("qam.logs.modalTitle"), strOKButtonText: t("qam.logs.ok"), onOK: closeModal, onCancel: closeModal, onEscKeypress: closeModal, closeModal: closeModal, children: SP_JSX.jsx(DFL.ScrollPanelGroup, { children: SP_JSX.jsx(DFL.Focusable, { noFocusRing: true, style: {
+                    maxHeight: "60vh",
+                    overflowY: "auto",
+                    fontFamily: "monospace",
+                    fontSize: "12px",
+                    whiteSpace: "pre-wrap",
+                    overflowWrap: "anywhere",
+                    backgroundColor: colors.surfaceKnockout,
+                    color: colors.textSecondary,
+                    padding: "10px",
+                    borderRadius: "4px",
+                    userSelect: "text",
+                }, children: logs || t("qam.logs.modalEmpty") }) }) }));
+}
+
+const useLogsSettings = () => {
+    const [logsBusy, setLogsBusy] = SP_REACT.useState(false);
+    const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
+    const [debugLoggingLoaded, setDebugLoggingLoaded] = SP_REACT.useState(false);
+    const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getDebugLogging()
+            .then((enabled) => {
+            if (!cancelled) {
+                setDebugLoggingState(enabled);
+                setVerboseLogging(enabled);
+            }
+        })
+            .catch((error) => warn("bridge", "debug logging setting load failed", error))
+            .finally(() => { if (!cancelled)
+            setDebugLoggingLoaded(true); });
+        return () => { cancelled = true; };
+    }, []);
+    const onToggleDebugLogging = async (enabled) => {
+        if (debugLoggingBusy)
+            return;
+        setDebugLoggingBusy(true);
+        setDebugLoggingState(enabled);
+        setVerboseLogging(enabled);
+        try {
+            const saved = await setDebugLogging(enabled);
+            setDebugLoggingState(saved);
+            setVerboseLogging(saved);
+            info("bridge", "debug logging setting updated", saved);
+        }
+        catch (error) {
+            warn("bridge", "debug logging setting update failed", error);
+        }
+        finally {
+            setDebugLoggingBusy(false);
+        }
+    };
+    const onViewLogs = async () => {
+        if (logsBusy)
+            return;
+        setLogsBusy(true);
+        try {
+            const logs = await getPluginLogs();
+            let modal;
+            modal = DFL.showModal(SP_REACT.createElement(PluginLogModal, { logs, closeModal: () => modal?.Close() }));
+        }
+        catch (error) {
+            warn("bridge", "plugin log load failed", error);
+            toastError(t("panel.toast.logs"), t("panel.logsLoadFailed"));
+        }
+        finally {
+            setLogsBusy(false);
+        }
+    };
+    return { logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging };
+};
+
+const epochToDate = (value) => {
+    if (!value)
+        return "";
+    const date = new Date(value * 1000);
+    if (Number.isNaN(date.getTime()))
+        return "";
+    return formatDate(date);
+};
+// Clear cache and the delisted Steam index: MetadataMaintenanceBody props.
+const useMetadataMaintenance = (games) => {
+    const t = useT();
+    const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
+    const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
+    const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
+    const loadDelistedStatus = SP_REACT.useCallback(async () => {
+        try {
+            setDelistedStatus(await getDelistedIndexStatus());
+        }
+        catch (error) {
+            warn("bridge", "delisted index status load failed", error);
+        }
+    }, []);
+    SP_REACT.useEffect(() => {
+        void loadDelistedStatus();
+    }, [loadDelistedStatus]);
+    const onClearCache = async () => {
+        if (cacheBusy || metadataScanStore.getSnapshot().busy)
+            return;
+        setCacheBusy(true);
+        try {
+            await clearMetadataCache();
+            // Clear cache takes every game off the removed list; HLTB must ask again.
+            hltbStore.reset();
+            await metadataScanStore.refreshCounts(games);
+            if (games.length)
+                void metadataScanStore.start(games, currentSteamLanguage);
+            toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
+        }
+        catch (error) {
+            toastError(t("panel.toast.cacheClearFailed"), translateBackendError(error));
+        }
+        finally {
+            setCacheBusy(false);
+        }
+    };
+    const onRefreshDelisted = async () => {
+        if (delistedBusy)
+            return;
+        setDelistedBusy(true);
+        try {
+            const result = await refreshDelistedIndex();
+            if (!result.ok) {
+                throw new Error("Delisted index refresh failed");
+            }
+            toastSuccess(t("panel.toast.delisted"), t("panel.delistedUpdated"));
+            await loadDelistedStatus();
+        }
+        catch (error) {
+            warn("bridge", "delisted index refresh failed", error);
+            toastError(t("panel.toast.delisted"), t("panel.delistedRefreshFailed"));
+        }
+        finally {
+            setDelistedBusy(false);
+        }
+    };
+    const downloaded = Boolean(delistedStatus?.count && delistedStatus.fetched_at);
+    return {
+        cacheBusy,
+        delistedBusy,
+        delistedCountText: downloaded
+            ? t("panel.delistedCount", { value: formatNumber(delistedStatus.count) })
+            : t("panel.delistedNotDownloaded"),
+        delistedDateText: downloaded
+            ? t("panel.delistedLastUpdated", { date: epochToDate(delistedStatus.fetched_at) })
+            : "",
+        onClearCache,
+        onRefreshDelisted,
+    };
+};
+
+const useVersions = () => {
+    const [deckyVersion, setDeckyVersion] = SP_REACT.useState("");
+    const [steamosVersion, setSteamosVersion] = SP_REACT.useState("");
+    const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
+    SP_REACT.useEffect(() => {
+        setControllerTypes(getConnectedControllerTypes());
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getSystemVersions()
+            .then((versions) => {
+            if (!cancelled) {
+                setDeckyVersion(versions.decky || "");
+                setSteamosVersion(versions.steamos || "");
+            }
+        })
+            .catch((error) => warn("bridge", "system versions load failed", error));
+        return () => { cancelled = true; };
+    }, []);
+    return { deckyVersion, steamosVersion, controllerTypes };
+};
+
+const NativePagedSettings = resolveNativePagedSettings();
+const PageContentContext = SP_REACT.createContext([]);
+function CurrentPageContent({ id }) {
+    const pages = SP_REACT.useContext(PageContentContext);
+    return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
+}
+function SettingsLayout({ pages, page, onPageRequested }) {
+    // Same rule as the editor: descriptors stay stable while bodies re-render; context supplies the latest content.
+    const pageDependencies = pages.flatMap(({ id, label, icon, separatorBefore }) => [id, label, icon, separatorBefore]);
+    const nativePages = SP_REACT.useMemo(() => {
+        const mapped = [];
+        for (const settingsPage of pages) {
+            if (settingsPage.separatorBefore)
+                mapped.push("separator");
+            mapped.push({
+                identifier: settingsPage.id,
+                title: settingsPage.label,
+                icon: settingsPage.icon,
+                // Native separators need every page visible.
+                visible: true,
+                hideTitle: true,
+                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: settingsPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent, { id: settingsPage.id }, settingsPage.id) })] })),
+            });
+        }
+        return mapped;
+    }, pageDependencies);
+    if (!NativePagedSettings) {
+        // Without Steam's component, show every page in one list so no setting is lost.
+        return (SP_JSX.jsx(DFL.ScrollPanelGroup, { children: pages.map((settingsPage) => (SP_JSX.jsxs(SP_REACT.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: settingsPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: settingsPage.content })] }, settingsPage.id))) }));
+    }
+    return (SP_JSX.jsx(PageContentContext.Provider, { value: pages, children: SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: onPageRequested, showTitle: false }) }));
+}
+
+// Shows Steam's own mini achievement stat beside Play Time. The Gaming Mode game
+// page passes no onSeek, and Valve's MiniAchievements row renders nothing without
+// it (ValveSoftware/steam-for-linux#13540), so one is supplied here. See NOTICE.
+const CAPTURE_RETRY_DELAYS_MS = [0, 50, 250, 1000];
+const MAX_FIBER_DEPTH = 12;
+// Valve's row only checks this for truthiness and opens My Achievements itself.
+const NOOP_SEEK = () => { };
+// The play bar's CSS module. It is looked up on use: the module may not be
+// registered when the plugin loads.
+let statsClassesCache;
+const statsClasses = () => {
+    if (!statsClassesCache?.GameStatsSection) {
+        try {
+            const found = DFL.findClassModule((module) => module.GameStat && module.Playtime);
+            if (found && typeof found === "object")
+                statsClassesCache = found;
+        }
+        catch {
+            // A failed lookup keeps the previous classes and retries on the next use.
+        }
+    }
+    const translatedSection = getNativeCssClass("gameStatsSection");
+    const translatedPlayBar = getNativeCssClass("playBar");
+    if (!statsClassesCache?.GameStatsSection && translatedSection) {
+        return {
+            ...statsClassesCache,
+            GameStatsSection: translatedSection,
+            ...(translatedPlayBar ? { PlayBar: translatedPlayBar } : {}),
+        };
+    }
+    return statsClassesCache ?? {};
+};
+// Repeated reads must return the same object so prop comparisons stay stable.
+const seekProps = new WeakMap();
+// Shortcuts get the callback too: Valve's row hides itself when Steam has no
+// achievements for the app, and a plugin such as Emuchievements can supply them.
+const withSeek = (raw) => {
+    if (!raw || typeof raw !== "object")
+        return raw;
+    if (Reflect.get(raw, "onSeek"))
+        return raw;
+    const cached = seekProps.get(raw);
+    if (cached)
+        return cached;
+    const injected = { ...raw, onSeek: NOOP_SEEK };
+    seekProps.set(raw, injected);
+    return injected;
+};
+/** The mounted stats component that owns a rendered section, from its fiber. */
+const ownerInstance = (section) => {
+    if (!section || typeof section !== "object")
+        return undefined;
+    const key = Object.keys(section).find((name) => name.startsWith("__reactFiber$") || name.startsWith("__reactInternalInstance$"));
+    let fiber = key ? Reflect.get(section, key) : undefined;
+    for (let depth = 0; fiber && typeof fiber === "object" && depth < MAX_FIBER_DEPTH; depth += 1) {
+        const stateNode = Reflect.get(fiber, "stateNode");
+        if (stateNode &&
+            typeof stateNode === "object" &&
+            typeof Reflect.get(stateNode, "BUserHasContentToClaim") === "function" &&
+            typeof Reflect.get(stateNode, "forceUpdate") === "function") {
+            return stateNode;
+        }
+        fiber = Reflect.get(fiber, "return");
+    }
+    return undefined;
+};
+const rerender = (instance) => {
+    try {
+        instance.forceUpdate?.();
+    }
+    catch (error) {
+        debug("miniAchievements", "achievement stat rerender failed", error);
+    }
+};
+/** Install the onSeek supply and return its disposer. */
+function installMiniAchievementsPatch() {
+    const unpatchers = [];
+    const patched = new WeakSet();
+    const patchedStats = new Set();
+    let observer;
+    let observedSection;
+    let captureTimer;
+    let captureAttempt = 0;
+    let disposed = false;
+    const patchInstance = (instance) => {
+        if (patched.has(instance))
+            return;
+        // React owns this property; if it is not reassignable the accessor cannot survive.
+        const descriptor = Object.getOwnPropertyDescriptor(instance, "props");
+        if (!descriptor || !("value" in descriptor) || !descriptor.configurable) {
+            debug("miniAchievements", "achievement stat props are not patchable");
+            return;
+        }
+        let raw = descriptor.value;
+        try {
+            Object.defineProperty(instance, "props", {
+                configurable: true,
+                enumerable: true,
+                get: () => withSeek(raw),
+                set: (value) => {
+                    raw = value;
+                },
+            });
+        }
+        catch (error) {
+            debug("miniAchievements", "achievement stat props patch failed", error);
+            return;
+        }
+        patched.add(instance);
+        patchedStats.add({ instance: new WeakRef(instance), raw: () => raw });
+        rerender(instance);
+    };
+    const observeSection = (section) => {
+        if (section === observedSection)
+            return;
+        observer?.disconnect();
+        observedSection = section;
+        if (!section || typeof section !== "object")
+            return;
+        const ownerDocument = Reflect.get(section, "ownerDocument");
+        const view = ownerDocument && typeof ownerDocument === "object" ? Reflect.get(ownerDocument, "defaultView") : undefined;
+        const Constructor = view ? Reflect.get(view, "MutationObserver") : undefined;
+        if (typeof Constructor !== "function")
+            return;
+        const classes = statsClasses();
+        const closest = Reflect.get(section, "closest");
+        const playBar = classes.PlayBar && typeof closest === "function" ? closest.call(section, `.${classes.PlayBar}`) : null;
+        const scope = playBar ?? Reflect.get(section, "parentElement") ?? section;
+        observer = new Constructor(() => requestSync());
+        try {
+            // A subtree watch survives Steam replacing the stats section itself.
+            observer.observe(scope, { childList: true, subtree: true });
+        }
+        catch {
+            observer = undefined;
+        }
+    };
+    const sync = () => {
+        if (disposed)
+            return true;
+        try {
+            const sectionClass = statsClasses().GameStatsSection;
+            if (!sectionClass)
+                return false;
+            let found = false;
+            let firstSection = undefined;
+            for (const uiDocument of steamUiDocuments()) {
+                let sections;
+                try {
+                    sections = uiDocument.querySelectorAll(`.${sectionClass}`);
+                }
+                catch {
+                    continue;
+                }
+                const list = Array.from(sections);
+                if (firstSection === undefined)
+                    firstSection = list[0];
+                for (const section of list) {
+                    const instance = ownerInstance(section);
+                    if (!instance)
+                        continue;
+                    found = true;
+                    patchInstance(instance);
+                }
+            }
+            observeSection(firstSection);
+            for (const entry of patchedStats)
+                if (!entry.instance.deref())
+                    patchedStats.delete(entry);
+            return found;
+        }
+        catch (error) {
+            warn("miniAchievements", "achievement stat sync failed", error);
+            return true;
+        }
+    };
+    const scheduleSync = () => {
+        if (disposed || captureTimer !== undefined)
+            return;
+        const delay = CAPTURE_RETRY_DELAYS_MS[captureAttempt];
+        if (delay === undefined)
+            return;
+        captureTimer = setTimeout(() => {
+            captureTimer = undefined;
+            if (sync() || disposed)
+                return;
+            captureAttempt += 1;
+            scheduleSync();
+        }, delay);
+    };
+    /** A route render replaces the page, so its retry burst starts over at once. */
+    const requestSync = () => {
+        if (disposed)
+            return;
+        captureAttempt = 0;
+        if (captureTimer !== undefined) {
+            clearTimeout(captureTimer);
+            captureTimer = undefined;
+        }
+        scheduleSync();
+    };
+    const unsubscribeClasses = subscribeNativeCssClasses(() => {
+        if (!disposed)
+            requestSync();
+    });
+    unpatchers.push(unsubscribeClasses);
+    requestSync();
+    for (const route of GAME_DETAIL_ROUTES) {
+        try {
+            const patch = routerHook.addPatch(route, (tree) => {
+                try {
+                    const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+                    if (typeof routeProps?.renderFunc === "function") {
+                        const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, rendered) => {
+                            requestSync();
+                            return rendered;
+                        });
+                        unpatchers.push(() => renderPatch.unpatch());
+                    }
+                }
+                catch (error) {
+                    warn("miniAchievements", "achievement stat patch failed", error);
+                }
+                return tree;
+            });
+            unpatchers.push(() => routerHook.removePatch(route, patch));
+        }
+        catch (error) {
+            warn("miniAchievements", "achievement stat route hook failed", error);
+        }
+    }
+    return () => {
+        if (disposed)
+            return;
+        disposed = true;
+        observer?.disconnect();
+        observer = undefined;
+        observedSection = undefined;
+        if (captureTimer !== undefined) {
+            clearTimeout(captureTimer);
+            captureTimer = undefined;
+        }
+        for (const entry of patchedStats) {
+            const instance = entry.instance.deref();
+            if (!instance)
+                continue;
+            try {
+                // Hand the latest real props back so Valve's row hides without a reload.
+                Object.defineProperty(instance, "props", {
+                    value: entry.raw(),
+                    writable: true,
+                    configurable: true,
+                    enumerable: true,
+                });
+            }
+            catch (error) {
+                debug("miniAchievements", "achievement stat props restore failed", error);
+            }
+            rerender(instance);
+        }
+        patchedStats.clear();
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+
+const initialSnapshot = (conflict) => ({
+    enabled: false,
+    conflict,
+    effectiveEnabled: false,
+    settingsLoaded: false,
+    busy: false,
+    settingsError: "",
+});
+/** Own the patch outside QAM so closing a section or panel cannot disable it. */
+class MiniAchievementsController {
+    constructor(conflicts = pluginConflicts) {
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposePatch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = initialSnapshot(conflicts.getConflict("miniAchievements"));
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.snapshot = { ...this.snapshot, conflict: this.conflicts.getConflict("miniAchievements") };
+            this.applyRuntime();
+            this.emit();
+        });
+        this.emit();
+        void getMiniAchievementsEnabled().then((enabled) => {
+            if (!this.isCurrent(generation))
+                return;
+            this.snapshot = { ...this.snapshot, enabled, settingsLoaded: true };
+            this.applyRuntime();
+            this.emit();
+        }).catch((error) => {
+            if (!this.isCurrent(generation))
+                return;
+            this.snapshot = {
+                ...this.snapshot,
+                settingsError: t("miniAchievements.errors.loadFailed", { error: translateBackendError(error) }),
+            };
+            warn("bridge", "mini-achievements setting load failed", error);
+            this.emit();
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        const dispose = this.disposePatch;
+        this.disposePatch = undefined;
+        try {
+            dispose?.();
+        }
+        catch (error$1) {
+            error("patch", "mini-achievements cleanup failed", error$1);
+        }
+        this.snapshot = initialSnapshot(this.conflicts.getConflict("miniAchievements"));
+        this.emit();
+        this.listeners.clear();
+    }
+    async setEnabled(enabled) {
+        if (!this.mounted || !this.snapshot.settingsLoaded || this.snapshot.busy)
+            return false;
+        if (enabled && !this.snapshot.enabled && this.snapshot.conflict.pluginName)
+            return false;
+        if (enabled === this.snapshot.enabled)
+            return true;
+        const generation = this.generation;
+        this.snapshot = { ...this.snapshot, busy: true, settingsError: "" };
+        this.emit();
+        try {
+            const confirmed = await setMiniAchievementsEnabled(enabled);
+            if (!this.isCurrent(generation))
+                return false;
+            this.snapshot = { ...this.snapshot, enabled: confirmed, busy: false };
+            const applied = this.applyRuntime();
+            this.emit();
+            return applied;
+        }
+        catch (error) {
+            if (!this.isCurrent(generation))
+                return false;
+            this.snapshot = {
+                ...this.snapshot,
+                busy: false,
+                settingsError: t("miniAchievements.errors.saveFailed", { error: translateBackendError(error) }),
+            };
+            warn("bridge", "mini-achievements setting save failed", error);
+            this.emit();
+            return false;
+        }
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    applyRuntime() {
+        const effectiveEnabled = this.mounted && this.snapshot.settingsLoaded &&
+            this.snapshot.enabled && !this.snapshot.conflict.pluginName;
+        if (this.snapshot.effectiveEnabled !== effectiveEnabled) {
+            this.snapshot = { ...this.snapshot, effectiveEnabled };
+        }
+        try {
+            if (effectiveEnabled) {
+                this.disposePatch ?? (this.disposePatch = installMiniAchievementsPatch());
+            }
+            else {
+                const dispose = this.disposePatch;
+                this.disposePatch = undefined;
+                dispose?.();
+            }
+            return true;
+        }
+        catch (error$1) {
+            this.snapshot = {
+                ...this.snapshot,
+                settingsError: t("miniAchievements.errors.applyFailed", { error: translateBackendError(error$1) }),
+            };
+            error("patch", "mini-achievements runtime transition failed", error$1);
+            return false;
+        }
+    }
+    emit() {
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* A closing QAM panel cannot block the feature. */ }
+        }
+    }
+}
+const miniAchievementsController = new MiniAchievementsController();
+function startMiniAchievementsController() {
+    miniAchievementsController.mount();
+    return () => miniAchievementsController.stop();
+}
+
+const rootClassName = "decky-metadata-settings";
+// Steam's settings wrapper fills the route host; without this the page stops short of the footer.
+const css = `.${rootClassName} { height: 100%; }`;
+// Module constants so page descriptors stay stable across renders.
+const icons = {
+    metadata: SP_JSX.jsx(FaTags, {}),
+    compat: SP_JSX.jsx(SiSteamdeck, {}),
+    protondb: SP_JSX.jsx(ProtonDbIcon, {}),
+    hltb: SP_JSX.jsx(FaClock, {}),
+    trailers: SP_JSX.jsx(FaPlayCircle, {}),
+    miniAchievements: SP_JSX.jsx(FaTrophy, {}),
+    contextMenu: SP_JSX.jsx(FaBars, {}),
+    logs: SP_JSX.jsx(FaFileAlt, {}),
+    updates: SP_JSX.jsx(FaSyncAlt, {}),
+    versions: SP_JSX.jsx(FaInfoCircle, {}),
+};
+function SettingsPage() {
+    const t = useT();
+    const [page, setPage] = SP_REACT.useState("metadata");
+    // Every container hook runs here, above the layout: the native layout mounts only the active page,
+    // so state kept in a page body would reset on a tab switch.
+    const { games, scan } = useScanGames();
+    const maintenance = useMetadataMaintenance(games);
+    const compatibility = useCompatibilityPolicy();
+    const logs = useLogsSettings();
+    const versions = useVersions();
+    const contextMenu = useContextMenuSettings();
+    const updates = usePluginUpdateController();
+    const [trailers, setTrailers] = SP_REACT.useState(trailerController.getSnapshot());
+    const [miniAchievements, setMiniAchievements] = SP_REACT.useState(miniAchievementsController.getSnapshot());
+    const [protonDb, setProtonDb] = SP_REACT.useState(protonDbBadgeController.getSnapshot());
+    const [hltb, setHltb] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        void refreshLanguage();
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = trailerController.subscribe(() => setTrailers(trailerController.getSnapshot()));
+        setTrailers(trailerController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot()));
+        setMiniAchievements(miniAchievementsController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
+        setProtonDb(protonDbBadgeController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = hltbController.subscribe(() => setHltb(hltbController.getSnapshot()));
+        setHltb(hltbController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    const pages = [
+        {
+            id: "metadata",
+            label: t("qam.metadata.title"),
+            icon: icons.metadata,
+            content: (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, ...maintenance })] })),
+        },
+        {
+            id: "compat",
+            label: t("qam.compat.title"),
+            icon: icons.compat,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) })),
+        },
+        {
+            id: "protondb",
+            label: t("qam.protondb.title"),
+            icon: icons.protondb,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ProtonDbBadgesBody, { snapshot: protonDb, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: (coverPosition) => protonDbBadgeController.setSettings({
+                        ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+                    }) }) })),
+        },
+        {
+            id: "hltb",
+            label: t("qam.hltb.title"),
+            icon: icons.hltb,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(HltbBody, { settings: hltb.settings, settingsLoaded: hltb.settingsLoaded, conflict: hltb.conflict, settingsError: hltb.settingsError, cacheStatus: hltb.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: (style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style }), onBlurChange: (blur) => {
+                        const current = hltbController.getSnapshot().settings;
+                        return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+                    } }) })),
+        },
+        {
+            id: "trailers",
+            label: t("qam.trailers.title"),
+            icon: icons.trailers,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(GameTrailersBody, { state: trailers, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: (quality) => trailerController.setQuality(quality) }) })),
+        },
+        {
+            id: "miniAchievements",
+            label: t("qam.miniAchievements.title"),
+            icon: icons.miniAchievements,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(MiniAchievementsBody, { state: miniAchievements, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }) })),
+        },
+        {
+            id: "contextMenu",
+            label: t("qam.contextMenu.title"),
+            icon: icons.contextMenu,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) }),
+        },
+        {
+            id: "logs",
+            label: t("qam.logs.title"),
+            icon: icons.logs,
+            separatorBefore: true,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(LogsBody, { ...logs }) }),
+        },
+        {
+            id: "updates",
+            label: t("qam.update.title"),
+            icon: icons.updates,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(PluginUpdateBody, {}) }),
+        },
+        {
+            id: "versions",
+            label: t("qam.versions.title"),
+            icon: icons.versions,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(VersionsBody, { pluginVersion: updates.pluginVersion, ...versions }) })),
+        },
+    ];
+    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
+}
+
 const protonDbCoverSurface = (path) => {
     if (/^\/(?:routes\/)?library\/home(?:\/|$)/.test(path ?? ""))
         return "home";
@@ -40904,15 +41079,14 @@ var index = DFL.definePlugin(() => {
     const stopStoreInfoRow = installStoreInfoRow();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
+    routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and
         // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
         name: "Decky Metadata",
         // Display label shown in the QAM header; kept human-readable on purpose.
-        titleView: (SP_JSX.jsx("div", { className: DFL.staticClasses.Title, style: DFL.staticClasses.Title
-                ? undefined
-                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }, children: "Decky Metadata" })),
+        titleView: SP_JSX.jsx(SettingsTitleView, {}),
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
@@ -40930,6 +41104,12 @@ var index = DFL.definePlugin(() => {
             }
             catch (error$1) {
                 error("patch", "metadata scan stop failed", error$1);
+            }
+            try {
+                pluginUpdateController.dispose();
+            }
+            catch (error$1) {
+                error("patch", "plugin update controller stop failed", error$1);
             }
             const reloading = reloadGuard.isPending();
             // The bootstrap stopper invalidates the compatibility lifecycle. Retain
@@ -40954,15 +41134,6 @@ var index = DFL.definePlugin(() => {
             }
             catch (error$1) {
                 error("patch", "metadata bootstrap stop failed", error$1);
-            }
-            try {
-                // Keep a native dropdown return request across an in-place bundle
-                // reload. A popup can reload the QAM while its selection is saving.
-                if (!reloading)
-                    clearCompatibilityDropdownReturn();
-            }
-            catch (error$1) {
-                error("patch", "compatibility dropdown focus stop failed", error$1);
             }
             try {
                 if (!reloading) {
@@ -40990,6 +41161,12 @@ var index = DFL.definePlugin(() => {
             }
             catch (error$1) {
                 error("patch", "route remove failed", error$1);
+            }
+            try {
+                routerHook.removeRoute(SETTINGS_ROUTE);
+            }
+            catch (error$1) {
+                error("patch", "settings route remove failed", error$1);
             }
         },
     };

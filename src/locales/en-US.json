@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Open settings" },
   "common": {
     "hours_one": "{{value}} hour",
     "hours_other": "{{value}} hours",

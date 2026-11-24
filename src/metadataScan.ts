@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 
-import { getScanProgress, startScanMissing } from "./backend";
+import { getMissingMetadataCount, getScanProgress, startScanMissing } from "./backend";
 import { t, translateBackendError } from "./i18n";
-import { refreshMetadataCache } from "./steam";
+import * as log from "./log";
+import { metadataCache, refreshMetadataCache } from "./steam";
 import { toastError, toastSuccess } from "./toast";
 import type { StatusKind } from "./tokens";
 import type { GameOption, ScanProgress } from "./types";
@@ -13,12 +14,15 @@ export type MetadataScanSnapshot = {
   statusKind: StatusKind;
   error: unknown;
   completedRevision: number;
+  savedCount: number;
+  missingCount: number;
 };
 
 export type MetadataScanDeps = {
   getScanProgress: () => Promise<ScanProgress>;
   startScanMissing: (games: GameOption[], language: string) => Promise<unknown>;
   refreshMetadataCache: () => Promise<unknown>;
+  getMissingMetadataCount: (games: GameOption[]) => Promise<number>;
   toastSuccess: (title: string, body: string) => void;
   toastError: (title: string, body: string) => void;
   setTimeout: (fn: () => void, ms: number) => number;
@@ -35,6 +39,8 @@ export class MetadataScanStore {
     statusKind: "idle",
     error: null,
     completedRevision: 0,
+    savedCount: 0,
+    missingCount: 0,
   };
   private readonly listeners = new Set<() => void>();
   private timer: number | null = null;
@@ -43,6 +49,9 @@ export class MetadataScanStore {
   private generation = 0;
   private startRevision = 0;
   private pollFailures = 0;
+  private countRevision = 0;
+  // Last game list from start() or a surface's refreshCounts(); a hydrated scan has no start() call.
+  private scanGames: GameOption[] = [];
 
   constructor(private readonly deps: MetadataScanDeps) {}
 
@@ -74,11 +83,30 @@ export class MetadataScanStore {
     this.publish({ progress, busy: true, statusKind: "active", error: null });
     this.ensurePolling();
   }
+  async refreshCounts(games: GameOption[]): Promise<void> {
+    this.scanGames = games;
+    const generation = this.generation;
+    const revision = ++this.countRevision;
+    await this.deps.refreshMetadataCache();
+    if (generation !== this.generation || revision !== this.countRevision) return;
+    const savedCount = Object.keys(metadataCache).length;
+    let missingCount = this.snapshot.missingCount;
+    try {
+      missingCount = await this.deps.getMissingMetadataCount(games);
+    } catch (error) {
+      if (generation === this.generation && revision === this.countRevision) {
+        log.warn("bridge", "missing metadata count load failed", error);
+      }
+    }
+    if (generation !== this.generation || revision !== this.countRevision) return;
+    this.publish({ savedCount, missingCount });
+  }
 
   async start(games: GameOption[], getLanguage: () => Promise<string>): Promise<void> {
     this.startRevision += 1;
     if (this.snapshot.busy) return;
     this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+    this.scanGames = games;
     const generation = this.generation;
     let language: string;
     try {
@@ -147,7 +175,7 @@ export class MetadataScanStore {
       return;
     }
     try {
-      await this.deps.refreshMetadataCache();
+      await this.refreshCounts(this.scanGames);
     } catch (error) {
       if (generation !== this.generation) return;
       this.pollInFlight = false;
@@ -179,6 +207,7 @@ export const metadataScanStore = new MetadataScanStore({
   getScanProgress,
   startScanMissing,
   refreshMetadataCache,
+  getMissingMetadataCount,
   toastSuccess,
   toastError,
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),

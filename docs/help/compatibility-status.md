@@ -4,7 +4,7 @@ Decky Metadata lets you choose a Steam Deck compatibility status for non-Steam g
 
 ## Choose a default
 
-Open the Quick Access Menu, open Decky Metadata, select **Compatibility status** below **Metadata**, then choose **Default compatibility status**.
+Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**. Open the **Compatibility status** tab and choose **Default compatibility status**.
 
 Choose one of these options:
 
@@ -35,7 +35,7 @@ With a manual default, only games in the selected group inherit it; a per-game c
 For a non-Steam game, open **Edit Metadata...** and select **Compatibility**.
 Under **Compatibility status**, choose one of these options:
 
-- **Use global default** inherits the Quick Access Menu setting for this game.
+- **Use global default** inherits the default in **Settings > Compatibility status** for this game.
   If the default is **Automatic**, it uses the game's Steam-matched status.
   If a manual default does not include this game, it uses the Steam-matched
   status when available. If there is no Steam status, it keeps the original
@@ -49,7 +49,9 @@ Select **Save** when you finish.
 
 ## When a change appears
 
-Other eligible games update when you change the default or its scope. If the game's **Game Info** tab is already open, its current status stays in place until you leave that tab and return. Closing the Quick Access Menu alone does not refresh the open **Game Info** view.
+Eligible games update when you change the default or its scope in Settings.
+Opening Settings leaves a game's **Game Info** tab, so that game shows the new
+status when you go back to it.
 
 ## What the status means
 

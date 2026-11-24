@@ -117,26 +117,13 @@ describe("EditorLayout", () => {
     expect(tree[0].type).toBe("Focusable");
   });
 
-  it("uses Steam's native paged settings component when its source signature is found", async () => {
+  it("passes editor pages and controls to Steam's native paged settings component", async () => {
     mocks.findModuleExport.mockClear();
     vi.resetModules();
-    let matcher: ((moduleExport: unknown) => boolean) | undefined;
-    mocks.findModuleExport.mockImplementation((predicate: (moduleExport: unknown) => boolean) => {
-      matcher = predicate;
-      return mocks.nativeComponent;
-    });
+    mocks.findModuleExport.mockReturnValue(mocks.nativeComponent);
 
     const { EditorLayout: NativeLayout } = await import("./editorLayout");
     expect(mocks.findModuleExport).toHaveBeenCalledOnce();
-    const matchingExport = function PagedSettingsAdapter(props: Record<string, unknown>) {
-      const component = "PagedSettings";
-      return [component, { ...props }];
-    };
-    const unrelatedExport = function OtherAdapter(props: Record<string, unknown>) {
-      return { ...props };
-    };
-    expect(matcher?.(matchingExport)).toBe(true);
-    expect(matcher?.(unrelatedExport)).toBe(false);
 
     const onPageRequested = vi.fn();
     const onSave = vi.fn();

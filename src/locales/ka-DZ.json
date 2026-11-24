@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "პარამეტრების გახსნა" },
   "common": {
     "hours_one": "{{value}} საათი",
     "hours_other": "{{value}} საათი",

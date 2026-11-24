@@ -1,6 +1,4 @@
 import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
-import { FaFileAlt } from "react-icons/fa";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { ButtonLabel } from "../../styles";
@@ -14,7 +12,7 @@ type LogsSectionProps = {
   onToggleDebugLogging: (enabled: boolean) => void;
 };
 
-export function LogsSection({
+export function LogsBody({
   logsBusy,
   debugLogging,
   debugLoggingLoaded,
@@ -25,7 +23,7 @@ export function LogsSection({
   const t = useT();
 
   return (
-    <CollapsibleSection title={t("qam.logs.title")} icon={<FaFileAlt size={16} />}>
+    <>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -46,6 +44,7 @@ export function LogsSection({
           onChange={onToggleDebugLogging}
         />
       </PanelSectionRow>
-    </CollapsibleSection>
+    </>
   );
 }
+

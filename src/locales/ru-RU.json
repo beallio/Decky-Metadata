@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Открыть настройки" },
   "common": {
     "hours_one": "{{value}} час",
     "hours_few": "{{value}} часа",

@@ -2,7 +2,6 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   Field: "Field",
-  PanelSection: "PanelSection",
   PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({ compactTextStyle: {} }));
@@ -12,7 +11,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { VersionsSection } from "./VersionsSection";
+import { VersionsBody } from "./VersionsSection";
 
 const text = (node: any): string => {
   if (node == null || typeof node === "boolean") return "";
@@ -34,8 +33,8 @@ const nodes = (node: unknown): TestNode[] => {
 const fields = (tree: unknown): FieldNode[] =>
   nodes(tree).filter((node): node is FieldNode => node.type === "Field" && node.props !== undefined);
 
-describe("VersionsSection", () => {
-  const render = (controllerTypes: number[]) => VersionsSection({
+describe("VersionsBody", () => {
+  const render = (controllerTypes: number[]) => VersionsBody({
     pluginVersion: "0.3.0",
     deckyVersion: "3.0",
     steamosVersion: "3.5",

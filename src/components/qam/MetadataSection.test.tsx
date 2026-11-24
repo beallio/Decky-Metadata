@@ -21,27 +21,33 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { MetadataSection } from "./MetadataSection";
+import { MetadataMaintenanceBody, MetadataScanBody } from "./MetadataSection";
 
 const refreshDelisted = vi.fn();
-const render = (overrides: Partial<Parameters<typeof MetadataSection>[0]> = {}) => MetadataSection({
-  detectedCount: 3,
-  savedCount: 2,
-  missingCount: 1,
-  scanBusy: false,
-  scanMessage: "",
-  scanCompleted: 0,
-  scanTotal: 0,
-  scanStatusKind: "idle",
-  cacheBusy: false,
-  delistedCountText: "Delisted games: 24",
-  delistedDateText: "Last updated: 9/29/2026",
-  delistedBusy: false,
-  onRefreshMetadata: vi.fn(),
-  onClearCache: vi.fn(),
-  onRefreshDelisted: refreshDelisted,
-  ...overrides,
-});
+const render = (overrides: Record<string, unknown> = {}) => {
+  const props = {
+    detectedCount: 3,
+    savedCount: 2,
+    missingCount: 1,
+    scanBusy: false,
+    scanMessage: "",
+    scanCompleted: 0,
+    scanTotal: 0,
+    scanStatusKind: "idle" as const,
+    cacheBusy: false,
+    delistedCountText: "Delisted games: 24",
+    delistedDateText: "Last updated: 9/29/2026",
+    delistedBusy: false,
+    onRefreshMetadata: vi.fn(),
+    onClearCache: vi.fn(),
+    onRefreshDelisted: refreshDelisted,
+    ...overrides,
+  };
+  return [
+    MetadataScanBody(props as Parameters<typeof MetadataScanBody>[0]),
+    MetadataMaintenanceBody(props as Parameters<typeof MetadataMaintenanceBody>[0]),
+  ];
+};
 
 const nodes = (node: any): any[] => {
   if (node == null || typeof node === "boolean") return [];
@@ -60,7 +66,7 @@ const refreshButton = (tree: any) => nodes(tree).find(node =>
   node.type === "ButtonItem" && node.props?.onClick === refreshDelisted
 );
 
-describe("Metadata delisted-games subsection", () => {
+describe("MetadataMaintenanceBody delisted-games controls", () => {
   beforeEach(() => refreshDelisted.mockClear());
 
   it("shows the saved index count and date and refreshes that index", () => {
@@ -96,6 +102,13 @@ describe("Metadata delisted-games subsection", () => {
     expect(refreshButton(tree).props.disabled).toBe(true);
     expect(text(refreshButton(tree))).toContain("Refreshing...");
   });
+  it("passes a count of 0 as text, because Steam's Field hides a falsy value", () => {
+    const counts = nodes(render({ detectedCount: 0, savedCount: 0, missingCount: 0 }))
+      .filter(node => node.type === "Field")
+      .map(node => node.props.children);
+
+    expect(counts).toEqual(["0", "0", "0"]);
+  });
   it("shows scan progress from the completed and total counts", () => {
     const progress = nodes(render({
       scanBusy: true,
@@ -116,4 +129,21 @@ describe("Metadata delisted-games subsection", () => {
     expect(clearButton.props.disabled).toBe(true);
   });
 
+});
+describe("MetadataMaintenanceBody", () => {
+  it("disables Clear cache while a scan is busy", () => {
+    const tree = MetadataMaintenanceBody({
+      scanBusy: true,
+      cacheBusy: false,
+      delistedCountText: "",
+      delistedBusy: false,
+      onClearCache: vi.fn(),
+      onRefreshDelisted: refreshDelisted,
+    });
+    const clearButton = nodes(tree).find(node =>
+      node.type === "ButtonItem" && node.props?.onClick !== refreshDelisted
+    );
+
+    expect(clearButton?.props?.disabled).toBe(true);
+  });
 });

@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Отваряне на настройките" },
   "common": {
     "hours_one": "{{value}} час",
     "hours_other": "{{value}} часа",

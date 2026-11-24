@@ -1,6 +1,4 @@
 import { Field, PanelSectionRow } from "@decky/ui";
-import { FaInfoCircle } from "react-icons/fa";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { formatConnectedControllerTypes } from "../../steam/controllerTypes";
@@ -12,7 +10,7 @@ type VersionsSectionProps = {
   controllerTypes: number[];
 };
 
-export function VersionsSection({
+export function VersionsBody({
   pluginVersion,
   deckyVersion,
   steamosVersion,
@@ -27,7 +25,7 @@ export function VersionsSection({
   const controllerTypesLabel = t("qam.versions.controllerTypes", { types: marker }).split(marker)[0].trimEnd();
 
   return (
-    <CollapsibleSection title={t("qam.versions.title")} icon={<FaInfoCircle size={16} />} defaultExpanded={true}>
+    <>
       <PanelSectionRow>
         <Field label={pluginLabel} focusable highlightOnFocus>
           {pluginVersion.trim() || unknown}
@@ -48,6 +46,7 @@ export function VersionsSection({
           {formatConnectedControllerTypes(controllerTypes)}
         </Field>
       </PanelSectionRow>
-    </CollapsibleSection>
+    </>
   );
 }
+

@@ -1,6 +1,6 @@
 # Updates and troubleshooting
 
-Open Decky Metadata from the Quick Access Menu. Select **Updates** or **Logs** to open its controls; **Versions** starts open.
+Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**. Open **Updates** or **Logs** in Settings.
 
 ## Check for updates
 
@@ -18,14 +18,13 @@ The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/r
 
 ## Mini achievements
 
-1. Open the Quick Access Menu, select **Decky**, then open **Decky Metadata**.
-2. Select **Mini achievements** or press **A** on its heading.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**.
+2. Open the **Mini achievements** tab in Settings.
 3. Turn on **Enable mini achievements**, then open a Steam game that has
    recorded achievement progress.
 
-The setting is off by default and stays saved when you close the panel or
+The setting is off by default and stays saved when you close Settings or
 reload the plugin. Turning it off hides the row at once, without a restart.
-Closing the section or Quick Access Menu does not turn the feature off.
 
 With the setting on, Steam's own ACHIEVEMENTS row shows beside Play Time on a
 game's page. It shows the earned/total count (for example 80/179) and a small
@@ -48,7 +47,7 @@ clears.
 You can turn Metadata's switch off while paused if you do not want it to resume.
 Once it is off, you cannot turn it back on until the peer is disabled or removed.
 
-If a setting cannot load or save, the section shows an error. A failed save
+If a setting cannot load or save, its tab shows an error. A failed save
 keeps the previous setting active. Reload the plugin to retry a failed load.
 
 ### Why don't I see it?
@@ -77,7 +76,7 @@ paused. The saved-choice and opt-out behavior described above applies to these
 features too. See [ProtonDB ratings](protondb-badges.md) and
 [game trailers](game-trailers.md#streaming-and-trailerhero).
 
-If Metadata cannot check Loader's plugin list, the affected section shows a
+If Metadata cannot check Loader's plugin list, the affected tab shows a
 warning instead of assuming there is a conflict. Check manually that only one
 plugin supplies that feature.
 

@@ -2,7 +2,6 @@ import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
 vi.mock("@decky/ui", () => ({ ButtonItem: "ButtonItem", DropdownItem: "DropdownItem", Field: "Field", PanelSectionRow: "PanelSectionRow", SliderField: "SliderField", ToggleField: "ToggleField" }));
-vi.mock("./CollapsibleSection", () => ({ CollapsibleSection: "CollapsibleSection" }));
 // The component is called as a plain function here, so the hook is stubbed with the same translator.
 vi.mock("../../i18n", async (importOriginal) => {
   const i18n = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();
@@ -10,7 +9,7 @@ vi.mock("../../i18n", async (importOriginal) => {
 });
 import { DEFAULT_HLTB_SETTINGS } from "../../hltb/settings";
 import type { HltbSettings } from "../../hltb/settings";
-import { HltbSection } from "./HltbSection";
+import { HltbBody } from "./HltbSection";
 
 function nodes(node: React.ReactNode): React.ReactElement<any>[] {
   if (Array.isArray(node)) return node.flatMap(nodes);
@@ -27,14 +26,14 @@ const applied = (change: Mock, settings: HltbSettings) => {
 describe("HLTB controls", () => {
   it("blocks enabling a conflicting plugin, but allows turning off a saved setting", () => {
     const base = { settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: true, conflict: { pluginName: "HLTB for Deck", detectionAvailable: true }, onSettingsChange: vi.fn(), onClearCache: vi.fn() };
-    const toggle = (settings = base.settings) => nodes(HltbSection({ ...base, settings })).find(node => node.props.label === "Show HowLongToBeat times")!;
+    const toggle = (settings = base.settings) => nodes(HltbBody({ ...base, settings })).find(node => node.props.label === "Show HowLongToBeat times")!;
     expect(toggle().props.disabled).toBe(true);
     expect(toggle({ ...base.settings, enabled: true }).props.disabled).toBe(false);
   });
   it("wires the Store info row toggle to the setting", () => {
     const change = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false };
-    const tree = nodes(HltbSection({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
+    const tree = nodes(HltbBody({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
     const toggle = tree.find(node => node.props.label === "Store")!;
     expect(toggle.props.checked).toBe(false);
     toggle.props.onChange(true);
@@ -43,14 +42,14 @@ describe("HLTB controls", () => {
   it("offers blur, and no opacity, for clean styles", () => {
     const change = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, style: "clean-default" as const, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };
-    const tree = nodes(HltbSection({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
+    const tree = nodes(HltbBody({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
     tree.find(node => node.props.label === "Background blur")!.props.onChange({ data: "blur" });
     expect(applied(change, settings)).toEqual({ ...settings, appearance: { ...settings.appearance, blur: "blur" } });
     expect(tree.some(node => node.props.label === "Background opacity")).toBe(false);
   });
   it("offers pushing Play down only for the bottom styles", () => {
     const change = vi.fn();
-    const tree = (style: (typeof DEFAULT_HLTB_SETTINGS)["style"]) => nodes(HltbSection({
+    const tree = (style: (typeof DEFAULT_HLTB_SETTINGS)["style"]) => nodes(HltbBody({
       settings: { ...DEFAULT_HLTB_SETTINGS, enabled: true, style }, settingsLoaded: true,
       conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn(),
     }));
@@ -66,7 +65,7 @@ describe("HLTB controls", () => {
   });
   it("offers keeping Play above the footer only while pushing Play down", () => {
     const change = vi.fn();
-    const tree = (settings: Partial<typeof DEFAULT_HLTB_SETTINGS> = {}) => nodes(HltbSection({
+    const tree = (settings: Partial<typeof DEFAULT_HLTB_SETTINGS> = {}) => nodes(HltbBody({
       settings: { ...DEFAULT_HLTB_SETTINGS, enabled: true, ...settings }, settingsLoaded: true,
       conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn(),
     }));
@@ -78,7 +77,7 @@ describe("HLTB controls", () => {
       expect(tree({ style }).find(node => node.props.label === label)!.props.disabled).toBe(true);
     }
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, pushPlayDown: true, style: "default" as const };
-    const toggle = nodes(HltbSection({
+    const toggle = nodes(HltbBody({
       settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true },
       onSettingsChange: change, onClearCache: vi.fn(),
     })).find(node => node.props.label === label)!;
@@ -90,7 +89,7 @@ describe("HLTB controls", () => {
   it("keeps two changes made in the same task", () => {
     let latest: HltbSettings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, pushPlayDown: true, respectMenuBar: true };
     const save = (update: (current: HltbSettings) => HltbSettings) => { latest = update(latest); };
-    const tree = nodes(HltbSection({
+    const tree = nodes(HltbBody({
       settings: latest, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true },
       onSettingsChange: save, onClearCache: vi.fn(),
     }));
@@ -102,7 +101,7 @@ describe("HLTB controls", () => {
   it("updates appearance, resets it, and clears the cache", () => {
     const change = vi.fn(), clear = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } };
-    const tree = nodes(HltbSection({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: clear }));
+    const tree = nodes(HltbBody({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: clear }));
     tree.find(node => node.props.label === "Background opacity")!.props.onChange(40);
     expect(applied(change, settings)).toEqual({ ...settings, appearance: { ...settings.appearance, barAlpha: 40 } });
     tree.find(node => node.type === "ButtonItem" && node.props.children === "Reset appearance")!.props.onClick();

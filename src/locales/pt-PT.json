@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Abrir definições" },
   "common": {
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} de horas",

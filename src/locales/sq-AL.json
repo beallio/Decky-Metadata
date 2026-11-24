@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Hap cilësimet" },
   "common": {
     "hours_one": "{{value}} orë",
     "hours_other": "{{value}} orë",

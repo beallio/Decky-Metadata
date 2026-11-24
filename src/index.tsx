@@ -1,14 +1,16 @@
 import { routerHook } from "@decky/api";
-import { definePlugin, staticClasses } from "@decky/ui";
+import { definePlugin } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
-import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
+import { SettingsPage } from "./SettingsPage";
+import { SETTINGS_ROUTE, SettingsTitleView } from "./settingsRoute";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
 import { setNativeCssClasses } from "./steam/nativeCssClasses";
 import { metadataScanStore } from "./metadataScan";
+import { pluginUpdateController } from "./updater/pluginUpdateController";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
@@ -110,6 +112,7 @@ export default definePlugin(() => {
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
+  routerHook.addRoute(SETTINGS_ROUTE, () => <SettingsPage />, { exact: true });
 
   return {
     // Plugin identity used by Decky Loader (must match plugin.json "name" so
@@ -117,18 +120,7 @@ export default definePlugin(() => {
     // must equal EXPECTED_PLUGIN_NAME + the manifest pluginName discovery checks).
     name: "Decky Metadata",
     // Display label shown in the QAM header; kept human-readable on purpose.
-    titleView: (
-      <div
-        className={staticClasses.Title}
-        style={
-          staticClasses.Title
-            ? undefined
-            : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }
-        }
-      >
-        {"Decky Metadata"}
-      </div>
-    ),
+    titleView: <SettingsTitleView />,
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
@@ -145,6 +137,11 @@ export default definePlugin(() => {
         metadataScanStore.dispose();
       } catch (error) {
         log.error("patch", "metadata scan stop failed", error);
+      }
+      try {
+        pluginUpdateController.dispose();
+      } catch (error) {
+        log.error("patch", "plugin update controller stop failed", error);
       }
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain
@@ -168,13 +165,6 @@ export default definePlugin(() => {
         log.error("patch", "metadata bootstrap stop failed", error);
       }
       try {
-        // Keep a native dropdown return request across an in-place bundle
-        // reload. A popup can reload the QAM while its selection is saving.
-        if (!reloading) clearCompatibilityDropdownReturn();
-      } catch (error) {
-        log.error("patch", "compatibility dropdown focus stop failed", error);
-      }
-      try {
         if (!reloading) {
           restoreAllCompatibilityBaselines();
         }
@@ -196,6 +186,11 @@ export default definePlugin(() => {
         routerHook.removeRoute(METADATA_ROUTE);
       } catch (error) {
         log.error("patch", "route remove failed", error);
+      }
+      try {
+        routerHook.removeRoute(SETTINGS_ROUTE);
+      } catch (error) {
+        log.error("patch", "settings route remove failed", error);
       }
     },
   };

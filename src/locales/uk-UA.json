@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Відкрити налаштування" },
   "common": {
     "hours_one": "{{value}} година",
     "hours_few": "{{value}} години",

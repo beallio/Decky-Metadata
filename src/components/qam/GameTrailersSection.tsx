@@ -1,6 +1,4 @@
 import { DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
-import { FaPlayCircle } from "react-icons/fa";
-import { CollapsibleSection } from "./CollapsibleSection";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle, sectionHeadingStyle } from "../../styles";
@@ -9,9 +7,7 @@ import type { TrailerQuality } from "../../types";
 import { colors } from "../../tokens";
 import { featureConflictNotice } from "../../pluginConflicts";
 
-
-type GameTrailersSectionProps = {
-  initiallyExpanded?: boolean;
+type GameTrailersBodyProps = {
   state: TrailerControllerSnapshot;
   onEnabledChange: (enabled: boolean) => void;
   onDetailEnabledChange: (enabled: boolean) => void;
@@ -21,12 +17,9 @@ type GameTrailersSectionProps = {
   onDetailFadeInDelayChange: (seconds: number) => void;
   onHomeFadeInDelayChange: (seconds: number) => void;
   onQualityChange: (quality: TrailerQuality) => void | Promise<boolean>;
-  onQualityMenuWillOpen: () => void;
-  onQualityControlRef: (element: HTMLDivElement | null) => void;
 };
 
-export function GameTrailersSection({
-  initiallyExpanded = false,
+export function GameTrailersBody({
   state,
   onEnabledChange,
   onDetailEnabledChange,
@@ -36,9 +29,7 @@ export function GameTrailersSection({
   onDetailFadeInDelayChange,
   onHomeFadeInDelayChange,
   onQualityChange,
-  onQualityMenuWillOpen,
-  onQualityControlRef,
-}: GameTrailersSectionProps) {
+}: GameTrailersBodyProps) {
   const t = useT();
   const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
     { data: "auto", label: t("qam.trailers.qualityAuto") },
@@ -56,7 +47,7 @@ export function GameTrailersSection({
     : t("qam.trailers.displayUnavailable");
 
   return (
-    <CollapsibleSection title={t("qam.trailers.title")} icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
+    <>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.enableLabel")}
@@ -144,23 +135,20 @@ export function GameTrailersSection({
         />
       </PanelSectionRow>
       <PanelSectionRow>
-        <div ref={onQualityControlRef}>
-          <DropdownItem
-            label={t("qam.trailers.qualityLabel")}
-            layout="below"
-            childrenContainerWidth="max"
-            rgOptions={qualityOptions}
-            selectedOption={state.settings.quality}
-            disabled={dependentDisabled}
-            onMenuWillOpen={onQualityMenuWillOpen}
-            onChange={(option) => { void onQualityChange(option.data); }}
-            renderButtonValue={() => (
-              <span style={{ whiteSpace: "normal" }}>
-                {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
-              </span>
-            )}
-          />
-        </div>
+        <DropdownItem
+          label={t("qam.trailers.qualityLabel")}
+          layout="below"
+          childrenContainerWidth="max"
+          rgOptions={qualityOptions}
+          selectedOption={state.settings.quality}
+          disabled={dependentDisabled}
+          onChange={(option) => { void onQualityChange(option.data); }}
+          renderButtonValue={() => (
+            <span style={{ whiteSpace: "normal" }}>
+              {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
+            </span>
+          )}
+        />
       </PanelSectionRow>
       <PanelSectionRow>
         <Field
@@ -184,6 +172,7 @@ export function GameTrailersSection({
           </Field>
         </PanelSectionRow>
       ) : null}
-    </CollapsibleSection>
+    </>
   );
 }
+
