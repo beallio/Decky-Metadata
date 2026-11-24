@@ -108,3 +108,13 @@ export const findLiveModuleChild = (predicate: (module: unknown) => unknown): un
   }
   return findModuleChild(predicate);
 };
+
+/** ESM Steam (Decky UI 5) keeps many internals as unexported module variables; webpack Steam has no such finder. */
+export const findSteamVar = (filter: (value: unknown) => boolean): unknown => {
+  const host = steamUiWindow();
+  const dfl = "DFL" in host ? host.DFL : undefined;
+  if (dfl && typeof dfl === "object" && "findVar" in dfl && typeof dfl.findVar === "function") {
+    return (dfl.findVar as (predicate: (value: unknown) => boolean) => unknown)(filter);
+  }
+  return undefined;
+};
