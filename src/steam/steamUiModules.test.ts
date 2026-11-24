@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({ findModuleChild: vi.fn() }));
 
-import { findSteamModulesBySource } from "./steamUiModules";
+import { findSteamModulesBySource, findSteamVar } from "./steamUiModules";
 
 describe("findSteamModulesBySource", () => {
   afterEach(() => {
@@ -43,5 +43,23 @@ describe("findSteamModulesBySource", () => {
     expect(findSteamModulesBySource(["tool-tip-source", "bNavStop", "toolTipContent:"])).toEqual([tooltipMod]);
     expect(findSteamModulesBySource(["LibraryAssetImage_UnknownName", "GetCustomImageURLs"])).toEqual([artworkMod]);
     expect(findSteamModulesBySource(["VBC_"])).toEqual([forwardMod]);
+  });
+});
+
+describe("findSteamVar", () => {
+  afterEach(() => {
+    delete (globalThis as Record<string, unknown>).DFL;
+  });
+
+  it("searches unexported module variables through Decky UI 5 and is inert on webpack Steam", () => {
+    const scope = { a: 1, AJ: class RegisterSection {} };
+    (globalThis as Record<string, unknown>).DFL = {
+      findModuleChild: vi.fn(),
+      findVar: (filter: (value: unknown) => boolean) => Object.values(scope).find(filter),
+    };
+    expect(findSteamVar((value) => value === scope.AJ)).toBe(scope.AJ);
+
+    (globalThis as Record<string, unknown>).DFL = { findModuleChild: vi.fn() };
+    expect(findSteamVar(() => true)).toBeUndefined();
   });
 });

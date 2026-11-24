@@ -1,5 +1,6 @@
 import { routerHook } from "@decky/api";
 import { findInReactTree, findModuleChild } from "@decky/ui";
+import { findSteamVar } from "./steamUiModules";
 import { cloneElement } from "react";
 import { frontendLog } from "../backend";
 import * as log from "../log";
@@ -103,26 +104,24 @@ export const installNonSteamQuickLinkPolicy = (unpatchers: Unpatch[]) => {
     }
   };
 
+  const isSectionClass = (candidate: any): boolean =>
+    typeof candidate === "function" &&
+    candidate.prototype?.isReactComponent &&
+    typeof candidate.prototype.render === "function" &&
+    String(candidate.prototype.render).includes("RegisterSection");
+
   const findSectionClass = () =>
     findModuleChild((module: any) => {
       if (typeof module !== "object") return undefined;
       for (const prop in module) {
         try {
-          const candidate = module[prop];
-          if (
-            typeof candidate === "function" &&
-            candidate.prototype?.isReactComponent &&
-            typeof candidate.prototype.render === "function" &&
-            String(candidate.prototype.render).includes("RegisterSection")
-          ) {
-            return candidate;
-          }
-        } catch (_error) {
+          if (isSectionClass(module[prop])) return module[prop];
+        } catch {
           continue;
         }
       }
       return undefined;
-    });
+    }) ?? findSteamVar(isSectionClass);
 
   const warnFingerprintMiss = () => {
     const fields = { attempt: attempts, maxAttempts };

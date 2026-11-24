@@ -1,4 +1,5 @@
 import { findModuleChild } from "@decky/ui";
+import { findSteamVar } from "./steamUiModules";
 import { frontendLog, getCommunityFallbackPage, getMetadata, refreshSteamActivityForApp } from "../backend";
 import { requestedCommunityPage, resolveCommunityRequest } from "../communityFeed";
 import { rewriteCommunityFeedUrlForSteamApp } from "../communityFeedUrl";
@@ -1349,18 +1350,19 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
 
 /**
  * Steam's HTTP helper: an instance whose class has AxiosWrapper, get and post.
- * Stable exports it as `g`, Vite (beta) builds as `Ij`, so match the shape, not the name.
+ * Stable exports it as `g`, Vite (beta) builds keep it as an unexported module variable, so match the shape, not the name.
  */
+const isSteamHttpHelper = (candidate: any): boolean => {
+  const proto = candidate && typeof candidate === "object" ? Object.getPrototypeOf(candidate) : null;
+  return Boolean(proto && typeof proto.AxiosWrapper === "function" &&
+    typeof proto.get === "function" && typeof proto.post === "function");
+};
+
 export const steamHttpHelperFromModule = (module: any): any => {
   if (!module || typeof module !== "object") return undefined;
   for (const key of Object.keys(module)) {
     try {
-      const candidate = module[key];
-      const proto = candidate && typeof candidate === "object" ? Object.getPrototypeOf(candidate) : null;
-      if (proto && typeof proto.AxiosWrapper === "function" &&
-        typeof proto.get === "function" && typeof proto.post === "function") {
-        return candidate;
-      }
+      if (isSteamHttpHelper(module[key])) return module[key];
     } catch {
       // A getter on an unrelated export can throw; keep scanning.
     }
@@ -1370,7 +1372,7 @@ export const steamHttpHelperFromModule = (module: any): any => {
 
 export const installCommunityFeedPatch = (unpatchers: Unpatch[]) => {
   try {
-    const httpClient = findModuleChild(steamHttpHelperFromModule);
+    const httpClient = findModuleChild(steamHttpHelperFromModule) ?? findSteamVar(isSteamHttpHelper);
     void frontendLog("community", "feed patch install", {
       httpClientFound: Boolean(httpClient),
       hasGet: typeof httpClient?.get === "function",

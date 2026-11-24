@@ -16,6 +16,11 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Fixed
 
+- **Works on the November 2026 Steam Beta.** On the new Steam Beta client,
+  **Edit Metadata...** was missing from the game menu, matched non-Steam games
+  showed the wrong quick links, and the Community tab did not show the matched
+  game's content. All three work again on the Beta, and the Steam Stable client
+  keeps working as before. The Beta needs a Decky Loader build that supports it.
 - **Debug Logging switch works again.** In **Settings > Logs**, turning
   **Debug Logging** on or off had no effect. It now saves the setting and
   turns detailed logging on or off at once.
