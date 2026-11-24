@@ -37618,6 +37618,21 @@ const resolveEditorIcon = async (appId, steamAppId, isCurrent) => {
     return (await waitForOwnIcon(appId, isCurrent)) ?? (steamIcon ? await steamIcon : null);
 };
 
+const resolveNativePagedSettings = () => {
+    try {
+        const component = DFL.findModuleExport((moduleExport) => {
+            if (typeof moduleExport !== "function")
+                return false;
+            const source = String(moduleExport);
+            return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
+        });
+        return typeof component === "function" ? component : null;
+    }
+    catch {
+        return null;
+    }
+};
+
 const layout = "decky-metadata-editor-layout";
 const css = `
 .${layout}__tab-title {
@@ -37674,20 +37689,6 @@ const css = `
 }
 
 `;
-const resolveNativePagedSettings = () => {
-    try {
-        const component = DFL.findModuleExport((moduleExport) => {
-            if (typeof moduleExport !== "function")
-                return false;
-            const source = String(moduleExport);
-            return source.includes("PagedSettings") && /\{\s*\.\.\.\w+\s*\}/.test(source);
-        });
-        return typeof component === "function" ? component : null;
-    }
-    catch {
-        return null;
-    }
-};
 const NativePagedSettings = resolveNativePagedSettings();
 const PageContentContext = SP_REACT.createContext([]);
 function CurrentPageContent({ id }) {
