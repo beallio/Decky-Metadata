@@ -8,6 +8,8 @@ In **Updates**, select **Check now** to check immediately. **Automatically check
 
 By default, the updater checks stable releases. Turn on **Receive development releases** to include prereleases intended for testing. Testing builds may contain regressions. A local build whose installed version includes a `+` can use the updater only to move to a stable release; install a development release manually instead.
 
+**Installed Version** always shows the version that is running now. When you select **Install**, Decky Loader asks you to confirm the update in its own window. The new version is installed only after you confirm, and Decky Loader then reloads the plugin. Until then, the update stays offered. If you closed Decky Loader's window, or nothing happened, select **Install** again.
+
 If the updater cannot install a candidate in your Decky environment, open **View Release Notes** and install the release ZIP manually. For the stable release, download `Decky-Metadata.zip` from the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then use Decky's **Developer** settings and **Install Plugin from ZIP File** to choose the ZIP with **Browse** and select **Install**. Do not unzip it. The [README installation steps](../../README.md#install) show the full path through Decky.
 
 Version 0.6.0 changed how the plugin saves your game details. When you go back to a version older than 0.6.0 with the plugin's updater, it first saves your game details in a form that the older version can read. A version older than 0.6.0 that you install by hand from a ZIP file does not show your saved details. Older versions from 0.6.0 onward read your details normally.

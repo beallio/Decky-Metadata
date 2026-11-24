@@ -162,13 +162,10 @@ impl Updater {
             .get("pending_update_install")
             .cloned()
             .unwrap_or(Value::Null);
-        let effective_version = effective_pending_install_version(&pending, now)
-            .unwrap_or_else(|| self.installed_version.clone());
         json!({
             "update_channel": self.channel(),
             "automatic_update_checks": self.settings["automatic_update_checks"],
             "installed_version": self.installed_version,
-            "effective_installed_version": effective_version,
             "last_checked_at": self.cache.get("last_checked_at").cloned().unwrap_or(Value::Null),
             "last_checked_channel": self.cache.get("last_checked_channel").cloned().unwrap_or(Value::Null),
             "last_available_tag": self.cache.get("last_available_tag").cloned().unwrap_or(Value::Null),
@@ -888,7 +885,7 @@ mod tests {
         let mut updater = make_updater(http, "0.4.0", &json!({}));
         let candidate = json!({"version": "0.4.0+local", "tag": "v0.4.0+local", "channel": "stable", "published_at": "raw", "updateTraceId": "trace-1"});
         let context = updater.record_install_requested(&candidate).unwrap();
-        assert_eq!(context["effective_installed_version"], "0.4.0+local");
+        assert_eq!(context["pending_update_install"]["version"], "0.4.0+local");
         assert_eq!(
             context["pending_update_install"]["update_trace_id"],
             "trace-1"

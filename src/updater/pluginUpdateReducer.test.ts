@@ -32,10 +32,7 @@ describe("plugin update reducer", () => {
     ],
     [{ type: "INSTALL_START" }, "installing"],
     [{ type: "INSTALL_HANDOFF_PENDING" }, "handoff_pending"],
-    [
-      { type: "INSTALL_SUCCESS", version: "0.4.0", channel: "stable", preInstallVersion: "0.3.1" },
-      "installed",
-    ],
+    [{ type: "INSTALL_HANDED_OFF", candidate }, "available"],
     [{ type: "INSTALL_FAILED", message: "failed", candidate }, "failed"],
   ])("handles $type", (action, phase) => {
     expect(updateReducer(initialUpdateState, action).phase).toBe(phase);
@@ -46,23 +43,5 @@ describe("plugin update reducer", () => {
     expect(timedOut.checkTimedOut).toBe(true);
     expect(updateReducer(timedOut, { type: "CHECK_START" }).checkTimedOut).toBe(false);
     expect(updateReducer(initialUpdateState, { type: "CHECK_FAILED", message: "offline" }).checkTimedOut).toBe(false);
-  });
-
-  it("hydrates a pending install and clears the installed override", () => {
-    const hydrated = updateReducer(initialUpdateState, {
-      type: "HYDRATION_COMPLETE",
-      installedReleasePublishedAt: "now",
-      pendingInstall: {
-        version: "0.4.0",
-        channel: "development",
-        preInstallVersion: "0.3.1",
-      },
-    });
-    expect(hydrated.installedOverride?.version).toBe("0.4.0");
-    expect(updateReducer(hydrated, { type: "CLEAR_INSTALLED_OVERRIDE" })).toMatchObject({
-      phase: "idle",
-      installedOverride: null,
-      pendingInstallVersion: null,
-    });
   });
 });

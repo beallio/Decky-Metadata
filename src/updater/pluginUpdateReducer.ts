@@ -1,4 +1,4 @@
-import { PluginUpdateCandidate, UpdateCheckResult, UpdateChannel } from "../types";
+import { PluginUpdateCandidate, UpdateCheckResult } from "../types";
 
 export type UpdateStatePhase =
   | "hydrating"
@@ -7,14 +7,7 @@ export type UpdateStatePhase =
   | "available"
   | "installing"
   | "handoff_pending"
-  | "installed"
   | "failed";
-
-export interface InstalledOverride {
-  version: string;
-  channel: UpdateChannel;
-  preInstallVersion: string;
-}
 
 export interface UpdateState {
   phase: UpdateStatePhase;
@@ -23,8 +16,6 @@ export interface UpdateState {
   errorMessage: string | null;
   checkTimedOut: boolean;
   installedReleasePublishedAt: string | null;
-  installedOverride: InstalledOverride | null;
-  pendingInstallVersion: string | null;
 }
 
 export const initialUpdateState: UpdateState = {
@@ -34,12 +25,10 @@ export const initialUpdateState: UpdateState = {
   errorMessage: null,
   checkTimedOut: false,
   installedReleasePublishedAt: null,
-  installedOverride: null,
-  pendingInstallVersion: null,
 };
 
 export type UpdateAction =
-  | { type: "HYDRATION_COMPLETE"; installedReleasePublishedAt: string | null; pendingInstall?: { version: string; channel: UpdateChannel; preInstallVersion: string } }
+  | { type: "HYDRATION_COMPLETE"; installedReleasePublishedAt: string | null }
   | { type: "CHECK_START" }
   | { type: "CHECK_CANCELLED" }
   | { type: "CHECK_TIMEOUT"; message: string }
@@ -48,25 +37,12 @@ export type UpdateAction =
   | { type: "CHECK_SUCCESS_AVAILABLE"; result: UpdateCheckResult; candidate: PluginUpdateCandidate }
   | { type: "INSTALL_START" }
   | { type: "INSTALL_HANDOFF_PENDING" }
-  | { type: "INSTALL_SUCCESS"; version: string; channel: UpdateChannel; preInstallVersion: string }
-  | { type: "INSTALL_FAILED"; message: string; candidate: PluginUpdateCandidate }
-  | { type: "CLEAR_INSTALLED_OVERRIDE" };
+  | { type: "INSTALL_HANDED_OFF"; candidate: PluginUpdateCandidate }
+  | { type: "INSTALL_FAILED"; message: string; candidate: PluginUpdateCandidate };
 
 export function updateReducer(state: UpdateState, action: UpdateAction): UpdateState {
   switch (action.type) {
     case "HYDRATION_COMPLETE":
-      if (action.pendingInstall) {
-        return {
-          ...state,
-          phase: "installed",
-          installedReleasePublishedAt: action.installedReleasePublishedAt,
-          installedOverride: action.pendingInstall,
-          pendingInstallVersion: action.pendingInstall.version,
-          candidate: null,
-          errorMessage: null,
-          checkResult: { status: "current", checked_at: new Date().toISOString(), channel: action.pendingInstall.channel }
-        };
-      }
       return {
         ...state,
         phase: "idle",
@@ -141,43 +117,21 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         phase: "handoff_pending",
       };
 
-    case "INSTALL_SUCCESS":
+    case "INSTALL_HANDED_OFF":
+      // Decky answers when it queues its own install prompt; only a plugin reload proves the new version.
       return {
         ...state,
-        phase: "installed",
-        candidate: null,
-        errorMessage: null,
-        installedOverride: {
-          version: action.version,
-          channel: action.channel,
-          preInstallVersion: action.preInstallVersion,
-        },
-        pendingInstallVersion: action.version,
-        checkResult: {
-          status: "current",
-          checked_at: new Date().toISOString(),
-          channel: action.channel
-        }
+        phase: "available",
+        candidate: action.candidate,
       };
 
     case "INSTALL_FAILED":
-      // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
       return {
         ...state,
         phase: "failed",
         candidate: action.candidate,
         errorMessage: action.message,
         checkTimedOut: false,
-        installedOverride: null,
-        pendingInstallVersion: null,
-      };
-
-    case "CLEAR_INSTALLED_OVERRIDE":
-      return {
-        ...state,
-        installedOverride: null,
-        pendingInstallVersion: null,
-        phase: state.phase === "installed" ? "idle" : state.phase,
       };
 
     default:

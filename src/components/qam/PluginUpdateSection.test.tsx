@@ -67,7 +67,7 @@ function text(node: unknown): string {
 }
 
 function render(currentVersion = "0.3.1") {
-  controller.effectiveCurrentVersion = currentVersion;
+  controller.pluginVersion = currentVersion;
   return PluginUpdateBody();
 }
 
@@ -76,7 +76,6 @@ describe("PluginUpdateBody", () => {
     vi.clearAllMocks();
     controller = {
       pluginVersion: "0.3.1",
-      effectiveCurrentVersion: "0.3.1",
       updateChannel: "stable",
       automaticUpdateChecks: true,
       settingsLoaded: true,
