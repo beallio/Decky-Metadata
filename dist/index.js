@@ -19244,17 +19244,17 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, inline = false, }) {
+function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, inline = false, listReady = true, }) {
     const t = useT();
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus") })) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: scanMessage }) : null] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus") })) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: scanMessage }) : null] }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage }) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage }) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null] }));
 }
-function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, }) {
+function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, listReady = true, }) {
     const t = useT();
     const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.clearCache"), description: t("qam.metadata.clearCacheDescription"), disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("settings.action.clear") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.delistedHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refreshDelisted"), description: delistedDescription, disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.clearCache"), description: t("qam.metadata.clearCacheDescription"), disabled: !listReady || cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("settings.action.clear") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.delistedHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refreshDelisted"), description: delistedDescription, disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] })] }));
 }
 
 // Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
@@ -29951,7 +29951,7 @@ function useScanGames() {
         seenRevision.current = scan.completedRevision;
         void loadGames();
     }, [scan.completedRevision]);
-    return { games, scan };
+    return { games, loaded, scan };
 }
 
 const takeNativeFocus = (element) => {
@@ -30010,7 +30010,7 @@ const Content = () => {
     }, []);
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
-    const { games, scan } = useScanGames();
+    const { games, loaded, scan } = useScanGames();
     const focusPanel = SP_REACT.useCallback((element) => {
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
@@ -30034,7 +30034,7 @@ const Content = () => {
             });
         }
     }, []);
-    return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }) }));
+    return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }) }));
 };
 
 // THIS FILE IS AUTO GENERATED
@@ -35080,7 +35080,7 @@ const epochToDate = (value) => {
     return formatDate(date);
 };
 // Clear cache and the delisted Steam index: MetadataMaintenanceBody props.
-const useMetadataMaintenance = (games) => {
+const useMetadataMaintenance = (games, loaded) => {
     const t = useT();
     const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
     const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
@@ -35097,7 +35097,8 @@ const useMetadataMaintenance = (games) => {
         void loadDelistedStatus();
     }, [loadDelistedStatus]);
     const onClearCache = async () => {
-        if (cacheBusy || metadataScanStore.getSnapshot().busy)
+        // Clear cache rescans `games`; a cached list from an earlier mount may be out of date.
+        if (!loaded || cacheBusy || metadataScanStore.getSnapshot().busy)
             return;
         setCacheBusy(true);
         try {
@@ -39651,8 +39652,8 @@ function SettingsPage() {
     const [page, setPage] = SP_REACT.useState("metadata");
     // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
-    const { games, scan } = useScanGames();
-    const maintenance = useMetadataMaintenance(games);
+    const { games, loaded, scan } = useScanGames();
+    const maintenance = useMetadataMaintenance(games, loaded);
     const compatibility = useCompatibilityPolicy();
     const logs = useLogsSettings();
     const versions = useVersions();
@@ -39666,7 +39667,7 @@ function SettingsPage() {
             id: "metadata",
             label: t("qam.metadata.title"),
             icon: icons.metadata,
-            content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(MetadataScanBody, { inline: true, ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, ...maintenance })] })),
+            content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(MetadataScanBody, { inline: true, ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, listReady: loaded, ...maintenance })] })),
         },
         { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) },
         { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: SP_JSX.jsx(ProtonDbTab, {}) },

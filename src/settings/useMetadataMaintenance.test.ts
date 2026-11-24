@@ -53,16 +53,16 @@ import { useMetadataMaintenance } from "./useMetadataMaintenance";
 
 const games = [{ appid: 1, name: "Game" }] as unknown as GameOption[];
 const flush = async () => { for (let i = 0; i < 8; i += 1) await Promise.resolve(); };
-const mount = () => {
+const mount = (loaded = true) => {
   state.values = []; state.effects = []; state.cursor = 0;
-  const hook = useMetadataMaintenance(games);
+  const hook = useMetadataMaintenance(games, loaded);
   state.effects.forEach((effect) => effect());
   return hook;
 };
 // Re-run the hook on the current state slots, as a React re-render would.
 const render = () => {
   state.cursor = 0;
-  return useMetadataMaintenance(games);
+  return useMetadataMaintenance(games, true);
 };
 
 afterEach(() => {
@@ -77,6 +77,13 @@ describe("useMetadataMaintenance", () => {
     deps.busy = true;
     await mount().onClearCache();
     expect(deps.clearMetadataCache).not.toHaveBeenCalled();
+  });
+
+  it("ignores Clear cache until the fresh game list loads, so the rescan never uses an old list", async () => {
+    deps.getDelistedIndexStatus.mockResolvedValue(null);
+    await mount(false).onClearCache();
+    expect(deps.clearMetadataCache).not.toHaveBeenCalled();
+    expect(deps.start).not.toHaveBeenCalled();
   });
 
   it("clears, refreshes the shared counts, then starts a new scan", async () => {

@@ -15,7 +15,7 @@ const epochToDate = (value?: number | null) => {
 };
 
 // Clear cache and the delisted Steam index: MetadataMaintenanceBody props.
-export const useMetadataMaintenance = (games: GameOption[]) => {
+export const useMetadataMaintenance = (games: GameOption[], loaded: boolean) => {
   const t = useT();
   const [cacheBusy, setCacheBusy] = useState(false);
   const [delistedStatus, setDelistedStatus] = useState<{ count: number; fetched_at: number } | null>(null);
@@ -34,7 +34,8 @@ export const useMetadataMaintenance = (games: GameOption[]) => {
   }, [loadDelistedStatus]);
 
   const onClearCache = async () => {
-    if (cacheBusy || metadataScanStore.getSnapshot().busy) return;
+    // Clear cache rescans `games`; a cached list from an earlier mount may be out of date.
+    if (!loaded || cacheBusy || metadataScanStore.getSnapshot().busy) return;
     setCacheBusy(true);
     try {
       await clearMetadataCache();

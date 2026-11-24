@@ -138,8 +138,8 @@ export function SettingsPage() {
 
   // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
   // so state kept in a page body would reset on a tab switch.
-  const { games, scan } = useScanGames();
-  const maintenance = useMetadataMaintenance(games);
+  const { games, loaded, scan } = useScanGames();
+  const maintenance = useMetadataMaintenance(games, loaded);
   const compatibility = useCompatibilityPolicy();
   const logs = useLogsSettings();
   const versions = useVersions();
@@ -164,8 +164,9 @@ export function SettingsPage() {
             savedCount={scan.savedCount}
             missingCount={scan.missingCount}
             onRefreshMetadata={() => void metadataScanStore.start(games, currentSteamLanguage)}
+            listReady={loaded}
           />
-          <MetadataMaintenanceBody scanBusy={scan.busy} {...maintenance} />
+          <MetadataMaintenanceBody scanBusy={scan.busy} listReady={loaded} {...maintenance} />
         </>
       ),
     },
