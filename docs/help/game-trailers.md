@@ -4,7 +4,7 @@ Decky Metadata can show trailers over a game's Library artwork or the Home backg
 
 ## Turn on trailers
 
-Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**. Open the **Game trailers** tab and turn on **Enable trailers**, the main switch for both views. It is off by default.
+Open Decky Metadata from the Quick Access Menu, then select the gear. Open the **Game trailers** tab and turn on **Enable trailers**, the main switch for both views. It is off by default.
 
 - **Detail view trailers** shows trailers on a game's main Library page. This view is on by default when the main switch is enabled.
 - **Home view trailers** shows muted trailers in the Home background. It is off by default; turn it on, return Home, then select a game with your controller or hover over its card.

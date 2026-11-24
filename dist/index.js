@@ -19257,43 +19257,6 @@ function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delis
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.clearCache"), description: t("qam.metadata.clearCacheDescription"), disabled: !listReady || cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("settings.action.clear") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.delistedHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refreshDelisted"), description: delistedDescription, disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] })] }));
 }
 
-// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
-const SETTINGS_ROUTE = "/decky-metadata-settings";
-const openSettings = () => {
-    DFL.Navigation.CloseSideMenus();
-    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
-    // Current Steam has SteamUIStore and no Router global; older builds have Router.
-    const host = globalThis;
-    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
-    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
-    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
-        DFL.Navigation.Navigate(SETTINGS_ROUTE);
-};
-// QAM header: the Decky display name plus a gear that opens Settings.
-function SettingsTitleView() {
-    const t = useT();
-    return (SP_JSX.jsxs(DFL.Focusable, { className: DFL.staticClasses.Title, style: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-            padding: 0,
-            boxShadow: "none",
-            ...(DFL.staticClasses.Title
-                ? {}
-                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
-        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "28px",
-                    width: "40px",
-                    minWidth: 0,
-                    padding: 0,
-                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
-}
-
 /** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
 const getAllMetadata = callable("get_all_metadata");
 const getNativeCssClasses = callable("get_native_css_classes");
@@ -19503,7 +19466,7 @@ function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalli
             : isInstalling
                 ? t("qam.update.preparing")
                 : getActionText();
-        return inline ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: label, description: description, onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) }) }));
+        return inline ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: label, description: description, onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) }) }));
     }
     const unavailableText = isLocalBuild && candidate.channel !== "stable"
         ? t("qam.update.localBuildOnlyStable")
@@ -20444,10 +20407,6 @@ function QamInstallRow() {
     if (!candidate || !canInstallCandidate(candidate, update.effectiveCurrentVersion))
         return null;
     return (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: update.effectiveCurrentVersion, isChecking: update.isChecking, isInstalling: update.isInstalling, isHandoffPending: update.isHandoffPending, onInstall: update.install }));
-}
-function OpenSettingsButton() {
-    const t = useT();
-    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: openSettings, children: t("settings.open") }) }));
 }
 
 let verbose = false;
@@ -23458,6 +23417,10 @@ const bypassArmTraceAt = {};
 const bIsModTraceAt = {};
 const traceBIsModDecision = (appId, path, originalRet, finalRet, reason, shieldState, bypassCounterBefore, bypassCounterAfter, hasCache, isCurrentMatchedRenderRoute) => {
     if (!bypassTraceEnabled)
+        return;
+    // Steam asks this for every app in the library; each line is a backend call. Only a matched
+    // shortcut or a changed answer helps debugging (a full library otherwise floods hundreds per QAM open).
+    if (!hasCache && finalRet === Boolean(originalRet))
         return;
     const now = Date.now();
     const key = `${appId}-${reason}`;
@@ -30034,7 +29997,7 @@ const Content = () => {
             });
         }
     }, []);
-    return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }) }));
+    return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(QamInstallRow, {})] }) }));
 };
 
 // THIS FILE IS AUTO GENERATED
@@ -39685,6 +39648,43 @@ function SettingsPage() {
         { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
     return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
+}
+
+// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
+const SETTINGS_ROUTE = "/decky-metadata-settings";
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    // Current Steam has SteamUIStore and no Router global; older builds have Router.
+    const host = globalThis;
+    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
+    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
+        DFL.Navigation.Navigate(SETTINGS_ROUTE);
+};
+// QAM header: the Decky display name plus a gear that opens Settings.
+function SettingsTitleView() {
+    const t = useT();
+    return (SP_JSX.jsxs(DFL.Focusable, { className: DFL.staticClasses.Title, style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: 0,
+            boxShadow: "none",
+            ...(DFL.staticClasses.Title
+                ? {}
+                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
+        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "28px",
+                    width: "40px",
+                    minWidth: 0,
+                    padding: 0,
+                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
 }
 
 const protonDbCoverSurface = (path) => {

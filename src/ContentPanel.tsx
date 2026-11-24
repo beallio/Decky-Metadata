@@ -8,7 +8,7 @@ import {
 import { useCallback, useEffect, useRef } from "react";
 
 import { MetadataScanBody } from "./components/qam/MetadataSection";
-import { OpenSettingsButton, QamInstallRow } from "./components/qam/QamActions";
+import { QamInstallRow } from "./components/qam/QamActions";
 import { currentSteamLanguage, refreshLanguage } from "./i18n";
 import * as log from "./log";
 import { metadataScanStore } from "./metadataScan";
@@ -126,7 +126,6 @@ export const Content = () => {
           listReady={loaded}
         />
         <QamInstallRow />
-        <OpenSettingsButton />
       </PanelSection>
     </Focusable>
   );

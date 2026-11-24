@@ -88,6 +88,7 @@ export function PluginInstallAction({
       <PanelSectionRow>
         <ButtonItem
           layout="below"
+          bottomSeparator="none"
           onClick={handleInstallClick}
           disabled={isChecking || isInstalling || isHandoffPending}
         >

@@ -7,7 +7,7 @@ non-Steam games: **Main Story**, **Main + Extras**, **Completionist**, and
 
 ## Turn on HLTB times
 
-1. Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear.
 2. Open the **HLTB times** tab in Settings.
 3. Turn on **Show HowLongToBeat times**. It is off by default.
 

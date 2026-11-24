@@ -7,10 +7,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 ### Changed
 
 - **Settings page replaces plugin settings in the Quick Access Menu.** Open
-  Settings from the gear or **Open settings** button. The full-screen page
+  Settings from the gear in the panel header. The full-screen page
   puts settings in side tabs, and changes apply at once. The Quick Access Menu
-  now shows metadata counts, **Refresh metadata**, its progress bar, **Open
-  settings**, and **Install** only when an update is available. Each Settings
+  now shows metadata counts, **Refresh metadata**, its progress bar, and
+  **Install** only when an update is available. Each Settings
   tab follows Steam's own Settings layout: grouped sections with headings, and
   each action as a short button on the right of its label.
 
@@ -52,6 +52,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Quick Access Menu looks and loads like other plugins.** Its rows have the
   standard Decky side padding again, and **Detected non-Steam games** no longer
   shows **0** for a few seconds each time you open the page.
+- **Quick Access Menu opens fast with Debug Logging on.** A debug trace sent
+  one log line for every Steam game in the library each time the menu opened,
+  and the menu could take several seconds to show its counts. It now logs only
+  the decisions that matter for matched shortcuts.
 
 ## [0.6.6] - 2026-11-22
 
