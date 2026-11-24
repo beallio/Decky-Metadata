@@ -72,10 +72,12 @@ const flushPromises = async () => {
 
 const deferred = <T,>() => {
   let resolve!: (value: T | PromiseLike<T>) => void;
-  const promise = new Promise<T>((resolvePromise) => {
+  let reject!: (error: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, resolve, reject };
 };
 
 const createDeps = (
@@ -258,6 +260,40 @@ describe("plugin update controller", () => {
     expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
   });
 
+  it("replaces a check dropped by a channel change even with automatic checks off", async () => {
+    const dropped = deferred<UpdateCheckResult>();
+    const checkForPluginUpdate = vi.fn((): Promise<UpdateCheckResult> =>
+      checkForPluginUpdate.mock.calls.length === 1
+        ? dropped.promise
+        : Promise.resolve({ status: "current", checked_at: "new", channel: "development" })
+    );
+    const { controller } = createController({
+      checkForPluginUpdate,
+      getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
+        update_channel: "stable",
+        automatic_update_checks: false,
+      })),
+      setUpdateChannel: vi.fn(async (channel: UpdateChannel): Promise<UpdateRpcResult<UpdateSettings>> => ({
+        update_channel: channel,
+        automatic_update_checks: false,
+      })),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+    expect(checkForPluginUpdate).not.toHaveBeenCalled();
+
+    void controller.checkNow();
+    expect(controller.getSnapshot().isChecking).toBe(true);
+    await controller.setUpdateChannel(true);
+    await flushPromises();
+
+    expect(checkForPluginUpdate).toHaveBeenCalledTimes(2);
+    expect(controller.getSnapshot()).toMatchObject({ isChecking: false, checkResult: { checked_at: "new" } });
+    dropped.resolve({ status: "current", checked_at: "old", channel: "stable" });
+    await flushPromises();
+    expect(controller.getSnapshot()).toMatchObject({ isChecking: false, checkResult: { checked_at: "new" } });
+  });
+
   it("starts the automatic check only after enabling automatic checks is saved", async () => {
     const save = deferred<UpdateRpcResult<UpdateSettings>>();
     const { deps, controller } = createController({
@@ -419,6 +455,72 @@ describe("plugin update controller", () => {
       })
     );
     expect(controller.getSnapshot().errorMessage).toBe("installer failed");
+  });
+
+  it("keeps the update offered and starts no check when the installer fails", async () => {
+    const { deps, controller } = createController({
+      invokeDeckyInstaller: vi.fn(async () => {
+        throw new Error("installer failed");
+      }),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    await controller.install(candidate());
+    await flushPromises();
+
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      candidate: { version: "0.4.0" },
+      errorMessage: "installer failed",
+      isChecking: false,
+      isInstalling: false,
+      effectiveCurrentVersion: "0.3.1",
+    });
+  });
+
+  it("keeps a revalidation failure visible instead of starting a check", async () => {
+    const { deps, controller } = createController({
+      revalidatePluginUpdate: vi.fn(async (): Promise<UpdateRpcResult<PluginUpdateCandidate>> => {
+        throw new Error("release gone");
+      }),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    await controller.install(candidate());
+    await flushPromises();
+
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      candidate: { version: "0.4.0" },
+      errorMessage: "release gone",
+      isChecking: false,
+    });
+  });
+
+  it("keeps the update offered when a pending handoff fails", async () => {
+    vi.useFakeTimers();
+    const installer = deferred<unknown>();
+    const { deps, controller } = createController({
+      invokeDeckyInstaller: vi.fn(() => installer.promise),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    const install = controller.install(candidate());
+    await vi.advanceTimersByTimeAsync(3000);
+    await install;
+    installer.reject(new Error("handoff failed"));
+    await flushPromises();
+
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+    expect(controller.getSnapshot()).toMatchObject({
+      candidate: { version: "0.4.0" },
+      errorMessage: "handoff failed",
+      isChecking: false,
+      isHandoffPending: false,
+    });
   });
 
   it.each([

@@ -1,6 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0, effects: [] as (() => void)[] }));
+const state = vi.hoisted(() => ({
+  values: [] as unknown[], cursor: 0, effects: [] as (() => void | (() => void))[], cleanups: [] as unknown[],
+}));
 const deps = vi.hoisted(() => ({
   getDebugLogging: vi.fn<() => Promise<boolean>>(),
   setDebugLogging: vi.fn<(value: boolean) => Promise<boolean>>(),
@@ -14,7 +16,13 @@ vi.mock("react", () => ({
     if (index >= state.values.length) state.values.push(initial);
     return [state.values[index], (value: unknown) => { state.values[index] = value; }];
   },
-  useEffect: (effect: () => void) => state.effects.push(effect),
+  useRef: (initial: unknown) => {
+    const index = state.cursor++;
+    if (index >= state.values.length) state.values.push({ current: initial });
+    return state.values[index];
+  },
+  useEffect: (effect: () => void | (() => void)) => state.effects.push(effect),
+  createElement: (type: unknown, props: unknown) => ({ type, props }),
 }));
 vi.mock("../backend", () => deps);
 vi.mock("../log", () => ({ setVerboseLogging: deps.setVerboseLogging, info: vi.fn(), warn: vi.fn() }));
@@ -28,8 +36,9 @@ import { useLogsSettings } from "./useLogsSettings";
 const mount = () => {
   state.values = []; state.effects = []; state.cursor = 0;
   useLogsSettings();
-  state.effects.forEach((effect) => effect());
+  state.cleanups = state.effects.map((effect) => effect());
 };
+const unmount = () => state.cleanups.forEach((cleanup) => typeof cleanup === "function" && cleanup());
 const render = () => {
   state.cursor = 0;
   return useLogsSettings();
@@ -63,5 +72,32 @@ describe("useLogsSettings", () => {
     expect(deps.setDebugLogging).toHaveBeenCalledWith(true);
     expect(deps.setVerboseLogging).toHaveBeenLastCalledWith(true);
     expect(render().debugLogging).toBe(true);
+  });
+
+  it("restores the switch and verbose logging when the save fails", async () => {
+    deps.getDebugLogging.mockResolvedValue(false);
+    deps.setDebugLogging.mockRejectedValue(new Error("disk full"));
+    mount();
+    await flush();
+
+    await render().onToggleDebugLogging(true);
+
+    expect(render()).toMatchObject({ debugLogging: false, debugLoggingBusy: false });
+    expect(deps.setVerboseLogging).toHaveBeenLastCalledWith(false);
+  });
+
+  it("opens no log window when Settings closed while the logs loaded", async () => {
+    deps.getDebugLogging.mockResolvedValue(false);
+    let resolve!: (value: string) => void;
+    deps.getPluginLogs.mockReturnValue(new Promise((done) => { resolve = done; }));
+    mount();
+    await flush();
+
+    const viewing = render().onViewLogs();
+    unmount();
+    resolve("log text");
+    await viewing;
+
+    expect(deps.showModal).not.toHaveBeenCalled();
   });
 });

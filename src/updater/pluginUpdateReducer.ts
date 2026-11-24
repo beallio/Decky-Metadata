@@ -48,7 +48,7 @@ export type UpdateAction =
   | { type: "INSTALL_START" }
   | { type: "INSTALL_HANDOFF_PENDING" }
   | { type: "INSTALL_SUCCESS"; version: string; channel: UpdateChannel; preInstallVersion: string }
-  | { type: "INSTALL_FAILED"; message: string }
+  | { type: "INSTALL_FAILED"; message: string; candidate: PluginUpdateCandidate }
   | { type: "CLEAR_INSTALLED_OVERRIDE" };
 
 export function updateReducer(state: UpdateState, action: UpdateAction): UpdateState {
@@ -156,9 +156,11 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
       };
 
     case "INSTALL_FAILED":
+      // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
       return {
         ...state,
         phase: "failed",
+        candidate: action.candidate,
         errorMessage: action.message,
         checkTimedOut: false,
         installedOverride: null,

@@ -31,6 +31,17 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Load timing in the debug log.** With **Debug Logging** on, each
   **Edit Metadata...** open writes one line with how long the saved details took
   to load and show. This helps find the cause when the editor is slow to fill.
+- **Update status no longer sticks on "Checking".** Changing **Receive
+  development releases** while a check was running, with automatic checks off,
+  could leave the status on "Checking" until the plugin reloaded. The channel
+  change now always runs its own check.
+- **A failed install keeps the update offered.** When the installer failed,
+  the update could disappear until the next check, or the error could be
+  replaced by a check result. The error now stays visible, and **Install**
+  stays available so you can try again.
+- **Debug Logging switch returns to its saved value when the save fails.** Before,
+  it showed the unsaved value. **View logs** no longer opens the log window after
+  you have left Settings.
 
 ## [0.6.6] - 2026-11-22
 

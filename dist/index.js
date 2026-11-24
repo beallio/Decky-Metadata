@@ -19120,7 +19120,8 @@ const openSettings = () => {
     const host = globalThis;
     const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
     const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    if (path !== SETTINGS_ROUTE)
+    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
@@ -19503,9 +19504,11 @@ function updateReducer(state, action) {
                 }
             };
         case "INSTALL_FAILED":
+            // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
             return {
                 ...state,
                 phase: "failed",
+                candidate: action.candidate,
                 errorMessage: action.message,
                 checkTimedOut: false,
                 installedOverride: null,
@@ -19826,7 +19829,7 @@ class PluginUpdateControllerStore {
                             elapsed_ms: Math.round(performance.now() - handoffStarted),
                         });
                         this.dispatch({ type: "INSTALL_HANDOFF_PENDING" });
-                        void this.finishPendingHandoff(installerPromise, revalidation.version, revalidation.channel, traceId, handoffStarted, generation);
+                        void this.finishPendingHandoff(installerPromise, revalidation, traceId, handoffStarted, generation);
                         return;
                     }
                     await installerPromise;
@@ -19837,7 +19840,7 @@ class PluginUpdateControllerStore {
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    await this.failInstall(error, targetCandidate.version, traceId, generation);
+                    await this.failInstall(error, targetCandidate, traceId, generation);
                 }
             }
         });
@@ -19948,7 +19951,8 @@ class PluginUpdateControllerStore {
         this.automaticUpdateChecks = settings.automatic_update_checks;
         this.publish();
         if (channelChanged) {
-            void this.checkForUpdates({ force: true, notify: false, source: "automatic" });
+            // A user action, so it is not held back like an automatic check: it replaces the check dropped above.
+            void this.checkForUpdates({ force: true, notify: false, source: "manual" });
         }
         else if (automaticChecksEnabled && this.settingsLoaded) {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
@@ -20149,51 +20153,27 @@ class PluginUpdateControllerStore {
             duration: 3000,
         });
     }
-    async finishPendingHandoff(installerPromise, version, channel, traceId, handoffStarted, generation) {
+    async finishPendingHandoff(installerPromise, candidate, traceId, handoffStarted, generation) {
         try {
             await installerPromise;
             if (generation !== this.generation)
                 return;
-            await this.handleHandoffSuccess(version, channel, traceId, handoffStarted, generation);
+            await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
         }
         catch (error) {
             if (generation !== this.generation)
                 return;
-            const message = translateBackendError(error);
             logUpdate(traceId, "handoff_rejected", {
-                message,
+                message: translateBackendError(error),
                 elapsed_ms: Math.round(performance.now() - handoffStarted),
             });
-            try {
-                const result = await this.deps.clearPendingUpdateInstall(version);
-                if (generation !== this.generation)
-                    return;
-                if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
-                    throw new Error(result.message || "Failed to clear pending install");
-                }
-            }
-            catch (clearError) {
-                if (generation !== this.generation)
-                    return;
-                logUpdate(traceId, "pending_clear_failed", {
-                    message: clearError instanceof Error ? clearError.message : String(clearError),
-                });
-            }
-            if (generation !== this.generation)
-                return;
-            void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-            this.dispatch({ type: "INSTALL_FAILED", message });
-            this.deps.toast({
-                title: t("updater.installation.failedTitle"),
-                body: message,
-                duration: 4000,
-            });
+            await this.failInstall(error, candidate, traceId, generation);
         }
     }
-    async failInstall(error, candidateVersion, traceId, generation) {
+    async failInstall(error, candidate, traceId, generation) {
         const message = translateBackendError(error);
         try {
-            const result = await this.deps.clearPendingUpdateInstall(candidateVersion);
+            const result = await this.deps.clearPendingUpdateInstall(candidate.version);
             if (generation !== this.generation)
                 return;
             if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
@@ -20209,8 +20189,8 @@ class PluginUpdateControllerStore {
         }
         if (generation !== this.generation)
             return;
-        void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-        this.dispatch({ type: "INSTALL_FAILED", message });
+        // No follow-up check: it would replace the failure with a check result; the user can retry or press Check now.
+        this.dispatch({ type: "INSTALL_FAILED", message, candidate });
         this.deps.toast({
             title: t("updater.installation.failedTitle"),
             body: message,
@@ -38786,23 +38766,25 @@ const useLogsSettings = () => {
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const [debugLoggingLoaded, setDebugLoggingLoaded] = SP_REACT.useState(false);
     const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
     SP_REACT.useEffect(() => {
-        let cancelled = false;
+        mounted.current = true;
         void getDebugLogging()
             .then((enabled) => {
-            if (!cancelled) {
+            if (mounted.current) {
                 setDebugLoggingState(enabled);
                 setVerboseLogging(enabled);
             }
         })
             .catch((error) => warn("bridge", "debug logging setting load failed", error))
-            .finally(() => { if (!cancelled)
+            .finally(() => { if (mounted.current)
             setDebugLoggingLoaded(true); });
-        return () => { cancelled = true; };
+        return () => { mounted.current = false; };
     }, []);
     const onToggleDebugLogging = async (enabled) => {
         if (debugLoggingBusy)
             return;
+        const previous = debugLogging;
         setDebugLoggingBusy(true);
         setDebugLoggingState(enabled);
         setVerboseLogging(enabled);
@@ -38813,6 +38795,8 @@ const useLogsSettings = () => {
             info("bridge", "debug logging setting updated", saved);
         }
         catch (error) {
+            setDebugLoggingState(previous);
+            setVerboseLogging(previous);
             warn("bridge", "debug logging setting update failed", error);
         }
         finally {
@@ -38825,6 +38809,8 @@ const useLogsSettings = () => {
         setLogsBusy(true);
         try {
             const logs = await getPluginLogs();
+            if (!mounted.current)
+                return;
             let modal;
             modal = DFL.showModal(SP_REACT.createElement(PluginLogModal, { logs, closeModal: () => modal?.Close() }));
         }

@@ -17,7 +17,8 @@ export const openSettings = () => {
   };
   const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
   const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-  if (path !== SETTINGS_ROUTE) Navigation.Navigate(SETTINGS_ROUTE);
+  // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+  if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE) Navigation.Navigate(SETTINGS_ROUTE);
 };
 
 // QAM header: the Decky display name plus a gear that opens Settings.

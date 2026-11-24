@@ -329,14 +329,7 @@ export class PluginUpdateControllerStore {
           elapsed_ms: Math.round(performance.now() - handoffStarted),
         });
         this.dispatch({ type: "INSTALL_HANDOFF_PENDING" });
-        void this.finishPendingHandoff(
-          installerPromise,
-          revalidation.version,
-          revalidation.channel,
-          traceId,
-          handoffStarted,
-          generation
-        );
+        void this.finishPendingHandoff(installerPromise, revalidation, traceId, handoffStarted, generation);
         return;
       }
       await installerPromise;
@@ -350,7 +343,7 @@ export class PluginUpdateControllerStore {
       );
     } catch (error) {
       if (generation !== this.generation) return;
-      await this.failInstall(error, targetCandidate.version, traceId, generation);
+      await this.failInstall(error, targetCandidate, traceId, generation);
     }
   };
 
@@ -450,7 +443,8 @@ export class PluginUpdateControllerStore {
     this.publish();
 
     if (channelChanged) {
-      void this.checkForUpdates({ force: true, notify: false, source: "automatic" });
+      // A user action, so it is not held back like an automatic check: it replaces the check dropped above.
+      void this.checkForUpdates({ force: true, notify: false, source: "manual" });
     } else if (automaticChecksEnabled && this.settingsLoaded) {
       void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
     }
@@ -664,8 +658,7 @@ export class PluginUpdateControllerStore {
 
   private async finishPendingHandoff(
     installerPromise: Promise<unknown>,
-    version: string,
-    channel: UpdateChannel,
+    candidate: PluginUpdateCandidate,
     traceId: string,
     handoffStarted: number,
     generation: number
@@ -673,46 +666,26 @@ export class PluginUpdateControllerStore {
     try {
       await installerPromise;
       if (generation !== this.generation) return;
-      await this.handleHandoffSuccess(version, channel, traceId, handoffStarted, generation);
+      await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
     } catch (error) {
       if (generation !== this.generation) return;
-      const message = translateBackendError(error);
       logUpdate(traceId, "handoff_rejected", {
-        message,
+        message: translateBackendError(error),
         elapsed_ms: Math.round(performance.now() - handoffStarted),
       });
-      try {
-        const result = await this.deps.clearPendingUpdateInstall(version);
-        if (generation !== this.generation) return;
-        if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
-          throw new Error(result.message || "Failed to clear pending install");
-        }
-      } catch (clearError) {
-        if (generation !== this.generation) return;
-        logUpdate(traceId, "pending_clear_failed", {
-          message: clearError instanceof Error ? clearError.message : String(clearError),
-        });
-      }
-      if (generation !== this.generation) return;
-      void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-      this.dispatch({ type: "INSTALL_FAILED", message });
-      this.deps.toast({
-        title: t("updater.installation.failedTitle"),
-        body: message,
-        duration: 4000,
-      });
+      await this.failInstall(error, candidate, traceId, generation);
     }
   }
 
   private async failInstall(
     error: unknown,
-    candidateVersion: string,
+    candidate: PluginUpdateCandidate,
     traceId: string,
     generation: number
   ): Promise<void> {
     const message = translateBackendError(error);
     try {
-      const result = await this.deps.clearPendingUpdateInstall(candidateVersion);
+      const result = await this.deps.clearPendingUpdateInstall(candidate.version);
       if (generation !== this.generation) return;
       if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
         throw new Error(result.message || "Failed to clear pending install");
@@ -724,8 +697,8 @@ export class PluginUpdateControllerStore {
       });
     }
     if (generation !== this.generation) return;
-    void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-    this.dispatch({ type: "INSTALL_FAILED", message });
+    // No follow-up check: it would replace the failure with a check result; the user can retry or press Check now.
+    this.dispatch({ type: "INSTALL_FAILED", message, candidate });
     this.deps.toast({
       title: t("updater.installation.failedTitle"),
       body: message,

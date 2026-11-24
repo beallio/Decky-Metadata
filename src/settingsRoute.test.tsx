@@ -13,8 +13,8 @@ vi.mock("@decky/ui", () => ({
 
 import { openSettings, SETTINGS_ROUTE } from "./settingsRoute";
 
-const setRoute = (pathname: string) =>
-  vi.stubGlobal("SteamUIStore", { WindowStore: { GamepadUIMainWindowInstance: { m_history: { location: { pathname } } } } });
+const store = (pathname: string) => ({ GamepadUIMainWindowInstance: { m_history: { location: { pathname } } } });
+const setRoute = (pathname: string) => vi.stubGlobal("SteamUIStore", { WindowStore: store(pathname) });
 
 describe("openSettings", () => {
   beforeEach(() => {
@@ -36,5 +36,22 @@ describe("openSettings", () => {
     openSettings();
 
     expect(calls).toEqual(["CloseSideMenus"]);
+  });
+
+  it.each([
+    ["SteamUIStore.m_WindowStore", () => vi.stubGlobal("SteamUIStore", { m_WindowStore: store(SETTINGS_ROUTE) })],
+    ["Router.WindowStore", () => vi.stubGlobal("Router", { WindowStore: store(SETTINGS_ROUTE) })],
+    ["a /routes/ prefix", () => setRoute(`/routes${SETTINGS_ROUTE}`)],
+  ])("recognizes open Settings through %s", (_name, stub) => {
+    stub();
+    openSettings();
+
+    expect(calls).toEqual(["CloseSideMenus"]);
+  });
+
+  it("still opens Settings when no window store is found", () => {
+    openSettings();
+
+    expect(calls).toEqual(["CloseSideMenus", `Navigate ${SETTINGS_ROUTE}`]);
   });
 });

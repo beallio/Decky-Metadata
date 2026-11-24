@@ -1,0 +1,172 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ReactElement } from "react";
+
+const harness = vi.hoisted(() => ({
+  cursor: 0,
+  slots: [] as unknown[],
+  effects: [] as Array<() => void | (() => void)>,
+}));
+// Each container hook returns a marker object so the test can follow it to the page that receives it.
+const hooks = vi.hoisted(() => ({
+  games: [{ appid: 1, name: "Game" }],
+  scan: { busy: true, savedCount: 7, missingCount: 2 },
+  maintenance: { cacheBusy: false, delistedCountText: "maintenance" },
+  compatibility: { compatibilityDefault: "compatibility" },
+  logs: { debugLogging: true },
+  versions: { deckyVersion: "versions" },
+  contextMenu: { settings: { gameIcon: true }, error: "", onChange: () => undefined },
+  updates: { pluginVersion: "0.6.7" },
+}));
+const controller = (name: string) => {
+  let listener: (() => void) | null = null;
+  const store = {
+    snapshot: { name, revision: 0, settings: {} } as Record<string, unknown>,
+    getSnapshot: vi.fn(() => store.snapshot),
+    subscribe: vi.fn((next: () => void) => {
+      listener = next;
+      return () => { listener = null; };
+    }),
+    publish: (snapshot: Record<string, unknown>) => {
+      store.snapshot = snapshot;
+      listener?.();
+    },
+  };
+  return store;
+};
+const controllers = vi.hoisted(() => ({} as Record<string, ReturnType<typeof controller>>));
+const navigation = vi.hoisted(() => ({ NavigateBack: vi.fn() }));
+
+vi.mock("react", () => ({
+  useState: (initial: unknown) => {
+    const index = harness.cursor++;
+    if (index >= harness.slots.length) harness.slots.push(initial);
+    return [harness.slots[index], (value: unknown) => { harness.slots[index] = value; }];
+  },
+  useEffect: (effect: () => void | (() => void)) => harness.effects.push(effect),
+}));
+vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
+  Focusable: "Focusable",
+  Navigation: navigation,
+}));
+vi.mock("react-icons/fa", () => ({
+  FaBars: "FaBars", FaClock: "FaClock", FaFileAlt: "FaFileAlt", FaInfoCircle: "FaInfoCircle",
+  FaPlayCircle: "FaPlayCircle", FaSyncAlt: "FaSyncAlt", FaTrophy: "FaTrophy",
+}));
+vi.mock("react-icons/fa6", () => ({ FaTags: "FaTags" }));
+vi.mock("react-icons/si", () => ({ SiSteamdeck: "SiSteamdeck" }));
+vi.mock("./protondb/Icon", () => ({ ProtonDbIcon: "ProtonDbIcon" }));
+vi.mock("./components/qam/CompatibilitySection", () => ({ CompatibilityBody: "CompatibilityBody" }));
+vi.mock("./components/qam/ContextMenuSection", () => ({ ContextMenuBody: "ContextMenuBody" }));
+vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersBody: "GameTrailersBody" }));
+vi.mock("./components/qam/HltbSection", () => ({ HltbBody: "HltbBody" }));
+vi.mock("./components/qam/LogsSection", () => ({ LogsBody: "LogsBody" }));
+vi.mock("./components/qam/MetadataSection", () => ({
+  MetadataMaintenanceBody: "MetadataMaintenanceBody",
+  MetadataScanBody: "MetadataScanBody",
+}));
+vi.mock("./components/qam/MiniAchievementsSection", () => ({ MiniAchievementsBody: "MiniAchievementsBody" }));
+vi.mock("./components/qam/PluginUpdateSection", () => ({ PluginUpdateBody: "PluginUpdateBody" }));
+vi.mock("./components/qam/ProtonDbBadgesSection", () => ({ ProtonDbBadgesBody: "ProtonDbBadgesBody" }));
+vi.mock("./components/qam/VersionsSection", () => ({ VersionsBody: "VersionsBody" }));
+vi.mock("./settingsLayout", () => ({ SettingsLayout: "SettingsLayout" }));
+vi.mock("./i18n", () => ({
+  currentSteamLanguage: vi.fn(),
+  refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
+  useT: () => (key: string) => key,
+}));
+vi.mock("./metadataScan", () => ({ metadataScanStore: { start: vi.fn() } }));
+vi.mock("./settings/scanView", () => ({ scanView: (scan: { busy: boolean }) => ({ scanBusy: scan.busy }) }));
+vi.mock("./settings/useScanGames", () => ({ useScanGames: () => ({ games: hooks.games, scan: hooks.scan }) }));
+vi.mock("./settings/useMetadataMaintenance", () => ({ useMetadataMaintenance: () => hooks.maintenance }));
+vi.mock("./settings/useCompatibilityPolicy", () => ({ useCompatibilityPolicy: () => hooks.compatibility }));
+vi.mock("./settings/useLogsSettings", () => ({ useLogsSettings: () => hooks.logs }));
+vi.mock("./settings/useVersions", () => ({ useVersions: () => hooks.versions }));
+vi.mock("./settings/useContextMenuSettings", () => ({ useContextMenuSettings: () => hooks.contextMenu }));
+vi.mock("./updater/pluginUpdateController", () => ({ usePluginUpdateController: () => hooks.updates }));
+vi.mock("./trailers/controller", () => ({ get trailerController() { return controllers.trailers; } }));
+vi.mock("./steam/miniAchievementsController", () => ({
+  get miniAchievementsController() { return controllers.miniAchievements; },
+}));
+vi.mock("./protondb/controller", () => ({ get protonDbBadgeController() { return controllers.protonDb; } }));
+vi.mock("./hltb/gameView", () => ({ get hltbController() { return controllers.hltb; } }));
+
+import { SettingsPage } from "./SettingsPage";
+
+type Node = { type?: unknown; props?: Record<string, unknown> & { children?: unknown } };
+const nodes = (node: unknown): Node[] => {
+  if (node == null || typeof node !== "object") return [];
+  if (Array.isArray(node)) return node.flatMap(nodes);
+  const element = node as Node;
+  return [element, ...nodes(element.props?.children)];
+};
+type Page = { id: string; label: string; separatorBefore?: boolean; content: unknown };
+
+// Re-run the component on the current state slots, as a React re-render would.
+const render = () => {
+  harness.cursor = 0;
+  harness.effects = [];
+  return SettingsPage() as ReactElement<Record<string, unknown>>;
+};
+const layout = (root: ReactElement<Record<string, unknown>>) =>
+  nodes(root).find((node) => node.type === "SettingsLayout")!.props as {
+    pages: Page[];
+    page: string;
+    onPageRequested: (id: string) => void;
+  };
+const body = (root: ReactElement<Record<string, unknown>>, id: string, type: string) =>
+  nodes(layout(root).pages.find((page) => page.id === id)!.content).find((node) => node.type === type)!.props!;
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  harness.slots = [];
+  for (const name of ["trailers", "miniAchievements", "protonDb", "hltb"]) controllers[name] = controller(name);
+});
+
+describe("SettingsPage", () => {
+  it("lists the QAM sections in order, with Logs, Updates and Versions after a separator", () => {
+    const pages = layout(render()).pages;
+
+    expect(pages.map((page) => page.id)).toEqual([
+      "metadata", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
+      "logs", "updates", "versions",
+    ]);
+    expect(pages.filter((page) => page.separatorBefore).map((page) => page.id)).toEqual(["logs"]);
+  });
+
+  it("gives each page the state of the hook that owns it", () => {
+    const root = render();
+
+    expect(body(root, "metadata", "MetadataScanBody")).toMatchObject({
+      scanBusy: true, detectedCount: 1, savedCount: 7, missingCount: 2,
+    });
+    expect(body(root, "metadata", "MetadataMaintenanceBody")).toMatchObject({ scanBusy: true, ...hooks.maintenance });
+    expect(body(root, "compat", "CompatibilityBody")).toMatchObject(hooks.compatibility);
+    expect(body(root, "contextMenu", "ContextMenuBody")).toMatchObject(hooks.contextMenu);
+    expect(body(root, "logs", "LogsBody")).toMatchObject(hooks.logs);
+    expect(body(root, "versions", "VersionsBody")).toMatchObject({ pluginVersion: "0.6.7", ...hooks.versions });
+  });
+
+  it("keeps the requested page across renders", () => {
+    layout(render()).onPageRequested("logs");
+
+    expect(layout(render()).page).toBe("logs");
+  });
+
+  it("shows controller changes that happen after the page subscribes", () => {
+    render();
+    for (const effect of harness.effects) effect();
+    controllers.trailers.publish({ name: "trailers", revision: 1 });
+    controllers.hltb.publish({ name: "hltb", revision: 1, settings: { style: "clean" } });
+
+    const root = render();
+    expect(body(root, "trailers", "GameTrailersBody").state).toMatchObject({ revision: 1 });
+    expect(body(root, "hltb", "HltbBody").settings).toEqual({ style: "clean" });
+  });
+
+  it("leaves Settings with B from the tab list", () => {
+    (render().props.onCancelButton as () => void)();
+
+    expect(navigation.NavigateBack).toHaveBeenCalledOnce();
+  });
+});
