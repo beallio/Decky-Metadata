@@ -27,7 +27,8 @@ All notable changes to this project are documented here in Keep a Changelog form
   it, for example after its confirmation window closed. This lasted until the
   plugin reloaded and for up to 15 minutes after that, and **Install** was
   hidden meanwhile. The plugin now always shows the running version and keeps
-  offering the update until Decky Loader installs it.
+  offering the update until Decky Loader installs it. After a plugin reload
+  with automatic checks off, select **Check now** to see the offer again.
 - **Debug Logging switch works again.** In **Settings > Logs**, turning
   **Debug Logging** on or off had no effect. It now saves the setting and
   turns detailed logging on or off at once.

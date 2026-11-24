@@ -522,6 +522,42 @@ describe("plugin update controller", () => {
       checkResult: { status: "available" },
     });
   });
+
+  it("offers the update again on Check now after a reload with automatic checks off", async () => {
+    const { deps, controller } = createController({
+      getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
+        update_channel: "stable",
+        automatic_update_checks: false,
+      })),
+      getUpdateCheckContext: vi.fn(async (): Promise<UpdateRpcResult<UpdateCheckContext>> => ({
+        ...context(),
+        pending_update_install: {
+          version: "0.4.0",
+          tag: "v0.4.0",
+          channel: "stable",
+          published_at: "now",
+          requested_at: "now",
+          handoff_confirmed_at: "now",
+        },
+      })),
+      checkForPluginUpdate: vi.fn(async (): Promise<UpdateCheckResult> => ({
+        status: "available",
+        checked_at: "now",
+        channel: "stable",
+        candidate: candidate(),
+      })),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).not.toHaveBeenCalled();
+
+    await controller.checkNow();
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledWith("0.3.1", true);
+    expect(controller.getSnapshot()).toMatchObject({
+      pluginVersion: "0.3.1",
+      candidate: { version: "0.4.0" },
+    });
+  });
   it("waits for first subscription and settings before its automatic check", async () => {
     const settings = deferred<UpdateRpcResult<UpdateSettings>>();
     const { deps, controller } = createController({
