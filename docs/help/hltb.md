@@ -7,8 +7,8 @@ non-Steam games: **Main Story**, **Main + Extras**, **Completionist**, and
 
 ## Turn on HLTB times
 
-1. Open the Quick Access Menu, select **Decky**, then open **Decky Metadata**.
-2. Select **HLTB times**, or press **A** on its heading.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**.
+2. Open the **HLTB times** tab in Settings.
 3. Turn on **Show HowLongToBeat times**. It is off by default.
 
 When it is off, Decky Metadata sends nothing to HowLongToBeat and shows no times.
@@ -22,7 +22,7 @@ page, and the **Toggle … stat** switches also hide or show them here. It works
 for games you do not own. Select the box to open the game on HowLongToBeat,
 unless **Hide "Details"** is on.
 
-The **Store** switch in the **HLTB times** section turns the
+The **Store** switch in the **HLTB times** tab turns the
 **How Long To Beat** box on. It is on by default, and you can change it only
 while **Show HowLongToBeat times** is on. The row also holds a ProtonDB box,
 which the ProtonDB **Store** switch controls. If only one box has data, it
@@ -91,7 +91,7 @@ account or send your library.
 ## Use one HLTB plugin
 
 When **HLTB for Deck** is enabled in Decky Loader, Decky Metadata cannot turn on
-its own HLTB times, so you do not see two rows. The **HLTB times** section names
+its own HLTB times, so you do not see two rows. The **HLTB times** tab names
 the conflict. Disable **HLTB for Deck** in Decky Loader to use Decky Metadata's
 times. Its settings are not copied.
 
@@ -101,7 +101,7 @@ times. Its settings are not copied.
   game is on a Store page.
 - For a non-Steam game, open **Edit Metadata...** and check the saved match
   on **Game Match**, or choose a game on **HowLongToBeat**.
-- Select **Clear HLTB cache** in the **HLTB times** section to look up every
+- Select **Clear HLTB cache** in the **HLTB times** tab to look up every
   game again. A message under the button tells you when the cache is clear.
 - HowLongToBeat has no official API. If it changes its site, times may stop
   appearing until Decky Metadata is updated. Check the logs as described in

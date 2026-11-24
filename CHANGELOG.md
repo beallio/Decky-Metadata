@@ -4,13 +4,21 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Changed
+
+- **Settings page replaces plugin settings in the Quick Access Menu.** Open
+  Settings from the gear or **Open settings** button. The full-screen page
+  puts settings in side tabs, and changes apply at once. The Quick Access Menu
+  now shows metadata counts, **Refresh metadata**, its progress bar, **Open
+  settings**, and **Install** only when an update is available.
+
 ### Fixed
 
-- **Debug Logging switch works again.** In the **Logs** section of the Quick
-  Access Menu, turning **Debug Logging** on or off had no effect. It now saves
-  the setting and turns detailed logging on or off at once.
+- **Debug Logging switch works again.** In **Settings > Logs**, turning
+  **Debug Logging** on or off had no effect. It now saves the setting and
+  turns detailed logging on or off at once.
 - **Metadata refresh stays visible.** A running **Refresh metadata** now keeps
-  its progress bar when the Quick Access Menu reopens, and **Clear cache**
+  its progress bar in the Quick Access Menu, and **Clear cache** in Settings
   stays off until the refresh finishes. Before, the panel could forget the
   refresh, and clearing the cache during it let the refresh save old matches
   again. The scan that starts after **Clear cache** now shows its progress too.

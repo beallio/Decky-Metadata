@@ -4,7 +4,7 @@ Decky Metadata can show trailers over a game's Library artwork or the Home backg
 
 ## Turn on trailers
 
-Open the Quick Access Menu, open Decky Metadata, and select **Game trailers**. Turn on **Enable trailers**, the main switch for both views. It is off by default.
+Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**. Open the **Game trailers** tab and turn on **Enable trailers**, the main switch for both views. It is off by default.
 
 - **Detail view trailers** shows trailers on a game's main Library page. This view is on by default when the main switch is enabled.
 - **Home view trailers** shows muted trailers in the Home background. It is off by default; turn it on, return Home, then select a game with your controller or hover over its card.
@@ -30,7 +30,7 @@ Home previews always stay muted and keep Steam's native controls. They do not mo
 
 ## Choose trailer settings
 
-The main **Enable trailers** switch stays at the top. Plain **Detail view** and **Home view** subheadings separate the controls. These labels are not buttons and do not expand or collapse. All controls are available when the main **Game trailers** section is open.
+The main **Enable trailers** switch stays at the top. Plain **Detail view** and **Home view** subheadings separate the controls. All controls are available on the **Game trailers** tab in Settings.
 
 ### Detail view
 
@@ -68,7 +68,7 @@ When the game page is visible, Steam's footer shows the **X** and **Y** actions.
 Trailers stream from Steam or IGN. Decky Metadata does not download them for offline playback.
 
 If **TrailerHero** is enabled in Decky Loader, Decky Metadata pauses its trailers
-and prevents turning them on. The **Game trailers** section tells you to disable
+and prevents turning them on. The **Game trailers** tab tells you to disable
 TrailerHero. Disable it in Decky Loader; hiding it from the menu is not enough.
 
 Your view preferences stay saved. If **Enable trailers** was on, the selected views resume when TrailerHero is disabled or removed. You can turn the main switch off while paused to keep Metadata's trailers off.

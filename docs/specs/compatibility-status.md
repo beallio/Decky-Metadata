@@ -3,8 +3,8 @@
 ## User behavior
 
 Decky Metadata can set a Steam compatibility category on native non-Steam
-shortcuts. The QAM **Default compatibility status** applies to the group
-selected by **Apply default to**.
+shortcuts. The default in **Settings > Compatibility status** applies to the
+group selected by **Apply default to**.
 Its choices are, in order: **Automatic — use matched Steam status**,
 **Verified**, **Playable**, **Unsupported**, and **Unknown**.
 
@@ -13,8 +13,8 @@ The per-game **Compatibility status** has, in order: **Use global default**,
 A fixed per-game choice wins over all other sources. Follow Valve ignores the
 global default. It uses the current Steam match's category only; if none is
 available, Steam keeps the shortcut's original status. Use global default uses
-the numeric QAM category when selected, otherwise it uses the matched Steam
-category or the original status when unavailable.
+the numeric category from **Settings > Compatibility status** when selected,
+otherwise it uses the matched Steam category or the original status when unavailable.
 
 Unknown is an available Valve category, not missing data. Steam presents it
 without a compatibility badge. All manual and default categories are choices
@@ -30,13 +30,13 @@ rows. Decky Metadata sets each row from the same choice. SteamOS has only
 follows Valve, each row uses the matched Steam game's own rating for that
 device when Steam has one.
 
-Saving a default saves it immediately. Eligible shortcuts other than the game
-currently open on the **Game Info** tab update immediately. The active Game
-Info game keeps its applied value and rich content until the user leaves that
-tab. Closing QAM or a context-menu overlay does not release it. A different
-tab, page, or game releases it; opening **Change Metadata...** is also an exit.
-The pending work then uses the latest default, match, and per-game choice, so a
-later editor Save wins over a formerly queued default.
+Saving a default in **Settings > Compatibility status** saves it immediately.
+Eligible shortcuts other than the game currently open on the **Game Info** tab
+update immediately. The active Game Info game keeps its applied value and rich
+content until the user leaves that tab. Opening Settings from a game's page
+leaves that page and applies its held update at once. The pending work then uses
+the latest default, match, and per-game choice, so a later editor Save wins over
+a formerly queued default.
 
 **Apply default to** has four choices, in this order:
 
@@ -94,9 +94,9 @@ same active-Game-Info deferral as any other default change.
 | S30 | Any | Global or per-game save fails/cancels | Last confirmed setting remains active; show failures. |
 | S31 | Any | Old load completes after successful save | New confirmed choice stays active. |
 | S32 | Automatic / Follow Valve | Nonzero Original and no Valve data | Preserve Original and bits 10 and above. |
-| S33 | Automatic -> Verified | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
-| S34 | Several global changes | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
-| S35 | Changed global default | Close QAM or cancel a context-menu overlay | Do not release the pending update while Game Info remains selected. |
+| S33 | Automatic -> Verified in Settings > Compatibility status | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
+| S34 | Several global changes in Settings > Compatibility status | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
+| S35 | Changed global default in Settings > Compatibility status | Open Settings from active Game Info | Leave Game Info; apply the held update at once. |
 | S36 | Changed global default | Open Change Metadata... from active Game Info | Editor navigation exits; its explicit Save wins over the old queued default. |
 | S37 | Changed global default | Navigate from game A Game Info to game B | Release A only; do not transfer A's state to B. |
 | S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
@@ -107,7 +107,7 @@ same active-Game-Info deferral as any other default change.
 | S43 | Verified, Steam-matched games | IGN record with a valid Steam ID | Verified. |
 | S44 | Verified, all games with saved metadata | Shortcut with no record | Original; it is outside the scope. |
 | S45 | Automatic, any saved scope | Any shortcut | No visible change; the selector is unavailable and its value persists. |
-| S46 | Verified | Scope changes while a Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
+| S46 | Scope changes in Settings > Compatibility status | A Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
 | S47 | Verified, Steam-matched games | An inheriting record loses its Steam ID | Valve category or Original; it leaves the scope. |
 | S48 | Verified, saved games without a Steam ID | A record gains a valid Steam ID | Valve category or Original; it leaves the scope. |
 | S49 | Automatic | Follow Valve on a non-Deck SteamOS device; Valve SteamOS Compatible | SteamOS row shows Compatible; Deck row shows the Valve Deck category. |
