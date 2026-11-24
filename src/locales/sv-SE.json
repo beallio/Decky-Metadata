@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Öppna inställningar" },
   "common": {
     "hours_one": "{{value}} timme",
     "hours_other": "{{value}} timmar",

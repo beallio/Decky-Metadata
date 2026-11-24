@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Deschide setările" },
   "common": {
     "hours_one": "{{value}} oră",
     "hours_few": "{{value}} ore",

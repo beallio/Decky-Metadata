@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "فتح الإعدادات" },
   "common": {
     "hours_zero": "{{value}} ساعة",
     "hours_one": "{{value}} ساعة",

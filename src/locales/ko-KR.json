@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "설정 열기" },
   "common": {
     "hours_other": "{{value}}시간",
     "hoursShort": "{{value}}시간",

@@ -2934,6 +2934,9 @@ const useTranslation = (ns, props = {}) => {
   return ret;
 };
 
+var settings$o = {
+	open: "فتح الإعدادات"
+};
 var common$o = {
 	hours_zero: "{{value}} ساعة",
 	hours_one: "{{value}} ساعة",
@@ -3550,6 +3553,7 @@ var controllerLayouts$o = {
 	disabledBody: "تُستخدم واجهة تخطيطات وحدة التحكم القياسية في Steam حتى إعادة تحميل Decky Metadata."
 };
 var arAA = {
+	settings: settings$o,
 	common: common$o,
 	backend: backend$o,
 	updater: updater$o,
@@ -3572,6 +3576,9 @@ var arAA = {
 	controllerLayouts: controllerLayouts$o
 };
 
+var settings$n = {
+	open: "Отваряне на настройките"
+};
 var common$n = {
 	hours_one: "{{value}} час",
 	hours_other: "{{value}} часа",
@@ -4184,6 +4191,7 @@ var controllerLayouts$n = {
 	disabledBody: "Използва се стандартният интерфейс за оформления на контролера на Steam, докато Decky Metadata не бъде презаредена."
 };
 var bgBG = {
+	settings: settings$n,
 	common: common$n,
 	backend: backend$n,
 	updater: updater$n,
@@ -4206,6 +4214,9 @@ var bgBG = {
 	controllerLayouts: controllerLayouts$n
 };
 
+var settings$m = {
+	open: "Otevřít nastavení"
+};
 var common$m = {
 	hours_one: "{{value}} hodina",
 	hours_few: "{{value}} hodiny",
@@ -4820,6 +4831,7 @@ var controllerLayouts$m = {
 	disabledBody: "Používá se standardní rozhraní rozvržení ovladače Steam, dokud nebude Decky Metadata znovu načten."
 };
 var csCZ = {
+	settings: settings$m,
 	common: common$m,
 	backend: backend$m,
 	updater: updater$m,
@@ -4842,6 +4854,9 @@ var csCZ = {
 	controllerLayouts: controllerLayouts$m
 };
 
+var settings$l = {
+	open: "Einstellungen öffnen"
+};
 var common$l = {
 	hours_one: "{{value}} Stunde",
 	hours_other: "{{value}} Stunden",
@@ -5454,6 +5469,7 @@ var controllerLayouts$l = {
 	disabledBody: "Bis Decky Metadata neu geladen wird, wird Steams Standardoberfläche für Controller-Layouts verwendet."
 };
 var deDE = {
+	settings: settings$l,
 	common: common$l,
 	backend: backend$l,
 	updater: updater$l,
@@ -5476,6 +5492,9 @@ var deDE = {
 	controllerLayouts: controllerLayouts$l
 };
 
+var settings$k = {
+	open: "Άνοιγμα ρυθμίσεων"
+};
 var common$k = {
 	hours_one: "{{value}} ώρα",
 	hours_other: "{{value}} ώρες",
@@ -6088,6 +6107,7 @@ var controllerLayouts$k = {
 	disabledBody: "Χρησιμοποιείται η τυπική διεπαφή διατάξεων χειριστηρίου του Steam μέχρι να επαναφορτωθεί το Decky Metadata."
 };
 var elGR = {
+	settings: settings$k,
 	common: common$k,
 	backend: backend$k,
 	updater: updater$k,
@@ -6110,6 +6130,9 @@ var elGR = {
 	controllerLayouts: controllerLayouts$k
 };
 
+var settings$j = {
+	open: "Open settings"
+};
 var common$j = {
 	hours_one: "{{value}} hour",
 	hours_other: "{{value}} hours",
@@ -6722,6 +6745,7 @@ var controllerLayouts$j = {
 	disabledBody: "Using Steam's standard controller layout UI until Decky Metadata is reloaded."
 };
 var enUS = {
+	settings: settings$j,
 	common: common$j,
 	backend: backend$j,
 	updater: updater$j,
@@ -6744,6 +6768,9 @@ var enUS = {
 	controllerLayouts: controllerLayouts$j
 };
 
+var settings$i = {
+	open: "Abrir ajustes"
+};
 var common$i = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} horas",
@@ -7357,6 +7384,7 @@ var controllerLayouts$i = {
 	disabledBody: "Se usará la interfaz estándar de disposición del mando de Steam hasta que se recargue Decky Metadata."
 };
 var esES = {
+	settings: settings$i,
 	common: common$i,
 	backend: backend$i,
 	updater: updater$i,
@@ -7379,6 +7407,9 @@ var esES = {
 	controllerLayouts: controllerLayouts$i
 };
 
+var settings$h = {
+	open: "Avaa asetukset"
+};
 var common$h = {
 	hours_one: "{{value}} tunti",
 	hours_other: "{{value}} tuntia",
@@ -7991,6 +8022,7 @@ var controllerLayouts$h = {
 	disabledBody: "Käytetään Steamin tavallista ohjainasettelujen käyttöliittymää, kunnes Decky Metadata ladataan uudelleen."
 };
 var fiFI = {
+	settings: settings$h,
 	common: common$h,
 	backend: backend$h,
 	updater: updater$h,
@@ -8013,6 +8045,9 @@ var fiFI = {
 	controllerLayouts: controllerLayouts$h
 };
 
+var settings$g = {
+	open: "Ouvrir les paramètres"
+};
 var common$g = {
 	hours_one: "{{value}} heure",
 	hours_many: "{{value}} heures",
@@ -8626,6 +8661,7 @@ var controllerLayouts$g = {
 	disabledBody: "Utilisation de l'interface standard des configurations de manette de Steam jusqu'au rechargement de Decky Metadata."
 };
 var frFR = {
+	settings: settings$g,
 	common: common$g,
 	backend: backend$g,
 	updater: updater$g,
@@ -8648,6 +8684,9 @@ var frFR = {
 	controllerLayouts: controllerLayouts$g
 };
 
+var settings$f = {
+	open: "Apri impostazioni"
+};
 var common$f = {
 	hours_one: "{{value}} ora",
 	hours_many: "{{value}} ore",
@@ -9261,6 +9300,7 @@ var controllerLayouts$f = {
 	disabledBody: "Viene usata l'interfaccia standard dei layout del controller di Steam fino al ricaricamento di Decky Metadata."
 };
 var itIT = {
+	settings: settings$f,
 	common: common$f,
 	backend: backend$f,
 	updater: updater$f,
@@ -9283,6 +9323,9 @@ var itIT = {
 	controllerLayouts: controllerLayouts$f
 };
 
+var settings$e = {
+	open: "設定を開く"
+};
 var common$e = {
 	hours_other: "{{value}}時間",
 	hoursShort: "{{value}}時間",
@@ -9894,6 +9937,7 @@ var controllerLayouts$e = {
 	disabledBody: "Decky Metadata を再読み込みするまで、Steam 標準のコントローラーレイアウト UI を使用します。"
 };
 var jaJP = {
+	settings: settings$e,
 	common: common$e,
 	backend: backend$e,
 	updater: updater$e,
@@ -9916,6 +9960,9 @@ var jaJP = {
 	controllerLayouts: controllerLayouts$e
 };
 
+var settings$d = {
+	open: "პარამეტრების გახსნა"
+};
 var common$d = {
 	hours_one: "{{value}} საათი",
 	hours_other: "{{value}} საათი",
@@ -10528,6 +10575,7 @@ var controllerLayouts$d = {
 	disabledBody: "Decky Metadata-ს გადატვირთვამდე გამოიყენება Steam-ის სტანდარტული კონტროლერის განლაგების ინტერფეისი."
 };
 var kaDZ = {
+	settings: settings$d,
 	common: common$d,
 	backend: backend$d,
 	updater: updater$d,
@@ -10550,6 +10598,9 @@ var kaDZ = {
 	controllerLayouts: controllerLayouts$d
 };
 
+var settings$c = {
+	open: "설정 열기"
+};
 var common$c = {
 	hours_other: "{{value}}시간",
 	hoursShort: "{{value}}시간",
@@ -11161,6 +11212,7 @@ var controllerLayouts$c = {
 	disabledBody: "Decky Metadata를 다시 로드할 때까지 Steam의 표준 컨트롤러 레이아웃 UI를 사용합니다."
 };
 var koKR = {
+	settings: settings$c,
 	common: common$c,
 	backend: backend$c,
 	updater: updater$c,
@@ -11183,6 +11235,9 @@ var koKR = {
 	controllerLayouts: controllerLayouts$c
 };
 
+var settings$b = {
+	open: "Instellingen openen"
+};
 var common$b = {
 	hours_one: "{{value}} uur",
 	hours_other: "{{value}} uur",
@@ -11795,6 +11850,7 @@ var controllerLayouts$b = {
 	disabledBody: "Steams standaardinterface voor controllerindelingen wordt gebruikt totdat Decky Metadata opnieuw is geladen."
 };
 var nlNL = {
+	settings: settings$b,
 	common: common$b,
 	backend: backend$b,
 	updater: updater$b,
@@ -11817,6 +11873,9 @@ var nlNL = {
 	controllerLayouts: controllerLayouts$b
 };
 
+var settings$a = {
+	open: "Otwórz ustawienia"
+};
 var common$a = {
 	hours_one: "{{value}} godzina",
 	hours_few: "{{value}} godziny",
@@ -12431,6 +12490,7 @@ var controllerLayouts$a = {
 	disabledBody: "Używany jest standardowy interfejs układów kontrolera Steam, dopóki Decky Metadata nie zostanie przeładowana."
 };
 var plPL = {
+	settings: settings$a,
 	common: common$a,
 	backend: backend$a,
 	updater: updater$a,
@@ -12453,6 +12513,9 @@ var plPL = {
 	controllerLayouts: controllerLayouts$a
 };
 
+var settings$9 = {
+	open: "Abrir configurações"
+};
 var common$9 = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} de horas",
@@ -13066,6 +13129,7 @@ var controllerLayouts$9 = {
 	disabledBody: "Usando a interface padrão de layouts de controle da Steam até o Decky Metadata ser recarregado."
 };
 var ptBR = {
+	settings: settings$9,
 	common: common$9,
 	backend: backend$9,
 	updater: updater$9,
@@ -13088,6 +13152,9 @@ var ptBR = {
 	controllerLayouts: controllerLayouts$9
 };
 
+var settings$8 = {
+	open: "Abrir definições"
+};
 var common$8 = {
 	hours_one: "{{value}} hora",
 	hours_many: "{{value}} de horas",
@@ -13701,6 +13768,7 @@ var controllerLayouts$8 = {
 	disabledBody: "A usar a interface predefinida de esquemas de comando da Steam até o Decky Metadata ser recarregado."
 };
 var ptPT = {
+	settings: settings$8,
 	common: common$8,
 	backend: backend$8,
 	updater: updater$8,
@@ -13723,6 +13791,9 @@ var ptPT = {
 	controllerLayouts: controllerLayouts$8
 };
 
+var settings$7 = {
+	open: "Deschide setările"
+};
 var common$7 = {
 	hours_one: "{{value}} oră",
 	hours_few: "{{value}} ore",
@@ -14336,6 +14407,7 @@ var controllerLayouts$7 = {
 	disabledBody: "Se folosește interfața standard Steam pentru configurațiile controlerului până la reîncărcarea Decky Metadata."
 };
 var roRO = {
+	settings: settings$7,
 	common: common$7,
 	backend: backend$7,
 	updater: updater$7,
@@ -14358,6 +14430,9 @@ var roRO = {
 	controllerLayouts: controllerLayouts$7
 };
 
+var settings$6 = {
+	open: "Открыть настройки"
+};
 var common$6 = {
 	hours_one: "{{value}} час",
 	hours_few: "{{value}} часа",
@@ -14972,6 +15047,7 @@ var controllerLayouts$6 = {
 	disabledBody: "Используется стандартный интерфейс раскладок контроллера Steam, пока Decky Metadata не будет перезагружен."
 };
 var ruRU = {
+	settings: settings$6,
 	common: common$6,
 	backend: backend$6,
 	updater: updater$6,
@@ -14994,6 +15070,9 @@ var ruRU = {
 	controllerLayouts: controllerLayouts$6
 };
 
+var settings$5 = {
+	open: "Hap cilësimet"
+};
 var common$5 = {
 	hours_one: "{{value}} orë",
 	hours_other: "{{value}} orë",
@@ -15606,6 +15685,7 @@ var controllerLayouts$5 = {
 	disabledBody: "Po përdoret ndërfaqja standarde e paraqitjeve të kontrolluesit të Steam derisa Decky Metadata të ringarkohet."
 };
 var sqAL = {
+	settings: settings$5,
 	common: common$5,
 	backend: backend$5,
 	updater: updater$5,
@@ -15628,6 +15708,9 @@ var sqAL = {
 	controllerLayouts: controllerLayouts$5
 };
 
+var settings$4 = {
+	open: "Öppna inställningar"
+};
 var common$4 = {
 	hours_one: "{{value}} timme",
 	hours_other: "{{value}} timmar",
@@ -16240,6 +16323,7 @@ var controllerLayouts$4 = {
 	disabledBody: "Steams vanliga gränssnitt för handkontrollslayouter används tills Decky Metadata läses in igen."
 };
 var svSE = {
+	settings: settings$4,
 	common: common$4,
 	backend: backend$4,
 	updater: updater$4,
@@ -16262,6 +16346,9 @@ var svSE = {
 	controllerLayouts: controllerLayouts$4
 };
 
+var settings$3 = {
+	open: "Ayarları aç"
+};
 var common$3 = {
 	hours_one: "{{value}} saat",
 	hours_other: "{{value}} saat",
@@ -16874,6 +16961,7 @@ var controllerLayouts$3 = {
 	disabledBody: "Decky Metadata yeniden yüklenene kadar Steam'in standart kontrolcü düzeni arayüzü kullanılıyor."
 };
 var trTR = {
+	settings: settings$3,
 	common: common$3,
 	backend: backend$3,
 	updater: updater$3,
@@ -16896,6 +16984,9 @@ var trTR = {
 	controllerLayouts: controllerLayouts$3
 };
 
+var settings$2 = {
+	open: "Відкрити налаштування"
+};
 var common$2 = {
 	hours_one: "{{value}} година",
 	hours_few: "{{value}} години",
@@ -17510,6 +17601,7 @@ var controllerLayouts$2 = {
 	disabledBody: "Використовується стандартний інтерфейс розкладок контролера Steam, поки Decky Metadata не буде перезавантажено."
 };
 var ukUA = {
+	settings: settings$2,
 	common: common$2,
 	backend: backend$2,
 	updater: updater$2,
@@ -17532,6 +17624,9 @@ var ukUA = {
 	controllerLayouts: controllerLayouts$2
 };
 
+var settings$1 = {
+	open: "打开设置"
+};
 var common$1 = {
 	hours_other: "{{value}} 小时",
 	hoursShort: "{{value}} 小时",
@@ -18143,6 +18238,7 @@ var controllerLayouts$1 = {
 	disabledBody: "在重新加载 Decky Metadata 前，将使用 Steam 的标准控制器布局界面。"
 };
 var zhCN = {
+	settings: settings$1,
 	common: common$1,
 	backend: backend$1,
 	updater: updater$1,
@@ -18165,6 +18261,9 @@ var zhCN = {
 	controllerLayouts: controllerLayouts$1
 };
 
+var settings = {
+	open: "開啟設定"
+};
 var common = {
 	hours_other: "{{value}} 小時",
 	hoursShort: "{{value}} 小時",
@@ -18776,6 +18875,7 @@ var controllerLayouts = {
 	disabledBody: "在 Decky Metadata 重新載入前，使用 Steam 的標準控制器配置介面。"
 };
 var zhTW = {
+	settings: settings,
 	common: common,
 	backend: backend,
 	updater: updater,

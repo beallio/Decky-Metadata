@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "設定を開く" },
   "common": {
     "hours_other": "{{value}}時間",
     "hoursShort": "{{value}}時間",

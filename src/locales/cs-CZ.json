@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Otevřít nastavení" },
   "common": {
     "hours_one": "{{value}} hodina",
     "hours_few": "{{value}} hodiny",

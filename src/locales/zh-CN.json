@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "打开设置" },
   "common": {
     "hours_other": "{{value}} 小时",
     "hoursShort": "{{value}} 小时",

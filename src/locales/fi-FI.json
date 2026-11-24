@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Avaa asetukset" },
   "common": {
     "hours_one": "{{value}} tunti",
     "hours_other": "{{value}} tuntia",
