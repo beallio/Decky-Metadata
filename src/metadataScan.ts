@@ -5,14 +5,11 @@ import { t, translateBackendError } from "./i18n";
 import * as log from "./log";
 import { metadataCache, refreshMetadataCache } from "./steam";
 import { toastError, toastSuccess } from "./toast";
-import type { StatusKind } from "./tokens";
 import type { GameOption, ScanProgress } from "./types";
 
 export type MetadataScanSnapshot = {
   progress: ScanProgress | null;
   busy: boolean;
-  statusKind: StatusKind;
-  error: unknown;
   completedRevision: number;
   savedCount: number;
   missingCount: number;
@@ -36,8 +33,6 @@ export class MetadataScanStore {
   private snapshot: MetadataScanSnapshot = {
     progress: null,
     busy: false,
-    statusKind: "idle",
-    error: null,
     completedRevision: 0,
     savedCount: 0,
     missingCount: 0,
@@ -80,32 +75,30 @@ export class MetadataScanStore {
     }
     if (generation !== this.generation) return;
     if (startRevision !== this.startRevision || !progress.running) return;
-    this.publish({ progress, busy: true, statusKind: "active", error: null });
+    this.publish({ progress, busy: true });
     this.ensurePolling();
   }
   async refreshCounts(games: GameOption[]): Promise<void> {
     this.scanGames = games;
     const generation = this.generation;
     const revision = ++this.countRevision;
-    await this.deps.refreshMetadataCache();
-    if (generation !== this.generation || revision !== this.countRevision) return;
-    const savedCount = Object.keys(metadataCache).length;
-    let missingCount = this.snapshot.missingCount;
-    try {
-      missingCount = await this.deps.getMissingMetadataCount(games);
-    } catch (error) {
-      if (generation === this.generation && revision === this.countRevision) {
-        log.warn("bridge", "missing metadata count load failed", error);
-      }
-    }
-    if (generation !== this.generation || revision !== this.countRevision) return;
-    this.publish({ savedCount, missingCount });
+    const current = () => generation === this.generation && revision === this.countRevision;
+    // Independent RPCs: each can wait seconds on a busy Decky connection, so they run together.
+    const [, missingCount] = await Promise.all([
+      this.deps.refreshMetadataCache(),
+      this.deps.getMissingMetadataCount(games).catch((error) => {
+        if (current()) log.warn("bridge", "missing metadata count load failed", error);
+        return this.snapshot.missingCount;
+      }),
+    ]);
+    if (!current()) return;
+    this.publish({ savedCount: Object.keys(metadataCache).length, missingCount });
   }
 
   async start(games: GameOption[], getLanguage: () => Promise<string>): Promise<void> {
     this.startRevision += 1;
     if (this.snapshot.busy) return;
-    this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+    this.publish({ busy: true, progress: null });
     this.scanGames = games;
     const generation = this.generation;
     let language: string;
@@ -168,7 +161,7 @@ export class MetadataScanStore {
     }
     if (generation !== this.generation) return;
     this.pollFailures = 0;
-    this.publish({ progress, statusKind: "active" });
+    this.publish({ progress });
     if (progress.running) {
       this.pollInFlight = false;
       this.ensurePolling();
@@ -184,16 +177,12 @@ export class MetadataScanStore {
     }
     if (generation !== this.generation) return;
     this.pollInFlight = false;
-    this.publish({
-      busy: false,
-      statusKind: scanCompleteStatusKind(progress),
-      completedRevision: this.snapshot.completedRevision + 1,
-    });
-    this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+    this.publish({ busy: false, completedRevision: this.snapshot.completedRevision + 1 });
+    this.deps.toastSuccess(t("panel.toast.metadata"), scanCompleteMessage(progress));
   }
 
   private fail(error: unknown): void {
-    this.publish({ busy: false, statusKind: "error", error });
+    this.publish({ busy: false });
     this.deps.toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
   }
 
@@ -237,15 +226,4 @@ export const scanCompleteMessage = (progress: {
   return failed
     ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
     : t("panel.scanCompleteSaved", { assigned, total });
-};
-
-export const scanCompleteStatusKind = (progress: {
-  total?: number;
-  assigned?: number;
-  failed?: number;
-}): StatusKind => {
-  const total = Number(progress.total || 0);
-  const assigned = Number(progress.assigned || 0);
-  const failed = Number(progress.failed || 0);
-  return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
 };

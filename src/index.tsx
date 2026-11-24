@@ -10,6 +10,7 @@ import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
 import { setNativeCssClasses } from "./steam/nativeCssClasses";
 import { metadataScanStore } from "./metadataScan";
+import { loadNonSteamGames } from "./useNonSteamGames";
 import { pluginUpdateController } from "./updater/pluginUpdateController";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
@@ -85,6 +86,10 @@ export default definePlugin(() => {
     .then((classes) => setNativeCssClasses(classes))
     .catch(() => undefined);
   void refreshMetadataCache();
+  // The first QAM open then shows counts at once instead of waiting for its own Decky calls.
+  void loadNonSteamGames()
+    .then((games) => metadataScanStore.refreshCounts(games))
+    .catch((error) => log.warn("bridge", "metadata count preload failed", error));
   void ensureCompatibilityDefault().catch((error) =>
     log.warn("bridge", "compatibility default load failed", error)
   );

@@ -19244,12 +19244,14 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, inline = false, listReady = true, }) {
+function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, onRefreshMetadata, inline = false, listReady = true, }) {
     const t = useT();
+    // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
+    const progress = scanBusy ? (SP_JSX.jsx(DFL.ProgressBarWithInfo, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus") })) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: scanMessage }) : null] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage }) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress] }));
 }
 function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, listReady = true, }) {
     const t = useT();
@@ -29506,8 +29508,6 @@ class MetadataScanStore {
             value: {
                 progress: null,
                 busy: false,
-                statusKind: "idle",
-                error: null,
                 completedRevision: 0,
                 savedCount: 0,
                 missingCount: 0,
@@ -29598,35 +29598,32 @@ class MetadataScanStore {
             return;
         if (startRevision !== this.startRevision || !progress.running)
             return;
-        this.publish({ progress, busy: true, statusKind: "active", error: null });
+        this.publish({ progress, busy: true });
         this.ensurePolling();
     }
     async refreshCounts(games) {
         this.scanGames = games;
         const generation = this.generation;
         const revision = ++this.countRevision;
-        await this.deps.refreshMetadataCache();
-        if (generation !== this.generation || revision !== this.countRevision)
+        const current = () => generation === this.generation && revision === this.countRevision;
+        // Independent RPCs: each can wait seconds on a busy Decky connection, so they run together.
+        const [, missingCount] = await Promise.all([
+            this.deps.refreshMetadataCache(),
+            this.deps.getMissingMetadataCount(games).catch((error) => {
+                if (current())
+                    warn("bridge", "missing metadata count load failed", error);
+                return this.snapshot.missingCount;
+            }),
+        ]);
+        if (!current())
             return;
-        const savedCount = Object.keys(metadataCache).length;
-        let missingCount = this.snapshot.missingCount;
-        try {
-            missingCount = await this.deps.getMissingMetadataCount(games);
-        }
-        catch (error) {
-            if (generation === this.generation && revision === this.countRevision) {
-                warn("bridge", "missing metadata count load failed", error);
-            }
-        }
-        if (generation !== this.generation || revision !== this.countRevision)
-            return;
-        this.publish({ savedCount, missingCount });
+        this.publish({ savedCount: Object.keys(metadataCache).length, missingCount });
     }
     async start(games, getLanguage) {
         this.startRevision += 1;
         if (this.snapshot.busy)
             return;
-        this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+        this.publish({ busy: true, progress: null });
         this.scanGames = games;
         const generation = this.generation;
         let language;
@@ -29697,7 +29694,7 @@ class MetadataScanStore {
         if (generation !== this.generation)
             return;
         this.pollFailures = 0;
-        this.publish({ progress, statusKind: "active" });
+        this.publish({ progress });
         if (progress.running) {
             this.pollInFlight = false;
             this.ensurePolling();
@@ -29716,15 +29713,11 @@ class MetadataScanStore {
         if (generation !== this.generation)
             return;
         this.pollInFlight = false;
-        this.publish({
-            busy: false,
-            statusKind: scanCompleteStatusKind(progress),
-            completedRevision: this.snapshot.completedRevision + 1,
-        });
-        this.deps.toastSuccess(t("panel.toast.metadata"), t("panel.refreshComplete"));
+        this.publish({ busy: false, completedRevision: this.snapshot.completedRevision + 1 });
+        this.deps.toastSuccess(t("panel.toast.metadata"), scanCompleteMessage(progress));
     }
     fail(error) {
-        this.publish({ busy: false, statusKind: "error", error });
+        this.publish({ busy: false });
         this.deps.toastError(t("panel.toast.metadataRefreshFailed"), translateBackendError(error));
     }
     publish(update) {
@@ -29763,44 +29756,33 @@ const scanCompleteMessage = (progress) => {
         ? t("panel.scanCompleteWithFailures", { assigned, total, failed })
         : t("panel.scanCompleteSaved", { assigned, total });
 };
-const scanCompleteStatusKind = (progress) => {
-    const total = Number(progress.total || 0);
-    const assigned = Number(progress.assigned || 0);
-    const failed = Number(progress.failed || 0);
-    return failed > 0 || (total > 0 && assigned < total) ? "warning" : "success";
-};
 
 // MetadataScanBody props from the shared scan snapshot; text is built at render time in the current language.
+// The result is a toast only, so the panel shows no message once the scan stops.
 function scanView(scan) {
     const completed = Number(scan.progress?.completed || 0);
     const total = Number(scan.progress?.total || 0);
-    const message = scan.statusKind === "error"
-        ? translateBackendError(scan.error)
-        : scan.busy
-            ? scan.progress
-                ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
-                : ""
-            : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
-                ? scanCompleteMessage(scan.progress)
-                : "";
+    const message = scan.busy && scan.progress
+        ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
+        : "";
     return {
         scanBusy: scan.busy,
         scanCompleted: completed,
         scanTotal: total,
         scanMessage: message,
-        scanStatusKind: scan.statusKind,
     };
 }
 
 // Decky remounts the QAM page each time it opens from the plugin list. Start from the last list so the
 // detected count shows at once; `loaded` stays false until this mount's fresh list arrives.
 let lastGames = [];
+/** Loads the list and keeps it for the next mount; plugin load calls it so the first QAM open has data. */
+const loadNonSteamGames = async () => (lastGames = await allNonSteamGames());
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState(lastGames);
     const [loaded, setLoaded] = SP_REACT.useState(false);
     const loadGames = SP_REACT.useCallback(async () => {
-        const loadedGames = await allNonSteamGames();
-        lastGames = loadedGames;
+        const loadedGames = await loadNonSteamGames();
         setGames(loadedGames);
         setLoaded(true);
         return loadedGames;
@@ -41092,6 +41074,10 @@ var index = DFL.definePlugin(() => {
         .then((classes) => setNativeCssClasses(classes))
         .catch(() => undefined);
     void refreshMetadataCache();
+    // The first QAM open then shows counts at once instead of waiting for its own Decky calls.
+    void loadNonSteamGames()
+        .then((games) => metadataScanStore.refreshCounts(games))
+        .catch((error) => warn("bridge", "metadata count preload failed", error));
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     resetProtonDbAppIdResolution();
     protonDbBadgeController.mount();

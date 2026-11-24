@@ -14,8 +14,6 @@ const metadataScan = vi.hoisted(() => ({
   snapshot: {
     progress: null,
     busy: false,
-    statusKind: "idle",
-    error: null,
     completedRevision: 0,
     savedCount: 0,
     missingCount: 0,
@@ -56,12 +54,10 @@ vi.mock("./components/qam/QamActions", () => ({
 vi.mock("./log", () => ({ warn: vi.fn() }));
 vi.mock("./metadataScan", () => ({
   metadataScanStore: metadataScan,
-  scanCompleteMessage: (progress: { message?: string }) => progress.message ?? "",
 }));
 vi.mock("./i18n", () => ({
   currentSteamLanguage: i18n.currentSteamLanguage,
   refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
-  translateBackendError: (error: unknown) => String(error),
   translateProgress: (progress: { message?: string } | null | undefined) => progress?.message ?? "",
 }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
@@ -134,8 +130,6 @@ beforeEach(() => {
   metadataScan.snapshot = {
     progress: null,
     busy: false,
-    statusKind: "idle",
-    error: null,
     completedRevision: 0,
     savedCount: 0,
     missingCount: 0,
@@ -213,8 +207,6 @@ describe("QAM content", () => {
         message: "",
       },
       busy: true,
-      statusKind: "active",
-      error: null,
       completedRevision: 0,
       savedCount: 7,
       missingCount: 3,
@@ -231,7 +223,6 @@ describe("QAM content", () => {
       scanCompleted: 2,
       scanTotal: 4,
       scanMessage: "Scanning metadata",
-      scanStatusKind: "active",
     });
     expect(children(root).map((node) => node.type)).toEqual([
       "Focusable",

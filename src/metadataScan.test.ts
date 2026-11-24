@@ -22,7 +22,7 @@ vi.mock("./i18n", () => ({
 }));
 
 import type { MetadataScanDeps } from "./metadataScan";
-import { MetadataScanStore, scanCompleteMessage, scanCompleteStatusKind } from "./metadataScan";
+import { MetadataScanStore, scanCompleteMessage } from "./metadataScan";
 import { metadataCache } from "./steam";
 import type { GameOption, ScanProgress } from "./types";
 
@@ -119,7 +119,7 @@ describe("MetadataScanStore", () => {
     const unsubscribeSecond = setupResult.store.subscribe(secondListener);
 
     await flush();
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active", progress: running });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, progress: running });
     expect(setupResult.getScanProgress).toHaveBeenCalledTimes(1);
     expect([...setupResult.timers.values()].map(({ ms }) => ms)).toEqual([800]);
 
@@ -127,10 +127,9 @@ describe("MetadataScanStore", () => {
     await flush();
 
     expect(setupResult.refreshMetadataCache).toHaveBeenCalledTimes(1);
-    expect(setupResult.toastSuccess).toHaveBeenCalledTimes(1);
+    expect(setupResult.toastSuccess).toHaveBeenCalledWith("panel.toast.metadata", "Refresh complete: 2/2 saved");
     expect(setupResult.store.getSnapshot()).toMatchObject({
       busy: false,
-      statusKind: "success",
       progress: complete,
       completedRevision: 1,
     });
@@ -211,6 +210,21 @@ describe("MetadataScanStore", () => {
     expect(setupResult.store.getSnapshot()).toMatchObject({ savedCount: 2, missingCount: 2 });
   });
 
+  it("asks for the missing count without waiting for the metadata cache", async () => {
+    const setupResult = setup();
+    const cache = deferred<undefined>();
+    setupResult.refreshMetadataCache.mockReturnValueOnce(cache.promise);
+    setupResult.getMissingMetadataCount.mockResolvedValueOnce(6);
+    const refreshing = setupResult.store.refreshCounts([]);
+    await flush();
+
+    expect(setupResult.getMissingMetadataCount).toHaveBeenCalledTimes(1);
+    expect(setupResult.store.getSnapshot().missingCount).toBe(0);
+    cache.resolve(undefined);
+    await refreshing;
+    expect(setupResult.store.getSnapshot().missingCount).toBe(6);
+  });
+
 
   it("continues polling after the last subscriber unsubscribes", async () => {
     const setupResult = setup();
@@ -242,7 +256,7 @@ describe("MetadataScanStore", () => {
     await expect(setupResult.store.start([], async () => "french")).resolves.toBeUndefined();
 
     expect(setupResult.startScanMissing).toHaveBeenCalledWith([], "french");
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "error", error });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false });
     expect(setupResult.toastError).toHaveBeenCalledTimes(1);
     expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "scan failed");
   });
@@ -264,7 +278,7 @@ describe("MetadataScanStore", () => {
       await flush();
     }
 
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "error", error });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false });
     expect(setupResult.toastError).toHaveBeenCalledTimes(1);
     expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "poll failed");
     expect(setupResult.timers.size).toBe(0);
@@ -272,7 +286,7 @@ describe("MetadataScanStore", () => {
     // The backend scan is still running: a new subscriber (QAM remount, Settings) picks it up again.
     setupResult.store.subscribe(vi.fn());
     await flush();
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active", error: null });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true });
     expect(setupResult.timers.size).toBe(1);
   });
 
@@ -287,12 +301,12 @@ describe("MetadataScanStore", () => {
 
     setupResult.runNextTimer();
     await flush();
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active" });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true });
     expect(setupResult.toastError).not.toHaveBeenCalled();
 
     setupResult.runNextTimer();
     await flush();
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "success", completedRevision: 1 });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, completedRevision: 1 });
     expect(setupResult.toastSuccess).toHaveBeenCalledTimes(1);
   });
 
@@ -308,7 +322,7 @@ describe("MetadataScanStore", () => {
     setupResult.store.subscribe(vi.fn());
     await flush();
     expect(setupResult.getScanProgress).toHaveBeenCalledTimes(2);
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active" });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true });
     expect(setupResult.timers.size).toBe(1);
   });
 
@@ -359,7 +373,7 @@ describe("MetadataScanStore", () => {
     const language = deferred<string>();
     const starting = setupResult.store.start([], () => language.promise);
 
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, statusKind: "active", progress: null, error: null });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: true, progress: null });
     expect(setupResult.startScanMissing).not.toHaveBeenCalled();
     await setupResult.store.start([], async () => "ignored");
     expect(setupResult.startScanMissing).not.toHaveBeenCalled();
@@ -377,7 +391,7 @@ describe("MetadataScanStore", () => {
     await expect(setupResult.store.start([], async () => Promise.reject(error))).resolves.toBeUndefined();
 
     expect(setupResult.startScanMissing).not.toHaveBeenCalled();
-    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false, statusKind: "error", error });
+    expect(setupResult.store.getSnapshot()).toMatchObject({ busy: false });
     expect(setupResult.toastError).toHaveBeenCalledTimes(1);
     expect(setupResult.toastError).toHaveBeenCalledWith("panel.toast.metadataRefreshFailed", "language failed");
   });
@@ -398,13 +412,10 @@ describe("MetadataScanStore", () => {
     expect(setupResult.timers.size).toBe(0);
   });
 
-  it("keeps the existing completion message and status output", () => {
+  it("keeps the existing completion message", () => {
     expect(scanCompleteMessage({})).toBe("Refresh complete");
     expect(scanCompleteMessage({ total: 3, assigned: 2, failed: 1 })).toBe(
       "Refresh complete: 2/3 saved, 1 not matched",
     );
-    expect(scanCompleteStatusKind({ total: 2, assigned: 2, failed: 0 })).toBe("success");
-    expect(scanCompleteStatusKind({ total: 3, assigned: 2, failed: 0 })).toBe("warning");
-    expect(scanCompleteStatusKind({ total: 3, assigned: 3, failed: 1 })).toBe("warning");
   });
 });
