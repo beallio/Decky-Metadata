@@ -14,6 +14,13 @@ All notable changes to this project are documented here in Keep a Changelog form
   stays off until the refresh finishes. Before, the panel could forget the
   refresh, and clearing the cache during it let the refresh save old matches
   again. The scan that starts after **Clear cache** now shows its progress too.
+- **Edit Metadata... fills its boxes sooner.** The editor no longer waits for
+  the shortcut-name check before it shows a game's saved details. The **Shortcut
+  Name** actions stay off until that game's own shortcut details have loaded,
+  so switching games never offers the previous game's name.
+- **Load timing in the debug log.** With **Debug Logging** on, each
+  **Edit Metadata...** open writes one line with how long the saved details took
+  to load and show. This helps find the cause when the editor is slow to fill.
 
 ## [0.6.6] - 2026-11-22
 

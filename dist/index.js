@@ -21427,6 +21427,7 @@ let verbose = false;
 const setVerboseLogging = (enabled) => {
     verbose = !!enabled;
 };
+const isVerboseLogging = () => verbose;
 const prefix = (area) => `[Decky Metadata][${area}]`;
 const debug = (area, message, ...args) => {
     if (verbose)
@@ -38097,9 +38098,9 @@ const MetadataPage = () => {
     // The operation that owns the shared busy guard; only its control shows busy text.
     const [busy, setBusy] = SP_REACT.useState(false);
     const [steamAppIdText, setSteamAppIdText] = SP_REACT.useState("");
-    const [shortcutManagement, setShortcutManagement] = SP_REACT.useState(null);
-    const [shortcutManagementError, setShortcutManagementError] = SP_REACT.useState(false);
-    const [currentShortcutName, setCurrentShortcutName] = SP_REACT.useState(null);
+    const [shortcutManagementState, setShortcutManagementState] = SP_REACT.useState(null);
+    const [shortcutManagementErrorState, setShortcutManagementErrorState] = SP_REACT.useState(false);
+    const [currentShortcutNameState, setCurrentShortcutNameState] = SP_REACT.useState(null);
     const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
     const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
     const [metadataHydratedEntry, setMetadataHydratedEntry] = SP_REACT.useState(null);
@@ -38249,24 +38250,32 @@ const MetadataPage = () => {
         const requestedEntry = editorEntryToken;
         try {
             const management = await getShortcutNameManagement(appId);
+            recordShortcutSettled(requestedEntry, true);
             if (!isCurrentEditorEntry(requestedEntry))
                 return null;
-            setShortcutManagement(management);
-            setShortcutManagementError(false);
-            setCurrentShortcutName(nativeShortcutName(appId));
+            setShortcutManagementState(management);
+            setShortcutManagementErrorState(false);
+            setShortcutManagementEntry(requestedEntry);
+            setCurrentShortcutNameState(nativeShortcutName(appId));
             return management;
         }
-        catch (_error) {
+        catch {
+            recordShortcutSettled(requestedEntry, false);
             if (!isCurrentEditorEntry(requestedEntry))
                 return null;
-            setShortcutManagement(null);
-            setShortcutManagementError(true);
-            setCurrentShortcutName(nativeShortcutName(appId));
+            setShortcutManagementState(null);
+            setShortcutManagementErrorState(true);
+            setShortcutManagementEntry(requestedEntry);
+            setCurrentShortcutNameState(nativeShortcutName(appId));
             return null;
         }
     }, [appId, editorEntryToken, isCurrentEditorEntry]);
     const load = SP_REACT.useCallback(async () => {
         const requestedEntry = editorEntryToken;
+        recordEditorLoadTiming(requestedEntry, (timing) => {
+            if (timing.loadStartAt === null)
+                timing.loadStartAt = performance.now();
+        });
         const requestedRevision = formRevisionRef.current;
         const baselineMetadata = metadataRef.current;
         const baselineDeveloperText = developerTextRef.current;
@@ -38274,78 +38283,89 @@ const MetadataPage = () => {
         const baselineReleaseText = releaseTextRef.current;
         const baselineRatingText = ratingTextRef.current;
         const baselineSteamAppIdText = steamAppIdTextRef.current;
-        const [metadataResult, managementResult] = await Promise.allSettled([
-            getMetadata(appId),
-            getShortcutNameManagement(appId),
-        ]);
+        void loadShortcutManagement();
+        let metadata;
+        try {
+            metadata = await getMetadata(appId);
+        }
+        catch {
+            recordEditorLoadTiming(requestedEntry, (timing) => {
+                if (timing.metadataSettledAt === null) {
+                    timing.metadataSettledAt = performance.now();
+                    timing.metadataOk = false;
+                }
+            });
+            emitEditorLoadTiming(requestedEntry);
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            setMetadataHydratedEntry(null);
+            return;
+        }
+        recordEditorLoadTiming(requestedEntry, (timing) => {
+            if (timing.metadataSettledAt === null) {
+                timing.metadataSettledAt = performance.now();
+                timing.metadataOk = true;
+            }
+        });
         if (!isCurrentEditorEntry(requestedEntry))
             return;
-        if (metadataResult.status === "fulfilled") {
-            const saved = metadataResult.value || metadataTemplate(appName(appId));
-            savedRecordRef.current = saved;
-            previewedSteamAppIdRef.current = null;
-            steamPreviewedFieldsRef.current.clear();
-            if (formRevisionRef.current === requestedRevision) {
-                setFormMetadata(saved);
+        const saved = metadata || metadataTemplate(appName(appId));
+        savedRecordRef.current = saved;
+        previewedSteamAppIdRef.current = null;
+        steamPreviewedFieldsRef.current.clear();
+        if (formRevisionRef.current === requestedRevision) {
+            setFormMetadata(saved);
+            setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
+        }
+        else {
+            const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
+            metadataRef.current = hydrated;
+            setMetadata(hydrated);
+            if (developerTextRef.current === baselineDeveloperText) {
+                const nextDeveloperText = personsToText(saved.developers);
+                developerTextRef.current = nextDeveloperText;
+                setDeveloperText(nextDeveloperText);
+            }
+            if (publisherTextRef.current === baselinePublisherText) {
+                const nextPublisherText = personsToText(saved.publishers);
+                publisherTextRef.current = nextPublisherText;
+                setPublisherText(nextPublisherText);
+            }
+            releaseBaselineRef.current = { text: hydrated.release_date ?? "", value: hydrated.release_date };
+            if (releaseTextRef.current === baselineReleaseText) {
+                const nextReleaseText = hydrated.release_date ?? "";
+                releaseTextRef.current = nextReleaseText;
+                setReleaseText(nextReleaseText);
+            }
+            if (ratingTextRef.current === baselineRatingText) {
+                const nextRatingText = saved.rating == null ? "" : String(saved.rating);
+                ratingTextRef.current = nextRatingText;
+                setRatingText(nextRatingText);
+            }
+            if (steamAppIdTextRef.current === baselineSteamAppIdText) {
                 setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
             }
-            else {
-                const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
-                metadataRef.current = hydrated;
-                setMetadata(hydrated);
-                if (developerTextRef.current === baselineDeveloperText) {
-                    const nextDeveloperText = personsToText(saved.developers);
-                    developerTextRef.current = nextDeveloperText;
-                    setDeveloperText(nextDeveloperText);
-                }
-                if (publisherTextRef.current === baselinePublisherText) {
-                    const nextPublisherText = personsToText(saved.publishers);
-                    publisherTextRef.current = nextPublisherText;
-                    setPublisherText(nextPublisherText);
-                }
-                releaseBaselineRef.current = { text: hydrated.release_date ?? "", value: hydrated.release_date };
-                if (releaseTextRef.current === baselineReleaseText) {
-                    const nextReleaseText = hydrated.release_date ?? "";
-                    releaseTextRef.current = nextReleaseText;
-                    setReleaseText(nextReleaseText);
-                }
-                if (ratingTextRef.current === baselineRatingText) {
-                    const nextRatingText = saved.rating == null ? "" : String(saved.rating);
-                    ratingTextRef.current = nextRatingText;
-                    setRatingText(nextRatingText);
-                }
-                if (steamAppIdTextRef.current === baselineSteamAppIdText) {
-                    setSteamAppIdInput(saved.steam_appid ? String(saved.steam_appid) : "");
-                }
-            }
-            // Backfill can only use the record that this entry's metadata RPC just
-            // returned. A route change otherwise leaves the prior form visible for
-            // one render while the new request is still pending.
-            setMetadataHydratedEntry(requestedEntry);
         }
-        else {
-            setMetadataHydratedEntry(null);
-        }
-        if (managementResult.status === "fulfilled") {
-            setShortcutManagement(managementResult.value);
-            setShortcutManagementError(false);
-        }
-        else {
-            setShortcutManagement(null);
-            setShortcutManagementError(true);
-        }
-        setCurrentShortcutName(nativeShortcutName(appId));
+        // Backfill can only use the record that this entry's metadata RPC just
+        // returned. A route change otherwise leaves the prior form visible for
+        // one render while the new request is still pending.
+        setMetadataHydratedEntry(requestedEntry);
     }, [
         appId,
         editorEntryToken,
         isCurrentEditorEntry,
         setFormMetadata,
+        loadShortcutManagement,
         setSteamAppIdInput,
     ]);
     SP_REACT.useEffect(() => {
         void load();
     }, [load]);
     SP_REACT.useEffect(() => {
+        setShortcutManagementState(null);
+        setShortcutManagementErrorState(false);
+        setShortcutManagementEntry(null);
+        setCurrentShortcutNameState(null);
         setSteamNameLoading(false);
         setSteamNameUnavailable(false);
         setMetadataHydratedEntry(null);
@@ -38491,14 +38511,131 @@ const MetadataPage = () => {
     }
     // The leave prompt outlives its render; it must save the form as it is when Save is chosen.
     const saveCurrentRef = SP_REACT.useRef(async () => false);
-    SP_REACT.useEffect(() => () => {
-        mountedRef.current = false;
+    SP_REACT.useEffect(() => {
+        mountedRef.current = true;
+        return () => {
+            mountedRef.current = false;
+        };
     }, []);
     const [page, setPage] = SP_REACT.useState("details");
     // Steam search results outlive the Game Match page, as IGN results do.
     const steamSearchRef = SP_REACT.useRef(null);
     // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
     const applySteamAppIdRef = SP_REACT.useRef(async () => undefined);
+    const [shortcutManagementEntry, setShortcutManagementEntry] = SP_REACT.useState(null);
+    const editorLoadTimingRef = SP_REACT.useRef(null);
+    let editorLoadTiming = editorLoadTimingRef.current;
+    if (editorLoadTiming === null || editorLoadTiming.entry !== editorEntryToken) {
+        editorLoadTiming = {
+            entry: editorEntryToken,
+            appId,
+            mountAt: performance.now(),
+            loadStartAt: null,
+            metadataSettledAt: null,
+            metadataOk: null,
+            shortcutSettledAt: null,
+            shortcutOk: null,
+            commitAt: null,
+            emitted: false,
+            timeoutId: null,
+        };
+        editorLoadTimingRef.current = editorLoadTiming;
+    }
+    const clearEditorLoadTimingTimeout = (timing) => {
+        if (timing.timeoutId === null)
+            return;
+        clearTimeout(timing.timeoutId);
+        timing.timeoutId = null;
+    };
+    const recordEditorLoadTiming = (entry, update) => {
+        if (!mountedRef.current)
+            return;
+        const timing = editorLoadTimingRef.current;
+        if (timing === null ||
+            timing.entry !== entry ||
+            editorEntryRef.current.token !== entry) {
+            return;
+        }
+        update(timing);
+    };
+    const recordShortcutSettled = (entry, ok) => {
+        recordEditorLoadTiming(entry, (timing) => {
+            if (timing.shortcutSettledAt === null) {
+                timing.shortcutSettledAt = performance.now();
+                timing.shortcutOk = ok;
+            }
+        });
+        emitEditorLoadTiming(entry);
+    };
+    const emitEditorLoadTiming = (entry, timedOut = false) => {
+        if (!mountedRef.current)
+            return;
+        const timing = editorLoadTimingRef.current;
+        if (timing === null ||
+            timing.entry !== entry ||
+            editorEntryRef.current.token !== entry ||
+            timing.emitted) {
+            return;
+        }
+        const metadataFailed = timing.metadataSettledAt !== null && timing.metadataOk === false;
+        const ready = metadataFailed || (timing.commitAt !== null &&
+            (timing.shortcutSettledAt !== null || timedOut));
+        if (!ready)
+            return;
+        clearEditorLoadTimingTimeout(timing);
+        timing.emitted = true;
+        if (!isVerboseLogging())
+            return;
+        void frontendLog("editor", "load timing", {
+            appId: timing.appId,
+            metadataMs: timing.metadataSettledAt === null
+                ? null
+                : Math.round(timing.metadataSettledAt - timing.mountAt),
+            shortcutMs: timing.shortcutSettledAt === null
+                ? null
+                : Math.round(timing.shortcutSettledAt - timing.mountAt),
+            commitMs: timing.commitAt === null
+                ? null
+                : Math.round(timing.commitAt - timing.mountAt),
+            loadStartMs: timing.loadStartAt === null
+                ? null
+                : Math.round(timing.loadStartAt - timing.mountAt),
+            metadataOk: timing.metadataOk,
+            shortcutOk: timing.shortcutOk,
+            timedOut,
+        }, "debug").catch(() => undefined);
+    };
+    SP_REACT.useLayoutEffect(() => {
+        if (editorLoadTimingRef.current !== editorLoadTiming ||
+            editorLoadTiming.entry !== editorEntryToken ||
+            editorEntryRef.current.token !== editorEntryToken) {
+            return;
+        }
+        if (metadataHydratedEntry === editorEntryToken && editorLoadTiming.commitAt === null) {
+            editorLoadTiming.commitAt = performance.now();
+        }
+        if (editorLoadTiming.commitAt !== null) {
+            emitEditorLoadTiming(editorEntryToken);
+            if (isVerboseLogging() &&
+                !editorLoadTiming.emitted &&
+                editorLoadTiming.shortcutSettledAt === null &&
+                editorLoadTiming.timeoutId === null) {
+                editorLoadTiming.timeoutId = setTimeout(() => {
+                    if (editorLoadTimingRef.current !== editorLoadTiming ||
+                        editorEntryRef.current.token !== editorLoadTiming.entry ||
+                        editorLoadTiming.shortcutSettledAt !== null) {
+                        return;
+                    }
+                    editorLoadTiming.timeoutId = null;
+                    emitEditorLoadTiming(editorLoadTiming.entry, true);
+                }, 15000);
+            }
+        }
+        return () => clearEditorLoadTimingTimeout(editorLoadTiming);
+    }, [editorEntryToken, metadataHydratedEntry]);
+    const shortcutManagement = shortcutManagementEntry === editorEntryToken ? shortcutManagementState : null;
+    const shortcutManagementError = shortcutManagementEntry === editorEntryToken && shortcutManagementErrorState;
+    const currentShortcutName = shortcutManagementEntry === editorEntryToken ? currentShortcutNameState : null;
     const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
     // The visible fields whose value differs from the stored record.
     const changed = changedDraftFields(savedRecordRef.current, {
@@ -38987,8 +39124,8 @@ const MetadataPage = () => {
             const observed = await setShortcutNameAndWait(appId, current, savedSteamStoreName);
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setCurrentShortcutName(observed);
-            setShortcutManagement({ ...shortcutManagement, state });
+            setCurrentShortcutNameState(observed);
+            setShortcutManagementState({ ...shortcutManagement, state });
             toastSuccess(t("editor.toast.shortcutNameUpdatedTitle"), t("editor.toast.shortcutNameUpdatedBody"));
         }
         catch (error) {
@@ -39021,7 +39158,7 @@ const MetadataPage = () => {
         try {
             const observed = await setShortcutNameAndWait(appId, state.applied_name, state.original_name);
             if (isCurrentEditorEntry(requestedEntry))
-                setCurrentShortcutName(observed);
+                setCurrentShortcutNameState(observed);
             try {
                 // The native restore is already complete. Clear the history for this
                 // captured shortcut even if the user navigated to another editor while
@@ -39039,7 +39176,7 @@ const MetadataPage = () => {
             }
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setShortcutManagement({ ...shortcutManagement, state: null });
+            setShortcutManagementState({ ...shortcutManagement, state: null });
             toastSuccess(t("editor.toast.shortcutNameRestoredTitle"), t("editor.toast.shortcutNameRestoredBody"));
         }
         catch (error) {
@@ -39060,7 +39197,7 @@ const MetadataPage = () => {
             await clearShortcutNameState(appId);
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setShortcutManagement((current) => current ? { ...current, state: null } : current);
+            setShortcutManagementState((current) => current ? { ...current, state: null } : current);
             toastSuccess(t("editor.toast.nameHistoryForgottenTitle"), t("editor.toast.nameHistoryForgottenBody"));
         }
         catch (error) {
