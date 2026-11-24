@@ -27,7 +27,7 @@ const backend = vi.hoisted(() => ({
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
   searchSteamMatches: vi.fn(),
-  frontendLog: vi.fn(),
+  frontendLog: vi.fn().mockResolvedValue(true),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -63,7 +63,7 @@ const steam = vi.hoisted(() => ({
   removeMetadataCacheEntry: vi.fn((appId: number) => {
     delete steam.metadataCache[String(appId)];
   }),
-  nativeShortcutName: vi.fn(() => "Shortcut"),
+  nativeShortcutName: vi.fn((_appId?: number) => "Shortcut"),
   refreshCompatibilitySurfaces: vi.fn(),
   setShortcutNameAndWait: vi.fn(),
   subscribeCompatibilityRevision: vi.fn(() => () => undefined),
@@ -350,6 +350,7 @@ const configureShortcutPanel = (overrides: {
   state.values[9] = shortcutState(overrides.management);
   state.values[10] = overrides.managementError ?? false;
   state.values[11] = overrides.current ?? "Original";
+  state.values[20] = 0;
   steam.classifyShortcutNameState.mockReturnValue(overrides.status ?? "unmanaged");
 };
 
@@ -1368,16 +1369,25 @@ describe("MetadataPage compatibility status", () => {
     backend.getShortcutNameManagement.mockImplementation((appId: number) =>
       appId === 100 ? Promise.resolve(shortcutState({ state: managedA })) : pendingB.promise);
     steam.classifyShortcutNameState.mockReturnValue("managed");
-    steam.nativeShortcutName.mockReturnValue("Steam Name");
+    steam.nativeShortcutName.mockImplementation((appId?: number) =>
+      appId === 100 ? "A native name" : "B native name");
 
     renderPage();
     await effects.callbacks[0]();
+    expect(text(openPage("Shortcut Name"))).toContain("A native name");
     expect(text(openPage("Shortcut Name"))).toContain("A original");
     expect(action(renderPage(), "Restore original name")).toBeDefined();
 
     route.appid = "101";
     effects.callbacks = [];
-    renderPage();
+    const pageBBeforeReset = renderPage();
+    expect(layoutProps(pageBBeforeReset).page).toBe("shortcut-name");
+    expect(text(pageBBeforeReset)).not.toContain("A native name");
+    expect(action(pageBBeforeReset, "Use Steam name")).toBeUndefined();
+    expect(action(pageBBeforeReset, "Restore original name")).toBeUndefined();
+    expect(action(pageBBeforeReset, "Forget saved name history")).toBeUndefined();
+    expect(text(pageBBeforeReset)).not.toContain("A original");
+
     effects.callbacks[1]();
     const loadingB = effects.callbacks[0]();
     await flushAsyncWork();
@@ -2888,6 +2898,7 @@ describe("MetadataPage editor load timing", () => {
   });
 
   afterEach(() => {
+    setVerboseLogging(false);
     vi.useRealTimers();
   });
 
@@ -2931,6 +2942,131 @@ describe("MetadataPage editor load timing", () => {
       "debug",
     );
   });
+  it("logs once when shortcut management settles before the metadata commit", async () => {
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    startLoad();
+    await flushAsyncWork();
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+    commitHydration();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({ shortcutOk: true, commitMs: expect.any(Number) }),
+      "debug",
+    );
+  });
+
+  it("logs a failed shortcut-management request once", async () => {
+    backend.getShortcutNameManagement.mockRejectedValue(new Error("management unavailable"));
+
+    startLoad();
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+    commitHydration();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({ shortcutOk: false }),
+      "debug",
+    );
+  });
+
+  it("does not log a late shortcut settlement after unmount", async () => {
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    renderPage();
+    const mountedCleanup = effects.callbacks[6]() as () => void;
+    const loading = effects.callbacks[0]();
+    await loading;
+
+    const nextLayoutEffect = layoutEffects.callbacks.length;
+    renderPage();
+    const layoutCleanup = layoutEffects.callbacks[nextLayoutEffect]() as () => void;
+    mountedCleanup();
+    layoutCleanup();
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+  });
+
+  it("logs after Strict Mode setup, cleanup, and setup", async () => {
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    renderPage();
+    const mountedEffect = effects.callbacks[6];
+    const cleanup = mountedEffect() as () => void;
+    cleanup();
+    mountedEffect();
+    const loading = effects.callbacks[0]();
+    await loading;
+    commitHydration();
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+  });
+
+  it("logs each A-to-B-to-A editor entry at most once", async () => {
+    vi.useFakeTimers();
+    const metadataA1 = deferred<MetadataData>();
+    const shortcutA1 = deferred<ShortcutNameManagement>();
+    const metadataB = deferred<MetadataData>();
+    const shortcutB = deferred<ShortcutNameManagement>();
+    const metadataA2 = deferred<MetadataData>();
+    const shortcutA2 = deferred<ShortcutNameManagement>();
+    let aEntry = 0;
+    backend.getMetadata.mockImplementation((appId: number) => {
+      if (appId === 101) return metadataB.promise;
+      return (aEntry++ === 0 ? metadataA1 : metadataA2).promise;
+    });
+    let shortcutAEntry = 0;
+    backend.getShortcutNameManagement.mockImplementation((appId: number) => {
+      if (appId === 101) return shortcutB.promise;
+      return (shortcutAEntry++ === 0 ? shortcutA1 : shortcutA2).promise;
+    });
+
+    startLoad();
+    route.appid = "101";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    effects.callbacks[0]();
+    metadataB.resolve(makeMetadata({ title: "B" }));
+    shortcutB.resolve(shortcutState());
+    await flushAsyncWork();
+    commitHydration();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog.mock.calls[0][2]).toMatchObject({ appId: 101 });
+
+    route.appid = "100";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    effects.callbacks[0]();
+    metadataA1.resolve(makeMetadata({ title: "Old A" }));
+    shortcutA1.resolve(shortcutState());
+    await flushAsyncWork();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+
+    metadataA2.resolve(makeMetadata({ title: "New A" }));
+    shortcutA2.resolve(shortcutState());
+    await flushAsyncWork();
+    commitHydration();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(2);
+    expect(backend.frontendLog.mock.calls[1][2]).toMatchObject({ appId: 100 });
+  });
+
 
 
   it("logs metadata failure without waiting for a commit or shortcut result", async () => {
@@ -3008,12 +3144,40 @@ describe("MetadataPage editor load timing", () => {
     );
   });
 
-  it("does not log when verbose logging is disabled", async () => {
+  it("does not create a timeout when verbose logging is disabled", async () => {
+    vi.useFakeTimers();
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
     setVerboseLogging(false);
+    const initialTimerCount = vi.getTimerCount();
+
     startLoad();
     await flushAsyncWork();
     commitHydration();
 
+    expect(vi.getTimerCount()).toBe(initialTimerCount);
+    await vi.advanceTimersByTimeAsync(15_000);
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+  });
+
+  it("does not log a late shortcut settlement after verbose logging is enabled", async () => {
+    vi.useFakeTimers();
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getMetadata.mockRejectedValue(new Error("metadata unavailable"));
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+    setVerboseLogging(false);
+
+    startLoad();
+    await flushAsyncWork();
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+
+    setVerboseLogging(true);
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
     expect(backend.frontendLog).not.toHaveBeenCalled();
   });
 
