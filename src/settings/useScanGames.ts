@@ -23,5 +23,5 @@ export function useScanGames() {
     void loadGames();
   }, [scan.completedRevision]);
 
-  return { games, scan };
+  return { games, loaded, scan };
 }

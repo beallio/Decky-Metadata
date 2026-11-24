@@ -24,6 +24,8 @@ type MetadataSectionProps = {
   onRefreshMetadata: () => void;
   onClearCache: () => void;
   onRefreshDelisted: () => void;
+  /** False while the page shows a cached game list: actions wait for the fresh one. */
+  listReady?: boolean;
 };
 
 export function MetadataScanBody({
@@ -37,7 +39,8 @@ export function MetadataScanBody({
   scanStatusKind,
   onRefreshMetadata,
   inline = false,
-}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata"> & { inline?: boolean }) {
+  listReady = true,
+}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata" | "listReady"> & { inline?: boolean }) {
   const t = useT();
 
   if (inline) {
@@ -56,7 +59,7 @@ export function MetadataScanBody({
           layout="inline"
           label={t("qam.metadata.refresh")}
           description={t("qam.metadata.refreshDescription")}
-          disabled={scanBusy || detectedCount === 0}
+          disabled={!listReady || scanBusy || detectedCount === 0}
           onClick={onRefreshMetadata}
         >
           {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("settings.action.refresh")}
@@ -89,7 +92,7 @@ export function MetadataScanBody({
           layout="below"
           description={t("qam.metadata.refreshDescription")}
           bottomSeparator="none"
-          disabled={scanBusy || detectedCount === 0}
+          disabled={!listReady || scanBusy || detectedCount === 0}
           onClick={onRefreshMetadata}
         >
           {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refresh")}
@@ -115,7 +118,8 @@ export function MetadataMaintenanceBody({
   delistedBusy,
   onClearCache,
   onRefreshDelisted,
-}: Pick<MetadataSectionProps, "scanBusy" | "cacheBusy" | "delistedCountText" | "delistedDateText" | "delistedBusy" | "onClearCache" | "onRefreshDelisted">) {
+  listReady = true,
+}: Pick<MetadataSectionProps, "scanBusy" | "cacheBusy" | "delistedCountText" | "delistedDateText" | "delistedBusy" | "onClearCache" | "onRefreshDelisted" | "listReady">) {
   const t = useT();
   const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
 
@@ -127,7 +131,7 @@ export function MetadataMaintenanceBody({
           layout="inline"
           label={t("qam.metadata.clearCache")}
           description={t("qam.metadata.clearCacheDescription")}
-          disabled={cacheBusy || scanBusy}
+          disabled={!listReady || cacheBusy || scanBusy}
           onClick={onClearCache}
         >
           {cacheBusy ? <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel> : t("settings.action.clear")}

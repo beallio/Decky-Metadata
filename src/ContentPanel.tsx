@@ -83,7 +83,7 @@ export const Content = () => {
 
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
-  const { games, scan } = useScanGames();
+  const { games, loaded, scan } = useScanGames();
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     if (focusFrame.current !== null) {
@@ -123,6 +123,7 @@ export const Content = () => {
           savedCount={scan.savedCount}
           missingCount={scan.missingCount}
           onRefreshMetadata={() => void metadataScanStore.start(games, currentSteamLanguage)}
+          listReady={loaded}
         />
         <QamInstallRow />
         <OpenSettingsButton />

@@ -130,4 +130,16 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
     expect(clearButton.props.disabled).toBe(true);
   });
 
+  it.each([false, true])("keeps Refresh metadata and Clear cache off until the fresh game list loads (inline %s)", (inline) => {
+    const onRefreshMetadata = vi.fn();
+    const onClearCache = vi.fn();
+    const actions = (listReady: boolean) => {
+      const tree = render({ inline, listReady, onRefreshMetadata, onClearCache });
+      const disabled = (onClick: unknown) => nodes(tree).find(node => node.props?.onClick === onClick)?.props.disabled;
+      return [disabled(onRefreshMetadata), disabled(onClearCache)];
+    };
+
+    expect(actions(false)).toEqual([true, true]);
+    expect(actions(true)).toEqual([false, false]);
+  });
 });
