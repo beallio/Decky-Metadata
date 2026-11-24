@@ -20,10 +20,9 @@ type ProtonDbBadgesSectionProps = {
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
 
-export function ProtonDbBadgesSection({
-  initiallyExpanded = false, snapshot, onSettingsChange,
-  onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef,
-}: ProtonDbBadgesSectionProps) {
+export function ProtonDbBadgesBody({
+  snapshot, onSettingsChange, onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef,
+}: Omit<ProtonDbBadgesSectionProps, "initiallyExpanded">) {
   const t = useT();
   const coverPositionOptions: Array<{
     data: ProtonDbBadgeSettings["coverPosition"];
@@ -43,7 +42,7 @@ export function ProtonDbBadgesSection({
   };
 
   return (
-    <CollapsibleSection title={t("qam.protondb.title")} icon={<ProtonDbIcon size={16} />} defaultExpanded={initiallyExpanded}>
+    <>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.protondb.enableLabel")}
@@ -133,6 +132,13 @@ export function ProtonDbBadgesSection({
           </Field>
         </PanelSectionRow>
       ) : null}
-    </CollapsibleSection>
+    </>
   );
+}
+
+export function ProtonDbBadgesSection(props: ProtonDbBadgesSectionProps) {
+  const t = useT();
+  return <CollapsibleSection title={t("qam.protondb.title")} icon={<ProtonDbIcon size={16} />} defaultExpanded={props.initiallyExpanded}>
+    <ProtonDbBadgesBody {...props} />
+  </CollapsibleSection>;
 }

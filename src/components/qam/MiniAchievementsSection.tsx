@@ -11,13 +11,13 @@ type MiniAchievementsSectionProps = {
   onEnabledChange: (enabled: boolean) => void;
 };
 
-export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievementsSectionProps) {
+export function MiniAchievementsBody({ state, onEnabledChange }: MiniAchievementsSectionProps) {
   const t = useT();
   const enableDisabled = !state.settingsLoaded || state.busy ||
     (Boolean(state.conflict.pluginName) && !state.enabled);
   const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
   return (
-    <CollapsibleSection title={t("qam.miniAchievements.title")} icon={<FaTrophy size={16} />}>
+    <>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.miniAchievements.enableLabel")}
@@ -36,6 +36,15 @@ export function MiniAchievementsSection({ state, onEnabledChange }: MiniAchievem
           </Field>
         </PanelSectionRow>
       ) : null}
+    </>
+  );
+}
+
+export function MiniAchievementsSection(props: MiniAchievementsSectionProps) {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.miniAchievements.title")} icon={<FaTrophy size={16} />}>
+      <MiniAchievementsBody {...props} />
     </CollapsibleSection>
   );
 }

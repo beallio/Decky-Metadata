@@ -28,7 +28,7 @@ type MetadataSectionProps = {
   onRefreshDelisted: () => void;
 };
 
-export function MetadataSection({
+export function MetadataScanBody({
   detectedCount,
   savedCount,
   missingCount,
@@ -37,46 +37,24 @@ export function MetadataSection({
   scanCompleted,
   scanTotal,
   scanStatusKind,
-  cacheBusy,
-  delistedCountText,
-  delistedDateText,
-  delistedBusy,
   onRefreshMetadata,
-  onClearCache,
-  onRefreshDelisted,
-}: MetadataSectionProps) {
+}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata">) {
   const t = useT();
-  const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
 
   return (
-    <CollapsibleSection title={t("qam.metadata.title")} icon={<FaTags size={16} />}>
+    <>
       <PanelSectionRow>
-        <Field
-          label={t("qam.metadata.detectedGames")}
-          focusable
-          highlightOnFocus
-          bottomSeparator="none"
-        >
+        <Field label={t("qam.metadata.detectedGames")} focusable highlightOnFocus bottomSeparator="none">
           {detectedCount}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <Field
-          label={t("qam.metadata.saved")}
-          focusable
-          highlightOnFocus
-          bottomSeparator="none"
-        >
+        <Field label={t("qam.metadata.saved")} focusable highlightOnFocus bottomSeparator="none">
           {savedCount}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <Field
-          label={t("qam.metadata.missing")}
-          focusable
-          highlightOnFocus
-          bottomSeparator="none"
-        >
+        <Field label={t("qam.metadata.missing")} focusable highlightOnFocus bottomSeparator="none">
           {missingCount}
         </Field>
       </PanelSectionRow>
@@ -88,15 +66,9 @@ export function MetadataSection({
           disabled={scanBusy || detectedCount === 0}
           onClick={onRefreshMetadata}
         >
-          {scanBusy ? (
-            <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel>
-          ) : (
-            t("qam.metadata.refresh")
-          )}
+          {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refresh")}
         </ButtonItem>
-        {!scanBusy && scanMessage ? (
-          <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage}</div>
-        ) : null}
+        {!scanBusy && scanMessage ? <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage}</div> : null}
       </PanelSectionRow>
       {scanBusy ? (
         <ProgressBarItem
@@ -105,9 +77,25 @@ export function MetadataSection({
           bottomSeparator="none"
         />
       ) : null}
-      <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("qam.metadata.cacheHeading")}</div>
-      </PanelSectionRow>
+    </>
+  );
+}
+
+export function MetadataMaintenanceBody({
+  scanBusy,
+  cacheBusy,
+  delistedCountText,
+  delistedDateText,
+  delistedBusy,
+  onClearCache,
+  onRefreshDelisted,
+}: Pick<MetadataSectionProps, "scanBusy" | "cacheBusy" | "delistedCountText" | "delistedDateText" | "delistedBusy" | "onClearCache" | "onRefreshDelisted">) {
+  const t = useT();
+  const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
+
+  return (
+    <>
+      <PanelSectionRow><div style={sectionHeadingStyle}>{t("qam.metadata.cacheHeading")}</div></PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -116,16 +104,10 @@ export function MetadataSection({
           disabled={cacheBusy || scanBusy}
           onClick={onClearCache}
         >
-          {cacheBusy ? (
-            <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel>
-          ) : (
-            t("qam.metadata.clearCache")
-          )}
+          {cacheBusy ? <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel> : t("qam.metadata.clearCache")}
         </ButtonItem>
       </PanelSectionRow>
-      <PanelSectionRow>
-        <div style={sectionHeadingStyle}>{t("qam.metadata.delistedHeading")}</div>
-      </PanelSectionRow>
+      <PanelSectionRow><div style={sectionHeadingStyle}>{t("qam.metadata.delistedHeading")}</div></PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -134,13 +116,19 @@ export function MetadataSection({
           disabled={delistedBusy}
           onClick={onRefreshDelisted}
         >
-          {delistedBusy ? (
-            <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel>
-          ) : (
-            t("qam.metadata.refreshDelisted")
-          )}
+          {delistedBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refreshDelisted")}
         </ButtonItem>
       </PanelSectionRow>
+    </>
+  );
+}
+
+export function MetadataSection(props: MetadataSectionProps) {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.metadata.title")} icon={<FaTags size={16} />}>
+      <MetadataScanBody {...props} />
+      <MetadataMaintenanceBody {...props} />
     </CollapsibleSection>
   );
 }

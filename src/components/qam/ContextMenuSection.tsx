@@ -8,7 +8,7 @@ import type { EditorHeaderSettings } from "../../types";
 import { CollapsibleSection } from "./CollapsibleSection";
 
 /** Options for the Edit Metadata page that the game context menu opens. */
-export function ContextMenuSection() {
+export function ContextMenuBody() {
   const t = useT();
   const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
   const [error, setError] = useState("");
@@ -44,7 +44,7 @@ export function ContextMenuSection() {
   };
 
   return (
-    <CollapsibleSection title={t("qam.contextMenu.title")} icon={<FaBars size={16} />}>
+    <>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.contextMenu.headerIconLabel")}
@@ -71,6 +71,15 @@ export function ContextMenuSection() {
           </Field>
         </PanelSectionRow>
       ) : null}
+    </>
+  );
+}
+
+export function ContextMenuSection() {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.contextMenu.title")} icon={<FaBars size={16} />}>
+      <ContextMenuBody />
     </CollapsibleSection>
   );
 }

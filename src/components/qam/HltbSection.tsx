@@ -29,11 +29,11 @@ type HltbSectionProps = {
   onBlurControlRef?: (element: HTMLDivElement | null) => void;
 };
 
-export function HltbSection({
-  initiallyExpanded = false, settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
+export function HltbBody({
+  settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache,
   onStyleChange, onStyleMenuWillOpen, onStyleControlRef,
   onBlurChange, onBlurMenuWillOpen, onBlurControlRef,
-}: HltbSectionProps) {
+}: Omit<HltbSectionProps, "initiallyExpanded">) {
   const t = useT();
   const styles: Array<{ data: HltbSettings["style"]; label: string }> = [
     { data: "default", label: t("qam.hltb.styleDefault") }, { data: "clean", label: t("qam.hltb.styleClean") },
@@ -62,7 +62,7 @@ export function HltbSection({
   const updateAppearance = <K extends keyof HltbAppearance>(key: K, value: HltbAppearance[K]) => {
     void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
   };
-  return <CollapsibleSection title={t("qam.hltb.title")} icon={<FaClock size={16} />} defaultExpanded={initiallyExpanded}>
+  return <>
     <PanelSectionRow><ToggleField label={t("qam.hltb.showTimesLabel")} description={t("qam.hltb.showTimesDescription")} checked={settings.enabled} disabled={controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled)} onChange={value => update("enabled", value)} /></PanelSectionRow>
     <PanelSectionRow><ToggleField label={t("qam.hltb.storeLabel")} description={t("qam.hltb.storeDescription")} checked={settings.store} disabled={disabled} onChange={value => update("store", value)} /></PanelSectionRow>
     <PanelSectionRow><div ref={onStyleControlRef}><DropdownItem label={t("qam.hltb.styleLabel")} description={t("qam.hltb.styleDescription")} layout="below" childrenContainerWidth="max" rgOptions={styles} selectedOption={settings.style} disabled={disabled} onMenuWillOpen={onStyleMenuWillOpen} onChange={option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); }} /></div></PanelSectionRow>
@@ -91,5 +91,12 @@ export function HltbSection({
       {notice ? <div style={inlineStatusStyle("warning")}>{notice}</div> : null}
       {settingsError ? <div style={inlineStatusStyle("error")}>{settingsError}</div> : null}
     </Field></PanelSectionRow>
+  </>;
+}
+
+export function HltbSection(props: HltbSectionProps) {
+  const t = useT();
+  return <CollapsibleSection title={t("qam.hltb.title")} icon={<FaClock size={16} />} defaultExpanded={props.initiallyExpanded}>
+    <HltbBody {...props} />
   </CollapsibleSection>;
 }

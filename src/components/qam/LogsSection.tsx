@@ -14,7 +14,7 @@ type LogsSectionProps = {
   onToggleDebugLogging: (enabled: boolean) => void;
 };
 
-export function LogsSection({
+export function LogsBody({
   logsBusy,
   debugLogging,
   debugLoggingLoaded,
@@ -25,7 +25,7 @@ export function LogsSection({
   const t = useT();
 
   return (
-    <CollapsibleSection title={t("qam.logs.title")} icon={<FaFileAlt size={16} />}>
+    <>
       <PanelSectionRow>
         <ButtonItem
           layout="below"
@@ -46,6 +46,15 @@ export function LogsSection({
           onChange={onToggleDebugLogging}
         />
       </PanelSectionRow>
+    </>
+  );
+}
+
+export function LogsSection(props: LogsSectionProps) {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.logs.title")} icon={<FaFileAlt size={16} />}>
+      <LogsBody {...props} />
     </CollapsibleSection>
   );
 }

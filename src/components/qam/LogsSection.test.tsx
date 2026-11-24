@@ -13,7 +13,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { LogsSection } from "./LogsSection";
+import { LogsBody } from "./LogsSection";
 
 type ToggleProps = { children?: ReactNode; onChange?: (checked: boolean) => void };
 
@@ -26,7 +26,7 @@ const nodes = (node: ReactNode): ReactElement<ToggleProps>[] => {
 describe("LogsSection debug logging toggle", () => {
   it("passes the new value to onToggleDebugLogging", () => {
     const onToggleDebugLogging = vi.fn();
-    const tree = LogsSection({
+    const tree = LogsBody({
       logsBusy: false,
       debugLogging: false,
       debugLoggingLoaded: true,

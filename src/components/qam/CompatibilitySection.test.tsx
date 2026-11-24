@@ -15,7 +15,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { CompatibilitySection } from "./CompatibilitySection";
+import { CompatibilityBody } from "./CompatibilitySection";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
 type Node = { type?: unknown; props?: { children?: unknown; [key: string]: unknown } };
@@ -38,7 +38,7 @@ const render = (overrides: {
   compatibilityDefaultBusy?: boolean;
   compatibilityDefaultScope?: CompatibilityDefaultScope;
   compatibilityDefaultScopeBusy?: boolean;
-} = {}) => CompatibilitySection({
+} = {}) => CompatibilityBody({
   compatibilityDefault: 3,
   compatibilityDefaultLoaded: true,
   compatibilityDefaultBusy: false,

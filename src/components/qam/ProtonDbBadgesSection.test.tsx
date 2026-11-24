@@ -8,7 +8,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...i18n, useT: () => i18n.t };
 });
 import type { ProtonDbBadgeSettings } from "../../types";
-import { ProtonDbBadgesSection } from "./ProtonDbBadgesSection";
+import { ProtonDbBadgesBody } from "./ProtonDbBadgesSection";
 
 function nodes(node: React.ReactNode): React.ReactElement<any>[] {
   if (Array.isArray(node)) return node.flatMap(nodes);
@@ -22,7 +22,7 @@ describe("ProtonDB badge controls", () => {
       enabled: true, home: true, library: true, gameView: true, store: true, focusOnly: false, coverPosition: "bottom-left",
     };
     const save = (update: (current: ProtonDbBadgeSettings) => ProtonDbBadgeSettings) => { latest = update(latest); };
-    const tree = nodes(ProtonDbBadgesSection({
+    const tree = nodes(ProtonDbBadgesBody({
       snapshot: {
         settings: latest, settingsLoaded: true, busy: false, settingsError: "",
         conflict: { pluginName: null, detectionAvailable: true }, effectiveEnabled: true,

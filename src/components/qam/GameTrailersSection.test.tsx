@@ -17,7 +17,7 @@ vi.mock("../../i18n", async (importOriginal) => {
 });
 
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
-import { GameTrailersSection } from "./GameTrailersSection";
+import { GameTrailersBody } from "./GameTrailersSection";
 
 type ControlProps = { children?: ReactNode; disabled?: boolean };
 
@@ -54,7 +54,7 @@ const snapshot = (
   effectiveEnabled: enabled,
 });
 
-const render = (state: TrailerControllerSnapshot) => GameTrailersSection({
+const render = (state: TrailerControllerSnapshot) => GameTrailersBody({
   state,
   onEnabledChange: vi.fn(),
   onDetailEnabledChange: vi.fn(),

@@ -25,8 +25,7 @@ type GameTrailersSectionProps = {
   onQualityControlRef: (element: HTMLDivElement | null) => void;
 };
 
-export function GameTrailersSection({
-  initiallyExpanded = false,
+export function GameTrailersBody({
   state,
   onEnabledChange,
   onDetailEnabledChange,
@@ -38,7 +37,7 @@ export function GameTrailersSection({
   onQualityChange,
   onQualityMenuWillOpen,
   onQualityControlRef,
-}: GameTrailersSectionProps) {
+}: Omit<GameTrailersSectionProps, "initiallyExpanded">) {
   const t = useT();
   const qualityOptions: Array<{ data: TrailerQuality; label: string }> = [
     { data: "auto", label: t("qam.trailers.qualityAuto") },
@@ -56,7 +55,7 @@ export function GameTrailersSection({
     : t("qam.trailers.displayUnavailable");
 
   return (
-    <CollapsibleSection title={t("qam.trailers.title")} icon={<FaPlayCircle size={16} />} defaultExpanded={initiallyExpanded}>
+    <>
       <PanelSectionRow>
         <ToggleField
           label={t("qam.trailers.enableLabel")}
@@ -184,6 +183,15 @@ export function GameTrailersSection({
           </Field>
         </PanelSectionRow>
       ) : null}
+    </>
+  );
+}
+
+export function GameTrailersSection(props: GameTrailersSectionProps) {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.trailers.title")} icon={<FaPlayCircle size={16} />} defaultExpanded={props.initiallyExpanded}>
+      <GameTrailersBody {...props} />
     </CollapsibleSection>
   );
 }

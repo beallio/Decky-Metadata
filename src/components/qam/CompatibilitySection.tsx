@@ -26,8 +26,7 @@ type CompatibilitySectionProps = {
   onCompatibilityDefaultScopeControlRef: (element: HTMLDivElement | null) => void;
 };
 
-export function CompatibilitySection({
-  initiallyExpanded = false,
+export function CompatibilityBody({
   compatibilityDefault,
   compatibilityDefaultLoaded,
   compatibilityDefaultBusy,
@@ -39,7 +38,7 @@ export function CompatibilitySection({
   onCompatibilityDefaultMenuWillOpen,
   onCompatibilityDefaultControlRef,
   onCompatibilityDefaultScopeControlRef,
-}: CompatibilitySectionProps) {
+}: Omit<CompatibilitySectionProps, "initiallyExpanded">) {
   const t = useT();
 
   const categoryLabel = (category: DeckCompatibilityCategory | null) => {
@@ -93,7 +92,7 @@ export function CompatibilitySection({
   }));
   const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
   return (
-    <CollapsibleSection title={t("qam.compat.title")} icon={<SiSteamdeck size={16} />} defaultExpanded={initiallyExpanded}>
+    <>
       <PanelSectionRow>
         <div ref={onCompatibilityDefaultControlRef}>
           <DropdownItem
@@ -148,6 +147,15 @@ export function CompatibilitySection({
           </Field>
         </PanelSectionRow>
       ) : null}
+    </>
+  );
+}
+
+export function CompatibilitySection(props: CompatibilitySectionProps) {
+  const t = useT();
+  return (
+    <CollapsibleSection title={t("qam.compat.title")} icon={<SiSteamdeck size={16} />} defaultExpanded={props.initiallyExpanded}>
+      <CompatibilityBody {...props} />
     </CollapsibleSection>
   );
 }
