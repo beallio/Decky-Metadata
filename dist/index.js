@@ -19115,7 +19115,12 @@ function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delis
 const SETTINGS_ROUTE = "/decky-metadata-settings";
 const openSettings = () => {
     DFL.Navigation.CloseSideMenus();
-    DFL.Navigation.Navigate(SETTINGS_ROUTE);
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    // Current Steam has SteamUIStore and no Router global; older builds have Router.
+    const host = globalThis;
+    const path = (host.SteamUIStore ?? host.Router)?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+    if (path !== SETTINGS_ROUTE)
+        DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
 function SettingsTitleView() {
