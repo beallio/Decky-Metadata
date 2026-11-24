@@ -11,7 +11,7 @@ watch game trailers.
 For Steam games, you can restore the small achievement progress bar beside
 Play Time.
 
-![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202611240820)
+![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202611241830)
 
 ## Install
 
@@ -36,7 +36,7 @@ if you need more help.
 Open Decky Metadata from the Quick Access Menu. The panel shows counts for
 detected non-Steam games, saved metadata, and missing metadata, plus **Refresh
 metadata** and its progress bar. It shows **Install** only when an update is
-available. Open Settings with the gear or **Open settings** button; the panel
+available. Open Settings with the gear in the panel header; the panel
 closes when Settings opens.
 
 Settings is a full-screen page with Steam-style side tabs. The tabs are

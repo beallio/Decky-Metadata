@@ -12,7 +12,6 @@ const controller = vi.hoisted(() => ({
     install: vi.fn(),
   },
 }));
-const settings = vi.hoisted(() => ({ openSettings: vi.fn() }));
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -21,16 +20,14 @@ vi.mock("@decky/ui", () => ({
   PanelSectionRow: "PanelSectionRow",
   showModal: vi.fn(),
 }));
-vi.mock("../../settingsRoute", () => ({ openSettings: settings.openSettings }));
 vi.mock("../../updater/deckyInstaller", () => ({ isDeckyInstallerAvailable: vi.fn(() => true) }));
 vi.mock("../../updater/pluginUpdateController", () => ({
   usePluginUpdateController: () => controller.snapshot,
 }));
 vi.mock("../../i18n", () => ({ useT: () => (key: string) => key }));
 
-import { openSettings } from "../../settingsRoute";
 import { PluginInstallAction } from "../../updater/installAction";
-import { OpenSettingsButton, QamInstallRow } from "./QamActions";
+import { QamInstallRow } from "./QamActions";
 
 const candidate = (channel: "stable" | "development" = "stable"): PluginUpdateCandidate => ({
   version: "0.4.0",
@@ -95,15 +92,5 @@ describe("QAM actions", () => {
       isHandoffPending: false,
       onInstall: controller.snapshot.install,
     });
-  });
-
-  it("opens Settings from its button", () => {
-    const tree = OpenSettingsButton();
-    const button = children(tree).find((node) => node.type === "ButtonItem");
-
-    expect(button?.props?.layout).toBe("below");
-    expect(button?.props?.children).toBe("settings.open");
-    (button?.props?.onClick as () => void)();
-    expect(openSettings).toHaveBeenCalledOnce();
   });
 });

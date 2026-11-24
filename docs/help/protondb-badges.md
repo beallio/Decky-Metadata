@@ -6,7 +6,7 @@ These ratings are separate from Valve's Steam Deck compatibility labels. Neither
 
 ## Turn on badges
 
-1. Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear.
 2. Open the **ProtonDB badges** tab in Settings.
 3. Turn on **Enable ProtonDB badges**. The feature is off by default.
 4. Choose the views where you want badges to appear.

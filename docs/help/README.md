@@ -23,4 +23,4 @@ setup steps.
 
 - [Updates and troubleshooting](updates-and-troubleshooting.md) — check for updates, find versions and logs, and get help with common problems.
 
-Open **Settings** from the gear in the Quick Access Menu header or its **Open settings** button. Settings has tabs for Metadata, Compatibility status, ProtonDB badges, HLTB times, Game trailers, Mini achievements, and Context menu. Logs, Updates, and Versions are after a separator. Press **B** to return from a settings page to the tab list; press **B** again to close Settings. Changes apply at once.
+Open **Settings** from the gear in the Quick Access Menu header. Settings has tabs for Metadata, Compatibility status, ProtonDB badges, HLTB times, Game trailers, Mini achievements, and Context menu. Logs, Updates, and Versions are after a separator. Press **B** to return from a settings page to the tab list; press **B** again to close Settings. Changes apply at once.

@@ -52,7 +52,6 @@ vi.mock("./components/qam/MetadataSection", () => ({
 }));
 vi.mock("./components/qam/QamActions", () => ({
   QamInstallRow: "QamInstallRow",
-  OpenSettingsButton: "OpenSettingsButton",
 }));
 vi.mock("./log", () => ({ warn: vi.fn() }));
 vi.mock("./metadataScan", () => ({
@@ -239,7 +238,6 @@ describe("QAM content", () => {
       "PanelSection",
       "MetadataScanBody",
       "QamInstallRow",
-      "OpenSettingsButton",
     ]);
 
     runEffects();

@@ -1,6 +1,6 @@
 # Updates and troubleshooting
 
-Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**. Open **Updates** or **Logs** in Settings.
+Open Decky Metadata from the Quick Access Menu, then select the gear. Open **Updates** or **Logs** in Settings.
 
 ## Check for updates
 
@@ -18,7 +18,7 @@ The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/r
 
 ## Mini achievements
 
-1. Open Decky Metadata from the Quick Access Menu, then select the gear or **Open settings**.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear.
 2. Open the **Mini achievements** tab in Settings.
 3. Turn on **Enable mini achievements**, then open a Steam game that has
    recorded achievement progress.

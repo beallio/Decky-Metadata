@@ -65,6 +65,9 @@ const traceBIsModDecision = (
   isCurrentMatchedRenderRoute: boolean
 ) => {
   if (!bypassTraceEnabled) return;
+  // Steam asks this for every app in the library; each line is a backend call. Only a matched
+  // shortcut or a changed answer helps debugging (a full library otherwise floods hundreds per QAM open).
+  if (!hasCache && finalRet === Boolean(originalRet)) return;
   const now = Date.now();
   const key = `${appId}-${reason}`;
   if (now - (bIsModTraceAt[key] || 0) < 1000) return;
