@@ -101,6 +101,18 @@ describe("PluginInstallAction", () => {
     expect(text(tree)).toContain("Move to Stable");
   });
 
+  it("shows the waiting-for-Decky label during handoff", () => {
+    const tree = PluginInstallAction({
+      candidate: candidate(),
+      currentVersion: "0.3.1",
+      isChecking: false,
+      isInstalling: false,
+      isHandoffPending: true,
+      onInstall: vi.fn(),
+    });
+    expect(text(tree)).toContain("Waiting for Decky");
+  });
+
   it("shows manual-install messaging when Decky installer is unavailable", () => {
     vi.mocked(isDeckyInstallerAvailable).mockReturnValue(false);
     const tree = PluginInstallAction({

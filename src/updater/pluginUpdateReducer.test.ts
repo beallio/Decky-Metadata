@@ -36,7 +36,7 @@ describe("plugin update reducer", () => {
       { type: "INSTALL_SUCCESS", version: "0.4.0", channel: "stable", preInstallVersion: "0.3.1" },
       "installed",
     ],
-    [{ type: "INSTALL_FAILED", message: "failed" }, "failed"],
+    [{ type: "INSTALL_FAILED", message: "failed", candidate }, "failed"],
   ])("handles $type", (action, phase) => {
     expect(updateReducer(initialUpdateState, action).phase).toBe(phase);
   });

@@ -367,11 +367,12 @@ Home/grid/Game Info state. Then, using the real Settings page and editor control
    record with a valid ID belongs to the Steam scope. A manual record without
    an ID belongs to the no-ID scope. A no-record shortcut belongs only to all
    shortcuts. Change a disposable record's ID, remove its record, and confirm
-   it moves to the correct fallback. Change the scope while Game Info is active
-   and confirm that view holds its value until it exits. Use the controller to
-   select and cancel the selector. Set the default to Automatic and confirm
-   the selector is unavailable but keeps its value through reload. Restore the
-   captured scope and fixtures.
+   it moves to the correct fallback. A scope change made in Settings leaves Game
+   Info first; for the held-update rule (S46), reload the plugin with a new saved
+   scope while Game Info is active and confirm that view holds its value until
+   it exits. Use the controller to select and cancel the selector. Set the
+   default to Automatic and confirm the selector is unavailable but keeps its
+   value through reload. Restore the captured scope and fixtures.
 
 Store screenshots and diagnostics below `$TMPDIR/Decky-Metadata`. Run
 `scripts/deck/verify/run_all.sh --no-launch`; run its launch fixture only with

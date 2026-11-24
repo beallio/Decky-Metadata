@@ -1,5 +1,5 @@
-import { DialogControlsSection, Focusable, Navigation } from "@decky/ui";
-import { useEffect, useState } from "react";
+import { Focusable, Navigation } from "@decky/ui";
+import { useEffect, useState, type ComponentProps } from "react";
 import { FaBars, FaClock, FaFileAlt, FaInfoCircle, FaPlayCircle, FaSyncAlt, FaTrophy } from "react-icons/fa";
 import { FaTags } from "react-icons/fa6";
 import { SiSteamdeck } from "react-icons/si";
@@ -48,11 +48,95 @@ const icons = {
   versions: <FaInfoCircle />,
 };
 
+type SnapshotStore<T> = { subscribe(listener: () => void): () => void; getSnapshot(): T };
+
+/** Subscribe in the tab that shows the snapshot: a change re-renders that tab, not the whole page. */
+function useStoreSnapshot<T>(store: SnapshotStore<T>): T {
+  const [snapshot, setSnapshot] = useState(store.getSnapshot());
+  useEffect(() => {
+    const unsubscribe = store.subscribe(() => setSnapshot(store.getSnapshot()));
+    setSnapshot(store.getSnapshot());
+    return unsubscribe;
+  }, [store]);
+  return snapshot;
+}
+
+// The feature controllers are module singletons, so their state survives a tab switch without a page-level hook.
+function ProtonDbTab() {
+  const protonDb = useStoreSnapshot(protonDbBadgeController);
+  return (
+    <ProtonDbBadgesBody
+      snapshot={protonDb}
+      onSettingsChange={(update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings))}
+      onCoverPositionChange={(coverPosition) => protonDbBadgeController.setSettings({
+        ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+      })}
+    />
+  );
+}
+
+function HltbTab() {
+  const hltb = useStoreSnapshot(hltbController);
+  return (
+    <HltbBody
+      settings={hltb.settings}
+      settingsLoaded={hltb.settingsLoaded}
+      conflict={hltb.conflict}
+      settingsError={hltb.settingsError}
+      cacheStatus={hltb.cacheStatus}
+      onSettingsChange={(update) => hltbController.setSettings(update(hltbController.getSnapshot().settings))}
+      onClearCache={() => hltbController.clearCache()}
+      onStyleChange={(style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style })}
+      onBlurChange={(blur) => {
+        const current = hltbController.getSnapshot().settings;
+        return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+      }}
+    />
+  );
+}
+
+function TrailersTab() {
+  const trailers = useStoreSnapshot(trailerController);
+  // The tab shows live trailer status, so the controller checks Steam every 2 s while it is open.
+  useEffect(() => {
+    trailerController.setPanelVisible(true);
+    return () => trailerController.setPanelVisible(false);
+  }, []);
+  return (
+    <GameTrailersBody
+      state={trailers}
+      onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
+      onDetailEnabledChange={(enabled) => void trailerController.setDetailEnabled(enabled)}
+      onHomeEnabledChange={(enabled) => void trailerController.setHomeEnabled(enabled)}
+      onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
+      onHideLogoChange={(hide) => void trailerController.setHideLogoDuringTrailer(hide)}
+      onDetailFadeInDelayChange={(seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds)}
+      onHomeFadeInDelayChange={(seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds)}
+      onQualityChange={(quality) => trailerController.setQuality(quality)}
+    />
+  );
+}
+
+function MiniAchievementsTab() {
+  const miniAchievements = useStoreSnapshot(miniAchievementsController);
+  return (
+    <MiniAchievementsBody
+      state={miniAchievements}
+      onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
+    />
+  );
+}
+
+function VersionsTab(props: Omit<ComponentProps<typeof VersionsBody>, "pluginVersion">) {
+  const { pluginVersion } = usePluginUpdateController();
+  return <VersionsBody pluginVersion={pluginVersion} {...props} />;
+}
+
 export function SettingsPage() {
   const t = useT();
   const [page, setPage] = useState("metadata");
 
-  // Every container hook runs here, above the layout: the native layout mounts only the active page,
+  // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
   // so state kept in a page body would reset on a tab switch.
   const { games, scan } = useScanGames();
   const maintenance = useMetadataMaintenance(games);
@@ -60,44 +144,21 @@ export function SettingsPage() {
   const logs = useLogsSettings();
   const versions = useVersions();
   const contextMenu = useContextMenuSettings();
-  const updates = usePluginUpdateController();
-  const [trailers, setTrailers] = useState(trailerController.getSnapshot());
-  const [miniAchievements, setMiniAchievements] = useState(miniAchievementsController.getSnapshot());
-  const [protonDb, setProtonDb] = useState(protonDbBadgeController.getSnapshot());
-  const [hltb, setHltb] = useState(hltbController.getSnapshot());
 
   useEffect(() => {
     void refreshLanguage();
   }, []);
-  useEffect(() => {
-    const unsubscribe = trailerController.subscribe(() => setTrailers(trailerController.getSnapshot()));
-    setTrailers(trailerController.getSnapshot());
-    return unsubscribe;
-  }, []);
-  useEffect(() => {
-    const unsubscribe = miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot()));
-    setMiniAchievements(miniAchievementsController.getSnapshot());
-    return unsubscribe;
-  }, []);
-  useEffect(() => {
-    const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
-    setProtonDb(protonDbBadgeController.getSnapshot());
-    return unsubscribe;
-  }, []);
-  useEffect(() => {
-    const unsubscribe = hltbController.subscribe(() => setHltb(hltbController.getSnapshot()));
-    setHltb(hltbController.getSnapshot());
-    return unsubscribe;
-  }, []);
 
+  // Each body renders its own Steam settings sections.
   const pages: SettingsLayoutPage[] = [
     {
       id: "metadata",
       label: t("qam.metadata.title"),
       icon: icons.metadata,
       content: (
-        <DialogControlsSection>
+        <>
           <MetadataScanBody
+            inline
             {...scanView(scan)}
             detectedCount={games.length}
             savedCount={scan.savedCount}
@@ -105,120 +166,23 @@ export function SettingsPage() {
             onRefreshMetadata={() => void metadataScanStore.start(games, currentSteamLanguage)}
           />
           <MetadataMaintenanceBody scanBusy={scan.busy} {...maintenance} />
-        </DialogControlsSection>
+        </>
       ),
     },
-    {
-      id: "compat",
-      label: t("qam.compat.title"),
-      icon: icons.compat,
-      content: (
-        <DialogControlsSection>
-          <CompatibilityBody {...compatibility} />
-        </DialogControlsSection>
-      ),
-    },
-    {
-      id: "protondb",
-      label: t("qam.protondb.title"),
-      icon: icons.protondb,
-      content: (
-        <DialogControlsSection>
-          <ProtonDbBadgesBody
-            snapshot={protonDb}
-            onSettingsChange={(update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings))}
-            onCoverPositionChange={(coverPosition) => protonDbBadgeController.setSettings({
-              ...protonDbBadgeController.getSnapshot().settings, coverPosition,
-            })}
-          />
-        </DialogControlsSection>
-      ),
-    },
-    {
-      id: "hltb",
-      label: t("qam.hltb.title"),
-      icon: icons.hltb,
-      content: (
-        <DialogControlsSection>
-          <HltbBody
-            settings={hltb.settings}
-            settingsLoaded={hltb.settingsLoaded}
-            conflict={hltb.conflict}
-            settingsError={hltb.settingsError}
-            cacheStatus={hltb.cacheStatus}
-            onSettingsChange={(update) => hltbController.setSettings(update(hltbController.getSnapshot().settings))}
-            onClearCache={() => hltbController.clearCache()}
-            onStyleChange={(style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style })}
-            onBlurChange={(blur) => {
-              const current = hltbController.getSnapshot().settings;
-              return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
-            }}
-          />
-        </DialogControlsSection>
-      ),
-    },
-    {
-      id: "trailers",
-      label: t("qam.trailers.title"),
-      icon: icons.trailers,
-      content: (
-        <DialogControlsSection>
-          <GameTrailersBody
-            state={trailers}
-            onEnabledChange={(enabled) => void trailerController.setEnabled(enabled)}
-            onDetailEnabledChange={(enabled) => void trailerController.setDetailEnabled(enabled)}
-            onHomeEnabledChange={(enabled) => void trailerController.setHomeEnabled(enabled)}
-            onAudioChange={(enabled) => void trailerController.setAudioEnabled(enabled)}
-            onHideLogoChange={(hide) => void trailerController.setHideLogoDuringTrailer(hide)}
-            onDetailFadeInDelayChange={(seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds)}
-            onHomeFadeInDelayChange={(seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds)}
-            onQualityChange={(quality) => trailerController.setQuality(quality)}
-          />
-        </DialogControlsSection>
-      ),
-    },
+    { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: <CompatibilityBody {...compatibility} /> },
+    { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: <ProtonDbTab /> },
+    { id: "hltb", label: t("qam.hltb.title"), icon: icons.hltb, content: <HltbTab /> },
+    { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: <TrailersTab /> },
     {
       id: "miniAchievements",
       label: t("qam.miniAchievements.title"),
       icon: icons.miniAchievements,
-      content: (
-        <DialogControlsSection>
-          <MiniAchievementsBody
-            state={miniAchievements}
-            onEnabledChange={(enabled) => void miniAchievementsController.setEnabled(enabled)}
-          />
-        </DialogControlsSection>
-      ),
+      content: <MiniAchievementsTab />,
     },
-    {
-      id: "contextMenu",
-      label: t("qam.contextMenu.title"),
-      icon: icons.contextMenu,
-      content: <DialogControlsSection><ContextMenuBody {...contextMenu} /></DialogControlsSection>,
-    },
-    {
-      id: "logs",
-      label: t("qam.logs.title"),
-      icon: icons.logs,
-      separatorBefore: true,
-      content: <DialogControlsSection><LogsBody {...logs} /></DialogControlsSection>,
-    },
-    {
-      id: "updates",
-      label: t("qam.update.title"),
-      icon: icons.updates,
-      content: <DialogControlsSection><PluginUpdateBody /></DialogControlsSection>,
-    },
-    {
-      id: "versions",
-      label: t("qam.versions.title"),
-      icon: icons.versions,
-      content: (
-        <DialogControlsSection>
-          <VersionsBody pluginVersion={updates.pluginVersion} {...versions} />
-        </DialogControlsSection>
-      ),
-    },
+    { id: "contextMenu", label: t("qam.contextMenu.title"), icon: icons.contextMenu, content: <ContextMenuBody {...contextMenu} /> },
+    { id: "logs", label: t("qam.logs.title"), icon: icons.logs, separatorBefore: true, content: <LogsBody {...logs} /> },
+    { id: "updates", label: t("qam.update.title"), icon: icons.updates, content: <PluginUpdateBody /> },
+    { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: <VersionsTab {...versions} /> },
   ];
 
   return (

@@ -733,7 +733,7 @@ describe("TrailerController behavior", () => {
     controller.stop();
   });
 
-  it("keeps checking every 2 s while the QAM panel is visible", async () => {
+  it("keeps checking every 2 s while the Game trailers settings tab is shown", async () => {
     usePollClock();
     const controller = mountBridgeOnlyController();
     await openGamePage(controller);
@@ -744,6 +744,24 @@ describe("TrailerController behavior", () => {
     await advancePoll(controller);
     await advancePoll(controller);
     expect(checkCalls()).toHaveLength(3);
+    controller.stop();
+  });
+
+  it("tells subscribers only about changed snapshots, not about every poll", async () => {
+    usePollClock();
+    const controller = mountController();
+    await openGamePage(controller);
+    await advancePoll(controller);
+    const listener = vi.fn();
+    controller.subscribe(listener);
+
+    for (let index = 0; index < 5; index += 1) await advancePoll(controller);
+    expect(listener).not.toHaveBeenCalled();
+
+    (window as any).__deckyMetadataTrailerRuntime.snapshot.mockReturnValue({ status: "Trailer paused" });
+    await advancePoll(controller);
+    expect(listener).toHaveBeenCalledOnce();
+    expect(controller.getSnapshot().status).toBe("Trailer paused");
     controller.stop();
   });
 

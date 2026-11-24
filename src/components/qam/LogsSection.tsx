@@ -1,7 +1,6 @@
-import { ButtonItem, PanelSectionRow, ToggleField } from "@decky/ui";
+import { ButtonItem, DialogControlsSection, ToggleField } from "@decky/ui";
 
 import { useT } from "../../i18n";
-import { ButtonLabel } from "../../styles";
 
 type LogsSectionProps = {
   logsBusy: boolean;
@@ -23,28 +22,22 @@ export function LogsBody({
   const t = useT();
 
   return (
-    <>
-      <PanelSectionRow>
-        <ButtonItem
-          layout="below"
-          bottomSeparator="none"
-          disabled={logsBusy}
-          onClick={onViewLogs}
-        >
-          {logsBusy ? <ButtonLabel busy>{t("qam.logs.loading")}</ButtonLabel> : t("qam.logs.view")}
-        </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.logs.debugLogging")}
-          description={t("qam.logs.debugLoggingDescription")}
-          bottomSeparator="none"
-          checked={debugLogging}
-          disabled={!debugLoggingLoaded || debugLoggingBusy}
-          onChange={onToggleDebugLogging}
-        />
-      </PanelSectionRow>
-    </>
+    <DialogControlsSection>
+      <ButtonItem
+        layout="inline"
+        label={t("qam.logs.view")}
+        disabled={logsBusy}
+        onClick={onViewLogs}
+      >
+        {t("settings.action.view")}
+      </ButtonItem>
+      <ToggleField
+        label={t("qam.logs.debugLogging")}
+        description={t("qam.logs.debugLoggingDescription")}
+        checked={debugLogging}
+        disabled={!debugLoggingLoaded || debugLoggingBusy}
+        onChange={onToggleDebugLogging}
+      />
+    </DialogControlsSection>
   );
 }
-

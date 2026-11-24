@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Öppna inställningar" },
+  "settings": { "open": "Öppna inställningar", "action": { "refresh": "Uppdatera", "clear": "Rensa", "view": "Visa", "check": "Kontrollera" } },
   "common": {
     "hours_one": "{{value}} timme",
     "hours_other": "{{value}} timmar",
@@ -245,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Hittade icke-Steam-spel:",
-      "saved": "Sparad metadata:",
-      "missing": "Saknad metadata:",
+      "detectedGames": "Hittade icke-Steam-spel",
+      "saved": "Sparad metadata",
+      "missing": "Saknad metadata",
       "refresh": "Uppdatera metadata",
       "refreshing": "Uppdaterar...",
       "refreshingStatus": "Uppdaterar metadata...",

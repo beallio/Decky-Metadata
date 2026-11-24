@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Hap cilësimet" },
+  "settings": { "open": "Hap cilësimet", "action": { "refresh": "Rifresko", "clear": "Pastro", "view": "Shiko", "check": "Kontrollo" } },
   "common": {
     "hours_one": "{{value}} orë",
     "hours_other": "{{value}} orë",
@@ -245,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Lojëra jo-Steam të zbuluara:",
-      "saved": "Metadata të ruajtura:",
-      "missing": "Metadata që mungojnë:",
+      "detectedGames": "Lojëra jo-Steam të zbuluara",
+      "saved": "Metadata të ruajtura",
+      "missing": "Metadata që mungojnë",
       "refresh": "Rifresko metadata",
       "refreshing": "Po rifreskohet...",
       "refreshingStatus": "Po rifreskohen metadata...",

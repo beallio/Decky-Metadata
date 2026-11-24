@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Otevřít nastavení" },
+  "settings": { "open": "Otevřít nastavení", "action": { "refresh": "Obnovit", "clear": "Vymazat", "view": "Zobrazit", "check": "Zkontrolovat" } },
   "common": {
     "hours_one": "{{value}} hodina",
     "hours_few": "{{value}} hodiny",
@@ -247,9 +247,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Zjištěné hry mimo Steam:",
-      "saved": "Uložená metadata:",
-      "missing": "Chybějící metadata:",
+      "detectedGames": "Zjištěné hry mimo Steam",
+      "saved": "Uložená metadata",
+      "missing": "Chybějící metadata",
       "refresh": "Obnovit metadata",
       "refreshing": "Obnovování...",
       "refreshingStatus": "Obnovování metadat...",

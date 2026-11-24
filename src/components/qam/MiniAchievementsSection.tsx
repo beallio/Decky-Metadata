@@ -1,4 +1,4 @@
-import { Field, PanelSectionRow, ToggleField } from "@decky/ui";
+import { DialogControlsSection, Field, ToggleField } from "@decky/ui";
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { MiniAchievementsSnapshot } from "../../steam/miniAchievementsController";
@@ -15,26 +15,20 @@ export function MiniAchievementsBody({ state, onEnabledChange }: MiniAchievement
     (Boolean(state.conflict.pluginName) && !state.enabled);
   const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
   return (
-    <>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.miniAchievements.enableLabel")}
-          description={`${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`}
-          checked={state.enabled}
-          disabled={enableDisabled}
-          onChange={onEnabledChange}
-          bottomSeparator="none"
-        />
-      </PanelSectionRow>
+    <DialogControlsSection>
+      <ToggleField
+        label={t("qam.miniAchievements.enableLabel")}
+        description={`${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`}
+        checked={state.enabled}
+        disabled={enableDisabled}
+        onChange={onEnabledChange}
+      />
       {(conflictNotice || state.settingsError) ? (
-        <PanelSectionRow>
-          <Field focusable={false} padding="none" bottomSeparator="none">
-            {conflictNotice && <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>}
-            {state.settingsError && <div style={inlineStatusStyle("error")}>{state.settingsError}</div>}
-          </Field>
-        </PanelSectionRow>
+        <Field focusable={false} childrenLayout="below" padding="none">
+          {conflictNotice && <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>}
+          {state.settingsError && <div style={inlineStatusStyle("error")}>{state.settingsError}</div>}
+        </Field>
       ) : null}
-    </>
+    </DialogControlsSection>
   );
 }
-

@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Otwórz ustawienia" },
+  "settings": { "open": "Otwórz ustawienia", "action": { "refresh": "Odśwież", "clear": "Wyczyść", "view": "Wyświetl", "check": "Sprawdź" } },
   "common": {
     "hours_one": "{{value}} godzina",
     "hours_few": "{{value}} godziny",
@@ -247,9 +247,9 @@
     },
     "metadata": {
       "title": "Metadane",
-      "detectedGames": "Wykryte gry spoza Steam:",
-      "saved": "Zapisane metadane:",
-      "missing": "Brakujące metadane:",
+      "detectedGames": "Wykryte gry spoza Steam",
+      "saved": "Zapisane metadane",
+      "missing": "Brakujące metadane",
       "refresh": "Odśwież metadane",
       "refreshing": "Odświeżanie...",
       "refreshingStatus": "Odświeżanie metadanych...",

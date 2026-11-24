@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Ouvrir les paramètres" },
+  "settings": { "open": "Ouvrir les paramètres", "action": { "refresh": "Actualiser", "clear": "Effacer", "view": "Voir", "check": "Vérifier" } },
   "common": {
     "hours_one": "{{value}} heure",
     "hours_many": "{{value}} heures",
@@ -246,9 +246,9 @@
     },
     "metadata": {
       "title": "Métadonnées",
-      "detectedGames": "Jeux non Steam détectés :",
-      "saved": "Métadonnées enregistrées :",
-      "missing": "Métadonnées manquantes :",
+      "detectedGames": "Jeux non Steam détectés",
+      "saved": "Métadonnées enregistrées",
+      "missing": "Métadonnées manquantes",
       "refresh": "Actualiser les métadonnées",
       "refreshing": "Actualisation...",
       "refreshingStatus": "Actualisation des métadonnées...",

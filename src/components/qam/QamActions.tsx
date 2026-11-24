@@ -25,7 +25,7 @@ export function OpenSettingsButton() {
   const t = useT();
   return (
     <PanelSectionRow>
-      <ButtonItem layout="below" onClick={openSettings}>
+      <ButtonItem layout="below" bottomSeparator="none" onClick={openSettings}>
         {t("settings.open")}
       </ButtonItem>
     </PanelSectionRow>

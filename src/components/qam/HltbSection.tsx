@@ -1,11 +1,11 @@
 // Controls adapted from HLTB for Deck (MIT).
-import { ButtonItem, DropdownItem, Field, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
+import { ButtonItem, DialogControlsSection, DropdownItem, Field, SliderField, ToggleField } from "@decky/ui";
 import { DEFAULT_HLTB_SETTINGS } from "../../hltb/settings";
 import type { HltbAppearance, HltbSettings } from "../../hltb/settings";
 import { useT } from "../../i18n";
 import { featureConflictNotice } from "../../pluginConflicts";
 import type { FeatureConflict } from "../../pluginConflicts";
-import { ButtonLabel, compactTextStyle, inlineStatusStyle } from "../../styles";
+import { inlineStatusStyle } from "../../styles";
 import type { HltbSnapshot } from "../../hltb/controller";
 
 type HltbBodyProps = {
@@ -53,35 +53,33 @@ export function HltbBody({
   const updateAppearance = <K extends keyof HltbAppearance>(key: K, value: HltbAppearance[K]) => {
     void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
   };
-  return <>
-    <PanelSectionRow><ToggleField label={t("qam.hltb.showTimesLabel")} description={t("qam.hltb.showTimesDescription")} checked={settings.enabled} disabled={controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled)} onChange={value => update("enabled", value)} /></PanelSectionRow>
-    <PanelSectionRow><ToggleField label={t("qam.hltb.storeLabel")} description={t("qam.hltb.storeDescription")} checked={settings.store} disabled={disabled} onChange={value => update("store", value)} /></PanelSectionRow>
-    <PanelSectionRow><DropdownItem label={t("qam.hltb.styleLabel")} description={t("qam.hltb.styleDescription")} layout="below" childrenContainerWidth="max" rgOptions={styles} selectedOption={settings.style} disabled={disabled} onChange={option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); }} /></PanelSectionRow>
-    {settings.style === "default" || settings.style === "clean-default" ? <PanelSectionRow><ToggleField label={t("qam.hltb.pushPlayLabel")} description={t("qam.hltb.pushPlayDescription")} checked={settings.pushPlayDown} disabled={disabled} onChange={value => update("pushPlayDown", value)} /></PanelSectionRow> : null}
-    {settings.style === "default" || settings.style === "clean-default" ? <PanelSectionRow><ToggleField label={t("qam.hltb.respectMenuBarLabel")} description={t("qam.hltb.respectMenuBarDescription")} checked={settings.respectMenuBar} disabled={disabled || !settings.pushPlayDown} onChange={value => update("respectMenuBar", value)} /></PanelSectionRow> : null}
-    {settings.style === "default" ? null : <PanelSectionRow><DropdownItem label={t("qam.hltb.blurLabel")} description={t("qam.hltb.blurDescription")} layout="below" childrenContainerWidth="max" rgOptions={blurOptions} selectedOption={appearance.blur} disabled={disabled} onChange={option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); }} /></PanelSectionRow>}
-    <PanelSectionRow><ToggleField label={t("qam.hltb.hideDetailsLabel")} description={t("qam.hltb.hideDetailsDescription")} checked={settings.hideViewDetails} disabled={disabled} onChange={value => update("hideViewDetails", value)} /></PanelSectionRow>
-    <PanelSectionRow><ToggleField label={t("qam.hltb.nativeCornersLabel")} description={t("qam.hltb.nativeCornersDescription")} checked={settings.nativeDetailsCorners} disabled={disabled} onChange={value => update("nativeDetailsCorners", value)} /></PanelSectionRow>
-    {statControls.map(([key, label, description]) => <PanelSectionRow key={key}><ToggleField label={label} description={description} checked={settings[key]} disabled={disabled} onChange={value => update(key, value)} /></PanelSectionRow>)}
-    <PanelSectionRow>
-      <ButtonItem layout="below" bottomSeparator="none" disabled={controlsDisabled || cacheStatus === "clearing"} onClick={() => { void onClearCache(); }}>
-        {cacheStatus === "clearing" ? <ButtonLabel busy={true}>{t("qam.hltb.clearingButton")}</ButtonLabel> : t("qam.hltb.clearCacheButton")}
-      </ButtonItem>
-      {cacheStatus !== "idle" ? <div style={inlineStatusStyle(cacheStatusText[cacheStatus][0])}>{cacheStatusText[cacheStatus][1]}</div> : null}
-    </PanelSectionRow>
-    <PanelSectionRow><ToggleField label={t("qam.hltb.customizeLabel")} description={t("qam.hltb.customizeDescription")} checked={appearance.custom} disabled={disabled} onChange={value => updateAppearance("custom", value)} /></PanelSectionRow>
+  return <DialogControlsSection>
+    <ToggleField label={t("qam.hltb.showTimesLabel")} description={t("qam.hltb.showTimesDescription")} checked={settings.enabled} disabled={controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled)} onChange={value => update("enabled", value)} />
+    <ToggleField label={t("qam.hltb.storeLabel")} description={t("qam.hltb.storeDescription")} checked={settings.store} disabled={disabled} onChange={value => update("store", value)} />
+    <DropdownItem label={t("qam.hltb.styleLabel")} description={t("qam.hltb.styleDescription")} rgOptions={styles} selectedOption={settings.style} disabled={disabled} onChange={option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); }} />
+    {settings.style === "default" || settings.style === "clean-default" ? <ToggleField label={t("qam.hltb.pushPlayLabel")} description={t("qam.hltb.pushPlayDescription")} checked={settings.pushPlayDown} disabled={disabled} onChange={value => update("pushPlayDown", value)} /> : null}
+    {settings.style === "default" || settings.style === "clean-default" ? <ToggleField label={t("qam.hltb.respectMenuBarLabel")} description={t("qam.hltb.respectMenuBarDescription")} checked={settings.respectMenuBar} disabled={disabled || !settings.pushPlayDown} onChange={value => update("respectMenuBar", value)} /> : null}
+    {settings.style === "default" ? null : <DropdownItem label={t("qam.hltb.blurLabel")} description={t("qam.hltb.blurDescription")} rgOptions={blurOptions} selectedOption={appearance.blur} disabled={disabled} onChange={option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); }} />}
+    <ToggleField label={t("qam.hltb.hideDetailsLabel")} description={t("qam.hltb.hideDetailsDescription")} checked={settings.hideViewDetails} disabled={disabled} onChange={value => update("hideViewDetails", value)} />
+    <ToggleField label={t("qam.hltb.nativeCornersLabel")} description={t("qam.hltb.nativeCornersDescription")} checked={settings.nativeDetailsCorners} disabled={disabled} onChange={value => update("nativeDetailsCorners", value)} />
+    {statControls.map(([key, label, description]) => <ToggleField key={key} label={label} description={description} checked={settings[key]} disabled={disabled} onChange={value => update(key, value)} />)}
+    <ButtonItem layout="inline" label={t("qam.hltb.clearCacheButton")} disabled={controlsDisabled || cacheStatus === "clearing"} onClick={() => { void onClearCache(); }}>
+      {t("settings.action.clear")}
+    </ButtonItem>
+    {cacheStatus !== "idle" ? <Field focusable={false} childrenLayout="below"><div style={inlineStatusStyle(cacheStatusText[cacheStatus][0])}>{cacheStatusText[cacheStatus][1]}</div></Field> : null}
+    <ToggleField label={t("qam.hltb.customizeLabel")} description={t("qam.hltb.customizeDescription")} checked={appearance.custom} disabled={disabled} onChange={value => updateAppearance("custom", value)} />
     {appearance.custom ? <>
-      {settings.style === "default" ? <PanelSectionRow><SliderField label={t("qam.hltb.opacityLabel")} description={t("qam.hltb.opacityDescription")} value={appearance.barAlpha} min={0} max={100} step={5} showValue valueSuffix="%" resetValue={25} disabled={disabled} onChange={value => updateAppearance("barAlpha", value)} /></PanelSectionRow> : null}
-      <PanelSectionRow><ToggleField label={t("qam.hltb.textShadowLabel")} description={t("qam.hltb.textShadowDescription")} checked={appearance.textShadow} disabled={disabled} onChange={value => updateAppearance("textShadow", value)} /></PanelSectionRow>
-      <PanelSectionRow><SliderField label={t("qam.hltb.textSizeLabel")} description={t("qam.hltb.textSizeDescription")} value={appearance.textScale} min={75} max={150} step={5} showValue valueSuffix="%" resetValue={100} disabled={disabled} onChange={value => updateAppearance("textScale", value)} /></PanelSectionRow>
-      {settings.style === "default" ? <PanelSectionRow><ToggleField label={t("qam.hltb.bottomBorderLabel")} description={t("qam.hltb.bottomBorderDescription")} checked={appearance.border} disabled={disabled} onChange={value => updateAppearance("border", value)} /></PanelSectionRow> : null}
-      <PanelSectionRow><ButtonItem layout="below" disabled={disabled} onClick={() => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true })}>{t("qam.hltb.resetAppearance")}</ButtonItem></PanelSectionRow>
+      {settings.style === "default" ? <SliderField label={t("qam.hltb.opacityLabel")} description={t("qam.hltb.opacityDescription")} value={appearance.barAlpha} min={0} max={100} step={5} showValue valueSuffix="%" resetValue={25} disabled={disabled} onChange={value => updateAppearance("barAlpha", value)} /> : null}
+      <ToggleField label={t("qam.hltb.textShadowLabel")} description={t("qam.hltb.textShadowDescription")} checked={appearance.textShadow} disabled={disabled} onChange={value => updateAppearance("textShadow", value)} />
+      <SliderField label={t("qam.hltb.textSizeLabel")} description={t("qam.hltb.textSizeDescription")} value={appearance.textScale} min={75} max={150} step={5} showValue valueSuffix="%" resetValue={100} disabled={disabled} onChange={value => updateAppearance("textScale", value)} />
+      {settings.style === "default" ? <ToggleField label={t("qam.hltb.bottomBorderLabel")} description={t("qam.hltb.bottomBorderDescription")} checked={appearance.border} disabled={disabled} onChange={value => updateAppearance("border", value)} /> : null}
+      <ButtonItem layout="inline" label={t("qam.hltb.customizeLabel")} description={t("qam.hltb.customizeDescription")} disabled={disabled} onClick={() => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true })}>{t("qam.hltb.resetAppearance")}</ButtonItem>
     </> : null}
-    <PanelSectionRow><Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
-      {!settingsLoaded ? <div style={compactTextStyle}>{t("qam.hltb.loadingPreferences")}</div> : null}
+    {!settingsLoaded || notice || settingsError ? <Field focusable={false} childrenLayout="below">
+      {!settingsLoaded ? <div>{t("qam.hltb.loadingPreferences")}</div> : null}
       {notice ? <div style={inlineStatusStyle("warning")}>{notice}</div> : null}
       {settingsError ? <div style={inlineStatusStyle("error")}>{settingsError}</div> : null}
-    </Field></PanelSectionRow>
-  </>;
+    </Field> : null}
+  </DialogControlsSection>;
 }
 

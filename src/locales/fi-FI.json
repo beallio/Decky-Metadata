@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Avaa asetukset" },
+  "settings": { "open": "Avaa asetukset", "action": { "refresh": "Päivitä", "clear": "Tyhjennä", "view": "Näytä", "check": "Tarkista" } },
   "common": {
     "hours_one": "{{value}} tunti",
     "hours_other": "{{value}} tuntia",
@@ -245,9 +245,9 @@
     },
     "metadata": {
       "title": "Metatiedot",
-      "detectedGames": "Havaitut Steamin ulkopuoliset pelit:",
-      "saved": "Tallennetut metatiedot:",
-      "missing": "Puuttuvat metatiedot:",
+      "detectedGames": "Havaitut Steamin ulkopuoliset pelit",
+      "saved": "Tallennetut metatiedot",
+      "missing": "Puuttuvat metatiedot",
       "refresh": "Päivitä metatiedot",
       "refreshing": "Päivitetään...",
       "refreshingStatus": "Päivitetään metatietoja...",

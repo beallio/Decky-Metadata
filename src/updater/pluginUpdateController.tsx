@@ -31,7 +31,7 @@ import {
 import { t, translateBackendError } from "../i18n";
 import { toastError } from "../toast";
 import { updateReducer, initialUpdateState } from "./pluginUpdateReducer";
-import { resolveLoadedUpdateSettings, resolveSavedUpdateSettings } from "./updateSettings";
+import { DEFAULT_UPDATE_SETTINGS, resolveLoadedUpdateSettings } from "./updateSettings";
 
 function logUpdate(traceId: string | null, stage: string, details?: Record<string, unknown>) {
   const detailsStr = details
@@ -112,8 +112,12 @@ type CheckOptions = {
 export class PluginUpdateControllerStore {
   private state = { ...initialUpdateState };
   private pluginVersion = "";
-  private updateChannel: UpdateChannel = "stable";
-  private automaticUpdateChecks = true;
+  // Settings the backend saved; checks follow only these. Pending choices show at once until their save settles.
+  private confirmed: UpdateSettings = { ...DEFAULT_UPDATE_SETTINGS };
+  private pendingChannel: { value: UpdateChannel } | null = null;
+  private pendingAutomatic: { value: boolean } | null = null;
+  // True from the Install click until Decky answers or the install fails: no check or second install meanwhile.
+  private installOwned = false;
   private settingsLoaded = false;
   private readonly listeners = new Set<() => void>();
   private snapshot: PluginUpdateControllerSnapshot = {
@@ -134,7 +138,6 @@ export class PluginUpdateControllerStore {
   private initializationStarted = false;
   private generation = 0;
   private activeCheckId = 0;
-  private latestChannel: UpdateChannel = "stable";
   private inFlightCheck: Promise<UpdateCheckResult> | null = null;
   private checkTimeout: ReturnType<typeof setTimeout> | null = null;
   private handoffTimeout: ReturnType<typeof setTimeout> | null = null;
@@ -157,9 +160,8 @@ export class PluginUpdateControllerStore {
 
   dispose(): void {
     this.generation += 1;
-    this.activeCheckId += 1;
-    this.inFlightCheck = null;
-    this.clearCheckTimeout();
+    this.installOwned = false;
+    this.dropActiveCheck();
     this.clearHandoffTimeout(true);
   }
 
@@ -168,77 +170,66 @@ export class PluginUpdateControllerStore {
   };
 
   setUpdateChannel = async (enabled: boolean): Promise<void> => {
-    const previous = this.currentSettings();
+    const pending = { value: (enabled ? "development" : "stable") as UpdateChannel };
     const generation = this.generation;
-    // Show the choice at once, but check only after the backend saved it: the backend checks the saved channel.
-    this.showSettings({ ...previous, update_channel: enabled ? "development" : "stable" });
+    this.pendingChannel = pending;
+    this.publish();
+    let saved: UpdateSettings | null = null;
     try {
-      const result = await this.deps.setUpdateChannel(enabled ? "development" : "stable");
+      const result = await this.deps.setUpdateChannel(pending.value);
       if (generation !== this.generation) return;
       if ("status" in result) {
-        const rolledBack = resolveSavedUpdateSettings(
-          {
-            update_channel: previous.update_channel,
-            automatic_update_checks: this.automaticUpdateChecks,
-          },
-          result
-        );
-        this.applySettings(rolledBack, previous);
         this.deps.toastError(
           t("panel.toast.updates"),
-          result.message
-            ? translateBackendError(result.message)
-            : t("panel.updateChannelSaveError")
+          result.message ? translateBackendError(result.message) : t("panel.updateChannelSaveError")
         );
-        return;
+      } else {
+        saved = result;
       }
-      this.applySettings(result, previous);
     } catch (error) {
       if (generation !== this.generation) return;
-      this.applySettings({ ...this.currentSettings(), update_channel: previous.update_channel }, previous);
       logUpdate(null, "update_channel_save_failed", {
         message: error instanceof Error ? error.message : String(error),
       });
     }
+    if (this.pendingChannel === pending) this.pendingChannel = null;
+    if (saved) this.applySettings(saved);
+    else this.publish();
   };
 
   setAutomaticUpdateChecks = async (enabled: boolean): Promise<void> => {
-    const previous = this.currentSettings();
+    const pending = { value: enabled };
     const generation = this.generation;
-    // As for the channel: show at once, start the automatic check only after the save is confirmed.
-    this.showSettings({ ...previous, automatic_update_checks: enabled });
+    this.pendingAutomatic = pending;
+    this.publish();
+    let saved: UpdateSettings | null = null;
     try {
       const result = await this.deps.setAutomaticUpdateChecks(enabled);
       if (generation !== this.generation) return;
       if ("status" in result) {
-        const rolledBack = resolveSavedUpdateSettings(
-          {
-            update_channel: this.updateChannel,
-            automatic_update_checks: previous.automatic_update_checks,
-          },
-          result
-        );
-        this.applySettings(rolledBack, previous);
         this.deps.toastError(
           t("panel.toast.updates"),
-          result.message
-            ? translateBackendError(result.message)
-            : t("panel.automaticUpdateSaveError")
+          result.message ? translateBackendError(result.message) : t("panel.automaticUpdateSaveError")
         );
-        return;
+      } else {
+        saved = result;
       }
-      this.applySettings(result, previous);
     } catch (error) {
       if (generation !== this.generation) return;
-      this.applySettings({ ...this.currentSettings(), automatic_update_checks: previous.automatic_update_checks }, previous);
       logUpdate(null, "automatic_update_setting_save_failed", {
         message: error instanceof Error ? error.message : String(error),
       });
     }
+    if (this.pendingAutomatic === pending) this.pendingAutomatic = null;
+    if (saved) this.applySettings(saved);
+    else this.publish();
   };
 
   install = async (targetCandidate: PluginUpdateCandidate): Promise<void> => {
-    if (this.state.phase === "installing" || this.state.phase === "handoff_pending") return;
+    if (this.installOwned) return;
+    this.installOwned = true;
+    // A check that finishes during the install would overwrite its state.
+    this.dropActiveCheck();
     const generation = this.generation;
     this.dispatch({ type: "INSTALL_START" });
 
@@ -282,9 +273,6 @@ export class PluginUpdateControllerStore {
         elapsed_ms: Math.round(performance.now() - recordStarted),
       });
 
-      this.activeCheckId += 1;
-      this.clearCheckTimeout();
-      this.inFlightCheck = null;
       this.dispatch({
         type: "INSTALL_SUCCESS",
         version: revalidation.version,
@@ -329,14 +317,7 @@ export class PluginUpdateControllerStore {
           elapsed_ms: Math.round(performance.now() - handoffStarted),
         });
         this.dispatch({ type: "INSTALL_HANDOFF_PENDING" });
-        void this.finishPendingHandoff(
-          installerPromise,
-          revalidation.version,
-          revalidation.channel,
-          traceId,
-          handoffStarted,
-          generation
-        );
+        void this.finishPendingHandoff(installerPromise, revalidation, traceId, handoffStarted, generation);
         return;
       }
       await installerPromise;
@@ -350,7 +331,7 @@ export class PluginUpdateControllerStore {
       );
     } catch (error) {
       if (generation !== this.generation) return;
-      await this.failInstall(error, targetCandidate.version, traceId, generation);
+      await this.failInstall(error, targetCandidate, traceId, generation);
     }
   };
 
@@ -382,10 +363,7 @@ export class PluginUpdateControllerStore {
     if (generation !== this.generation) return;
 
     if (version) this.pluginVersion = version;
-    const settings = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
-    this.updateChannel = settings.update_channel;
-    this.latestChannel = settings.update_channel;
-    this.automaticUpdateChecks = settings.automatic_update_checks;
+    this.confirmed = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
     this.settingsLoaded = true;
 
     const context =
@@ -418,39 +396,42 @@ export class PluginUpdateControllerStore {
       logUpdate(null, "initial_check_skipped_hydration");
       return;
     }
-    if (this.automaticUpdateChecks) {
+    if (this.confirmed.automatic_update_checks) {
       void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
     }
   }
 
-  private currentSettings(): UpdateSettings {
-    return { update_channel: this.updateChannel, automatic_update_checks: this.automaticUpdateChecks };
+  private get updateChannel(): UpdateChannel {
+    return this.pendingChannel?.value ?? this.confirmed.update_channel;
   }
 
-  /** Optimistic display only: no check starts and in-flight checks keep running. */
-  private showSettings(settings: UpdateSettings): void {
-    this.updateChannel = settings.update_channel;
-    this.automaticUpdateChecks = settings.automatic_update_checks;
-    this.publish();
+  private get automaticUpdateChecks(): boolean {
+    return this.pendingAutomatic?.value ?? this.confirmed.automatic_update_checks;
   }
 
-  /** Apply settings the backend confirmed; checks follow the change from `previous`, the settings before the save. */
-  private applySettings(settings: UpdateSettings, previous: UpdateSettings): void {
+  private dropActiveCheck(): void {
+    this.activeCheckId += 1;
+    this.inFlightCheck = null;
+    this.clearCheckTimeout();
+  }
+
+  /** Apply settings the backend saved; checks follow the change from the settings saved before. */
+  private applySettings(settings: UpdateSettings): void {
+    const previous = this.confirmed;
+    this.confirmed = settings;
     const channelChanged = previous.update_channel !== settings.update_channel;
     const automaticChecksEnabled =
       !previous.automatic_update_checks && settings.automatic_update_checks;
     if (channelChanged) {
-      this.activeCheckId += 1;
-      this.inFlightCheck = null;
-      this.clearCheckTimeout();
+      this.dropActiveCheck();
+      this.dispatch({ type: "CHECK_CANCELLED" });
+    } else {
+      this.publish();
     }
-    this.updateChannel = settings.update_channel;
-    this.latestChannel = settings.update_channel;
-    this.automaticUpdateChecks = settings.automatic_update_checks;
-    this.publish();
 
     if (channelChanged) {
-      void this.checkForUpdates({ force: true, notify: false, source: "automatic" });
+      // A user action, so it is not held back like an automatic check: it replaces the check dropped above.
+      void this.checkForUpdates({ force: true, notify: false, source: "manual" });
     } else if (automaticChecksEnabled && this.settingsLoaded) {
       void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
     }
@@ -473,10 +454,14 @@ export class PluginUpdateControllerStore {
   }
 
   private async checkForUpdates(options: CheckOptions): Promise<UpdateCheckResult | undefined> {
+    if (this.installOwned) {
+      logUpdate(null, "check_suppressed_install");
+      return;
+    }
     const currentVersion = this.state.installedOverride?.version ?? this.pluginVersion;
     if (!currentVersion || currentVersion === "Loading...") return;
     if (options.source === "automatic" && !this.settingsLoaded) return;
-    if (options.source === "automatic" && !this.automaticUpdateChecks) {
+    if (options.source === "automatic" && !this.confirmed.automatic_update_checks) {
       logUpdate(null, "automatic_check_suppressed_disabled");
       return;
     }
@@ -488,16 +473,11 @@ export class PluginUpdateControllerStore {
       return;
     }
 
-    const checkChannel = this.updateChannel;
-    if (this.inFlightCheck && this.latestChannel === checkChannel) {
+    // The backend checks its saved channel, so a pending channel choice does not count yet.
+    const checkChannel = this.confirmed.update_channel;
+    if (this.inFlightCheck) {
       logUpdate(null, "check_reuse", { channel: checkChannel, elapsed_ms: 0 });
       return this.inFlightCheck;
-    }
-    if (this.latestChannel !== checkChannel) {
-      this.activeCheckId += 1;
-      this.inFlightCheck = null;
-      this.clearCheckTimeout();
-      this.latestChannel = checkChannel;
     }
 
     this.activeCheckId += 1;
@@ -519,12 +499,12 @@ export class PluginUpdateControllerStore {
     const request = (async (): Promise<UpdateCheckResult> => {
       try {
         const result = await this.deps.checkForPluginUpdate(currentVersion, options.force);
-        if (
-          generation !== this.generation ||
-          this.activeCheckId !== checkId ||
-          this.latestChannel !== checkChannel ||
-          (result.status !== "failed" && result.channel !== checkChannel)
-        ) {
+        if (generation !== this.generation || this.activeCheckId !== checkId) {
+          return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
+        }
+        if (result.status !== "failed" && result.channel !== checkChannel) {
+          logUpdate(null, "check_channel_mismatch", { channel: checkChannel, result_channel: result.channel });
+          this.dispatch({ type: "CHECK_CANCELLED" });
           return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
         }
         const elapsedMs = Math.round(performance.now() - checkStarted);
@@ -583,11 +563,7 @@ export class PluginUpdateControllerStore {
         }
         return result;
       } catch (error) {
-        if (
-          generation !== this.generation ||
-          this.activeCheckId !== checkId ||
-          this.latestChannel !== checkChannel
-        ) {
+        if (generation !== this.generation || this.activeCheckId !== checkId) {
           return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
         }
         const elapsedMs = Math.round(performance.now() - checkStarted);
@@ -627,9 +603,6 @@ export class PluginUpdateControllerStore {
     handoffStarted: number,
     generation: number
   ): Promise<void> {
-    this.activeCheckId += 1;
-    this.clearCheckTimeout();
-    this.inFlightCheck = null;
     this.dispatch({
       type: "INSTALL_SUCCESS",
       version,
@@ -654,6 +627,7 @@ export class PluginUpdateControllerStore {
       status: "success",
       elapsed_ms: Math.round(performance.now() - handoffStarted),
     });
+    this.installOwned = false;
     this.setPluginVersion(version);
     this.deps.toast({
       title: t("updater.installation.startedTitle"),
@@ -664,8 +638,7 @@ export class PluginUpdateControllerStore {
 
   private async finishPendingHandoff(
     installerPromise: Promise<unknown>,
-    version: string,
-    channel: UpdateChannel,
+    candidate: PluginUpdateCandidate,
     traceId: string,
     handoffStarted: number,
     generation: number
@@ -673,46 +646,26 @@ export class PluginUpdateControllerStore {
     try {
       await installerPromise;
       if (generation !== this.generation) return;
-      await this.handleHandoffSuccess(version, channel, traceId, handoffStarted, generation);
+      await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
     } catch (error) {
       if (generation !== this.generation) return;
-      const message = translateBackendError(error);
       logUpdate(traceId, "handoff_rejected", {
-        message,
+        message: translateBackendError(error),
         elapsed_ms: Math.round(performance.now() - handoffStarted),
       });
-      try {
-        const result = await this.deps.clearPendingUpdateInstall(version);
-        if (generation !== this.generation) return;
-        if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
-          throw new Error(result.message || "Failed to clear pending install");
-        }
-      } catch (clearError) {
-        if (generation !== this.generation) return;
-        logUpdate(traceId, "pending_clear_failed", {
-          message: clearError instanceof Error ? clearError.message : String(clearError),
-        });
-      }
-      if (generation !== this.generation) return;
-      void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-      this.dispatch({ type: "INSTALL_FAILED", message });
-      this.deps.toast({
-        title: t("updater.installation.failedTitle"),
-        body: message,
-        duration: 4000,
-      });
+      await this.failInstall(error, candidate, traceId, generation);
     }
   }
 
   private async failInstall(
     error: unknown,
-    candidateVersion: string,
+    candidate: PluginUpdateCandidate,
     traceId: string,
     generation: number
   ): Promise<void> {
     const message = translateBackendError(error);
     try {
-      const result = await this.deps.clearPendingUpdateInstall(candidateVersion);
+      const result = await this.deps.clearPendingUpdateInstall(candidate.version);
       if (generation !== this.generation) return;
       if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
         throw new Error(result.message || "Failed to clear pending install");
@@ -724,8 +677,9 @@ export class PluginUpdateControllerStore {
       });
     }
     if (generation !== this.generation) return;
-    void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-    this.dispatch({ type: "INSTALL_FAILED", message });
+    // No follow-up check: it would replace the failure with a check result; the user can retry or press Check now.
+    this.installOwned = false;
+    this.dispatch({ type: "INSTALL_FAILED", message, candidate });
     this.deps.toast({
       title: t("updater.installation.failedTitle"),
       body: message,
@@ -750,7 +704,7 @@ export class PluginUpdateControllerStore {
       errorMessage: this.state.errorMessage,
       checkTimedOut: this.state.checkTimedOut,
       isChecking: this.state.phase === "checking",
-      isInstalling: this.state.phase === "installing",
+      isInstalling: this.installOwned && this.state.phase !== "handoff_pending",
       isHandoffPending: this.state.phase === "handoff_pending",
       installedReleasePublishedAt: this.state.installedReleasePublishedAt,
     };

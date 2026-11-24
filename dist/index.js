@@ -94,15 +94,9 @@ const colors = {
     textSecondary: "#b8bcbf",
     surfaceKnockout: "#0e141b",
 };
-// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
-const space = {
-    md: 12};
 // Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
 const fontSize = {
-    sm: 13,
-    lg: 16};
-const fontWeight = {
-    medium: 500};
+    sm: 13};
 // Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
 const fontFamily = '"Motiva Sans", Arial, sans-serif';
 const statusColor = (kind) => ({
@@ -139,6 +133,13 @@ const inlineStatusStyle = (kind) => ({
     ...inlineStatusBaseStyle,
     color: statusColor(kind),
 });
+/** A status shown as a Field value: color only, so Steam's own value font applies. */
+const statusValueStyle = (kind) => ({
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    color: statusColor(kind),
+});
 const busySpinnerStyle = {
     width: "18px",
     height: "18px",
@@ -150,14 +151,6 @@ const buttonLabelStyle = {
     justifyContent: "center",
     gap: "10px",
     minWidth: 136,
-};
-const sectionHeadingStyle = {
-    width: "100%",
-    paddingTop: space.md,
-    color: "#dcdedf",
-    fontSize: fontSize.lg,
-    fontWeight: fontWeight.medium,
-    lineHeight: "20px",
 };
 const BusySpinner = () => (SP_JSX.jsx(DFL.Spinner, { style: busySpinnerStyle }));
 const ButtonLabel = ({ children, busy = false }) => (SP_JSX.jsxs("span", { style: buttonLabelStyle, children: [busy ? SP_JSX.jsx(BusySpinner, {}) : null, children] }));
@@ -2870,7 +2863,13 @@ const useTranslation = (ns, props = {}) => {
 };
 
 var settings$o = {
-	open: "فتح الإعدادات"
+	open: "فتح الإعدادات",
+	action: {
+		refresh: "تحديث",
+		clear: "مسح",
+		view: "عرض",
+		check: "تحقق"
+	}
 };
 var common$o = {
 	hours_zero: "{{value}} ساعة",
@@ -3121,9 +3120,9 @@ var qam$o = {
 	},
 	metadata: {
 		title: "البيانات الوصفية",
-		detectedGames: "الألعاب غير التابعة لـ Steam المكتشفة:",
-		saved: "البيانات الوصفية المحفوظة:",
-		missing: "البيانات الوصفية المفقودة:",
+		detectedGames: "الألعاب غير التابعة لـ Steam المكتشفة",
+		saved: "البيانات الوصفية المحفوظة",
+		missing: "البيانات الوصفية المفقودة",
 		refresh: "تحديث البيانات الوصفية",
 		refreshing: "جارٍ التحديث...",
 		refreshingStatus: "جارٍ تحديث البيانات الوصفية...",
@@ -3512,7 +3511,13 @@ var arAA = {
 };
 
 var settings$n = {
-	open: "Отваряне на настройките"
+	open: "Отваряне на настройките",
+	action: {
+		refresh: "Обнови",
+		clear: "Изчисти",
+		view: "Преглед",
+		check: "Провери"
+	}
 };
 var common$n = {
 	hours_one: "{{value}} час",
@@ -3759,9 +3764,9 @@ var qam$n = {
 	},
 	metadata: {
 		title: "Метаданни",
-		detectedGames: "Открити не-Steam игри:",
-		saved: "Запазени метаданни:",
-		missing: "Липсващи метаданни:",
+		detectedGames: "Открити не-Steam игри",
+		saved: "Запазени метаданни",
+		missing: "Липсващи метаданни",
 		refresh: "Обновяване на метаданните",
 		refreshing: "Обновяване...",
 		refreshingStatus: "Обновяване на метаданните...",
@@ -4150,7 +4155,13 @@ var bgBG = {
 };
 
 var settings$m = {
-	open: "Otevřít nastavení"
+	open: "Otevřít nastavení",
+	action: {
+		refresh: "Obnovit",
+		clear: "Vymazat",
+		view: "Zobrazit",
+		check: "Zkontrolovat"
+	}
 };
 var common$m = {
 	hours_one: "{{value}} hodina",
@@ -4399,9 +4410,9 @@ var qam$m = {
 	},
 	metadata: {
 		title: "Metadata",
-		detectedGames: "Zjištěné hry mimo Steam:",
-		saved: "Uložená metadata:",
-		missing: "Chybějící metadata:",
+		detectedGames: "Zjištěné hry mimo Steam",
+		saved: "Uložená metadata",
+		missing: "Chybějící metadata",
 		refresh: "Obnovit metadata",
 		refreshing: "Obnovování...",
 		refreshingStatus: "Obnovování metadat...",
@@ -4790,7 +4801,13 @@ var csCZ = {
 };
 
 var settings$l = {
-	open: "Einstellungen öffnen"
+	open: "Einstellungen öffnen",
+	action: {
+		refresh: "Aktualisieren",
+		clear: "Leeren",
+		view: "Ansehen",
+		check: "Prüfen"
+	}
 };
 var common$l = {
 	hours_one: "{{value}} Stunde",
@@ -5037,9 +5054,9 @@ var qam$l = {
 	},
 	metadata: {
 		title: "Metadaten",
-		detectedGames: "Erkannte Nicht-Steam-Spiele:",
-		saved: "Gespeicherte Metadaten:",
-		missing: "Fehlende Metadaten:",
+		detectedGames: "Erkannte Nicht-Steam-Spiele",
+		saved: "Gespeicherte Metadaten",
+		missing: "Fehlende Metadaten",
 		refresh: "Metadaten aktualisieren",
 		refreshing: "Aktualisierung...",
 		refreshingStatus: "Metadaten werden aktualisiert...",
@@ -5428,7 +5445,13 @@ var deDE = {
 };
 
 var settings$k = {
-	open: "Άνοιγμα ρυθμίσεων"
+	open: "Άνοιγμα ρυθμίσεων",
+	action: {
+		refresh: "Ανανέωση",
+		clear: "Εκκαθάριση",
+		view: "Προβολή",
+		check: "Έλεγχος"
+	}
 };
 var common$k = {
 	hours_one: "{{value}} ώρα",
@@ -5675,9 +5698,9 @@ var qam$k = {
 	},
 	metadata: {
 		title: "Μεταδεδομένα",
-		detectedGames: "Εντοπισμένα παιχνίδια εκτός Steam:",
-		saved: "Αποθηκευμένα μεταδεδομένα:",
-		missing: "Μεταδεδομένα που λείπουν:",
+		detectedGames: "Εντοπισμένα παιχνίδια εκτός Steam",
+		saved: "Αποθηκευμένα μεταδεδομένα",
+		missing: "Μεταδεδομένα που λείπουν",
 		refresh: "Ανανέωση μεταδεδομένων",
 		refreshing: "Ανανέωση...",
 		refreshingStatus: "Ανανέωση μεταδεδομένων...",
@@ -6066,7 +6089,13 @@ var elGR = {
 };
 
 var settings$j = {
-	open: "Open settings"
+	open: "Open settings",
+	action: {
+		refresh: "Refresh",
+		clear: "Clear",
+		view: "View",
+		check: "Check"
+	}
 };
 var common$j = {
 	hours_one: "{{value}} hour",
@@ -6313,9 +6342,9 @@ var qam$j = {
 	},
 	metadata: {
 		title: "Metadata",
-		detectedGames: "Detected non-Steam games:",
-		saved: "Metadata saved:",
-		missing: "Missing metadata:",
+		detectedGames: "Detected non-Steam games",
+		saved: "Metadata saved",
+		missing: "Missing metadata",
 		refresh: "Refresh metadata",
 		refreshing: "Refreshing...",
 		refreshingStatus: "Refreshing metadata...",
@@ -6704,7 +6733,13 @@ var enUS = {
 };
 
 var settings$i = {
-	open: "Abrir ajustes"
+	open: "Abrir ajustes",
+	action: {
+		refresh: "Actualizar",
+		clear: "Borrar",
+		view: "Ver",
+		check: "Comprobar"
+	}
 };
 var common$i = {
 	hours_one: "{{value}} hora",
@@ -6952,9 +6987,9 @@ var qam$i = {
 	},
 	metadata: {
 		title: "Metadatos",
-		detectedGames: "Juegos que no son de Steam detectados:",
-		saved: "Metadatos guardados:",
-		missing: "Sin metadatos:",
+		detectedGames: "Juegos que no son de Steam detectados",
+		saved: "Metadatos guardados",
+		missing: "Sin metadatos",
 		refresh: "Actualizar metadatos",
 		refreshing: "Actualizando...",
 		refreshingStatus: "Actualizando metadatos...",
@@ -7343,7 +7378,13 @@ var esES = {
 };
 
 var settings$h = {
-	open: "Avaa asetukset"
+	open: "Avaa asetukset",
+	action: {
+		refresh: "Päivitä",
+		clear: "Tyhjennä",
+		view: "Näytä",
+		check: "Tarkista"
+	}
 };
 var common$h = {
 	hours_one: "{{value}} tunti",
@@ -7590,9 +7631,9 @@ var qam$h = {
 	},
 	metadata: {
 		title: "Metatiedot",
-		detectedGames: "Havaitut Steamin ulkopuoliset pelit:",
-		saved: "Tallennetut metatiedot:",
-		missing: "Puuttuvat metatiedot:",
+		detectedGames: "Havaitut Steamin ulkopuoliset pelit",
+		saved: "Tallennetut metatiedot",
+		missing: "Puuttuvat metatiedot",
 		refresh: "Päivitä metatiedot",
 		refreshing: "Päivitetään...",
 		refreshingStatus: "Päivitetään metatietoja...",
@@ -7981,7 +8022,13 @@ var fiFI = {
 };
 
 var settings$g = {
-	open: "Ouvrir les paramètres"
+	open: "Ouvrir les paramètres",
+	action: {
+		refresh: "Actualiser",
+		clear: "Effacer",
+		view: "Voir",
+		check: "Vérifier"
+	}
 };
 var common$g = {
 	hours_one: "{{value}} heure",
@@ -8229,9 +8276,9 @@ var qam$g = {
 	},
 	metadata: {
 		title: "Métadonnées",
-		detectedGames: "Jeux non Steam détectés :",
-		saved: "Métadonnées enregistrées :",
-		missing: "Métadonnées manquantes :",
+		detectedGames: "Jeux non Steam détectés",
+		saved: "Métadonnées enregistrées",
+		missing: "Métadonnées manquantes",
 		refresh: "Actualiser les métadonnées",
 		refreshing: "Actualisation...",
 		refreshingStatus: "Actualisation des métadonnées...",
@@ -8620,7 +8667,13 @@ var frFR = {
 };
 
 var settings$f = {
-	open: "Apri impostazioni"
+	open: "Apri impostazioni",
+	action: {
+		refresh: "Aggiorna",
+		clear: "Cancella",
+		view: "Visualizza",
+		check: "Controlla"
+	}
 };
 var common$f = {
 	hours_one: "{{value}} ora",
@@ -8868,9 +8921,9 @@ var qam$f = {
 	},
 	metadata: {
 		title: "Metadati",
-		detectedGames: "Giochi non Steam rilevati:",
-		saved: "Metadati salvati:",
-		missing: "Metadati mancanti:",
+		detectedGames: "Giochi non Steam rilevati",
+		saved: "Metadati salvati",
+		missing: "Metadati mancanti",
 		refresh: "Aggiorna i metadati",
 		refreshing: "Aggiornamento...",
 		refreshingStatus: "Aggiornamento dei metadati...",
@@ -9259,7 +9312,13 @@ var itIT = {
 };
 
 var settings$e = {
-	open: "設定を開く"
+	open: "設定を開く",
+	action: {
+		refresh: "更新",
+		clear: "クリア",
+		view: "表示",
+		check: "確認"
+	}
 };
 var common$e = {
 	hours_other: "{{value}}時間",
@@ -9505,9 +9564,9 @@ var qam$e = {
 	},
 	metadata: {
 		title: "メタデータ",
-		detectedGames: "検出された Steam 以外のゲーム:",
-		saved: "保存済みメタデータ:",
-		missing: "メタデータなし:",
+		detectedGames: "検出された Steam 以外のゲーム",
+		saved: "保存済みメタデータ",
+		missing: "メタデータなし",
 		refresh: "メタデータを更新",
 		refreshing: "更新中...",
 		refreshingStatus: "メタデータを更新中...",
@@ -9896,7 +9955,13 @@ var jaJP = {
 };
 
 var settings$d = {
-	open: "პარამეტრების გახსნა"
+	open: "პარამეტრების გახსნა",
+	action: {
+		refresh: "განახლება",
+		clear: "გასუფთავება",
+		view: "ნახვა",
+		check: "შემოწმება"
+	}
 };
 var common$d = {
 	hours_one: "{{value}} საათი",
@@ -10143,9 +10208,9 @@ var qam$d = {
 	},
 	metadata: {
 		title: "მეტამონაცემები",
-		detectedGames: "აღმოჩენილი არა-Steam თამაშები:",
-		saved: "შენახული მეტამონაცემები:",
-		missing: "მეტამონაცემების გარეშე:",
+		detectedGames: "აღმოჩენილი არა-Steam თამაშები",
+		saved: "შენახული მეტამონაცემები",
+		missing: "მეტამონაცემების გარეშე",
 		refresh: "მეტამონაცემების განახლება",
 		refreshing: "მიმდინარეობს განახლება...",
 		refreshingStatus: "მეტამონაცემები ახლდება...",
@@ -10534,7 +10599,13 @@ var kaDZ = {
 };
 
 var settings$c = {
-	open: "설정 열기"
+	open: "설정 열기",
+	action: {
+		refresh: "새로고침",
+		clear: "지우기",
+		view: "보기",
+		check: "확인"
+	}
 };
 var common$c = {
 	hours_other: "{{value}}시간",
@@ -10780,9 +10851,9 @@ var qam$c = {
 	},
 	metadata: {
 		title: "메타데이터",
-		detectedGames: "감지된 비Steam 게임:",
-		saved: "저장된 메타데이터:",
-		missing: "메타데이터 없음:",
+		detectedGames: "감지된 비Steam 게임",
+		saved: "저장된 메타데이터",
+		missing: "메타데이터 없음",
 		refresh: "메타데이터 새로 고침",
 		refreshing: "새로 고치는 중...",
 		refreshingStatus: "메타데이터를 새로 고치는 중...",
@@ -11171,7 +11242,13 @@ var koKR = {
 };
 
 var settings$b = {
-	open: "Instellingen openen"
+	open: "Instellingen openen",
+	action: {
+		refresh: "Vernieuwen",
+		clear: "Wissen",
+		view: "Bekijken",
+		check: "Controleren"
+	}
 };
 var common$b = {
 	hours_one: "{{value}} uur",
@@ -11418,9 +11495,9 @@ var qam$b = {
 	},
 	metadata: {
 		title: "Metadata",
-		detectedGames: "Gedetecteerde niet-Steam-games:",
-		saved: "Opgeslagen metadata:",
-		missing: "Ontbrekende metadata:",
+		detectedGames: "Gedetecteerde niet-Steam-games",
+		saved: "Opgeslagen metadata",
+		missing: "Ontbrekende metadata",
 		refresh: "Metadata vernieuwen",
 		refreshing: "Vernieuwen...",
 		refreshingStatus: "Metadata vernieuwen...",
@@ -11809,7 +11886,13 @@ var nlNL = {
 };
 
 var settings$a = {
-	open: "Otwórz ustawienia"
+	open: "Otwórz ustawienia",
+	action: {
+		refresh: "Odśwież",
+		clear: "Wyczyść",
+		view: "Wyświetl",
+		check: "Sprawdź"
+	}
 };
 var common$a = {
 	hours_one: "{{value}} godzina",
@@ -12058,9 +12141,9 @@ var qam$a = {
 	},
 	metadata: {
 		title: "Metadane",
-		detectedGames: "Wykryte gry spoza Steam:",
-		saved: "Zapisane metadane:",
-		missing: "Brakujące metadane:",
+		detectedGames: "Wykryte gry spoza Steam",
+		saved: "Zapisane metadane",
+		missing: "Brakujące metadane",
 		refresh: "Odśwież metadane",
 		refreshing: "Odświeżanie...",
 		refreshingStatus: "Odświeżanie metadanych...",
@@ -12449,7 +12532,13 @@ var plPL = {
 };
 
 var settings$9 = {
-	open: "Abrir configurações"
+	open: "Abrir configurações",
+	action: {
+		refresh: "Atualizar",
+		clear: "Limpar",
+		view: "Ver",
+		check: "Verificar"
+	}
 };
 var common$9 = {
 	hours_one: "{{value}} hora",
@@ -12697,9 +12786,9 @@ var qam$9 = {
 	},
 	metadata: {
 		title: "Metadados",
-		detectedGames: "Jogos não Steam detectados:",
-		saved: "Metadados salvos:",
-		missing: "Metadados ausentes:",
+		detectedGames: "Jogos não Steam detectados",
+		saved: "Metadados salvos",
+		missing: "Metadados ausentes",
 		refresh: "Atualizar metadados",
 		refreshing: "Atualizando...",
 		refreshingStatus: "Atualizando metadados...",
@@ -13088,7 +13177,13 @@ var ptBR = {
 };
 
 var settings$8 = {
-	open: "Abrir definições"
+	open: "Abrir definições",
+	action: {
+		refresh: "Atualizar",
+		clear: "Limpar",
+		view: "Ver",
+		check: "Verificar"
+	}
 };
 var common$8 = {
 	hours_one: "{{value}} hora",
@@ -13336,9 +13431,9 @@ var qam$8 = {
 	},
 	metadata: {
 		title: "Metadados",
-		detectedGames: "Jogos não Steam detetados:",
-		saved: "Metadados guardados:",
-		missing: "Metadados em falta:",
+		detectedGames: "Jogos não Steam detetados",
+		saved: "Metadados guardados",
+		missing: "Metadados em falta",
 		refresh: "Atualizar metadados",
 		refreshing: "A atualizar...",
 		refreshingStatus: "A atualizar metadados...",
@@ -13727,7 +13822,13 @@ var ptPT = {
 };
 
 var settings$7 = {
-	open: "Deschide setările"
+	open: "Deschide setările",
+	action: {
+		refresh: "Reîmprospătează",
+		clear: "Șterge",
+		view: "Vezi",
+		check: "Verifică"
+	}
 };
 var common$7 = {
 	hours_one: "{{value}} oră",
@@ -13975,9 +14076,9 @@ var qam$7 = {
 	},
 	metadata: {
 		title: "Metadate",
-		detectedGames: "Jocuri non-Steam detectate:",
-		saved: "Metadate salvate:",
-		missing: "Metadate lipsă:",
+		detectedGames: "Jocuri non-Steam detectate",
+		saved: "Metadate salvate",
+		missing: "Metadate lipsă",
 		refresh: "Reîmprospătează metadatele",
 		refreshing: "Se reîmprospătează...",
 		refreshingStatus: "Se reîmprospătează metadatele...",
@@ -14366,7 +14467,13 @@ var roRO = {
 };
 
 var settings$6 = {
-	open: "Открыть настройки"
+	open: "Открыть настройки",
+	action: {
+		refresh: "Обновить",
+		clear: "Очистить",
+		view: "Просмотр",
+		check: "Проверить"
+	}
 };
 var common$6 = {
 	hours_one: "{{value}} час",
@@ -14615,9 +14722,9 @@ var qam$6 = {
 	},
 	metadata: {
 		title: "Метаданные",
-		detectedGames: "Найдено игр вне Steam:",
-		saved: "Метаданные сохранены:",
-		missing: "Нет метаданных:",
+		detectedGames: "Найдено игр вне Steam",
+		saved: "Метаданные сохранены",
+		missing: "Нет метаданных",
 		refresh: "Обновить метаданные",
 		refreshing: "Обновление...",
 		refreshingStatus: "Обновление метаданных...",
@@ -15006,7 +15113,13 @@ var ruRU = {
 };
 
 var settings$5 = {
-	open: "Hap cilësimet"
+	open: "Hap cilësimet",
+	action: {
+		refresh: "Rifresko",
+		clear: "Pastro",
+		view: "Shiko",
+		check: "Kontrollo"
+	}
 };
 var common$5 = {
 	hours_one: "{{value}} orë",
@@ -15253,9 +15366,9 @@ var qam$5 = {
 	},
 	metadata: {
 		title: "Metadata",
-		detectedGames: "Lojëra jo-Steam të zbuluara:",
-		saved: "Metadata të ruajtura:",
-		missing: "Metadata që mungojnë:",
+		detectedGames: "Lojëra jo-Steam të zbuluara",
+		saved: "Metadata të ruajtura",
+		missing: "Metadata që mungojnë",
 		refresh: "Rifresko metadata",
 		refreshing: "Po rifreskohet...",
 		refreshingStatus: "Po rifreskohen metadata...",
@@ -15644,7 +15757,13 @@ var sqAL = {
 };
 
 var settings$4 = {
-	open: "Öppna inställningar"
+	open: "Öppna inställningar",
+	action: {
+		refresh: "Uppdatera",
+		clear: "Rensa",
+		view: "Visa",
+		check: "Kontrollera"
+	}
 };
 var common$4 = {
 	hours_one: "{{value}} timme",
@@ -15891,9 +16010,9 @@ var qam$4 = {
 	},
 	metadata: {
 		title: "Metadata",
-		detectedGames: "Hittade icke-Steam-spel:",
-		saved: "Sparad metadata:",
-		missing: "Saknad metadata:",
+		detectedGames: "Hittade icke-Steam-spel",
+		saved: "Sparad metadata",
+		missing: "Saknad metadata",
 		refresh: "Uppdatera metadata",
 		refreshing: "Uppdaterar...",
 		refreshingStatus: "Uppdaterar metadata...",
@@ -16282,7 +16401,13 @@ var svSE = {
 };
 
 var settings$3 = {
-	open: "Ayarları aç"
+	open: "Ayarları aç",
+	action: {
+		refresh: "Yenile",
+		clear: "Temizle",
+		view: "Görüntüle",
+		check: "Kontrol et"
+	}
 };
 var common$3 = {
 	hours_one: "{{value}} saat",
@@ -16529,9 +16654,9 @@ var qam$3 = {
 	},
 	metadata: {
 		title: "Meta veriler",
-		detectedGames: "Algılanan Steam dışı oyunlar:",
-		saved: "Kaydedilmiş meta veriler:",
-		missing: "Eksik meta veriler:",
+		detectedGames: "Algılanan Steam dışı oyunlar",
+		saved: "Kaydedilmiş meta veriler",
+		missing: "Eksik meta veriler",
 		refresh: "Meta verileri yenile",
 		refreshing: "Yenileniyor...",
 		refreshingStatus: "Meta veriler yenileniyor...",
@@ -16920,7 +17045,13 @@ var trTR = {
 };
 
 var settings$2 = {
-	open: "Відкрити налаштування"
+	open: "Відкрити налаштування",
+	action: {
+		refresh: "Оновити",
+		clear: "Очистити",
+		view: "Переглянути",
+		check: "Перевірити"
+	}
 };
 var common$2 = {
 	hours_one: "{{value}} година",
@@ -17169,9 +17300,9 @@ var qam$2 = {
 	},
 	metadata: {
 		title: "Метадані",
-		detectedGames: "Виявлено ігор поза Steam:",
-		saved: "Метадані збережено:",
-		missing: "Немає метаданих:",
+		detectedGames: "Виявлено ігор поза Steam",
+		saved: "Метадані збережено",
+		missing: "Немає метаданих",
 		refresh: "Оновити метадані",
 		refreshing: "Оновлення...",
 		refreshingStatus: "Оновлення метаданих...",
@@ -17560,7 +17691,13 @@ var ukUA = {
 };
 
 var settings$1 = {
-	open: "打开设置"
+	open: "打开设置",
+	action: {
+		refresh: "刷新",
+		clear: "清除",
+		view: "查看",
+		check: "检查"
+	}
 };
 var common$1 = {
 	hours_other: "{{value}} 小时",
@@ -17806,9 +17943,9 @@ var qam$1 = {
 	},
 	metadata: {
 		title: "元数据",
-		detectedGames: "检测到的非 Steam 游戏：",
-		saved: "已保存的元数据：",
-		missing: "缺少元数据：",
+		detectedGames: "检测到的非 Steam 游戏",
+		saved: "已保存的元数据",
+		missing: "缺少元数据",
 		refresh: "刷新元数据",
 		refreshing: "正在刷新...",
 		refreshingStatus: "正在刷新元数据...",
@@ -18197,7 +18334,13 @@ var zhCN = {
 };
 
 var settings = {
-	open: "開啟設定"
+	open: "開啟設定",
+	action: {
+		refresh: "重新整理",
+		clear: "清除",
+		view: "查看",
+		check: "檢查"
+	}
 };
 var common = {
 	hours_other: "{{value}} 小時",
@@ -18443,9 +18586,9 @@ var qam = {
 	},
 	metadata: {
 		title: "中繼資料",
-		detectedGames: "偵測到的非 Steam 遊戲：",
-		saved: "已儲存的中繼資料：",
-		missing: "缺少的中繼資料：",
+		detectedGames: "偵測到的非 Steam 遊戲",
+		saved: "已儲存的中繼資料",
+		missing: "缺少的中繼資料",
 		refresh: "重新整理中繼資料",
 		refreshing: "正在重新整理...",
 		refreshingStatus: "正在重新整理中繼資料...",
@@ -19101,14 +19244,17 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, }) {
+function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, scanStatusKind, onRefreshMetadata, inline = false, }) {
     const t = useT();
+    if (inline) {
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus") })) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: scanMessage }) : null] }));
+    }
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }), !scanBusy && scanMessage ? SP_JSX.jsx("div", { style: inlineStatusStyle(scanStatusKind), children: scanMessage }) : null] }), scanBusy ? (SP_JSX.jsx(DFL.ProgressBarItem, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, description: scanMessage || t("qam.metadata.refreshingStatus"), bottomSeparator: "none" })) : null] }));
 }
 function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, }) {
     const t = useT();
     const delistedDescription = [delistedCountText, delistedDateText].filter(Boolean).join(" ");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.cacheHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.clearCacheDescription"), bottomSeparator: "none", disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("qam.metadata.clearCache") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.metadata.delistedHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: delistedDescription, bottomSeparator: "none", disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refreshDelisted") }) })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.clearCache"), description: t("qam.metadata.clearCacheDescription"), disabled: cacheBusy || scanBusy, onClick: onClearCache, children: cacheBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.clearing") }) : t("settings.action.clear") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.metadata.delistedHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refreshDelisted"), description: delistedDescription, disabled: delistedBusy, onClick: onRefreshDelisted, children: delistedBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] })] }));
 }
 
 // Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
@@ -19120,7 +19266,8 @@ const openSettings = () => {
     const host = globalThis;
     const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
     const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    if (path !== SETTINGS_ROUTE)
+    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
@@ -19136,7 +19283,15 @@ function SettingsTitleView() {
             ...(DFL.staticClasses.Title
                 ? {}
                 : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
-        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: { height: "28px", width: "40px", minWidth: 0, padding: "10px 12px" }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
+        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "28px",
+                    width: "40px",
+                    minWidth: 0,
+                    padding: 0,
+                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
 }
 
 /** Every record, without non-empty `steam_news`; `getMetadata` returns the full record. */
@@ -19318,7 +19473,7 @@ async function invokeDeckyInstaller(url, version, sha256, installType, traceId) 
 function canInstallCandidate(candidate, currentVersion) {
     return isDeckyInstallerAvailable() && (!currentVersion.includes("+") || candidate.channel === "stable");
 }
-function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalling, isHandoffPending, onInstall, }) {
+function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalling, isHandoffPending, onInstall, inline = false, label, description, }) {
     const t = useT();
     const isLocalBuild = currentVersion.includes("+");
     const canInstall = canInstallCandidate(candidate, currentVersion);
@@ -19342,11 +19497,18 @@ function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalli
             void onInstall(candidate);
         }
     };
-    return canInstall ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: handleInstallClick, disabled: isChecking || isInstalling, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling, children: isInstalling
-                    ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
-                    : getActionText() }) }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: isLocalBuild && candidate.channel !== "stable"
-                    ? t("qam.update.localBuildOnlyStable")
-                    : t("qam.update.manualInstallUnavailable") }) }) }));
+    if (canInstall) {
+        const actionText = isHandoffPending
+            ? t("qam.update.waitingForDecky")
+            : isInstalling
+                ? t("qam.update.preparing")
+                : getActionText();
+        return inline ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: label, description: description, onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: handleInstallClick, disabled: isChecking || isInstalling || isHandoffPending, children: SP_JSX.jsx(ButtonLabel, { busy: isInstalling || isHandoffPending, children: actionText }) }) }));
+    }
+    const unavailableText = isLocalBuild && candidate.channel !== "stable"
+        ? t("qam.update.localBuildOnlyStable")
+        : t("qam.update.manualInstallUnavailable");
+    return inline ? (SP_JSX.jsx(DFL.Field, { label: label, description: description, childrenLayout: "below", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: unavailableText }) })) : (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: true, highlightOnFocus: true, padding: "standard", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: unavailableText }) }) }));
 }
 
 // THIS FILE IS AUTO GENERATED
@@ -19434,6 +19596,9 @@ function updateReducer(state, action) {
                 errorMessage: null,
                 checkTimedOut: false,
             };
+        case "CHECK_CANCELLED":
+            // A dropped check with no replacement: leave "checking" without a result.
+            return state.phase === "checking" ? { ...state, phase: state.candidate ? "available" : "idle" } : state;
         case "CHECK_TIMEOUT":
             return {
                 ...state,
@@ -19503,9 +19668,11 @@ function updateReducer(state, action) {
                 }
             };
         case "INSTALL_FAILED":
+            // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
             return {
                 ...state,
                 phase: "failed",
+                candidate: action.candidate,
                 errorMessage: action.message,
                 checkTimedOut: false,
                 installedOverride: null,
@@ -19528,7 +19695,6 @@ const DEFAULT_UPDATE_SETTINGS = {
     automatic_update_checks: true,
 };
 const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
-const resolveSavedUpdateSettings = (previous, result) => ("status" in result ? previous : result);
 
 function logUpdate(traceId, stage, details) {
     const detailsStr = details
@@ -19567,17 +19733,31 @@ class PluginUpdateControllerStore {
             writable: true,
             value: ""
         });
-        Object.defineProperty(this, "updateChannel", {
+        // Settings the backend saved; checks follow only these. Pending choices show at once until their save settles.
+        Object.defineProperty(this, "confirmed", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: "stable"
+            value: { ...DEFAULT_UPDATE_SETTINGS }
         });
-        Object.defineProperty(this, "automaticUpdateChecks", {
+        Object.defineProperty(this, "pendingChannel", {
             enumerable: true,
             configurable: true,
             writable: true,
-            value: true
+            value: null
+        });
+        Object.defineProperty(this, "pendingAutomatic", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        // True from the Install click until Decky answers or the install fails: no check or second install meanwhile.
+        Object.defineProperty(this, "installOwned", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
         });
         Object.defineProperty(this, "settingsLoaded", {
             enumerable: true,
@@ -19629,12 +19809,6 @@ class PluginUpdateControllerStore {
             writable: true,
             value: 0
         });
-        Object.defineProperty(this, "latestChannel", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: "stable"
-        });
         Object.defineProperty(this, "inFlightCheck", {
             enumerable: true,
             configurable: true,
@@ -19672,35 +19846,35 @@ class PluginUpdateControllerStore {
             configurable: true,
             writable: true,
             value: async (enabled) => {
-                const previous = this.currentSettings();
+                const pending = { value: (enabled ? "development" : "stable") };
                 const generation = this.generation;
-                // Show the choice at once, but check only after the backend saved it: the backend checks the saved channel.
-                this.showSettings({ ...previous, update_channel: enabled ? "development" : "stable" });
+                this.pendingChannel = pending;
+                this.publish();
+                let saved = null;
                 try {
-                    const result = await this.deps.setUpdateChannel(enabled ? "development" : "stable");
+                    const result = await this.deps.setUpdateChannel(pending.value);
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
-                        const rolledBack = resolveSavedUpdateSettings({
-                            update_channel: previous.update_channel,
-                            automatic_update_checks: this.automaticUpdateChecks,
-                        }, result);
-                        this.applySettings(rolledBack, previous);
-                        this.deps.toastError(t("panel.toast.updates"), result.message
-                            ? translateBackendError(result.message)
-                            : t("panel.updateChannelSaveError"));
-                        return;
+                        this.deps.toastError(t("panel.toast.updates"), result.message ? translateBackendError(result.message) : t("panel.updateChannelSaveError"));
                     }
-                    this.applySettings(result, previous);
+                    else {
+                        saved = result;
+                    }
                 }
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    this.applySettings({ ...this.currentSettings(), update_channel: previous.update_channel }, previous);
                     logUpdate(null, "update_channel_save_failed", {
                         message: error instanceof Error ? error.message : String(error),
                     });
                 }
+                if (this.pendingChannel === pending)
+                    this.pendingChannel = null;
+                if (saved)
+                    this.applySettings(saved);
+                else
+                    this.publish();
             }
         });
         Object.defineProperty(this, "setAutomaticUpdateChecks", {
@@ -19708,35 +19882,35 @@ class PluginUpdateControllerStore {
             configurable: true,
             writable: true,
             value: async (enabled) => {
-                const previous = this.currentSettings();
+                const pending = { value: enabled };
                 const generation = this.generation;
-                // As for the channel: show at once, start the automatic check only after the save is confirmed.
-                this.showSettings({ ...previous, automatic_update_checks: enabled });
+                this.pendingAutomatic = pending;
+                this.publish();
+                let saved = null;
                 try {
                     const result = await this.deps.setAutomaticUpdateChecks(enabled);
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
-                        const rolledBack = resolveSavedUpdateSettings({
-                            update_channel: this.updateChannel,
-                            automatic_update_checks: previous.automatic_update_checks,
-                        }, result);
-                        this.applySettings(rolledBack, previous);
-                        this.deps.toastError(t("panel.toast.updates"), result.message
-                            ? translateBackendError(result.message)
-                            : t("panel.automaticUpdateSaveError"));
-                        return;
+                        this.deps.toastError(t("panel.toast.updates"), result.message ? translateBackendError(result.message) : t("panel.automaticUpdateSaveError"));
                     }
-                    this.applySettings(result, previous);
+                    else {
+                        saved = result;
+                    }
                 }
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    this.applySettings({ ...this.currentSettings(), automatic_update_checks: previous.automatic_update_checks }, previous);
                     logUpdate(null, "automatic_update_setting_save_failed", {
                         message: error instanceof Error ? error.message : String(error),
                     });
                 }
+                if (this.pendingAutomatic === pending)
+                    this.pendingAutomatic = null;
+                if (saved)
+                    this.applySettings(saved);
+                else
+                    this.publish();
             }
         });
         Object.defineProperty(this, "install", {
@@ -19744,8 +19918,11 @@ class PluginUpdateControllerStore {
             configurable: true,
             writable: true,
             value: async (targetCandidate) => {
-                if (this.state.phase === "installing" || this.state.phase === "handoff_pending")
+                if (this.installOwned)
                     return;
+                this.installOwned = true;
+                // A check that finishes during the install would overwrite its state.
+                this.dropActiveCheck();
                 const generation = this.generation;
                 this.dispatch({ type: "INSTALL_START" });
                 const traceId = generateUpdateTraceId();
@@ -19785,9 +19962,6 @@ class PluginUpdateControllerStore {
                         version: revalidation.version,
                         elapsed_ms: Math.round(performance.now() - recordStarted),
                     });
-                    this.activeCheckId += 1;
-                    this.clearCheckTimeout();
-                    this.inFlightCheck = null;
                     this.dispatch({
                         type: "INSTALL_SUCCESS",
                         version: revalidation.version,
@@ -19826,7 +20000,7 @@ class PluginUpdateControllerStore {
                             elapsed_ms: Math.round(performance.now() - handoffStarted),
                         });
                         this.dispatch({ type: "INSTALL_HANDOFF_PENDING" });
-                        void this.finishPendingHandoff(installerPromise, revalidation.version, revalidation.channel, traceId, handoffStarted, generation);
+                        void this.finishPendingHandoff(installerPromise, revalidation, traceId, handoffStarted, generation);
                         return;
                     }
                     await installerPromise;
@@ -19837,7 +20011,7 @@ class PluginUpdateControllerStore {
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    await this.failInstall(error, targetCandidate.version, traceId, generation);
+                    await this.failInstall(error, targetCandidate, traceId, generation);
                 }
             }
         });
@@ -19855,9 +20029,8 @@ class PluginUpdateControllerStore {
     }
     dispose() {
         this.generation += 1;
-        this.activeCheckId += 1;
-        this.inFlightCheck = null;
-        this.clearCheckTimeout();
+        this.installOwned = false;
+        this.dropActiveCheck();
         this.clearHandoffTimeout(true);
     }
     async initialize() {
@@ -19889,10 +20062,7 @@ class PluginUpdateControllerStore {
             return;
         if (version)
             this.pluginVersion = version;
-        const settings = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
-        this.updateChannel = settings.update_channel;
-        this.latestChannel = settings.update_channel;
-        this.automaticUpdateChecks = settings.automatic_update_checks;
+        this.confirmed = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
         this.settingsLoaded = true;
         const context = contextResult && !("status" in contextResult) ? contextResult : null;
         const pendingInstall = context?.pending_update_install;
@@ -19921,34 +20091,37 @@ class PluginUpdateControllerStore {
             logUpdate(null, "initial_check_skipped_hydration");
             return;
         }
-        if (this.automaticUpdateChecks) {
+        if (this.confirmed.automatic_update_checks) {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
         }
     }
-    currentSettings() {
-        return { update_channel: this.updateChannel, automatic_update_checks: this.automaticUpdateChecks };
+    get updateChannel() {
+        return this.pendingChannel?.value ?? this.confirmed.update_channel;
     }
-    /** Optimistic display only: no check starts and in-flight checks keep running. */
-    showSettings(settings) {
-        this.updateChannel = settings.update_channel;
-        this.automaticUpdateChecks = settings.automatic_update_checks;
-        this.publish();
+    get automaticUpdateChecks() {
+        return this.pendingAutomatic?.value ?? this.confirmed.automatic_update_checks;
     }
-    /** Apply settings the backend confirmed; checks follow the change from `previous`, the settings before the save. */
-    applySettings(settings, previous) {
+    dropActiveCheck() {
+        this.activeCheckId += 1;
+        this.inFlightCheck = null;
+        this.clearCheckTimeout();
+    }
+    /** Apply settings the backend saved; checks follow the change from the settings saved before. */
+    applySettings(settings) {
+        const previous = this.confirmed;
+        this.confirmed = settings;
         const channelChanged = previous.update_channel !== settings.update_channel;
         const automaticChecksEnabled = !previous.automatic_update_checks && settings.automatic_update_checks;
         if (channelChanged) {
-            this.activeCheckId += 1;
-            this.inFlightCheck = null;
-            this.clearCheckTimeout();
+            this.dropActiveCheck();
+            this.dispatch({ type: "CHECK_CANCELLED" });
         }
-        this.updateChannel = settings.update_channel;
-        this.latestChannel = settings.update_channel;
-        this.automaticUpdateChecks = settings.automatic_update_checks;
-        this.publish();
+        else {
+            this.publish();
+        }
         if (channelChanged) {
-            void this.checkForUpdates({ force: true, notify: false, source: "automatic" });
+            // A user action, so it is not held back like an automatic check: it replaces the check dropped above.
+            void this.checkForUpdates({ force: true, notify: false, source: "manual" });
         }
         else if (automaticChecksEnabled && this.settingsLoaded) {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
@@ -19969,12 +20142,16 @@ class PluginUpdateControllerStore {
         }
     }
     async checkForUpdates(options) {
+        if (this.installOwned) {
+            logUpdate(null, "check_suppressed_install");
+            return;
+        }
         const currentVersion = this.state.installedOverride?.version ?? this.pluginVersion;
         if (!currentVersion || currentVersion === "Loading...")
             return;
         if (options.source === "automatic" && !this.settingsLoaded)
             return;
-        if (options.source === "automatic" && !this.automaticUpdateChecks) {
+        if (options.source === "automatic" && !this.confirmed.automatic_update_checks) {
             logUpdate(null, "automatic_check_suppressed_disabled");
             return;
         }
@@ -19983,16 +20160,11 @@ class PluginUpdateControllerStore {
             logUpdate(null, "automatic_check_suppressed_pending_install");
             return;
         }
-        const checkChannel = this.updateChannel;
-        if (this.inFlightCheck && this.latestChannel === checkChannel) {
+        // The backend checks its saved channel, so a pending channel choice does not count yet.
+        const checkChannel = this.confirmed.update_channel;
+        if (this.inFlightCheck) {
             logUpdate(null, "check_reuse", { channel: checkChannel, elapsed_ms: 0 });
             return this.inFlightCheck;
-        }
-        if (this.latestChannel !== checkChannel) {
-            this.activeCheckId += 1;
-            this.inFlightCheck = null;
-            this.clearCheckTimeout();
-            this.latestChannel = checkChannel;
         }
         this.activeCheckId += 1;
         const checkId = this.activeCheckId;
@@ -20013,10 +20185,12 @@ class PluginUpdateControllerStore {
         const request = (async () => {
             try {
                 const result = await this.deps.checkForPluginUpdate(currentVersion, options.force);
-                if (generation !== this.generation ||
-                    this.activeCheckId !== checkId ||
-                    this.latestChannel !== checkChannel ||
-                    (result.status !== "failed" && result.channel !== checkChannel)) {
+                if (generation !== this.generation || this.activeCheckId !== checkId) {
+                    return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
+                }
+                if (result.status !== "failed" && result.channel !== checkChannel) {
+                    logUpdate(null, "check_channel_mismatch", { channel: checkChannel, result_channel: result.channel });
+                    this.dispatch({ type: "CHECK_CANCELLED" });
                     return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
                 }
                 const elapsedMs = Math.round(performance.now() - checkStarted);
@@ -20078,9 +20252,7 @@ class PluginUpdateControllerStore {
                 return result;
             }
             catch (error) {
-                if (generation !== this.generation ||
-                    this.activeCheckId !== checkId ||
-                    this.latestChannel !== checkChannel) {
+                if (generation !== this.generation || this.activeCheckId !== checkId) {
                     return { status: "failed", message: "stale", checked_at: new Date().toISOString() };
                 }
                 const elapsedMs = Math.round(performance.now() - checkStarted);
@@ -20112,9 +20284,6 @@ class PluginUpdateControllerStore {
         return request;
     }
     async handleHandoffSuccess(version, channel, traceId, handoffStarted, generation) {
-        this.activeCheckId += 1;
-        this.clearCheckTimeout();
-        this.inFlightCheck = null;
         this.dispatch({
             type: "INSTALL_SUCCESS",
             version,
@@ -20142,6 +20311,7 @@ class PluginUpdateControllerStore {
             status: "success",
             elapsed_ms: Math.round(performance.now() - handoffStarted),
         });
+        this.installOwned = false;
         this.setPluginVersion(version);
         this.deps.toast({
             title: t("updater.installation.startedTitle"),
@@ -20149,51 +20319,27 @@ class PluginUpdateControllerStore {
             duration: 3000,
         });
     }
-    async finishPendingHandoff(installerPromise, version, channel, traceId, handoffStarted, generation) {
+    async finishPendingHandoff(installerPromise, candidate, traceId, handoffStarted, generation) {
         try {
             await installerPromise;
             if (generation !== this.generation)
                 return;
-            await this.handleHandoffSuccess(version, channel, traceId, handoffStarted, generation);
+            await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
         }
         catch (error) {
             if (generation !== this.generation)
                 return;
-            const message = translateBackendError(error);
             logUpdate(traceId, "handoff_rejected", {
-                message,
+                message: translateBackendError(error),
                 elapsed_ms: Math.round(performance.now() - handoffStarted),
             });
-            try {
-                const result = await this.deps.clearPendingUpdateInstall(version);
-                if (generation !== this.generation)
-                    return;
-                if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
-                    throw new Error(result.message || "Failed to clear pending install");
-                }
-            }
-            catch (clearError) {
-                if (generation !== this.generation)
-                    return;
-                logUpdate(traceId, "pending_clear_failed", {
-                    message: clearError instanceof Error ? clearError.message : String(clearError),
-                });
-            }
-            if (generation !== this.generation)
-                return;
-            void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-            this.dispatch({ type: "INSTALL_FAILED", message });
-            this.deps.toast({
-                title: t("updater.installation.failedTitle"),
-                body: message,
-                duration: 4000,
-            });
+            await this.failInstall(error, candidate, traceId, generation);
         }
     }
-    async failInstall(error, candidateVersion, traceId, generation) {
+    async failInstall(error, candidate, traceId, generation) {
         const message = translateBackendError(error);
         try {
-            const result = await this.deps.clearPendingUpdateInstall(candidateVersion);
+            const result = await this.deps.clearPendingUpdateInstall(candidate.version);
             if (generation !== this.generation)
                 return;
             if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
@@ -20209,8 +20355,9 @@ class PluginUpdateControllerStore {
         }
         if (generation !== this.generation)
             return;
-        void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
-        this.dispatch({ type: "INSTALL_FAILED", message });
+        // No follow-up check: it would replace the failure with a check result; the user can retry or press Check now.
+        this.installOwned = false;
+        this.dispatch({ type: "INSTALL_FAILED", message, candidate });
         this.deps.toast({
             title: t("updater.installation.failedTitle"),
             body: message,
@@ -20233,7 +20380,7 @@ class PluginUpdateControllerStore {
             errorMessage: this.state.errorMessage,
             checkTimedOut: this.state.checkTimedOut,
             isChecking: this.state.phase === "checking",
-            isInstalling: this.state.phase === "installing",
+            isInstalling: this.installOwned && this.state.phase !== "handoff_pending",
             isHandoffPending: this.state.phase === "handoff_pending",
             installedReleasePublishedAt: this.state.installedReleasePublishedAt,
         };
@@ -20300,7 +20447,7 @@ function QamInstallRow() {
 }
 function OpenSettingsButton() {
     const t = useT();
-    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: openSettings, children: t("settings.open") }) }));
+    return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: openSettings, children: t("settings.open") }) }));
 }
 
 let verbose = false;
@@ -29791,4101 +29938,17 @@ function useScanGames() {
             return;
         metadataScanStore.refreshCounts(games).catch((error) => warn("bridge", "metadata count refresh failed", error));
     }, [games, loaded]);
-    // Shortcuts can change while the QAM stays mounted; reload them after each scan, as the QAM did before.
+    // Shortcuts can change while the QAM stays mounted; reload them after each scan that finishes while mounted.
+    // A scan that finished before mount needs nothing: the mount already loads the list.
+    const seenRevision = SP_REACT.useRef(scan.completedRevision);
     SP_REACT.useEffect(() => {
-        if (scan.completedRevision > 0)
-            void loadGames();
+        if (scan.completedRevision === seenRevision.current)
+            return;
+        seenRevision.current = scan.completedRevision;
+        void loadGames();
     }, [scan.completedRevision]);
     return { games, scan };
 }
-
-const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
-const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
-const KNOWN_CONFLICTS = {
-    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
-    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
-    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
-    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
-};
-const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
-const FALLBACK_POLL_MS = 1000;
-const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
-const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
-    typeof value.addEventListener === "function" && "removeEventListener" in value &&
-    typeof value.removeEventListener === "function";
-const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
-/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
-class PluginConflictMonitor {
-    constructor(getLoader = currentLoader) {
-        Object.defineProperty(this, "getLoader", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: getLoader
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "events", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                protondb: UNAVAILABLE,
-                trailers: UNAVAILABLE,
-                miniAchievements: UNAVAILABLE,
-                hltb: UNAVAILABLE,
-            }
-        });
-        Object.defineProperty(this, "handleUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.refresh()
-        });
-    }
-    getConflict(feature) {
-        return this.conflicts[feature];
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => { this.listeners.delete(listener); };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        this.refresh();
-    }
-    stop() {
-        this.mounted = false;
-        this.attachEvents(undefined);
-        this.setPolling(false);
-        this.publish(undefined, undefined);
-        this.listeners.clear();
-    }
-    attachEvents(events) {
-        if (events === this.events)
-            return;
-        try {
-            this.events?.removeEventListener("update", this.handleUpdate);
-        }
-        catch { /* Loader may be unloading. */ }
-        this.events = undefined;
-        try {
-            if (isStateEvents(events)) {
-                events.addEventListener("update", this.handleUpdate);
-                this.events = events;
-            }
-        }
-        catch { /* Poll when Loader state notifications are unavailable. */ }
-    }
-    setPolling(enabled) {
-        if (enabled && this.pollTimer === undefined) {
-            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
-        }
-        else if (!enabled && this.pollTimer !== undefined) {
-            window.clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
-    }
-    refresh() {
-        if (!this.mounted)
-            return;
-        let plugins;
-        let disabled;
-        try {
-            const loader = this.getLoader();
-            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
-                ? loader.deckyState : undefined;
-            if (state !== null && typeof state === "object") {
-                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
-                const inventory = "publicState" in state && typeof state.publicState === "function"
-                    ? state.publicState() : undefined;
-                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
-                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
-                    plugins = inventory.plugins;
-                    disabled = inventory.disabledPlugins;
-                }
-            }
-            else {
-                this.attachEvents(undefined);
-            }
-        }
-        catch {
-            this.attachEvents(undefined);
-        }
-        this.publish(plugins, disabled);
-        this.setPolling(!this.events || !plugins || !disabled);
-    }
-    publish(plugins, disabled) {
-        let changed = false;
-        for (const feature of FEATURES) {
-            const conflict = KNOWN_CONFLICTS[feature];
-            const next = !plugins || !disabled ? UNAVAILABLE
-                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
-                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
-            if (next === this.conflicts[feature])
-                continue;
-            this.conflicts[feature] = next;
-            changed = true;
-        }
-        if (!changed)
-            return;
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* One feature must not block another subscriber. */ }
-        }
-    }
-}
-function featureConflictNotice(conflict, feature, savedEnabled) {
-    if (conflict.pluginName) {
-        const notice = t("conflicts.pluginConflict", {
-            pluginName: conflict.pluginName,
-            feature,
-        });
-        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
-    }
-    return conflict.detectionAvailable ? ""
-        : t("conflicts.detectionUnavailable", { feature });
-}
-const pluginConflicts = new PluginConflictMonitor();
-function startPluginConflicts() {
-    pluginConflicts.mount();
-    return () => pluginConflicts.stop();
-}
-
-const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
-const isTrailerHomeRoute = (route) => {
-    const first = String(route || "").trim().split(/\s+/, 1)[0];
-    if (!first)
-        return false;
-    try {
-        const parsed = new URL(first, "https://steamloopback.host/");
-        return parsed.hostname === "steamloopback.host" &&
-            /^\/(?:routes\/)?library\/home\/?$/i.test(parsed.pathname) &&
-            (!parsed.hash || parsed.hash.toLowerCase() === "#quickaccess");
-    }
-    catch {
-        return false;
-    }
-};
-const parseTrailerRootRoute = (route) => {
-    const routeText = String(route || "").trim();
-    const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
-    if (hashes.some((hash) => hash && hash !== "quickaccess") || /\b(?:tab|page|section|subpage)=/i.test(routeText))
-        return null;
-    const first = routeText.split(/\s+/, 1)[0];
-    if (!first)
-        return null;
-    let path;
-    try {
-        const parsed = new URL(first, "https://steamloopback.host/");
-        if (parsed.hostname !== "steamloopback.host")
-            return null;
-        if ((parsed.hash && parsed.hash.toLowerCase() !== "#quickaccess") ||
-            ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key)))
-            return null;
-        path = parsed.pathname.replace(/^\/routes(?=\/)/i, "");
-    }
-    catch {
-        return null;
-    }
-    const match = path.match(/^\/library\/(?:app|details)\/(\d{1,10})\/?$/i)
-        ?? path.match(/^\/library\/collection\/[^/]+\/(\d{1,10})\/?$/i)
-        ?? path.match(/^\/library\/collection\/[^/]+\/app\/(\d{1,10})\/?$/i);
-    if (!match)
-        return null;
-    const appId = Number(match[1]);
-    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
-};
-const nativeOverviewAppId = (value) => {
-    if (!value || typeof value !== "object")
-        return null;
-    const appId = Number(value.appid);
-    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
-};
-const isNativeShortcut = (value) => {
-    if (!value || typeof value !== "object")
-        return false;
-    const overview = value;
-    if (Number(overview.app_type) === 1073741824)
-        return true;
-    try {
-        return overview.BIsShortcut?.() === true;
-    }
-    catch {
-        return false;
-    }
-};
-const validSteamAppId$1 = (value) => {
-    if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value)))
-        return null;
-    const appId = Number(value);
-    return Number.isSafeInteger(appId) && appId > 0 && appId < SHORTCUT_APP_ID_BOUNDARY
-        ? appId
-        : null;
-};
-const trailerTitle = (value) => {
-    const title = typeof value === "string" ? value.trim() : "";
-    return title.length <= 200 ? title : "";
-};
-const nativeTrailerGameTitle = (overview) => {
-    if (!overview || typeof overview !== "object")
-        return "";
-    const app = overview;
-    return trailerTitle(app.display_name) || trailerTitle(app.localized_name) ||
-        trailerTitle(app.name) || trailerTitle(app.strDisplayName);
-};
-const ignGameUrl = (metadata) => {
-    if (metadata?.source !== "IGN" || typeof metadata.source_url !== "string")
-        return null;
-    const url = metadata.source_url.trim();
-    return /^https:\/\/www\.ign\.com\/games\/[a-z0-9][a-z0-9-]{0,119}\/?$/i.test(url)
-        ? url.replace(/\/$/, "") : null;
-};
-/** Share native AppID validation without weakening the detail route/hero guard. */
-const resolveTrailerAppSource = (context) => {
-    const pageAppId = context.appId;
-    if (!context.hydrated || !Number.isInteger(pageAppId) || pageAppId <= 0 ||
-        pageAppId > 0xffffffff || nativeOverviewAppId(context.overview) !== pageAppId)
-        return null;
-    if (pageAppId < SHORTCUT_APP_ID_BOUNDARY) {
-        return isNativeShortcut(context.overview)
-            ? null
-            : { pageAppId, sourceAppId: pageAppId, kind: "steam" };
-    }
-    if (!isNativeShortcut(context.overview))
-        return null;
-    const sourceAppId = validSteamAppId$1(context.metadata?.steam_appid);
-    if (!sourceAppId && !nativeTrailerGameTitle(context.overview) &&
-        !(typeof context.metadata?.title === "string" && context.metadata.title.trim()) &&
-        !ignGameUrl(context.metadata))
-        return null;
-    return { pageAppId, sourceAppId, kind: "shortcut" };
-};
-/** Resolve detail playback only after the route and visible hero agree. */
-const resolveTrailerSource = (context) => {
-    const pageAppId = parseTrailerRootRoute(context.route);
-    if (!pageAppId || context.heroAppId !== pageAppId)
-        return null;
-    return resolveTrailerAppSource({
-        appId: pageAppId, overview: context.overview, metadata: context.metadata, hydrated: context.hydrated,
-    });
-};
-
-// @ts-nocheck
-// This self-contained function is serialized into Steam's default world.
-// Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
-function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
-    const runtimeKey = "__deckyMetadataTrailerRuntime";
-    const runtimeVersion = "0.2.0";
-    const styleId = "decky-metadata-trailer-style";
-    const videoClass = "decky-metadata-trailer-video";
-    const targetClass = "decky-metadata-trailer-target";
-    const homeTargetClass = "decky-metadata-home-trailer-target";
-    const readyClass = "decky-metadata-trailer-ready";
-    const visibleClass = "decky-metadata-trailer-visible";
-    const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
-    const cleanViewClass = "decky-metadata-trailer-clean-view";
-    const audioHintId = "decky-metadata-trailer-audio-hint";
-    const viewHintId = "decky-metadata-trailer-view-hint";
-    const audioChangeEvent = "decky-metadata-trailer:audio-change";
-    const homeSelectionEvent = "decky-metadata-trailer:home-selection";
-    const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
-    const routeScanIntervalMs = 2400;
-    const queuedScanDelayMs = 360;
-    // Steam's page-entry animation ends within about 0.5 s on a Deck.
-    const earlyBackdropMs = 1000;
-    const directPlaybackTimeoutMs = 12000;
-    const audioFadeDurationMs = 1200;
-    const MAX_METADATA_BYTES = 1024 * 1024;
-    const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
-    const MAX_INIT_BYTES = 4 * 1024 * 1024;
-    const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
-    // Shared on window so a reused runtime picks up the strings of the latest install.
-    const translationsKey = `${runtimeKey}Translations`;
-    if (injectedTranslations)
-        window[translationsKey] = injectedTranslations;
-    const rt = (key, vars = {}) => {
-        const template = window[translationsKey]?.[key] ?? key;
-        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
-    };
-    let nativeStatusRowClass;
-    let nativeBackgroundClass;
-    const isStatusBand = (element) => {
-        if (!nativeStatusRowClass || !nativeBackgroundClass) {
-            const candidates = [window];
-            try {
-                candidates.push(window.opener);
-            }
-            catch { }
-            try {
-                if (window.parent !== window)
-                    candidates.push(window.parent);
-            }
-            catch { }
-            for (const candidate of candidates) {
-                try {
-                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow ||
-                        candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.cloudStatusRow;
-                    if (typeof value === "string" && value) {
-                        nativeStatusRowClass = value;
-                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage ||
-                            candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.headerBackgroundImage;
-                        if (typeof background === "string" && background)
-                            nativeBackgroundClass = background;
-                        break;
-                    }
-                }
-                catch { }
-            }
-        }
-        if (element.getAttribute?.("data-sdh-ludusavi-status-row") === "true" ||
-            element.getAttribute?.("data-sdh-ludusavi-artwork-band") === "true")
-            return true;
-        return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
-    };
-    const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
-    const isPaintedStatusBand = (element, target) => {
-        if (element.getAttribute?.("aria-hidden") === "true")
-            return false;
-        const band = element.getBoundingClientRect();
-        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
-            if (ancestor.hidden)
-                return false;
-            const style = getComputedStyle(ancestor);
-            // Steam fades the whole entering page in from 0; an ancestor that also holds the art hides both alike.
-            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ancestor.contains?.(target)))
-                return false;
-            if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky"))
-                return false;
-            if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
-                const bounds = ancestor.getBoundingClientRect();
-                if ((clipsOverflow(style.overflowX || style.overflow) && (band.left < bounds.left || band.right > bounds.right)) ||
-                    (clipsOverflow(style.overflowY || style.overflow) && (band.top < bounds.top || band.bottom > bounds.bottom)))
-                    return false;
-            }
-        }
-        return true;
-    };
-    const safeMediaUrl = (value, base) => {
-        if (typeof value !== "string" || !value.trim())
-            return null;
-        let parsed;
-        try {
-            parsed = base ? new URL(value, base) : new URL(value);
-        }
-        catch {
-            return null;
-        }
-        const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
-        if (parsed.protocol !== "https:" || parsed.username || parsed.password || !host ||
-            host === "steamloopback.host" || host.endsWith(".steamloopback.host") ||
-            host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
-            host.endsWith(".internal") || host.endsWith(".lan") || host.endsWith(".home") ||
-            host.endsWith(".onion") || /^\[.*\]$/.test(host) || /^\d+(?:\.\d+){0,3}$/.test(host))
-            return null;
-        return parsed.href;
-    };
-    const readBoundedBody = async (response, maximumBytes, asText) => {
-        const contentLength = response.headers?.get?.("content-length");
-        const lengthText = contentLength == null ? null : String(contentLength).trim();
-        if (lengthText !== null && !/^\d+$/.test(lengthText)) {
-            throw new Error("Steam media response has an invalid content length");
-        }
-        const declaredLength = lengthText === null ? null : Number(lengthText);
-        if (declaredLength !== null && !Number.isSafeInteger(declaredLength)) {
-            throw new Error("Steam media response has an invalid content length");
-        }
-        if (declaredLength !== null && declaredLength > maximumBytes) {
-            throw new Error("Steam media response is too large");
-        }
-        const reader = response.body?.getReader?.();
-        if (!reader)
-            throw new Error("Steam media response has no bounded streaming body");
-        const chunks = [];
-        let size = 0;
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done)
-                    break;
-                size += value.byteLength;
-                if (size > maximumBytes) {
-                    await reader.cancel();
-                    throw new Error("Steam media response is too large");
-                }
-                chunks.push(value);
-            }
-        }
-        catch (error) {
-            try {
-                await reader.cancel();
-            }
-            catch { }
-            throw error;
-        }
-        const bytes = new Uint8Array(size);
-        let offset = 0;
-        for (const chunk of chunks) {
-            bytes.set(chunk, offset);
-            offset += chunk.byteLength;
-        }
-        return asText ? new TextDecoder().decode(bytes) : bytes.buffer;
-    };
-    const validateResponseUrl = (response, requestedUrl) => {
-        if (response.redirected === true)
-            throw new Error("Steam media redirects are not allowed");
-        if (!response.url)
-            return;
-        const finalUrl = safeMediaUrl(response.url);
-        if (!finalUrl || finalUrl !== requestedUrl)
-            throw new Error("Steam media response URL changed");
-    };
-    const normalizeSettings = (value) => {
-        const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
-        const qualityOptions = ["auto", 720, 1080, 1440, 2160];
-        const detailEnabled = typeof parsed.detailEnabled === "boolean" ? parsed.detailEnabled : true;
-        const homeEnabled = typeof parsed.homeEnabled === "boolean" ? parsed.homeEnabled : false;
-        return {
-            enabled: parsed.enabled === true && (detailEnabled || homeEnabled),
-            detailEnabled,
-            homeEnabled,
-            audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
-            hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
-            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
-            detailFadeInDelaySeconds: Number.isInteger(parsed.detailFadeInDelaySeconds) &&
-                parsed.detailFadeInDelaySeconds >= 0 && parsed.detailFadeInDelaySeconds <= 10 ? parsed.detailFadeInDelaySeconds : 3,
-            homeFadeInDelaySeconds: Number.isInteger(parsed.homeFadeInDelaySeconds) &&
-                parsed.homeFadeInDelaySeconds >= 0 && parsed.homeFadeInDelaySeconds <= 10 ? parsed.homeFadeInDelaySeconds : 3
-        };
-    };
-    const findOwnerWindow = () => {
-        try {
-            if (window.opener?.__deckyMetadataTrailerOwner &&
-                typeof window.opener.__deckyMetadataTrailerOwner === "object")
-                return window.opener;
-        }
-        catch { }
-        if (window.__deckyMetadataTrailerOwner &&
-            typeof window.__deckyMetadataTrailerOwner === "object")
-            return window;
-        try {
-            if (window.parent !== window && window.parent?.__deckyMetadataTrailerOwner &&
-                typeof window.parent.__deckyMetadataTrailerOwner === "object")
-                return window.parent;
-        }
-        catch { }
-        return undefined;
-    };
-    const findOwnerRecord = () => findOwnerWindow()?.__deckyMetadataTrailerOwner;
-    let activeOwnerId = ownerId || "";
-    let activeRevision = Number.isSafeInteger(settingsRevision) && settingsRevision >= 0 ? settingsRevision : 0;
-    let settings = normalizeSettings(nextSettings);
-    const normalizeIdentity = (value) => {
-        const pageAppId = Number(value?.pageAppId);
-        const sourceAppId = value?.sourceAppId === null ? null : Number(value?.sourceAppId);
-        if (!Number.isInteger(pageAppId) || pageAppId <= 0 || pageAppId > 0xffffffff ||
-            (value?.view !== "detail" && value?.view !== "home") ||
-            (sourceAppId === null
-                ? pageAppId < 0x80000000
-                : !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000))
-            return null;
-        if (value.view === "home") {
-            if (!Number.isSafeInteger(value.selectionRevision) || value.selectionRevision < 0 ||
-                !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0)
-                return null;
-            return { view: "home", pageAppId, sourceAppId,
-                selectionRevision: value.selectionRevision, enteredAt: value.enteredAt };
-        }
-        return { view: "detail", pageAppId, sourceAppId };
-    };
-    const normalizeIgnFallback = (value) => {
-        if (value === undefined)
-            return undefined;
-        if (!value || typeof value.name !== "string" || !value.name.trim() || !Array.isArray(value.candidates))
-            return null;
-        const candidates = value.candidates.slice(0, 8).filter((item) => item?.format === "mp4" && typeof item.url === "string" && safeMediaUrl(item.url) &&
-            Number.isInteger(item.height) && item.height >= 360 && item.height <= 4320);
-        return candidates.length ? { name: value.name.trim().slice(0, 200), candidates } : null;
-    };
-    let activeIdentity = normalizeIdentity(identity);
-    let activeIgnFallback = normalizeIgnFallback(nextIgnFallback);
-    const ownerRecord = findOwnerRecord();
-    if (activeOwnerId && (!ownerRecord || ownerRecord.ownerId !== activeOwnerId || ownerRecord.active !== true)) {
-        return { status: rt("steamUiUnavailable"), runtimeMissing: true };
-    }
-    if (ownerRecord && ownerRecord.ownerId === activeOwnerId && Number.isSafeInteger(ownerRecord.settingsRevision) && ownerRecord.settingsRevision > activeRevision) {
-        activeRevision = ownerRecord.settingsRevision;
-        settings = normalizeSettings(ownerRecord.settings);
-        activeIdentity = normalizeIdentity(ownerRecord.identity);
-        activeIgnFallback = normalizeIgnFallback(ownerRecord.ignFallback);
-    }
-    const coerceAppId = (value) => {
-        if (typeof value !== "number" && (typeof value !== "string" || !/^\d{1,10}$/.test(value)))
-            return undefined;
-        const appId = Number(value);
-        return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : undefined;
-    };
-    function getGameDetailsRouteAppId(value) {
-        let path;
-        try {
-            const routeText = String(value || "").trim();
-            const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
-            if (hashes.some((hash) => hash && hash !== "quickaccess") ||
-                /\b(?:tab|page|section|subpage)=/i.test(routeText))
-                return undefined;
-            const route = new URL(routeText.split(/\s+/, 1)[0], window.location?.href ||
-                "https://steamloopback.host/");
-            if ((route.hash && route.hash.toLowerCase() !== "#quickaccess") ||
-                ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key)))
-                return undefined;
-            path = route.pathname;
-        }
-        catch {
-            return undefined;
-        }
-        const match = path.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/)?(\d{1,10})\/?$/i) ??
-            path.match(/^\/(?:routes\/)?library\/collection\/[^/]+\/(?:app\/)?(\d{1,10})\/?$/i);
-        const appId = coerceAppId(match?.[1]);
-        return appId;
-    }
-    const getLocalRouteText = () => [window.location?.href, window.location?.pathname, window.location?.hash, document.URL].filter(Boolean).join(" ").toLowerCase();
-    function getOpenerRouteText() {
-        try {
-            const opener = window.opener;
-            if (!opener?.location || new URL(opener.location.href).hostname !== "steamloopback.host")
-                return "";
-            return [opener.location.href, opener.location.pathname, opener.location.hash, opener.document?.URL]
-                .filter(Boolean).join(" ").toLowerCase();
-        }
-        catch {
-            return "";
-        }
-    }
-    const activeRouteText = () => getOpenerRouteText() || getLocalRouteText();
-    const detectLocationAppId = () => getGameDetailsRouteAppId(activeRouteText());
-    const readRootRouteKey = () => {
-        try {
-            const first = activeRouteText().trim().split(/\s+/, 1)[0];
-            return new URL(first, window.location.href).pathname.replace(/^\/routes(?=\/)/, "").replace(/\/$/, "") || "/";
-        }
-        catch {
-            return "";
-        }
-    };
-    const getElementAssetText = (element) => {
-        let background = "";
-        try {
-            background = getComputedStyle(element).backgroundImage || "";
-        }
-        catch { }
-        return [element.getAttribute("style") || "", element.getAttribute("src") || "", element.getAttribute("href") || "", background].join(" ");
-    };
-    const extractAppIdFromText = (value) => {
-        const text = String(value || "");
-        const patterns = [
-            /(?:steam\/apps|store_item_assets\/steam\/apps|steamcommunity\/public\/images\/apps|assets)\/(\d{1,10})(?:[\/_?.&#-]|$)/i,
-            /(?:config\/grid|\/grid\/)(\d{1,10})(?:[._a-z-]|$)/i,
-            /\/customimages\/(\d{1,10})(?:[a-z_]*)(?:[._/?#-]|$)/i,
-            /store\.steampowered\.com\/app\/(\d{1,10})(?:[/?#-]|$)/i
-        ];
-        const match = patterns.map((pattern) => text.match(pattern)).find(Boolean);
-        const appId = coerceAppId(match?.[1]);
-        return appId;
-    };
-    const isUsableRect = (rect) => {
-        const minWidth = Math.min(420, window.innerWidth * 0.35);
-        const minHeight = Math.min(180, window.innerHeight * 0.28);
-        return rect.width >= minWidth && rect.height >= minHeight && rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
-    };
-    const scoreHeroElement = (element, assetText) => {
-        const rect = element.getBoundingClientRect();
-        if (!isUsableRect(rect))
-            return 0;
-        const classText = String(element.className || "").toLowerCase();
-        const assetLower = assetText.toLowerCase();
-        if (assetLower.includes("movie") || assetLower.includes("trailer"))
-            return 0;
-        const areaScore = Math.min(900, rect.width * rect.height / 900);
-        const topBias = Math.max(0, 260 - Math.abs(rect.top)) / 2;
-        const heroBias = assetLower.includes("library_hero") || classText.includes("hero") ? 500 : 0;
-        const customHeroBias = assetLower.includes("/customimages/") && assetLower.includes("_hero") ? 700 : 0;
-        const backgroundBias = classText.includes("background") || assetLower.includes("page_bg") ? 180 : 0;
-        const smallMediaPenalty = element.tagName === "IMG" && rect.height < window.innerHeight * 0.32 ? 350 : 0;
-        const offscreenPenalty = Math.max(0, Math.abs(rect.left) - 4) * 4 + Math.max(0, Math.abs(rect.top) - 8) * 4;
-        return areaScore + topBias + heroBias + customHeroBias + backgroundBias - smallMediaPenalty - offscreenPenalty;
-    };
-    function findHeroCandidate(preferredAppId = detectLocationAppId(), within) {
-        const selector = [
-            "[style*='steam/apps']", "[style*='store_item_assets']", "[style*='/assets/']", "[style*='/customimages/']", "[style*='library_hero']",
-            "img[src*='steam/apps']", "img[src*='store_item_assets']", "img[src*='/assets/']", "img[src*='/customimages/']", "img[src*='library_hero']", "a[href*='/app/']"
-        ].join(",");
-        const nodes = Array.from(document.querySelectorAll(selector)).slice(0, 900);
-        let best;
-        for (const node of nodes) {
-            const assetText = getElementAssetText(node);
-            const appId = extractAppIdFromText(assetText);
-            if (!appId || (preferredAppId && appId !== preferredAppId))
-                continue;
-            const target = node.tagName === "IMG" ? node.parentElement : node;
-            if (!(target instanceof HTMLElement) || (within && !target.closest?.(within)))
-                continue;
-            const score = scoreHeroElement(target, assetText);
-            if (score > 0 && (!best || score > best.score))
-                best = { appId, element: target, score, assetText };
-        }
-        return best;
-    }
-    function findGameLogo(appId, hero) {
-        const heroRect = hero.getBoundingClientRect();
-        const nativePrefix = `/assets/${appId}/`;
-        const customPrefix = `/customimages/${appId}_logo.`;
-        const logos = document.querySelectorAll(`img[src*="${nativePrefix}"],img[src*="${customPrefix}"]`);
-        for (const logo of logos) {
-            const source = logo.getAttribute("src");
-            if (!source)
-                continue;
-            let asset;
-            try {
-                asset = new URL(source, window.location.href);
-            }
-            catch {
-                continue;
-            }
-            if (asset.origin !== window.location.origin)
-                continue;
-            const path = asset.pathname.toLowerCase();
-            const nativeLogo = path.startsWith(nativePrefix) &&
-                /\/(?:library_)?logo\.(?:png|jpe?g|webp)$/.test(path);
-            const customLogo = path.startsWith(customPrefix) &&
-                /^(?:png|jpe?g|webp)$/.test(path.slice(customPrefix.length));
-            if (!nativeLogo && !customLogo)
-                continue;
-            const rect = logo.getBoundingClientRect();
-            if (rect.width <= 0 || rect.height <= 0 || rect.right <= heroRect.left ||
-                rect.left >= heroRect.right || rect.bottom <= heroRect.top || rect.top >= heroRect.bottom)
-                continue;
-            return logo;
-        }
-        return undefined;
-    }
-    function otherTrailerPluginActive() {
-        return Boolean(document.getElementById("trailerhero-style") ||
-            document.querySelector(".trailerhero-video") ||
-            document.getElementById("decky-trailerhero-style") ||
-            document.querySelector(".decky-trailerhero-video"));
-    }
-    function isProbablyGameDetailsPage() {
-        if (!document.body)
-            return false;
-        const routeText = activeRouteText();
-        const routeAppId = getGameDetailsRouteAppId(routeText);
-        if (!routeAppId || activeIdentity?.view !== "detail" || activeIdentity.pageAppId !== routeAppId)
-            return false;
-        const hero = findHeroCandidate(routeAppId);
-        return Boolean(hero && hero.appId === routeAppId);
-    }
-    const normalizeActionText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
-    function isLaunchActionElement(target) {
-        if (!(target instanceof HTMLElement))
-            return false;
-        let playButtonClass;
-        let appActionButtonClass;
-        const candidates = [window];
-        try {
-            candidates.push(window.opener);
-        }
-        catch { }
-        try {
-            if (window.parent !== window)
-                candidates.push(window.parent);
-        }
-        catch { }
-        for (const candidate of candidates) {
-            try {
-                const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
-                const playButton = candidate?.DFL?.appActionButtonClasses?.PlayButton;
-                const appActionButton = candidate?.DFL?.basicAppDetailsSectionStylerClasses?.AppActionButton;
-                if (!playButtonClass) {
-                    if (typeof playButton === "string" && playButton)
-                        playButtonClass = playButton;
-                    else if (typeof translated?.playButton === "string" && translated.playButton)
-                        playButtonClass = translated.playButton;
-                }
-                if (!appActionButtonClass) {
-                    if (typeof appActionButton === "string" && appActionButton)
-                        appActionButtonClass = appActionButton;
-                    else if (typeof translated?.appActionButton === "string" && translated.appActionButton)
-                        appActionButtonClass = translated.appActionButton;
-                }
-            }
-            catch { }
-        }
-        const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
-            ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
-        const nativeSelector = [playButtonClass, appActionButtonClass]
-            .map((value) => typeof value === "string" ? escape(value) : "")
-            .filter(Boolean).map((value) => `.${value}`).join(", ");
-        const control = target.closest(nativeSelector || "button, a, [role='button'], [tabindex], [class*='Button'], [class*='button']");
-        if (!control)
-            return false;
-        const rect = control.getBoundingClientRect();
-        if (rect.width < 44 || rect.height < 28 || rect.bottom < 0 || rect.top > window.innerHeight)
-            return false;
-        if (nativeSelector)
-            return true;
-        const text = normalizeActionText([control.innerText, control.textContent, control.getAttribute("aria-label"), control.getAttribute("title")].filter(Boolean).join(" "));
-        return /\b(play|launch|install|resume|update|stream|gioca|avvia|installa|riprendi|aggiorna|jouer|lancer|installer|reprendre|jugar|iniciar|instalar|reanudar|actualizar|jogar|continuar|spielen|installieren|fortsetzen)\b/.test(text) || ["开始游戏", "开始", "安装", "继续", "更新", "プレイ", "起動", "インストール", "再開"].some((word) => text.includes(word));
-    }
-    const detectGameTitle = (appId) => {
-        try {
-            const overview = window.appStore?.GetAppOverviewByAppID?.(appId);
-            return String(overview?.display_name || overview?.name || overview?.strDisplayName || "");
-        }
-        catch {
-            return "";
-        }
-    };
-    function readPlaybackDisplaySize(hostWindow) {
-        const dpr = Number.isFinite(hostWindow.devicePixelRatio) && hostWindow.devicePixelRatio > 0
-            ? hostWindow.devicePixelRatio : 1;
-        const valid = (width, height) => Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
-        const screen = hostWindow.screen;
-        const width = valid(screen?.width, screen?.height) ? screen.width : hostWindow.innerWidth;
-        const height = valid(screen?.width, screen?.height) ? screen.height : hostWindow.innerHeight;
-        if (!valid(width, height))
-            return null;
-        return { width: Math.round(width * dpr), height: Math.round(height * dpr) };
-    }
-    function resolveQualityTarget(quality, displaySize) {
-        return typeof quality === "number" && [720, 1080, 1440, 2160].includes(quality)
-            ? quality : displaySize ? Math.min(2160, displaySize.height) : 720;
-    }
-    function createStyle() {
-        return `
-      .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
-      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
-      .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
-      .${homeTargetClass}>.${videoClass}{transform:none!important;transition:opacity ${audioFadeDurationMs}ms linear!important}
-      .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
-      .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
-      img.${logoHiddenClass}{opacity:0!important}
-    `;
-    }
-    class AdaptiveSession {
-        constructor(video, presentation, candidate) {
-            this.video = video;
-            this.presentation = presentation;
-            this.candidate = candidate;
-            this.requests = new Set();
-            this.operation = Promise.resolve();
-            this.generation = 0;
-            this.pendingPump = false;
-            this.starting = true;
-            this.disposed = false;
-            this.failed = false;
-            this.handlers = [];
-        }
-        assertCurrent() {
-            if (this.disposed || !this.candidate.isCurrent()) {
-                const error = new Error("Trailer request changed");
-                error.name = "AbortError";
-                throw error;
-            }
-        }
-        waitFor(target, eventName, timeoutMs, action) {
-            return new Promise((resolve, reject) => {
-                const signal = this.candidate.controller.signal;
-                let timer;
-                const cleanup = () => {
-                    target.removeEventListener(eventName, done);
-                    target.removeEventListener("error", failed);
-                    signal.removeEventListener("abort", cancelled);
-                    window.clearTimeout(timer);
-                };
-                const done = () => { cleanup(); resolve(); };
-                const failed = () => { cleanup(); reject(new Error(`${eventName} failed`)); };
-                const cancelled = () => {
-                    cleanup();
-                    const error = new Error("Trailer request stopped");
-                    error.name = "AbortError";
-                    reject(error);
-                };
-                if (signal.aborted || this.disposed) {
-                    cancelled();
-                    return;
-                }
-                target.addEventListener(eventName, done);
-                target.addEventListener("error", failed);
-                signal.addEventListener("abort", cancelled, { once: true });
-                timer = window.setTimeout(() => {
-                    cleanup();
-                    reject(new Error(`${eventName} timed out`));
-                }, timeoutMs);
-                if (action) {
-                    try {
-                        action();
-                    }
-                    catch (error) {
-                        cleanup();
-                        reject(error);
-                    }
-                }
-            });
-        }
-        async fetchBytes(url, generation, segment = false) {
-            this.assertCurrent();
-            const requestUrl = safeMediaUrl(url);
-            if (!requestUrl)
-                throw new Error("Steam media URL is not safe HTTPS");
-            const controller = new AbortController();
-            const request = { controller, generation, segment };
-            this.requests.add(request);
-            const cancel = () => controller.abort();
-            this.candidate.controller.signal.addEventListener("abort", cancel, { once: true });
-            const timeout = window.setTimeout(() => controller.abort(), 12000);
-            try {
-                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
-                validateResponseUrl(response, requestUrl);
-                if (!response.ok)
-                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
-                const data = await readBoundedBody(response, segment ? MAX_SEGMENT_BYTES : MAX_INIT_BYTES, false);
-                this.assertCurrent();
-                if (segment && generation !== this.generation) {
-                    const error = new Error("Obsolete seek request");
-                    error.name = "AbortError";
-                    throw error;
-                }
-                return data;
-            }
-            finally {
-                window.clearTimeout(timeout);
-                this.candidate.controller.signal.removeEventListener("abort", cancel);
-                this.requests.delete(request);
-            }
-        }
-        async mutate(buffer, action) {
-            const previous = this.operation;
-            let release;
-            this.operation = new Promise((resolve) => { release = resolve; });
-            await previous;
-            try {
-                this.assertCurrent();
-                await this.waitFor(buffer, "updateend", 12000, action);
-            }
-            finally {
-                release();
-            }
-        }
-        async start() {
-            try {
-                this.assertCurrent();
-                if (!Number.isFinite(this.presentation.duration) || this.presentation.duration <= 0 ||
-                    !this.presentation.tracks.length || this.presentation.tracks.some((track) => !track.initUrl || !track.segments.length || track.segments.some((segment) => !Number.isFinite(segment.start) || !Number.isFinite(segment.end) || segment.end <= segment.start))) {
-                    throw new Error("Invalid adaptive presentation");
-                }
-                this.mediaSource = new MediaSource();
-                this.objectUrl = URL.createObjectURL(this.mediaSource);
-                const opened = this.waitFor(this.mediaSource, "sourceopen", 12000);
-                this.video.loop = false;
-                this.video.src = this.objectUrl;
-                this.video.load();
-                await opened;
-                this.assertCurrent();
-                // CEF rejects a second SourceBuffer if any init data was appended
-                // before it was allocated. Allocate every track synchronously.
-                this.tracks = this.presentation.tracks.map((track) => {
-                    const buffer = this.mediaSource.addSourceBuffer(track.mimeType);
-                    buffer.mode = "segments";
-                    const timestampOffset = Number(track.timestampOffset ?? 0);
-                    if (!Number.isFinite(timestampOffset))
-                        throw new Error("Invalid media timestamp offset");
-                    buffer.timestampOffset = timestampOffset;
-                    return { track, buffer, appended: new Set(),
-                        pinned: new Set(track.segments.flatMap((segment, index) => segment.start < 8 ? [index] : [])) };
-                });
-                this.mediaSource.duration = this.presentation.duration;
-                for (const state of this.tracks) {
-                    const data = await this.fetchBytes(state.track.initUrl);
-                    this.assertCurrent();
-                    await this.mutate(state.buffer, () => state.buffer.appendBuffer(data));
-                }
-                await this.pumpWindow(this.generation, true);
-                this.assertCurrent();
-                this.starting = false;
-                const listen = (target, name, handler) => {
-                    target.addEventListener(name, handler);
-                    this.handlers.push([target, name, handler]);
-                };
-                listen(this.video, "timeupdate", () => this.requestPump());
-                listen(this.video, "waiting", () => this.requestPump());
-                listen(this.video, "play", () => this.requestPump());
-                listen(this.video, "seeking", () => this.seek(this.video.currentTime));
-                listen(this.video, "ended", () => {
-                    if (this.disposed)
-                        return;
-                    this.video.currentTime = 0;
-                    this.seek(0);
-                    this.video.play().catch(() => undefined);
-                });
-                this.pumpTimer = window.setInterval(() => this.requestPump(), 700);
-                if (this.pendingPump)
-                    this.requestPump();
-            }
-            catch (error) {
-                this.fail(error);
-                throw error;
-            }
-        }
-        seek(_time) {
-            if (this.disposed)
-                return;
-            this.generation++;
-            for (const request of this.requests)
-                if (request.segment)
-                    request.controller.abort();
-            this.requestPump();
-        }
-        requestPump() {
-            if (this.disposed)
-                return;
-            this.pendingPump = true;
-            if (this.starting || this.pumping)
-                return;
-            this.pumping = true;
-            void (async () => {
-                do {
-                    this.pendingPump = false;
-                    await this.pumpWindow(this.generation, false);
-                } while (this.pendingPump && !this.disposed);
-            })().catch((error) => this.fail(error)).finally(() => {
-                this.pumping = false;
-                if (this.pendingPump && !this.disposed)
-                    this.requestPump();
-            });
-        }
-        async pumpWindow(generation, priming) {
-            this.assertCurrent();
-            const time = Math.min(this.presentation.duration, Math.max(0, Number(this.video.currentTime) || 0));
-            const from = Math.max(0, time - 6);
-            const until = Math.min(this.presentation.duration, time + 12);
-            for (const state of this.tracks) {
-                if (generation !== this.generation)
-                    return;
-                const segments = state.track.segments;
-                const wanted = new Set(state.pinned);
-                segments.forEach((segment, index) => {
-                    if (segment.start < until && segment.end > from)
-                        wanted.add(index);
-                });
-                let removeStart, removeEnd;
-                const flushRemoval = async () => {
-                    if (removeStart === undefined)
-                        return;
-                    const start = removeStart, end = removeEnd;
-                    removeStart = removeEnd = undefined;
-                    await this.mutate(state.buffer, () => state.buffer.remove(start, end));
-                };
-                for (const index of [...state.appended].sort((a, b) => a - b)) {
-                    if (generation !== this.generation)
-                        return;
-                    if (wanted.has(index)) {
-                        await flushRemoval();
-                        continue;
-                    }
-                    const segment = segments[index];
-                    if (removeStart === undefined)
-                        removeStart = segment.start;
-                    else if (segment.start > removeEnd + 0.0001) {
-                        await flushRemoval();
-                        removeStart = segment.start;
-                    }
-                    removeEnd = segment.end;
-                    state.appended.delete(index);
-                }
-                await flushRemoval();
-                if (!priming && this.video.paused)
-                    continue;
-                for (const index of [...wanted].sort((a, b) => a - b)) {
-                    if (generation !== this.generation)
-                        return;
-                    if (state.appended.has(index))
-                        continue;
-                    const segment = segments[index];
-                    let data;
-                    try {
-                        data = await this.fetchBytes(segment.url, generation, true);
-                    }
-                    catch (error) {
-                        if (generation !== this.generation && !this.disposed)
-                            return;
-                        throw error;
-                    }
-                    if (generation !== this.generation)
-                        return;
-                    this.assertCurrent();
-                    await this.mutate(state.buffer, () => state.buffer.appendBuffer(data));
-                    state.appended.add(index);
-                }
-            }
-            if (generation === this.generation && !this.video.seeking &&
-                this.mediaSource.readyState === "open" &&
-                this.tracks.every(({ track, appended }) => appended.has(track.segments.length - 1)) &&
-                this.tracks.every(({ buffer }) => !buffer.updating)) {
-                this.mediaSource.endOfStream();
-            }
-        }
-        fail(error) {
-            if (this.failed || this.disposed || !this.candidate.isCurrent())
-                return;
-            this.failed = true;
-            this.candidate.onFailure(error);
-        }
-        dispose() {
-            if (this.disposed)
-                return;
-            this.disposed = true;
-            this.candidate.controller.abort();
-            for (const request of this.requests)
-                request.controller.abort();
-            if (this.pumpTimer)
-                window.clearInterval(this.pumpTimer);
-            for (const [target, name, handler] of this.handlers)
-                target.removeEventListener(name, handler);
-            this.handlers.length = 0;
-            this.video.pause();
-            this.video.removeAttribute("src");
-            this.video.load();
-            if (this.mediaSource?.readyState === "open") {
-                for (const { buffer } of this.tracks ?? []) {
-                    try {
-                        if (!buffer.updating)
-                            this.mediaSource.removeSourceBuffer(buffer);
-                    }
-                    catch { }
-                }
-            }
-            if (this.objectUrl) {
-                URL.revokeObjectURL(this.objectUrl);
-                this.objectUrl = undefined;
-            }
-            this.video.remove();
-        }
-    }
-    class Runtime {
-        constructor(initialSettings, runtimeOwnerId, revision, initialIgnFallback = activeIgnFallback) {
-            this.product = "decky-metadata-trailer";
-            this.version = runtimeVersion;
-            this.ownerId = runtimeOwnerId || "";
-            this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : 0;
-            this.identity = activeIdentity;
-            this.settings = normalizeSettings(initialSettings);
-            this.ignFallback = normalizeIgnFallback(initialIgnFallback);
-            this.needsIgnFallback = false;
-            this.steamUnavailable = false;
-            this.status = rt(this.settings.enabled ? "waitingGamePage" : "disabled");
-            this.requestToken = 0;
-            this.trailerCache = new Map();
-            this.resumeAttemptCandidate = undefined;
-            this.displaySize = readPlaybackDisplaySize(window);
-            this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
-            this.trailerAudioEnabled = this.settings.audioEnabled;
-            this.lastSecondaryPressAt = -Infinity;
-            this.homeInputMode = document.activeElement?.classList?.contains("gpfocus") ? "controller" : "pointer";
-            const homeRevision = findOwnerRecord()?.homeSelectionRevision;
-            this.homeSelectionRevision = Number.isSafeInteger(homeRevision) && homeRevision >= 0 ? homeRevision : 0;
-            this.homeFocusTask = () => {
-                this.refreshHomeSelection();
-            };
-            this.handleHomeFocus = () => queueMicrotask(this.homeFocusTask);
-            this.handleHomePointerMove = (event) => {
-                if (!event.isTrusted || !this.homeMonitoring)
-                    return;
-                if (this.homePointerX === event.clientX && this.homePointerY === event.clientY)
-                    return;
-                this.homePointerX = event.clientX;
-                this.homePointerY = event.clientY;
-                this.homeInputMode = "pointer";
-                this.homePointerCard = event.target?.closest?.("[data-id]");
-                this.refreshHomeSelection();
-            };
-            this.handleHomePointerOut = (event) => {
-                if (this.homeInputMode !== "pointer")
-                    return;
-                const card = event.relatedTarget?.closest?.("[data-id]");
-                if (card === this.homePointerCard)
-                    return;
-                this.homePointerCard = card;
-                this.refreshHomeSelection();
-            };
-            this.handleHomeKeyDown = (event) => {
-                if (homeNavigationKeys[event.key] !== true)
-                    return;
-                this.homeInputMode = "controller";
-                queueMicrotask(this.homeFocusTask);
-            };
-            this.handleHomeGamepadInput = () => {
-                this.homeInputMode = "controller";
-                queueMicrotask(this.homeFocusTask);
-            };
-            this.scanQueued = false;
-            this.launchHeld = false;
-            this.statusBackdrop = undefined;
-            this.rootRouteKey = readRootRouteKey();
-            this.handleResize = () => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                const target = this.currentTarget ?? this.statusBackdrop?.target;
-                if (target) {
-                    this.restoreStatusBackdrop();
-                    this.syncStatusBackdrop(target);
-                }
-                this.queueScan();
-            };
-            this.handleRouteChange = () => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
-                    activeRouteText().toLowerCase().includes("#quickaccess")))
-                    this.exitCleanViewing();
-                if (this.checkRootRoute())
-                    void this.scan();
-            };
-            this.handleVisibilityChange = () => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                this.failedVisit = undefined;
-                if (document.hidden) {
-                    this.pageEnteredAt = undefined;
-                    this.setHomeSelection(undefined, undefined);
-                    this.cleanupVideo(true);
-                }
-                else {
-                    this.launchHeld = false;
-                    this.pageEnteredAt = undefined;
-                    void this.scan();
-                }
-            };
-            this.handleLaunchIntent = (event) => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                this.stopTrailerForLaunch(event.target);
-            };
-            this.handleLaunchKeyDown = (event) => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                if (this.cleanViewingOverlay && (event.key === "Escape" || event.key === "Backspace")) {
-                    this.exitCleanViewing();
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                    return;
-                }
-                if (event.key === "Enter" || event.key === " ")
-                    this.stopTrailerForLaunch(event.target ?? document.activeElement);
-            };
-            this.steamSideMenuVisible = () => {
-                try {
-                    const store = window.opener?.SteamUIStore?.m_WindowStore ??
-                        window.SteamUIStore?.m_WindowStore;
-                    return store?.GamepadUIMainWindowInstance?.m_MenuStore?.IsAnySideMenuVisible?.() === true;
-                }
-                catch {
-                    return false;
-                }
-            };
-            this.handleGamepadButtonDown = (event) => {
-                if (this.destroyed || !this.settings.enabled)
-                    return;
-                const button = Number(event?.detail?.button);
-                if (event?.detail?.is_repeat || this.steamSideMenuVisible())
-                    return;
-                const editable = (element) => element instanceof HTMLElement && Boolean(element.closest("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']"));
-                if (editable(event.target) || editable(document.activeElement))
-                    return;
-                const overlayVisible = Array.from(document.querySelectorAll("[role='dialog'],[role='menu']"))
-                    .some((element) => {
-                    if (!(element instanceof HTMLElement) || element.hidden ||
-                        element.getAttribute("aria-hidden") === "true")
-                        return false;
-                    const rect = element.getBoundingClientRect();
-                    const style = getComputedStyle(element);
-                    return rect.width > 0 && rect.height > 0 && style.display !== "none" &&
-                        style.visibility !== "hidden";
-                });
-                if (overlayVisible)
-                    return;
-                let handled = false;
-                if (button === 4)
-                    handled = this.toggleCleanViewing();
-                else if (button === 2 && this.cleanViewingOverlay) {
-                    this.exitCleanViewing();
-                    handled = true;
-                }
-                else if (button === 3 && Date.now() - this.lastSecondaryPressAt >= 350 &&
-                    this.toggleTrailerAudio()) {
-                    this.lastSecondaryPressAt = Date.now();
-                    handled = true;
-                }
-                if (!handled)
-                    return;
-                event.preventDefault?.();
-                event.stopPropagation?.();
-                event.stopImmediatePropagation?.();
-            };
-        }
-        resolveHomeStyles() {
-            if (this.homeStyles)
-                return this.homeStyles;
-            const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
-                (typeof module?.RecentGamesBackgroundImages === "string" ||
-                    typeof module?.RecentGamesBackgroundContainer === "string") ? module : undefined;
-            for (const candidate of [window.opener, window, window.parent]) {
-                try {
-                    const styles = candidate?.DFL?.findModuleChild?.(predicate);
-                    const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
-                    const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
-                    const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
-                    const rawBackgroundFallback = styles?.RecentGamesBackgroundContainer || translated?.recentGamesBackgroundContainer;
-                    if (!rawContainer || (!rawBackground && !rawBackgroundFallback))
-                        continue;
-                    const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
-                        ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
-                    const container = escape(rawContainer);
-                    const backgrounds = [rawBackground, rawBackgroundFallback]
-                        .map((value) => value ? escape(value) : "")
-                        .filter(Boolean)
-                        .map((value) => `.${value}`);
-                    if (!container || !backgrounds.length)
-                        continue;
-                    this.homeStyles = { container: `.${container}`, backgrounds };
-                    return this.homeStyles;
-                }
-                catch { }
-            }
-            return undefined;
-        }
-        isHomeRoute() {
-            return /^\/library\/home$/i.test(readRootRouteKey());
-        }
-        getHomeCardAppId(card) {
-            const styles = this.resolveHomeStyles();
-            if (!styles || !card?.isConnected || !card.closest?.(styles.container) ||
-                !card.querySelector?.("[role='link']"))
-                return undefined;
-            return coerceAppId(card.getAttribute("data-id"));
-        }
-        refreshHomeSelection() {
-            if (!this.homeMonitoring || this.destroyed)
-                return;
-            const owner = findOwnerRecord();
-            if (!this.settings.enabled || !this.settings.homeEnabled || owner?.active !== true ||
-                owner.ownerId !== this.ownerId || owner.settings?.enabled !== true ||
-                owner.settings?.homeEnabled !== true || !this.isHomeRoute() || document.hidden ||
-                document.hasFocus?.() === false || this.steamSideMenuVisible() || this.launchHeld ||
-                document.activeElement?.closest?.("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']")) {
-                this.setHomeSelection(undefined, undefined);
-                return;
-            }
-            let card;
-            if (this.homeInputMode === "pointer") {
-                card = this.homePointerCard;
-            }
-            else if (document.activeElement?.classList?.contains("gpfocus")) {
-                card = document.activeElement.closest?.("[data-id]");
-            }
-            this.setHomeSelection(this.getHomeCardAppId(card), card);
-        }
-        setHomeSelection(appId, card) {
-            card = appId ? card : undefined;
-            if (this.homeAppId === appId && this.homeCard === card)
-                return;
-            this.homeAppId = appId;
-            this.homeCard = card;
-            this.homeSelectionRevision += 1;
-            this.homeEnteredAt = Date.now();
-            this.steamUnavailable = false;
-            this.needsIgnFallback = false;
-            this.failedVisit = undefined;
-            this.cleanupVideo(true);
-            const target = findOwnerWindow();
-            const owner = target?.__deckyMetadataTrailerOwner;
-            if (owner?.ownerId !== this.ownerId || owner.active !== true)
-                return;
-            const detail = { ownerId: this.ownerId, settingsRevision: owner.settingsRevision,
-                appId: appId ?? null, selectionRevision: this.homeSelectionRevision, enteredAt: this.homeEnteredAt };
-            try {
-                target.dispatchEvent(new target.CustomEvent(homeSelectionEvent, { detail }));
-            }
-            catch { }
-        }
-        startHomeTracking() {
-            if (this.homeMonitoring || !this.monitoring || !this.settings.homeEnabled)
-                return;
-            this.homeMonitoring = true;
-            const styles = this.resolveHomeStyles();
-            this.homePointerCard = styles
-                ? document.querySelector(`${styles.container} [data-id]:hover`) ?? undefined : undefined;
-            this.homeInputMode = this.homePointerCard && !document.activeElement?.classList?.contains("gpfocus")
-                ? "pointer" : "controller";
-            document.addEventListener("pointermove", this.handleHomePointerMove, true);
-            document.addEventListener("pointerout", this.handleHomePointerOut, true);
-            document.addEventListener("focusin", this.handleHomeFocus, true);
-            document.addEventListener("focusout", this.handleHomeFocus, true);
-            document.addEventListener("keydown", this.handleHomeKeyDown, true);
-            document.addEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
-            window.addEventListener("blur", this.handleHomeFocus);
-            this.refreshHomeSelection();
-        }
-        stopHomeTracking() {
-            this.homeMonitoring = false;
-            document.removeEventListener("pointermove", this.handleHomePointerMove, true);
-            document.removeEventListener("pointerout", this.handleHomePointerOut, true);
-            document.removeEventListener("focusin", this.handleHomeFocus, true);
-            document.removeEventListener("focusout", this.handleHomeFocus, true);
-            document.removeEventListener("keydown", this.handleHomeKeyDown, true);
-            document.removeEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
-            window.removeEventListener("blur", this.handleHomeFocus);
-            this.homePointerCard = undefined;
-            this.homePointerX = undefined;
-            this.homePointerY = undefined;
-            this.setHomeSelection(undefined, undefined);
-        }
-        homeIdentityIsCurrent() {
-            const owner = findOwnerRecord();
-            return this.settings.homeEnabled && owner?.settings?.enabled === true &&
-                owner.settings.homeEnabled === true && this.isHomeRoute() && !document.hidden &&
-                document.hasFocus?.() !== false && !this.steamSideMenuVisible() &&
-                this.identity?.view === "home" && this.homeAppId === this.identity.pageAppId &&
-                this.homeSelectionRevision === this.identity.selectionRevision && this.homeCard?.isConnected;
-        }
-        findHomeBackground() {
-            const styles = this.resolveHomeStyles();
-            if (!styles)
-                return undefined;
-            const container = this.homeCard?.closest?.(styles.container);
-            let element;
-            for (const selector of styles.backgrounds) {
-                const candidate = container?.querySelector?.(selector);
-                if (candidate?.isConnected) {
-                    element = candidate;
-                    break;
-                }
-            }
-            if (!element)
-                return undefined;
-            const rect = element.getBoundingClientRect();
-            return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
-        }
-        reservedBandHeight(target) {
-            const style = getComputedStyle(target);
-            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
-                !style.getPropertyValue("--CGV-image-height"))
-                return 0;
-            const value = Number.parseFloat(style.getPropertyValue("--sdh-status-band-height") || "30");
-            return Number.isFinite(value) ? Math.max(0, value) : 0;
-        }
-        reserveThemeBand(target, height) {
-            const style = getComputedStyle(target);
-            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
-                !style.getPropertyValue("--CGV-image-height") || !nativeBackgroundClass)
-                return;
-            const background = target.closest?.("." + nativeBackgroundClass);
-            if (!background)
-                return;
-            if (this.reservationBackground !== background)
-                this.releaseThemeBand();
-            const host = background.ownerDocument?.defaultView ?? window;
-            const reservations = host.__sdhStatusBandReservations ?? (host.__sdhStatusBandReservations = new WeakMap());
-            let reservation = reservations.get(background);
-            if (!reservation) {
-                reservation = {
-                    original: background.style.getPropertyValue("--sdh-status-band-height"),
-                    priority: background.style.getPropertyPriority("--sdh-status-band-height"),
-                    owner: this
-                };
-                reservations.set(background, reservation);
-            }
-            reservation.owner = this;
-            this.reservationBackground = background;
-            const value = height + "px";
-            if (background.style.getPropertyValue("--sdh-status-band-height") !== value ||
-                background.style.getPropertyPriority("--sdh-status-band-height") !== "") {
-                background.style.setProperty("--sdh-status-band-height", value);
-            }
-        }
-        releaseThemeBand() {
-            const background = this.reservationBackground;
-            this.reservationBackground = undefined;
-            if (!background)
-                return;
-            const host = background.ownerDocument?.defaultView ?? window;
-            const reservations = host.__sdhStatusBandReservations;
-            const reservation = reservations?.get(background);
-            if (reservation?.owner !== this)
-                return;
-            if (reservation.original)
-                background.style.setProperty("--sdh-status-band-height", reservation.original, reservation.priority);
-            else
-                background.style.removeProperty("--sdh-status-band-height");
-            reservations.delete(background);
-        }
-        restoreStatusBackdrop() {
-            const backdrop = this.statusBackdrop;
-            if (!backdrop)
-                return;
-            this.statusBackdrop = undefined;
-            backdrop.target.style.setProperty("height", backdrop.inlineHeight, backdrop.priority);
-        }
-        statusBandLayoutHeight(element, hero, edge) {
-            if (!isStatusBand(element) || !element.textContent?.trim())
-                return 0;
-            const band = element.getBoundingClientRect();
-            if (element.offsetHeight <= 0 || Math.abs(band.top - edge) > 1 ||
-                Math.abs(band.width - hero.width) > 2)
-                return 0;
-            const style = getComputedStyle(element);
-            const ownSuppression = element.getAttribute?.("data-sdh-ludusavi-paint-suppressed") === "true";
-            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ownSuppression) ||
-                style.position === "absolute" || style.position === "fixed" || style.position === "sticky")
-                return 0;
-            return element.offsetHeight;
-        }
-        syncStatusBackdrop(target) {
-            if (this.statusBackdrop?.target !== target)
-                this.restoreStatusBackdrop();
-            if (!target?.style || typeof document.elementFromPoint !== "function")
-                return;
-            const layoutHeight = target.offsetHeight;
-            if (layoutHeight <= 0) {
-                this.restoreStatusBackdrop();
-                return;
-            }
-            const hero = target.getBoundingClientRect();
-            // Steam scales the page on entry; only hit-testing uses screen heights.
-            const scaleY = hero.height / layoutHeight;
-            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
-            const edge = hero.top + naturalHeight * scaleY;
-            const hit = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
-            let element = hit;
-            let bandHeight = 0;
-            let reservationHeight = 0;
-            let hasStatusBand = false;
-            while (element && element !== document.body) {
-                if (isStatusBand(element))
-                    hasStatusBand = true;
-                const height = this.statusBandLayoutHeight(element, hero, edge);
-                if (height) {
-                    reservationHeight = height;
-                    if (isPaintedStatusBand(element, target)) {
-                        bandHeight = height;
-                        break;
-                    }
-                }
-                element = element.parentElement;
-            }
-            if (!reservationHeight) {
-                // Occlusion must not change layout; on-page cover still blocks paint.
-                isStatusBand(target);
-                const selector = '[data-sdh-ludusavi-status-row="true"]' +
-                    (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
-                for (const row of document.querySelectorAll(selector)) {
-                    hasStatusBand = true;
-                    reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
-                    if (!reservationHeight)
-                        continue;
-                    // Steam's outgoing page covers the entering one for its first frames; that cover is not occlusion.
-                    let page = row.parentElement;
-                    while (page && !page.contains(target))
-                        page = page.parentElement;
-                    if (hit && page && !page.contains(hit) && isPaintedStatusBand(row, target))
-                        bandHeight = reservationHeight;
-                    break;
-                }
-            }
-            if (!bandHeight) {
-                this.restoreStatusBackdrop();
-                if (hasStatusBand)
-                    this.reserveThemeBand(target, reservationHeight);
-                else
-                    this.releaseThemeBand();
-                return;
-            }
-            this.reserveThemeBand(target, bandHeight);
-            if (this.statusBackdrop?.bandHeight === bandHeight)
-                return;
-            if (this.statusBackdrop) {
-                this.statusBackdrop.bandHeight = bandHeight;
-            }
-            else {
-                this.statusBackdrop = {
-                    target, naturalHeight, bandHeight,
-                    inlineHeight: target.style.getPropertyValue("height"),
-                    priority: target.style.getPropertyPriority("height")
-                };
-            }
-            // Extend the clipped artwork and trailer, not Steam's play-section layout.
-            target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
-        }
-        syncDetailBackdrop(target) {
-            if (this.identity?.view !== "home")
-                this.syncStatusBackdrop(target);
-        }
-        // The current detail route's hero; nothing when this runtime does not paint that route.
-        routeHero(within) {
-            if (!this.settings.enabled || !this.settings.detailEnabled || this.isHomeRoute())
-                return undefined;
-            const appId = detectLocationAppId();
-            const hero = appId ? findHeroCandidate(appId, within) : undefined;
-            return hero && hero.appId === appId ? hero : undefined;
-        }
-        // cleanupVideo restores the inline height, so a band kept for this hero is detached and re-attached around it.
-        // Route-derived: playback still needs identity, but the band must not wait for it, and a repeat scan writes nothing.
-        syncRouteBackdrop(hero = this.routeHero()) {
-            const keep = hero && this.statusBackdrop?.target === hero.element ? this.statusBackdrop : undefined;
-            if (keep)
-                this.statusBackdrop = undefined;
-            this.cleanupVideo(true);
-            if (keep)
-                this.statusBackdrop = keep;
-            if (hero)
-                this.syncStatusBackdrop(hero.element);
-        }
-        // The queued scan lands after Steam's entry animation; size the art while the page is still entering.
-        syncEarlyBackdrop() {
-            const appId = detectLocationAppId();
-            const now = Date.now();
-            if (this.earlyBackdrop?.appId !== appId)
-                this.earlyBackdrop = { appId, until: now + earlyBackdropMs };
-            if (!appId || now > this.earlyBackdrop.until)
-                return;
-            // The same stops as scan(): a held launch, a hidden page, or TrailerHero owning the art.
-            if (this.launchHeld || document.hidden || otherTrailerPluginActive())
-                return;
-            isStatusBand(document.body); // resolves Steam's class names
-            // Library Home's background can show the same hero while it leaves; only the game page's header art counts.
-            const hero = this.routeHero(nativeBackgroundClass && "." + nativeBackgroundClass);
-            if (hero && this.statusBackdrop?.target !== hero.element)
-                this.syncStatusBackdrop(hero.element);
-        }
-        mount() {
-            this.mounted = true;
-            this.installStyle();
-            this.cleanupVideo();
-            this.startMonitoring();
-            if (this.settings.enabled)
-                void this.scan();
-        }
-        startMonitoring() {
-            if (!this.mounted || this.monitoring || this.destroyed || !this.settings.enabled)
-                return;
-            this.monitoring = true;
-            const generation = this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
-            const isCurrent = () => this.monitoring && !this.destroyed && this.settings.enabled &&
-                generation === this.monitoringGeneration;
-            if (document.body) {
-                this.observer = new MutationObserver((mutations) => {
-                    if (!isCurrent())
-                        return;
-                    if (this.settings.homeEnabled && mutations.some((mutation) => mutation.type === "childList" || mutation.attributeName === "class"))
-                        this.refreshHomeSelection();
-                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) {
-                        this.queueScan();
-                        this.syncEarlyBackdrop();
-                    }
-                });
-                this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
-                if (document.head) {
-                    this.themeObserver = new MutationObserver(() => { if (isCurrent())
-                        this.handleResize(); });
-                    this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
-                }
-            }
-            document.addEventListener("pointerdown", this.handleLaunchIntent, true);
-            document.addEventListener("click", this.handleLaunchIntent, true);
-            document.addEventListener("keydown", this.handleLaunchKeyDown, true);
-            document.addEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
-            this.routeWindows = [window];
-            try {
-                if (window.opener && new URL(window.opener.location.href).hostname === "steamloopback.host") {
-                    this.routeWindows.push(window.opener);
-                }
-            }
-            catch { }
-            for (const routeWindow of this.routeWindows) {
-                routeWindow.addEventListener("hashchange", this.handleRouteChange);
-                routeWindow.addEventListener("popstate", this.handleRouteChange);
-            }
-            window.addEventListener("resize", this.handleResize);
-            document.addEventListener("visibilitychange", this.handleVisibilityChange);
-            this.scanTimer = window.setInterval(() => {
-                if (isCurrent() && !document.hidden)
-                    void this.scan();
-            }, routeScanIntervalMs);
-            this.startHomeTracking();
-        }
-        update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
-            if (Number.isSafeInteger(revision) && revision < this.settingsRevision)
-                return this.snapshot();
-            const previous = this.settings;
-            const previousIdentity = this.identity;
-            const previousFallback = this.ignFallback;
-            this.settings = normalizeSettings(nextSettings);
-            this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : this.settingsRevision;
-            activeRevision = this.settingsRevision;
-            this.identity = normalizeIdentity(nextIdentity);
-            activeIdentity = this.identity;
-            const identityChanged = previousIdentity?.view !== this.identity?.view ||
-                previousIdentity?.pageAppId !== this.identity?.pageAppId ||
-                previousIdentity?.sourceAppId !== this.identity?.sourceAppId ||
-                previousIdentity?.selectionRevision !== this.identity?.selectionRevision;
-            this.ignFallback = normalizeIgnFallback(arguments.length >= 4 ? nextFallback :
-                identityChanged ? undefined : previousFallback);
-            const fallbackChanged = (previousFallback === undefined) !== (this.ignFallback === undefined) ||
-                (previousFallback === null) !== (this.ignFallback === null);
-            if (identityChanged) {
-                this.steamUnavailable = false;
-                this.needsIgnFallback = false;
-                this.failedVisit = undefined;
-                this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
-                this.syncRouteBackdrop();
-            }
-            if (fallbackChanged && !identityChanged) {
-                this.failedVisit = undefined;
-                this.needsIgnFallback = false;
-                if (this.ignFallback === undefined) {
-                    this.steamUnavailable = false;
-                    this.syncRouteBackdrop();
-                }
-            }
-            if (previous.audioEnabled !== this.settings.audioEnabled)
-                this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
-            if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer)
-                this.syncLogoVisibility();
-            if (!this.settings.enabled) {
-                this.stopMonitoring();
-                this.pageEnteredAt = undefined;
-                this.cleanupVideo(true);
-                this.releaseThemeBand();
-                this.status = rt("disabled");
-                return this.snapshot();
-            }
-            if (!previous.enabled) {
-                this.startMonitoring();
-                this.launchHeld = false;
-                this.failedVisit = undefined;
-                this.steamUnavailable = false;
-                this.needsIgnFallback = false;
-                this.pageEnteredAt = undefined;
-            }
-            if (this.settings.homeEnabled)
-                this.startHomeTracking();
-            else if (this.homeMonitoring)
-                this.stopHomeTracking();
-            const delayChanged = this.identity?.view === "home"
-                ? previous.homeFadeInDelaySeconds !== this.settings.homeFadeInDelaySeconds
-                : previous.detailFadeInDelaySeconds !== this.settings.detailFadeInDelaySeconds;
-            if (delayChanged && this.currentVideo && this.currentTarget && this.activeCandidate) {
-                this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
-            }
-            this.refreshDisplayTarget();
-            void this.scan();
-            return this.snapshot();
-        }
-        refreshDisplayTarget() {
-            this.displaySize = readPlaybackDisplaySize(window);
-            const targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
-            if (this.targetHeight === targetHeight)
-                return;
-            this.targetHeight = targetHeight;
-            this.failedVisit = undefined;
-            this.steamUnavailable = false;
-            this.needsIgnFallback = false;
-            this.pageEnteredAt = Date.now();
-            this.cleanupVideo(true);
-        }
-        checkRootRoute() {
-            const key = readRootRouteKey();
-            if (key === this.rootRouteKey)
-                return false;
-            this.rootRouteKey = key;
-            this.launchHeld = false;
-            this.steamUnavailable = false;
-            this.needsIgnFallback = false;
-            this.failedVisit = undefined;
-            this.pageEnteredAt = undefined;
-            this.cleanupVideo(true);
-            return true;
-        }
-        snapshot() {
-            const video = this.currentVideo;
-            return {
-                appId: this.currentAppId,
-                sourceAppId: this.identity?.sourceAppId,
-                status: this.status,
-                trailerName: this.currentTrailerName,
-                gameTitle: this.currentGameTitle,
-                trailerAudioEnabled: this.trailerAudioEnabled,
-                quality: this.settings.quality,
-                displayWidth: this.displaySize?.width ?? null,
-                displayHeight: this.displaySize?.height ?? null,
-                targetHeight: this.targetHeight,
-                needsIgnFallback: this.needsIgnFallback,
-                // Still resolving or starting a source; bridge-only polling continues until this clears.
-                pending: this.pendingRequestToken !== undefined ||
-                    Boolean(video?.isConnected && !video.classList?.contains(visibleClass) &&
-                        !this.failedVisit && !this.needsIgnFallback)
-            };
-        }
-        destroy() {
-            this.destroyed = true;
-            this.stopMonitoring();
-            this.cleanupVideo(true);
-            this.releaseThemeBand();
-            document.getElementById(styleId)?.remove();
-        }
-        stopMonitoring() {
-            this.monitoring = false;
-            this.stopHomeTracking();
-            this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
-            this.observer?.disconnect();
-            this.themeObserver?.disconnect();
-            this.observer = undefined;
-            this.themeObserver = undefined;
-            if (this.scanTimer)
-                window.clearInterval(this.scanTimer);
-            if (this.queuedScanTimer)
-                window.clearTimeout(this.queuedScanTimer);
-            this.scanTimer = undefined;
-            this.queuedScanTimer = undefined;
-            this.scanQueued = false;
-            for (const routeWindow of this.routeWindows ?? []) {
-                routeWindow.removeEventListener("hashchange", this.handleRouteChange);
-                routeWindow.removeEventListener("popstate", this.handleRouteChange);
-            }
-            this.routeWindows = [];
-            window.removeEventListener("resize", this.handleResize);
-            document.removeEventListener("pointerdown", this.handleLaunchIntent, true);
-            document.removeEventListener("click", this.handleLaunchIntent, true);
-            document.removeEventListener("keydown", this.handleLaunchKeyDown, true);
-            document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
-            document.removeEventListener("visibilitychange", this.handleVisibilityChange);
-        }
-        installStyle() {
-            let style = document.getElementById(styleId);
-            if (!style) {
-                style = document.createElement("style");
-                style.id = styleId;
-                document.head.appendChild(style);
-            }
-            style.textContent = createStyle();
-        }
-        shouldQueueScanForMutation(mutation) {
-            const target = mutation.target instanceof HTMLElement ? mutation.target : undefined;
-            if (target?.closest(`.${videoClass}`))
-                return false;
-            if (mutation.type === "attributes" && target) {
-                const assetText = getElementAssetText(target).toLowerCase();
-                return assetText.includes("library_hero") || assetText.includes("_hero") || assetText.includes("customimages");
-            }
-            return true;
-        }
-        stopTrailerForLaunch(target) {
-            if (!this.currentAppId || !isLaunchActionElement(target))
-                return;
-            this.launchHeld = true;
-            this.pageEnteredAt = undefined;
-            this.cleanupVideo(true);
-            this.status = rt("stoppedForLaunch");
-        }
-        stopAudioFade() {
-            if (this.audioFadeTimer)
-                window.clearInterval(this.audioFadeTimer);
-            this.audioFadeTimer = undefined;
-        }
-        applyCurrentMediaAudioState(fadeIn = false) {
-            this.stopAudioFade();
-            const video = this.currentVideo;
-            if (!video)
-                return;
-            const audible = this.identity?.view !== "home" && this.trailerAudioEnabled &&
-                this.currentMediaReady === true && video.classList.contains(visibleClass);
-            video.volume = audible && !fadeIn ? 1 : 0;
-            video.muted = !audible;
-            video.defaultMuted = !audible;
-            if (!audible || !fadeIn)
-                return;
-            const startedAt = Date.now();
-            this.audioFadeTimer = window.setInterval(() => {
-                if (this.currentVideo !== video || !video.isConnected) {
-                    this.stopAudioFade();
-                    return;
-                }
-                video.volume = Math.min(1, (Date.now() - startedAt) / audioFadeDurationMs);
-                if (video.volume === 1)
-                    this.stopAudioFade();
-            }, 50);
-        }
-        dispatchAudioChange() {
-            const detail = { ownerId: this.ownerId, settingsRevision: this.settingsRevision, audioEnabled: this.trailerAudioEnabled };
-            const targets = [window];
-            try {
-                if (window.opener && !targets.includes(window.opener))
-                    targets.push(window.opener);
-            }
-            catch { }
-            for (const target of targets) {
-                try {
-                    target.dispatchEvent(new target.CustomEvent(audioChangeEvent, { detail }));
-                }
-                catch { }
-            }
-        }
-        setTrailerAudioEnabled(enabled, notify = true) {
-            if (typeof enabled !== "boolean")
-                return false;
-            const changed = this.trailerAudioEnabled !== enabled;
-            this.trailerAudioEnabled = enabled;
-            this.settings = { ...this.settings, audioEnabled: enabled };
-            this.applyCurrentMediaAudioState();
-            this.updateTrailerHints();
-            if (notify && changed)
-                this.dispatchAudioChange();
-            return true;
-        }
-        toggleTrailerAudio() {
-            if (!isProbablyGameDetailsPage() || !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass))
-                return false;
-            return this.setTrailerAudioEnabled(!this.trailerAudioEnabled);
-        }
-        toggleCleanViewing() {
-            if (this.cleanViewingOverlay) {
-                this.exitCleanViewing();
-                return true;
-            }
-            const video = this.currentVideo;
-            if (!video?.isConnected || !video.classList.contains(visibleClass) ||
-                !isProbablyGameDetailsPage() || !document.body)
-                return false;
-            const overlay = document.createElement("div");
-            overlay.className = cleanViewClass;
-            Object.assign(overlay.style, {
-                position: "fixed", inset: "0", background: "#000", zIndex: "2147483646"
-            });
-            overlay.addEventListener("click", () => this.exitCleanViewing());
-            document.body.appendChild(overlay);
-            overlay.appendChild(video);
-            this.cleanViewingOverlay = overlay;
-            return true;
-        }
-        exitCleanViewing() {
-            const overlay = this.cleanViewingOverlay;
-            if (!overlay)
-                return;
-            this.cleanViewingOverlay = undefined;
-            if (this.currentVideo?.parentElement === overlay && this.currentTarget?.isConnected) {
-                this.currentTarget.insertBefore(this.currentVideo, this.currentTarget.firstChild);
-            }
-            overlay.remove();
-        }
-        removeTrailerHints() {
-            document.getElementById(audioHintId)?.remove();
-            document.getElementById(viewHintId)?.remove();
-        }
-        updateTrailerHints() {
-            const hasVideo = Boolean(this.currentVideo?.isConnected &&
-                this.currentVideo.classList.contains(visibleClass) && isProbablyGameDetailsPage());
-            if (!hasVideo) {
-                this.removeTrailerHints();
-                return;
-            }
-            const footer = document.querySelector("#Footer > div");
-            if (!(footer instanceof HTMLElement))
-                return;
-            const nativeActions = Array.from(footer.children).filter((element) => element.id !== audioHintId && element.id !== viewHintId);
-            const template = nativeActions.find((element) => /_button_[ab](?=[./?#]|$)/i.test(element.querySelector("img")?.src ?? "")) ?? nativeActions.find((element) => element.querySelector("img"));
-            const nativeGlyph = template?.querySelector("img");
-            const nativeGlyphSrc = nativeGlyph?.src ?? "";
-            const nativeButtonToken = /_button_[a-z0-9]+(?=[./?#]|$)/i;
-            const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
-            if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel)
-                return;
-            if (!nativeButtonToken.test(nativeGlyphSrc)) {
-                this.removeTrailerHints();
-                return;
-            }
-            for (const [id, button, labelText] of [
-                [audioHintId, "x", rt(this.trailerAudioEnabled ? "muteTrailer" : "audio")],
-                [viewHintId, "y", rt("expandTrailer")],
-            ]) {
-                let hint = document.getElementById(id);
-                if (!hint || hint.parentElement !== footer) {
-                    hint?.remove();
-                    hint = document.createElement("div");
-                    hint.id = id;
-                    hint.className = template.className;
-                    hint.style.pointerEvents = "none";
-                    hint.setAttribute("aria-hidden", "true");
-                    const iconContainer = document.createElement("div");
-                    iconContainer.className = nativeGlyph.parentElement.className;
-                    const glyph = document.createElement("img");
-                    glyph.className = nativeGlyph.className;
-                    glyph.src = nativeGlyphSrc.replace(nativeButtonToken, `_button_${button}`);
-                    glyph.alt = "";
-                    iconContainer.appendChild(glyph);
-                    const label = document.createElement("div");
-                    label.className = `${nativeLabel.className} decky-metadata-trailer-hint-label`;
-                    hint.append(iconContainer, label);
-                    const firstAction = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a']"));
-                    footer.insertBefore(hint, firstAction ?? null);
-                }
-                const label = hint.querySelector(".decky-metadata-trailer-hint-label");
-                if (label)
-                    label.textContent = labelText;
-            }
-        }
-        restoreLogo() {
-            this.hiddenLogo?.classList.remove(logoHiddenClass);
-            this.hiddenLogo = undefined;
-        }
-        syncLogoVisibility() {
-            const appId = this.currentAppId;
-            if (!this.settings.enabled || !this.settings.hideLogoDuringTrailer ||
-                !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass) ||
-                !this.currentTarget || !appId || this.identity?.pageAppId !== appId ||
-                detectLocationAppId() !== appId) {
-                this.restoreLogo();
-                return;
-            }
-            const logo = findGameLogo(appId, this.currentTarget);
-            if (this.hiddenLogo === logo) {
-                if (logo && !logo.classList.contains(logoHiddenClass))
-                    logo.classList.add(logoHiddenClass);
-                return;
-            }
-            this.restoreLogo();
-            if (logo) {
-                logo.classList.add(logoHiddenClass);
-                this.hiddenLogo = logo;
-            }
-        }
-        queueScan() {
-            if (this.scanQueued || this.destroyed || !this.settings.enabled)
-                return;
-            this.scanQueued = true;
-            const generation = this.monitoringGeneration;
-            this.queuedScanTimer = window.setTimeout(() => {
-                if (generation !== this.monitoringGeneration)
-                    return;
-                this.queuedScanTimer = undefined;
-                this.scanQueued = false;
-                if (!this.destroyed && this.settings.enabled)
-                    void this.scan();
-            }, queuedScanDelayMs);
-        }
-        async scan() {
-            if (this.destroyed || !this.settings.enabled)
-                return;
-            if (this.reservationBackground?.isConnected === false)
-                this.releaseThemeBand();
-            const owner = findOwnerRecord();
-            if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
-                this.destroy();
-                if (window[runtimeKey] === this)
-                    delete window[runtimeKey];
-                return;
-            }
-            if (Number.isSafeInteger(owner.settingsRevision) && owner.settingsRevision > this.settingsRevision) {
-                this.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
-                return;
-            }
-            if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
-                !this.cleanViewingOverlay.isConnected ||
-                activeRouteText().toLowerCase().includes("#quickaccess")))
-                this.exitCleanViewing();
-            this.refreshDisplayTarget();
-            this.checkRootRoute();
-            if (this.homeMonitoring)
-                this.refreshHomeSelection();
-            if (!this.settings.enabled) {
-                this.cleanupVideo(true);
-                this.releaseThemeBand();
-                this.status = rt("disabled");
-                return;
-            }
-            if (document.hidden) {
-                this.cleanupVideo(true);
-                return;
-            }
-            if (otherTrailerPluginActive()) {
-                this.cleanupVideo(true);
-                this.status = rt("otherPluginActive");
-                return;
-            }
-            if (this.launchHeld) {
-                if (this.currentVideo?.isConnected)
-                    this.cleanupVideo(true);
-                this.status = rt("stoppedForLaunch");
-                return;
-            }
-            const home = this.isHomeRoute() && this.settings.homeEnabled;
-            // Route-derived, not identity-derived: the status band must not wait for the identity poll.
-            if (!document.body || (!home && (!this.settings.detailEnabled || !detectLocationAppId()))) {
-                this.failedVisit = undefined;
-                this.currentAppId = undefined;
-                this.currentGameTitle = undefined;
-                this.currentTrailerName = undefined;
-                this.cleanupVideo(true);
-                this.status = rt("waitingGamePage");
-                return;
-            }
-            const appId = home ? this.homeAppId : detectLocationAppId();
-            const hero = home ? this.findHomeBackground() : appId ? findHeroCandidate(appId) : undefined;
-            if (!appId || !this.identity || this.identity.pageAppId !== appId ||
-                (home && !this.homeIdentityIsCurrent()) || (!home && this.identity.view !== "detail") ||
-                !hero || hero.appId !== appId) {
-                this.needsIgnFallback = false;
-                this.currentAppId = undefined;
-                this.failedVisit = undefined;
-                // Identity can arrive a poll interval late; the art takes its band height now instead of after it.
-                this.syncRouteBackdrop(!home && hero?.appId === appId ? hero : undefined);
-                this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
-                return;
-            }
-            if (this.needsIgnFallback && this.ignFallback === undefined &&
-                this.currentAppId === appId && this.currentTarget === hero.element)
-                return;
-            if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element)
-                return;
-            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
-                if (!home)
-                    this.syncStatusBackdrop(hero.element);
-                this.resumeVisiblePausedVideo(appId, hero.element);
-                this.syncLogoVisibility();
-                if (this.currentVideo?.classList.contains(visibleClass) &&
-                    (!document.getElementById(audioHintId) || !document.getElementById(viewHintId))) {
-                    this.updateTrailerHints();
-                }
-                return;
-            }
-            if (this.pendingAppId === appId && this.pendingTarget === hero.element && this.pendingRequestToken === this.requestToken)
-                return;
-            const priorAppId = this.currentAppId;
-            this.cleanupVideo(true);
-            const token = ++this.requestToken;
-            this.currentAppId = appId;
-            this.currentGameTitle = detectGameTitle(appId);
-            this.pageEnteredAt = home ? this.identity.enteredAt
-                : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
-            this.currentTarget = hero.element;
-            // After cleanupVideo, so the art already has its final height when the page paints.
-            this.syncDetailBackdrop(hero.element);
-            this.pendingAppId = appId;
-            this.pendingTarget = hero.element;
-            this.pendingRequestToken = token;
-            this.status = rt("searchTrailerForApp", { appId });
-            const sourceAppId = this.identity.sourceAppId;
-            let trailer, sourceKind = "steam";
-            if (sourceAppId === null || this.steamUnavailable) {
-                sourceKind = "ign";
-            }
-            else {
-                trailer = await this.getTrailer(sourceAppId);
-                if (token !== this.requestToken || this.destroyed || (home && !this.homeIdentityIsCurrent()))
-                    return;
-                if (!trailer.ok || !trailer.candidates?.length) {
-                    this.steamUnavailable = true;
-                    this.trailerCache.delete(sourceAppId);
-                    sourceKind = "ign";
-                }
-            }
-            if (sourceKind === "ign") {
-                if (this.ignFallback === undefined) {
-                    this.needsIgnFallback = true;
-                    this.status = rt("searchIgnTrailer");
-                    this.pendingAppId = undefined;
-                    this.pendingTarget = undefined;
-                    this.pendingRequestToken = undefined;
-                    return;
-                }
-                trailer = this.ignFallback
-                    ? { ok: true, name: this.ignFallback.name, candidates: this.ignFallback.candidates }
-                    : { ok: false, error: rt("noGameTrailer") };
-            }
-            this.needsIgnFallback = false;
-            this.pendingAppId = undefined;
-            this.pendingTarget = undefined;
-            this.pendingRequestToken = undefined;
-            if (!trailer.ok || !trailer.candidates?.length) {
-                // The art keeps its status-band height without a trailer; leaving the page restores it.
-                this.failedVisit = { appId, hero: hero.element };
-                this.releaseThemeBand();
-                this.status = trailer.error || rt("noGameTrailer");
-                return;
-            }
-            this.currentTrailerName = trailer.name;
-            this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token, { mediaSignature: this.getDesiredMediaSignature(), sourceKind });
-        }
-        resumeVisiblePausedVideo(appId, hero) {
-            const video = this.currentVideo;
-            const candidate = this.activeCandidate;
-            if (!video?.isConnected || !video.paused || !this.currentMediaReady || document.hidden ||
-                this.launchHeld || !this.settings.enabled || !candidate?.isCurrent?.() ||
-                this.resumeAttemptCandidate === candidate)
-                return;
-            this.resumeAttemptCandidate = candidate;
-            let playback;
-            try {
-                playback = video.play();
-            }
-            catch (error) {
-                playback = Promise.reject(error);
-            }
-            Promise.resolve(playback).then(() => {
-                if (!candidate.isCurrent())
-                    return;
-                if (video.paused)
-                    throw new Error("Trailer stayed paused after wake");
-                this.status = this.currentTrailerName
-                    ? rt("trailerLabel", { name: this.currentTrailerName })
-                    : rt("trailerActive");
-                this.updateTrailerHints();
-                this.scheduleTrailerReveal(candidate, video, hero);
-            }).catch(() => {
-                if (!candidate.isCurrent())
-                    return;
-                this.failedVisit = { appId, hero };
-                this.cleanupVideo(true);
-                this.syncDetailBackdrop(hero);
-                this.releaseThemeBand();
-                this.status = rt("autoplayBlocked");
-            });
-        }
-        scheduleTrailerReveal(candidate, video, target) {
-            if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
-                video.classList.contains(visibleClass))
-                return;
-            if (this.fadeTimer)
-                window.clearTimeout(this.fadeTimer);
-            const delaySeconds = this.identity?.view === "home"
-                ? this.settings.homeFadeInDelaySeconds : this.settings.detailFadeInDelaySeconds;
-            const delay = Math.max(0, delaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
-            this.fadeTimer = window.setTimeout(() => {
-                this.fadeTimer = undefined;
-                if (!candidate.isCurrent() || video.paused)
-                    return;
-                target.classList.add(readyClass);
-                video.classList.add(visibleClass);
-                this.applyCurrentMediaAudioState(true);
-                this.syncLogoVisibility();
-                this.updateTrailerHints();
-                this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
-            }, delay);
-        }
-        getDesiredMediaSignature() {
-            return `${this.identity?.view}:${this.targetHeight}:${this.identity?.sourceAppId || 0}:${this.identity?.selectionRevision ?? 0}`;
-        }
-        async getTrailer(appId) {
-            const cached = this.trailerCache.get(appId);
-            if (cached) {
-                this.trailerCache.delete(appId);
-                this.trailerCache.set(appId, cached);
-                return cached;
-            }
-            const controller = new AbortController();
-            this.metadataController = controller;
-            const timeout = window.setTimeout(() => controller.abort(), 9000);
-            try {
-                const requestUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`;
-                const response = await fetch(requestUrl, {
-                    signal: controller.signal, cache: "default", redirect: "error"
-                });
-                validateResponseUrl(response, requestUrl);
-                if (!response.ok)
-                    throw new Error(`HTTP ${response.status}`);
-                const payload = JSON.parse(await readBoundedBody(response, MAX_METADATA_BYTES, true));
-                if (controller.signal.aborted)
-                    throw new Error("Steam metadata request stopped");
-                const movies = payload?.[String(appId)]?.data?.movies ?? [];
-                if (!Array.isArray(movies) || !movies.length)
-                    return { ok: false, error: rt("noSteamTrailer") };
-                const movie = movies.find((entry) => entry?.highlight) ?? movies[0];
-                if (!movie?.id)
-                    return { ok: false, error: rt("steamTrailerNotPlayable") };
-                const candidates = [];
-                const add = (url, format, label = "") => {
-                    if (typeof url !== "string")
-                        return;
-                    const safeUrl = safeMediaUrl(url);
-                    if (!safeUrl)
-                        return;
-                    const height = Number(String(label).match(/(?:^|[^0-9])(2160|1440|1080|720|480|360)(?:p|[^0-9]|$)/i)?.[1]
-                        ?? url.match(/movie[_-]?(2160|1440|1080|720|480|360)/i)?.[1] ?? 0);
-                    candidates.push({ url: safeUrl, format, height });
-                };
-                for (const format of ["mp4", "webm"]) {
-                    if (!movie[format] || typeof movie[format] !== "object")
-                        continue;
-                    for (const [label, url] of Object.entries(movie[format]))
-                        add(url, format, label);
-                }
-                for (const format of ["dash_h264", "hls_h264", "dash_av1"])
-                    add(movie[format], format);
-                if (!candidates.length)
-                    return { ok: false, error: rt("steamTrailerNotPlayable") };
-                return this.rememberTrailer(appId, { ok: true, name: movie.name ?? rt("steamTrailer"), candidates });
-            }
-            catch (error) {
-                return { ok: false, error: error instanceof Error ? error.message : rt("steamTrailerNotPlayable") };
-            }
-            finally {
-                window.clearTimeout(timeout);
-                if (this.metadataController === controller)
-                    this.metadataController = undefined;
-            }
-        }
-        rememberTrailer(appId, result) {
-            this.trailerCache.delete(appId);
-            this.trailerCache.set(appId, result);
-            while (this.trailerCache.size > 32)
-                this.trailerCache.delete(this.trailerCache.keys().next().value);
-            return result;
-        }
-        orderCandidates(candidates) {
-            const target = this.targetHeight;
-            const formatRank = { mp4: 0, webm: 1, dash_h264: 0, hls_h264: 1, dash_av1: 2 };
-            const ranked = candidates.filter((candidate) => {
-                if (!safeMediaUrl(candidate.url))
-                    return false;
-                if (candidate.format !== "dash_av1")
-                    return true;
-                return typeof MediaSource !== "undefined" &&
-                    MediaSource.isTypeSupported?.('video/mp4; codecs="av01.0.08M.08"');
-            }).map((candidate, index) => {
-                const adaptive = candidate.format.startsWith("dash_") || candidate.format.startsWith("hls_");
-                const height = candidate.height;
-                const group = !adaptive && height === target ? 0 : adaptive ? 1 : 2;
-                const range = height && height < target ? 0 : !height ? 1 : 2;
-                const distance = range === 0 ? -height : range === 2 ? height : index;
-                return { candidate, index, group, range, distance };
-            });
-            ranked.sort((a, b) => a.group - b.group ||
-                (a.group === 2 ? a.range - b.range || a.distance - b.distance : 0) ||
-                formatRank[a.candidate.format] - formatRank[b.candidate.format] || a.index - b.index);
-            const seen = new Set();
-            return ranked.map((entry) => entry.candidate).filter((candidate) => {
-                if (seen.has(candidate.url))
-                    return false;
-                seen.add(candidate.url);
-                return true;
-            });
-        }
-        attachVideo(target, appId, candidates, token, options = {}) {
-            let index = 0;
-            target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
-            this.syncDetailBackdrop(target);
-            this.currentTarget = target;
-            this.currentAppId = appId;
-            this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
-            const clearWatchdog = () => {
-                if (this.candidateWatchdog)
-                    window.clearTimeout(this.candidateWatchdog);
-                this.candidateWatchdog = undefined;
-            };
-            const clearAttempt = () => {
-                clearWatchdog();
-                if (this.fadeTimer)
-                    window.clearTimeout(this.fadeTimer);
-                this.stopAudioFade();
-                this.exitCleanViewing();
-                this.fadeTimer = undefined;
-                this.restoreLogo();
-                this.removeVideoHandlers(this.currentVideo);
-                this.activeCandidate?.controller.abort();
-                this.activeSession?.dispose();
-                this.activeSession = undefined;
-                this.currentMediaReady = false;
-                this.resumeAttemptCandidate = undefined;
-                const video = this.currentVideo;
-                if (video?.isConnected) {
-                    video.pause();
-                    video.removeAttribute("src");
-                    video.load();
-                    video.remove();
-                }
-                this.currentVideo = undefined;
-                this.activeCandidate = undefined;
-                target.classList.remove(readyClass);
-                this.removeTrailerHints();
-            };
-            const tryCandidate = () => {
-                if (token !== this.requestToken || this.destroyed)
-                    return;
-                const source = candidates[index++];
-                if (!source) {
-                    if (options.sourceKind !== "ign" && this.identity?.sourceAppId != null) {
-                        this.steamUnavailable = true;
-                        this.trailerCache.delete(this.identity.sourceAppId);
-                        if (this.ignFallback) {
-                            this.currentTrailerName = this.ignFallback.name;
-                            this.needsIgnFallback = false;
-                            this.attachVideo(target, appId, this.orderCandidates(this.ignFallback.candidates), token, { mediaSignature: this.getDesiredMediaSignature(), sourceKind: "ign" });
-                            return;
-                        }
-                        if (this.ignFallback === undefined) {
-                            this.needsIgnFallback = true;
-                            this.failedVisit = { appId, hero: target };
-                            this.cleanupVideo();
-                            this.syncDetailBackdrop(target);
-                            this.status = rt("searchIgnTrailer");
-                            return;
-                        }
-                    }
-                    this.failedVisit = { appId, hero: target };
-                    this.cleanupVideo();
-                    this.syncDetailBackdrop(target);
-                    this.releaseThemeBand();
-                    this.status = rt("noGameTrailer");
-                    return;
-                }
-                const video = document.createElement("video");
-                video.className = videoClass;
-                video.autoplay = true;
-                video.loop = source.format === "mp4" || source.format === "webm";
-                video.muted = true;
-                video.defaultMuted = true;
-                video.playsInline = true;
-                video.preload = "auto";
-                video.volume = 0;
-                video.setAttribute("playsinline", "true");
-                video.setAttribute("webkit-playsinline", "true");
-                video.setAttribute("aria-hidden", "true");
-                target.insertBefore(video, target.firstChild);
-                const id = this.attemptId = (this.attemptId || 0) + 1;
-                const candidate = {
-                    id,
-                    controller: new AbortController(),
-                    isCurrent: () => !this.destroyed && this.requestToken === token &&
-                        this.attemptId === id && this.activeCandidate === candidate &&
-                        this.currentVideo === video && video.isConnected &&
-                        (this.identity?.view !== "home" || this.homeIdentityIsCurrent()),
-                    onFailure: (error) => {
-                        if (!candidate.isCurrent() || candidate.failed)
-                            return;
-                        candidate.failed = true;
-                        clearAttempt();
-                        tryCandidate();
-                    }
-                };
-                this.activeCandidate = candidate;
-                this.resumeAttemptCandidate = undefined;
-                this.currentVideo = video;
-                this.currentMediaReady = false;
-                let readyForPlayback = source.format === "mp4" || source.format === "webm";
-                let started = false;
-                let lastProgress = 0;
-                const watchProgress = () => {
-                    clearWatchdog();
-                    this.candidateWatchdog = window.setTimeout(() => {
-                        if (candidate.isCurrent() && !candidate.controller.signal.aborted) {
-                            candidate.onFailure(new Error(`Steam video stalled: ${source.url}`));
-                        }
-                    }, directPlaybackTimeoutMs);
-                };
-                const onCanPlay = () => {
-                    if (!candidate.isCurrent() || !readyForPlayback || started)
-                        return;
-                    started = true;
-                    video.play().then(() => {
-                        if (!candidate.isCurrent())
-                            return;
-                        this.currentMediaReady = true;
-                        this.applyCurrentMediaAudioState();
-                        this.scheduleTrailerReveal(candidate, video, target);
-                    }).catch(() => {
-                        if (!candidate.isCurrent())
-                            return;
-                        clearWatchdog();
-                        this.status = rt("autoplayBlocked");
-                    });
-                };
-                const handlers = [];
-                const listen = (name, handler) => {
-                    video.addEventListener(name, handler);
-                    handlers.push([name, handler]);
-                };
-                video.__deckyMetadataTrailerHandlers = handlers;
-                listen("canplay", onCanPlay);
-                listen("error", () => candidate.onFailure(new Error(`Steam video error ${video.error?.code ?? 0}`)));
-                listen("timeupdate", () => {
-                    if (!candidate.isCurrent() || video.paused || !Number.isFinite(video.currentTime))
-                        return;
-                    if (video.currentTime > lastProgress + 0.05 || video.currentTime + 0.05 < lastProgress) {
-                        lastProgress = video.currentTime;
-                        if (this.resumeAttemptCandidate === candidate)
-                            this.resumeAttemptCandidate = undefined;
-                        watchProgress();
-                    }
-                });
-                listen("seeking", () => {
-                    if (!candidate.isCurrent())
-                        return;
-                    lastProgress = Number.isFinite(video.currentTime) ? video.currentTime : 0;
-                    if (!started || !video.paused)
-                        watchProgress();
-                });
-                listen("pause", () => { if (started && candidate.isCurrent())
-                    clearWatchdog(); });
-                listen("play", () => { if (candidate.isCurrent())
-                    watchProgress(); });
-                listen("playing", () => {
-                    if (!candidate.isCurrent())
-                        return;
-                    if (this.resumeAttemptCandidate === candidate)
-                        this.resumeAttemptCandidate = undefined;
-                    watchProgress();
-                });
-                watchProgress();
-                if (readyForPlayback) {
-                    // Native direct playback keeps browser-managed buffering. The browser follows
-                    // redirects for these declared MP4/WebM URLs without exposing the target here.
-                    video.src = source.url;
-                    video.load();
-                }
-                else {
-                    const playback = source.format === "hls_h264"
-                        ? this.playHls(video, source.url, candidate)
-                        : this.playDash(video, source.url, candidate);
-                    playback.then(() => {
-                        if (!candidate.isCurrent())
-                            return;
-                        readyForPlayback = true;
-                        if (video.readyState >= 2)
-                            onCanPlay();
-                    }).catch((error) => candidate.onFailure(error));
-                }
-            };
-            tryCandidate();
-        }
-        async playAdaptive(video, presentation, candidate) {
-            if (this.activeSession)
-                this.activeSession.dispose();
-            const session = new AdaptiveSession(video, presentation, candidate);
-            this.activeSession = session;
-            await session.start();
-        }
-        async playHls(video, masterUrl, candidate) {
-            if (typeof MediaSource === "undefined")
-                throw new Error(rt("mediaSourceUnavailable"));
-            const variant = this.selectHlsVariant(await this.fetchText(masterUrl, candidate), masterUrl);
-            if (!candidate.isCurrent())
-                return;
-            const media = this.parseHlsMediaPlaylist(await this.fetchText(variant.url, candidate), variant.url);
-            const tracks = [{ kind: "video", mimeType: variant.mimeType, initUrl: media.initUrl, segments: media.segments }];
-            if (variant.audio) {
-                const audio = this.parseHlsMediaPlaylist(await this.fetchText(variant.audio.url, candidate), variant.audio.url);
-                if (Math.abs(media.duration - audio.duration) > 0.5)
-                    throw new Error("HLS audio timeline differs from video");
-                tracks.push({ kind: "audio", mimeType: variant.audio.mimeType, initUrl: audio.initUrl, segments: audio.segments });
-            }
-            if (!candidate.isCurrent())
-                return;
-            await this.playAdaptive(video, { duration: media.duration, tracks }, candidate);
-        }
-        async playDash(video, manifestUrl, candidate) {
-            if (typeof MediaSource === "undefined")
-                throw new Error(rt("mediaSourceUnavailable"));
-            const presentation = this.selectDashVariant(await this.fetchText(manifestUrl, candidate), manifestUrl);
-            if (!candidate.isCurrent())
-                return;
-            await this.playAdaptive(video, presentation, candidate);
-        }
-        async fetchText(url, candidate) {
-            const requestUrl = safeMediaUrl(url);
-            if (!requestUrl)
-                throw new Error("Steam manifest URL is not safe HTTPS");
-            const controller = new AbortController();
-            const cancel = () => controller.abort();
-            candidate.controller.signal.addEventListener("abort", cancel, { once: true });
-            const timeout = window.setTimeout(() => controller.abort(), 9000);
-            try {
-                if (!candidate.isCurrent())
-                    throw new Error("Trailer request changed");
-                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
-                validateResponseUrl(response, requestUrl);
-                if (!response.ok)
-                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
-                const text = await readBoundedBody(response, MAX_MANIFEST_BYTES, true);
-                if (controller.signal.aborted || !candidate.isCurrent())
-                    throw new Error("Trailer request changed");
-                return text;
-            }
-            finally {
-                window.clearTimeout(timeout);
-                candidate.controller.signal.removeEventListener("abort", cancel);
-            }
-        }
-        rankRenditions(left, right) {
-            const category = (height) => !Number.isFinite(height) || height <= 0 ? 2 : height <= this.targetHeight ? 0 : 1;
-            const leftCategory = category(left.height);
-            const rightCategory = category(right.height);
-            return leftCategory - rightCategory ||
-                (leftCategory === 0 ? right.height - left.height : left.height - right.height) ||
-                left.bandwidth - right.bandwidth;
-        }
-        parseHlsAttributes(value) {
-            const attributes = {};
-            let start = 0, quoted = false;
-            const parse = (field) => {
-                const separator = field.indexOf("=");
-                if (separator <= 0)
-                    throw new Error("Malformed HLS attributes");
-                const key = field.slice(0, separator).trim();
-                const raw = field.slice(separator + 1).trim();
-                if (!/^[A-Z0-9-]+$/.test(key) || !raw)
-                    throw new Error("Malformed HLS attributes");
-                attributes[key] = raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1) : raw;
-            };
-            for (let index = 0; index < value.length; index++) {
-                if (value[index] === '"' && value[index - 1] !== "\\")
-                    quoted = !quoted;
-                if (value[index] === "," && !quoted) {
-                    parse(value.slice(start, index));
-                    start = index + 1;
-                }
-            }
-            if (quoted)
-                throw new Error("Unclosed HLS attribute");
-            parse(value.slice(start));
-            return attributes;
-        }
-        selectHlsVariant(masterText, masterUrl) {
-            const lines = masterText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-            if (lines[0] !== "#EXTM3U")
-                throw new Error("Invalid HLS master playlist");
-            const groups = new Map();
-            const variants = [];
-            for (let index = 1; index < lines.length; index++) {
-                const line = lines[index];
-                if (line.startsWith("#EXT-X-SESSION-KEY:")) {
-                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-SESSION-KEY:".length));
-                    if (attributes.METHOD !== "NONE")
-                        throw new Error("Encrypted HLS is unsupported");
-                }
-                if (line.startsWith("#EXT-X-MEDIA:")) {
-                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-MEDIA:".length));
-                    if (attributes.TYPE === "AUDIO") {
-                        const group = groups.get(attributes["GROUP-ID"]) ?? [];
-                        group.push(attributes);
-                        groups.set(attributes["GROUP-ID"], group);
-                    }
-                    continue;
-                }
-                if (!line.startsWith("#EXT-X-STREAM-INF:"))
-                    continue;
-                const attributes = this.parseHlsAttributes(line.slice("#EXT-X-STREAM-INF:".length));
-                const uri = lines[index + 1];
-                if (!uri || uri.startsWith("#"))
-                    continue;
-                index++;
-                const codecs = (attributes.CODECS || "").split(",").map((codec) => codec.trim()).filter(Boolean);
-                const videoCodec = codecs.find((codec) => /^avc1\./i.test(codec));
-                if (!videoCodec)
-                    continue;
-                const videoMimeType = `video/mp4; codecs="${attributes.AUDIO ? videoCodec : codecs.join(",")}"`;
-                if (!MediaSource.isTypeSupported(videoMimeType))
-                    continue;
-                const height = Number(attributes.RESOLUTION?.match(/^\d+x(\d+)$/)?.[1] || 0);
-                const bandwidth = Number(attributes.BANDWIDTH || 0);
-                const resolvedUrl = safeMediaUrl(uri, masterUrl);
-                if (!resolvedUrl)
-                    continue;
-                variants.push({ url: resolvedUrl, mimeType: videoMimeType,
-                    height, bandwidth, audioGroup: attributes.AUDIO, codecs });
-            }
-            if (!variants.length)
-                throw new Error("HLS playlist has no supported video variants");
-            variants.sort((left, right) => this.rankRenditions(left, right));
-            const selected = variants[0];
-            if (selected.audioGroup) {
-                const group = groups.get(selected.audioGroup) || [];
-                const rendition = group.find((item) => item.DEFAULT === "YES") ?? group[0];
-                const codec = selected.codecs.find((item) => /^mp4a\./i.test(item));
-                if (!rendition?.URI || !codec)
-                    throw new Error("HLS audio group is unavailable");
-                const mimeType = `audio/mp4; codecs="${codec}"`;
-                if (!MediaSource.isTypeSupported(mimeType))
-                    throw new Error("Unsupported HLS audio codec");
-                const audioUrl = safeMediaUrl(rendition.URI, masterUrl);
-                if (!audioUrl)
-                    throw new Error("HLS audio URL is not safe HTTPS");
-                selected.audio = { url: audioUrl, mimeType };
-            }
-            return selected;
-        }
-        selectDashVariant(manifestText, manifestUrl) {
-            const xml = new DOMParser().parseFromString(manifestText, "application/xml");
-            const root = xml.documentElement;
-            if (root?.localName !== "MPD" || xml.querySelector("parsererror") ||
-                root.getAttribute("type") !== "static" ||
-                xml.getElementsByTagName("SegmentBase").length || xml.getElementsByTagName("SegmentList").length ||
-                Array.from(xml.getElementsByTagName("*")).some((element) => element.localName === "ContentProtection")) {
-                throw new Error("Unsupported DASH manifest");
-            }
-            const children = (node, name) => Array.from(node?.children ?? []).filter((child) => child.localName === name);
-            const periods = children(root, "Period");
-            if (periods.length !== 1)
-                throw new Error("DASH requires a single Period");
-            const period = periods[0];
-            if (period.hasAttribute("start") && this.parseIsoDurationSeconds(period.getAttribute("start")) !== 0) {
-                throw new Error("DASH Period must start at zero");
-            }
-            const duration = this.parseIsoDurationSeconds(period.getAttribute("duration") || root.getAttribute("mediaPresentationDuration") || "");
-            if (!Number.isFinite(duration) || duration <= 0)
-                throw new Error("DASH presentation duration is invalid");
-            const resolveBase = (node, base) => {
-                const relative = children(node, "BaseURL")[0]?.textContent?.trim();
-                const resolved = relative ? safeMediaUrl(relative, base) : safeMediaUrl(base);
-                if (!resolved)
-                    throw new Error("DASH BaseURL is not safe HTTPS");
-                return resolved;
-            };
-            const periodBase = resolveBase(period, resolveBase(root, manifestUrl));
-            const videos = [], audio = [];
-            let advertisedAudio = false;
-            for (const adaptation of children(period, "AdaptationSet")) {
-                const contentType = adaptation.getAttribute("contentType") || "";
-                const adaptationMime = adaptation.getAttribute("mimeType") || "";
-                const isAudio = contentType === "audio" || adaptationMime.startsWith("audio/");
-                const isVideo = contentType === "video" || adaptationMime.startsWith("video/") || (!contentType && !adaptationMime);
-                if (!isAudio && !isVideo)
-                    continue;
-                if (isAudio)
-                    advertisedAudio = true;
-                const adaptationBase = resolveBase(adaptation, periodBase);
-                for (const representation of children(adaptation, "Representation")) {
-                    const codec = representation.getAttribute("codecs") || adaptation.getAttribute("codecs") || "";
-                    const mime = representation.getAttribute("mimeType") || adaptationMime;
-                    const supportedCodec = isAudio ? /^mp4a\./i.test(codec) : /^(avc1|av01)\./i.test(codec);
-                    const mimeType = `${mime}; codecs="${codec}"`;
-                    if (!supportedCodec || mime !== (isAudio ? "audio/mp4" : "video/mp4") ||
-                        !MediaSource.isTypeSupported(mimeType))
-                        continue;
-                    const templates = [root, period, adaptation, representation]
-                        .map((node) => children(node, "SegmentTemplate")[0]).filter(Boolean);
-                    const attribute = (name) => {
-                        for (let index = templates.length - 1; index >= 0; index--) {
-                            if (templates[index].hasAttribute(name))
-                                return templates[index].getAttribute(name);
-                        }
-                        return null;
-                    };
-                    const representationId = representation.getAttribute("id") || "";
-                    const bandwidth = Number(representation.getAttribute("bandwidth") || 0);
-                    const height = Number(representation.getAttribute("height") || adaptation.getAttribute("maxHeight") || 0);
-                    if (!representationId || !Number.isFinite(bandwidth) || bandwidth < 0 || !templates.length)
-                        continue;
-                    const initTemplate = attribute("initialization"), mediaTemplate = attribute("media");
-                    if (!initTemplate || !mediaTemplate)
-                        continue;
-                    const base = resolveBase(representation, adaptationBase);
-                    const timeline = [...templates].reverse()
-                        .map((template) => children(template, "SegmentTimeline")[0]).find(Boolean);
-                    const spec = {
-                        media: mediaTemplate,
-                        timescale: Number(attribute("timescale") ?? 1),
-                        durationTicks: Number(attribute("duration") ?? 0),
-                        offset: Number(attribute("presentationTimeOffset") ?? 0),
-                        startNumber: Number(attribute("startNumber") ?? 1),
-                        timeline: timeline ? children(timeline, "S").map((item) => ({
-                            t: item.hasAttribute("t") ? Number(item.getAttribute("t")) : null,
-                            d: Number(item.getAttribute("d")),
-                            r: Number(item.getAttribute("r") ?? 0)
-                        })) : null
-                    };
-                    let segments;
-                    try {
-                        segments = this.buildDashSegments(spec, representationId, bandwidth, duration, base);
-                    }
-                    catch {
-                        continue;
-                    }
-                    if (!segments.length)
-                        continue;
-                    const initUrl = safeMediaUrl(this.expandDashTemplate(initTemplate, representationId, bandwidth), base);
-                    if (!initUrl)
-                        continue;
-                    const track = {
-                        kind: isAudio ? "audio" : "video", mimeType,
-                        timestampOffset: -spec.offset / spec.timescale,
-                        initUrl,
-                        segments
-                    };
-                    const entry = { track, height, bandwidth };
-                    if (isAudio)
-                        audio.push(entry);
-                    else
-                        videos.push(entry);
-                }
-            }
-            if (!videos.length)
-                throw new Error("DASH manifest has no supported video rendition");
-            if (advertisedAudio && !audio.length)
-                throw new Error("DASH audio rendition is unsupported");
-            videos.sort((left, right) => this.rankRenditions(left, right));
-            audio.sort((left, right) => right.bandwidth - left.bandwidth);
-            return { duration, tracks: [videos[0].track, ...(audio.length ? [audio[0].track] : [])] };
-        }
-        buildDashSegments(spec, representationId, bandwidth, duration, base) {
-            const { timescale, durationTicks, offset, startNumber, timeline, media } = spec;
-            if (!Number.isSafeInteger(timescale) || timescale <= 0 ||
-                !Number.isSafeInteger(offset) || offset < 0 ||
-                !Number.isSafeInteger(startNumber) || startNumber < 0)
-                throw new Error("Invalid DASH timebase");
-            const segments = [];
-            let number = startNumber;
-            const push = (tick, endTick) => {
-                const start = Math.max(0, (tick - offset) / timescale);
-                const end = Math.min(duration, (endTick - offset) / timescale);
-                if (Number.isFinite(start) && Number.isFinite(end) && end > start && start < duration) {
-                    const url = safeMediaUrl(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base);
-                    if (!url)
-                        throw new Error("DASH segment URL is not safe HTTPS");
-                    segments.push({
-                        url,
-                        start, end
-                    });
-                }
-                number++;
-                if (number - startNumber > 100000)
-                    throw new Error("DASH timeline is unbounded");
-            };
-            if (timeline) {
-                if (!timeline.length)
-                    throw new Error("Empty DASH SegmentTimeline");
-                let tick = 0;
-                for (let index = 0; index < timeline.length; index++) {
-                    const item = timeline[index];
-                    if (!Number.isSafeInteger(item.d) || item.d <= 0 ||
-                        !Number.isSafeInteger(item.r) || item.r < -1 ||
-                        (item.t !== null && (!Number.isSafeInteger(item.t) || item.t < 0))) {
-                        throw new Error("Invalid DASH SegmentTimeline");
-                    }
-                    if (item.t !== null)
-                        tick = item.t;
-                    const next = timeline.slice(index + 1).find((entry) => entry.t !== null);
-                    const boundary = item.r === -1 ? (next?.t ?? offset + duration * timescale) : Infinity;
-                    const count = item.r === -1 ? Math.ceil((boundary - tick) / item.d) : item.r + 1;
-                    if (!Number.isSafeInteger(count) || count < 1 || count > 100000)
-                        throw new Error("Invalid DASH repeat");
-                    for (let repeat = 0; repeat < count; repeat++) {
-                        push(tick, Math.min(tick + item.d, boundary));
-                        tick += item.d;
-                    }
-                }
-            }
-            else {
-                if (!Number.isSafeInteger(durationTicks) || durationTicks <= 0)
-                    throw new Error("Invalid DASH segment duration");
-                const count = Math.ceil(duration * timescale / durationTicks);
-                if (!Number.isSafeInteger(count) || count < 1 || count > 100000)
-                    throw new Error("Invalid DASH segment count");
-                for (let index = 0; index < count; index++) {
-                    const tick = offset + index * durationTicks;
-                    push(tick, tick + durationTicks);
-                }
-            }
-            return segments;
-        }
-        expandDashTemplate(value, representationId, bandwidth, number, time) {
-            return value.replace(/\$RepresentationID\$/g, representationId).replace(/\$Bandwidth\$/g, String(bandwidth)).replace(/\$Time\$/g, String(time ?? 0)).replace(/\$Number(?:%0(\d+)d)?\$/g, (_match, width) => {
-                const text = String(number ?? 0);
-                return width ? text.padStart(Number(width), "0") : text;
-            }).replace(/\$\$/g, "$");
-        }
-        parseIsoDurationSeconds(value) {
-            const match = String(value).match(/^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/);
-            if (!match || !match.slice(1).some(Boolean))
-                return NaN;
-            return Number(match[1] ?? 0) * 86400 + Number(match[2] ?? 0) * 3600 +
-                Number(match[3] ?? 0) * 60 + Number(match[4] ?? 0);
-        }
-        parseHlsMediaPlaylist(mediaText, mediaUrl) {
-            const lines = mediaText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
-            if (lines[0] !== "#EXTM3U" || !lines.includes("#EXT-X-ENDLIST"))
-                throw new Error("HLS requires static VOD");
-            let initUrl, duration = 0, pendingDuration, ended = false;
-            const segments = [];
-            for (const line of lines.slice(1)) {
-                if (line.startsWith("#EXT-X-KEY:")) {
-                    if (this.parseHlsAttributes(line.slice("#EXT-X-KEY:".length)).METHOD !== "NONE") {
-                        throw new Error("Encrypted HLS is unsupported");
-                    }
-                }
-                else if (line.startsWith("#EXT-X-BYTERANGE") || line.startsWith("#EXT-X-DISCONTINUITY") ||
-                    line.startsWith("#EXT-X-PART"))
-                    throw new Error("Unsupported HLS media timeline");
-                else if (line.startsWith("#EXT-X-MAP:")) {
-                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-MAP:".length));
-                    if (!attributes.URI || attributes.BYTERANGE || initUrl || segments.length) {
-                        throw new Error("Invalid HLS initialization segment");
-                    }
-                    initUrl = safeMediaUrl(attributes.URI, mediaUrl);
-                    if (!initUrl)
-                        throw new Error("HLS initialization URL is not safe HTTPS");
-                }
-                else if (line.startsWith("#EXTINF:")) {
-                    if (pendingDuration !== undefined || ended)
-                        throw new Error("Malformed HLS segment");
-                    pendingDuration = Number(line.slice("#EXTINF:".length).split(",", 1)[0]);
-                    if (!Number.isFinite(pendingDuration) || pendingDuration <= 0)
-                        throw new Error("Invalid HLS duration");
-                }
-                else if (line === "#EXT-X-ENDLIST")
-                    ended = true;
-                else if (!line.startsWith("#")) {
-                    if (ended || !initUrl || pendingDuration === undefined)
-                        throw new Error("Malformed HLS segment timeline");
-                    const end = duration + pendingDuration;
-                    if (!Number.isFinite(end) || end <= duration || segments.length >= 100000)
-                        throw new Error("Invalid HLS timeline");
-                    const url = safeMediaUrl(line, mediaUrl);
-                    if (!url)
-                        throw new Error("HLS segment URL is not safe HTTPS");
-                    segments.push({ url, start: duration, end });
-                    duration = end;
-                    pendingDuration = undefined;
-                }
-            }
-            if (!initUrl || !segments.length || pendingDuration !== undefined || !ended) {
-                throw new Error("Incomplete HLS VOD playlist");
-            }
-            return { initUrl, duration, segments };
-        }
-        removeVideoHandlers(video) {
-            for (const [name, handler] of video?.__deckyMetadataTrailerHandlers ?? []) {
-                video.removeEventListener(name, handler);
-            }
-            if (video)
-                delete video.__deckyMetadataTrailerHandlers;
-        }
-        cleanupVideo(cancelPending = false) {
-            this.exitCleanViewing();
-            this.removeTrailerHints();
-            this.restoreLogo();
-            if (cancelPending) {
-                this.metadataController?.abort();
-                this.metadataController = undefined;
-                this.requestToken += 1;
-                this.pendingAppId = undefined;
-                this.pendingTarget = undefined;
-                this.pendingRequestToken = undefined;
-            }
-            this.removeVideoHandlers(this.currentVideo);
-            this.activeCandidate?.controller.abort();
-            this.activeSession?.dispose();
-            this.activeCandidate = undefined;
-            this.resumeAttemptCandidate = undefined;
-            this.activeSession = undefined;
-            this.currentMediaReady = false;
-            if (this.fadeTimer)
-                window.clearTimeout(this.fadeTimer);
-            this.stopAudioFade();
-            if (this.candidateWatchdog)
-                window.clearTimeout(this.candidateWatchdog);
-            this.fadeTimer = undefined;
-            this.candidateWatchdog = undefined;
-            const video = this.currentVideo;
-            if (video?.isConnected) {
-                video.pause();
-                video.removeAttribute("src");
-                video.load();
-                video.remove();
-            }
-            this.currentVideo = undefined;
-            this.restoreStatusBackdrop();
-            this.currentTarget?.classList.remove(targetClass, homeTargetClass, readyClass);
-            this.currentTarget = undefined;
-            this.currentMediaSignature = undefined;
-            document.querySelectorAll(`.${videoClass}`).forEach((element) => element.remove());
-            document.querySelectorAll(`.${targetClass},.${homeTargetClass}`).forEach((element) => element.classList.remove(targetClass, homeTargetClass, readyClass));
-        }
-    }
-    const existing = window[runtimeKey];
-    if (existing) {
-        if (existing.product !== "decky-metadata-trailer") {
-            return { status: rt("runtimeConflict"), runtimeMissing: true };
-        }
-        if (existing.ownerId === activeOwnerId && existing.version === runtimeVersion) {
-            return existing.update(settings, activeRevision, activeIdentity, activeIgnFallback);
-        }
-        try {
-            existing.destroy?.();
-        }
-        catch { }
-        if (window[runtimeKey] === existing)
-            delete window[runtimeKey];
-    }
-    const runtime = new Runtime(settings, activeOwnerId, activeRevision, activeIgnFallback);
-    window[runtimeKey] = runtime;
-    runtime.mount();
-    return runtime.snapshot();
-}
-
-const DEFAULT_TRAILER_SETTINGS = {
-    enabled: false,
-    detailEnabled: true,
-    homeEnabled: false,
-    audioEnabled: false,
-    hideLogoDuringTrailer: false,
-    quality: "auto",
-    detailFadeInDelaySeconds: 3,
-    homeFadeInDelaySeconds: 3,
-};
-const POLL_INTERVAL_MS = 2000;
-// The 15 s target cap quantizes to the 2 s tick, so 8 ticks.
-const REMOTE_BACKOFF_MAX_MS = 16000;
-const BRIDGE_TIMEOUT_MS = 24000;
-const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
-const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
-const OWNER_KEY = "__deckyMetadataTrailerOwner";
-const RUNTIME_KEY = "__deckyMetadataTrailerRuntime";
-/** The serialized runtime cannot import i18n, so its whole table is resolved here at install time. */
-const runtimeTranslations = () => ({
-    audio: t("trailers.audio"),
-    autoplayBlocked: t("trailers.autoplayBlocked"),
-    disabled: t("trailers.disabled"),
-    noSteamTrailer: t("trailers.noSteamTrailer"),
-    // The runtime substitutes its own `{var}` placeholders from this table.
-    searchTrailerForApp: t("trailers.searchTrailerForApp", { appId: "{appId}" }),
-    steamTrailer: t("trailers.steamTrailer"),
-    steamTrailerNotPlayable: t("trailers.steamTrailerNotPlayable"),
-    searchIgnTrailer: t("trailers.searchIgnTrailer"),
-    noGameTrailer: t("trailers.noGameTrailer"),
-    stoppedForLaunch: t("trailers.stoppedForLaunch"),
-    trailerActive: t("trailers.trailerActive"),
-    trailerLabel: t("trailers.trailerLabel", { name: "{name}" }),
-    waitingGamePage: t("trailers.waitingGamePage"),
-    waitingHomeSelection: t("trailers.waitingHomeSelection"),
-    waitingHomeDelay: t("trailers.waitingHomeDelay"),
-    muteTrailer: t("trailers.muteTrailer"),
-    expandTrailer: t("trailers.expandTrailer"),
-    mediaSourceUnavailable: t("trailers.mediaSourceUnavailable"),
-    steamUiUnavailable: t("trailers.steamUiUnavailable"),
-    runtimeConflict: t("trailers.runtimeConflict"),
-    otherPluginActive: t("trailers.otherPluginActive"),
-});
-const normalizeSettings = (value) => {
-    if (value === null || typeof value !== "object" || Array.isArray(value))
-        return { ...DEFAULT_TRAILER_SETTINGS };
-    const enabled = "enabled" in value ? value.enabled : undefined;
-    const detailEnabled = "detailEnabled" in value ? value.detailEnabled : undefined;
-    const homeEnabled = "homeEnabled" in value ? value.homeEnabled : undefined;
-    const audioEnabled = "audioEnabled" in value ? value.audioEnabled : undefined;
-    const hideLogoDuringTrailer = "hideLogoDuringTrailer" in value ? value.hideLogoDuringTrailer : undefined;
-    const detailDelay = "detailFadeInDelaySeconds" in value ? value.detailFadeInDelaySeconds : undefined;
-    const homeDelay = "homeFadeInDelaySeconds" in value ? value.homeFadeInDelaySeconds : undefined;
-    const quality = "quality" in value ? value.quality : undefined;
-    return {
-        enabled: typeof enabled === "boolean" ? enabled : false,
-        detailEnabled: typeof detailEnabled === "boolean" ? detailEnabled : true,
-        homeEnabled: typeof homeEnabled === "boolean" ? homeEnabled : false,
-        audioEnabled: typeof audioEnabled === "boolean" ? audioEnabled : false,
-        hideLogoDuringTrailer: typeof hideLogoDuringTrailer === "boolean" ? hideLogoDuringTrailer : false,
-        detailFadeInDelaySeconds: typeof detailDelay === "number" &&
-            Number.isInteger(detailDelay) && detailDelay >= 0 && detailDelay <= 10 ? detailDelay : 3,
-        homeFadeInDelaySeconds: typeof homeDelay === "number" &&
-            Number.isInteger(homeDelay) && homeDelay >= 0 && homeDelay <= 10 ? homeDelay : 3,
-        quality: quality === "auto" || quality === 720 || quality === 1080 || quality === 1440 || quality === 2160
-            ? quality : "auto",
-    };
-};
-const sameIdentity = (left, right) => left?.view === right?.view && left?.pageAppId === right?.pageAppId &&
-    left?.sourceAppId === right?.sourceAppId && left?.selectionRevision === right?.selectionRevision;
-const sameIgnLookup = (left, right) => left?.title === right?.title && left?.gameUrl === right?.gameUrl;
-const isRuntimeSnapshot = (value) => value !== null && typeof value === "object" && "status" in value && typeof value.status === "string";
-const runtimeMissingScript = () => `(() => {
-  const runtime = window.${RUNTIME_KEY};
-  const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
-  if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
-    return { status: ${JSON.stringify(t("trailers.steamUiUnavailable"))}, runtimeMissing: true };
-  }
-  // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
-  if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
-    return runtime.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
-  }
-  return runtime.snapshot();
-})()`;
-class TrailerController {
-    constructor(conflicts = pluginConflicts) {
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "settings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: { ...DEFAULT_TRAILER_SETTINGS }
-        });
-        Object.defineProperty(this, "confirmedSettings", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: { ...DEFAULT_TRAILER_SETTINGS }
-        });
-        Object.defineProperty(this, "settingsLoaded", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "settingsBusy", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "pendingSettingsWrites", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "settingsTransactionId", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "settingsError", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: ""
-        });
-        Object.defineProperty(this, "status", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: ""
-        });
-        Object.defineProperty(this, "runtimeSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "ownerId", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: ""
-        });
-        Object.defineProperty(this, "settingsRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "identity", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "ignLookup", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "ignFallback", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "ignRequestEpoch", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "ignRequested", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "pageAppId", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "pageOverview", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "homeSelection", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: null
-        });
-        Object.defineProperty(this, "homeSelectionRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "homeDelayTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "identityRequestEpoch", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "matchRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: metadataMatchRevisionSnapshot()
-        });
-        Object.defineProperty(this, "statusTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollInFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "installInFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "pendingInstall", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "remoteIntervalMs", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: POLL_INTERVAL_MS
-        });
-        Object.defineProperty(this, "nextRemoteAt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "lastRemoteKey", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: ""
-        });
-        Object.defineProperty(this, "remoteRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: -1
-        });
-        Object.defineProperty(this, "installedRevision", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: -1
-        });
-        Object.defineProperty(this, "panelVisible", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "settingsSaveQueue", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: Promise.resolve()
-        });
-        Object.defineProperty(this, "audioWindows", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "unsubscribeMatchChanges", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeLanguage", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "conflict", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "handleAudioChange", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (event) => {
-                const detail = event.detail;
-                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
-                    !("settingsRevision" in detail) || !("audioEnabled" in detail))
-                    return;
-                const owner = window[OWNER_KEY];
-                if (!this.mounted || owner?.ownerId !== this.ownerId ||
-                    detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
-                    typeof detail.audioEnabled !== "boolean" || detail.audioEnabled === this.settings.audioEnabled)
-                    return;
-                void this.updateSettings({ audioEnabled: detail.audioEnabled });
-            }
-        });
-        Object.defineProperty(this, "handleHomeSelection", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (event) => {
-                const detail = event.detail;
-                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
-                    !("settingsRevision" in detail) || !("selectionRevision" in detail) ||
-                    !("appId" in detail) || !("enteredAt" in detail))
-                    return;
-                const owner = window[OWNER_KEY];
-                if (!this.isEffectivelyEnabled() || !this.settings.homeEnabled ||
-                    !isTrailerHomeRoute(currentRoutePath()) || owner?.ownerId !== this.ownerId ||
-                    detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
-                    typeof detail.selectionRevision !== "number" ||
-                    !Number.isSafeInteger(detail.selectionRevision) || detail.selectionRevision < 0)
-                    return;
-                if (detail.appId !== null && (typeof detail.appId !== "number" || !Number.isInteger(detail.appId) ||
-                    detail.appId <= 0 || detail.appId > 0xffffffff || typeof detail.enteredAt !== "number" ||
-                    !Number.isSafeInteger(detail.enteredAt) || detail.enteredAt < 0))
-                    return;
-                if (detail.selectionRevision <= this.homeSelectionRevision)
-                    return;
-                this.homeSelectionRevision = detail.selectionRevision;
-                this.homeSelection = typeof detail.appId === "number" && typeof detail.enteredAt === "number" ? {
-                    appId: detail.appId, selectionRevision: detail.selectionRevision, enteredAt: detail.enteredAt,
-                } : null;
-                this.cancelHomeDelay();
-                this.identityRequestEpoch += 1;
-                this.resetPlaybackIdentity();
-                this.settingsRevision += 1;
-                this.publishOwner();
-                if (!this.updateReachableRuntimes())
-                    void this.runInSteamTab(runtimeMissingScript());
-                if (this.homeSelection)
-                    this.scheduleHomeIdentity();
-                this.emit();
-            }
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        this.conflict = conflicts.getConflict("trailers");
-        this.snapshot = this.buildSnapshot();
-    }
-    /** QAM stays mounted while hidden, so only its own document reports visibility. */
-    setPanelVisible(visible) {
-        if (visible && !this.panelVisible)
-            this.resetRemoteBackoff();
-        this.panelVisible = visible;
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
-        this.mounted = true;
-        this.status = t("trailers.loadingSettings");
-        this.conflict = this.conflicts.getConflict("trailers");
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
-        this.pendingSettingsWrites = 0;
-        this.settingsBusy = false;
-        this.resetRemoteBackoff();
-        this.remoteRevision = -1;
-        this.installedRevision = -1;
-        this.lastRemoteKey = "";
-        this.destroyOlderRuntimes();
-        this.publishOwner();
-        this.refreshAudioListeners();
-        window.addEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
-        this.unsubscribeMatchChanges = subscribeMetadataMatchChanges((appId, revision) => {
-            this.matchRevision = revision;
-            if (appId === this.pageAppId)
-                void this.refreshPageIdentity();
-            else
-                this.emit();
-        });
-        this.unsubscribeLanguage = onLanguageChange(() => void this.installOrUpdate());
-        void this.loadSettings();
-        this.emit();
-    }
-    /** Stop local playback ownership before any best-effort remote cleanup. */
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.ignRequestEpoch += 1;
-        this.identityRequestEpoch += 1;
-        this.cancelHomeDelay();
-        this.homeSelection = null;
-        window.removeEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.ignRequested = false;
-        this.ignLookup = null;
-        this.ignFallback = undefined;
-        if (this.statusTimer !== undefined)
-            window.clearInterval(this.statusTimer);
-        this.statusTimer = undefined;
-        this.unsubscribeMatchChanges?.();
-        this.unsubscribeMatchChanges = undefined;
-        this.unsubscribeLanguage?.();
-        this.unsubscribeLanguage = undefined;
-        const owner = window[OWNER_KEY];
-        if (owner?.ownerId === this.ownerId)
-            owner.active = false;
-        for (const [target, listener] of this.audioWindows) {
-            try {
-                target.removeEventListener(AUDIO_CHANGE_EVENT, listener);
-            }
-            catch { }
-        }
-        this.audioWindows.clear();
-        for (const doc of steamUiDocuments()) {
-            try {
-                const target = doc.defaultView;
-                const runtime = target?.[RUNTIME_KEY];
-                if (runtime?.ownerId !== this.ownerId || typeof runtime.destroy !== "function")
-                    continue;
-                runtime.destroy();
-                if (target?.[RUNTIME_KEY] === runtime)
-                    delete target[RUNTIME_KEY];
-            }
-            catch { /* Direct teardown is best effort for closing Steam windows. */ }
-        }
-        if (window[OWNER_KEY]?.ownerId === this.ownerId)
-            delete window[OWNER_KEY];
-        const ownerId = JSON.stringify(this.ownerId);
-        const cleanup = `(() => { const runtime=window.${RUNTIME_KEY}; if(runtime?.ownerId!==${ownerId}) return {status:${JSON.stringify(t("trailers.steamUiUnavailable"))},runtimeMissing:true}; runtime.destroy?.(); if(window.${RUNTIME_KEY}===runtime) delete window.${RUNTIME_KEY}; return {status:${JSON.stringify(t("trailers.runtimeRemoved"))}}; })()`;
-        void evalInBigPicture(cleanup).catch(() => undefined);
-        this.listeners.clear();
-    }
-    setEnabled(enabled) {
-        return this.updateSettings({ enabled });
-    }
-    setDetailEnabled(detailEnabled) {
-        return this.updateSettings({ detailEnabled });
-    }
-    setHomeEnabled(homeEnabled) {
-        return this.updateSettings({ homeEnabled });
-    }
-    setAudioEnabled(audioEnabled) {
-        return this.updateSettings({ audioEnabled });
-    }
-    setHideLogoDuringTrailer(hideLogoDuringTrailer) {
-        return this.updateSettings({ hideLogoDuringTrailer });
-    }
-    setQuality(quality) {
-        return this.updateSettings({ quality });
-    }
-    setDetailFadeInDelaySeconds(detailFadeInDelaySeconds) {
-        return this.updateSettings({ detailFadeInDelaySeconds });
-    }
-    setHomeFadeInDelaySeconds(homeFadeInDelaySeconds) {
-        return this.updateSettings({ homeFadeInDelaySeconds });
-    }
-    isEffectivelyEnabled() {
-        return this.mounted && this.settingsLoaded && this.settings.enabled &&
-            (this.settings.detailEnabled || this.settings.homeEnabled) && !this.conflict.pluginName;
-    }
-    effectiveSettings() {
-        const enabled = this.isEffectivelyEnabled();
-        return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
-    }
-    syncPolling() {
-        if (this.isEffectivelyEnabled()) {
-            if (this.statusTimer === undefined) {
-                this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
-            }
-        }
-        else {
-            if (this.statusTimer !== undefined)
-                window.clearInterval(this.statusTimer);
-            this.statusTimer = undefined;
-            this.cancelHomeDelay();
-        }
-    }
-    resetRemoteBackoff() {
-        this.remoteIntervalMs = POLL_INTERVAL_MS;
-        this.nextRemoteAt = 0;
-    }
-    cancelHomeDelay() {
-        if (this.homeDelayTimer !== undefined)
-            window.clearTimeout(this.homeDelayTimer);
-        this.homeDelayTimer = undefined;
-    }
-    scheduleHomeIdentity() {
-        this.cancelHomeDelay();
-        const selection = this.homeSelection;
-        if (!selection || !this.isEffectivelyEnabled() || !this.settings.homeEnabled)
-            return;
-        const delay = Math.max(0, this.settings.homeFadeInDelaySeconds * 1000 - (Date.now() - selection.enteredAt));
-        this.status = t("trailers.waitingHomeDelay");
-        this.homeDelayTimer = window.setTimeout(() => {
-            this.homeDelayTimer = undefined;
-            if (this.homeSelection !== selection || !isTrailerHomeRoute(currentRoutePath()))
-                return;
-            void this.refreshPageIdentity();
-        }, delay);
-    }
-    resetPlaybackIdentity() {
-        this.ignRequestEpoch += 1;
-        this.ignRequested = false;
-        this.ignLookup = null;
-        this.ignFallback = undefined;
-        this.identity = null;
-        this.runtimeSnapshot = undefined;
-    }
-    syncConflict() {
-        const next = this.conflicts.getConflict("trailers");
-        if (next.pluginName === this.conflict.pluginName &&
-            next.detectionAvailable === this.conflict.detectionAvailable)
-            return;
-        const wasEnabled = this.isEffectivelyEnabled();
-        this.conflict = next;
-        if (wasEnabled !== this.isEffectivelyEnabled()) {
-            this.identityRequestEpoch += 1;
-            this.homeSelection = null;
-            this.cancelHomeDelay();
-            this.ignRequestEpoch += 1;
-            this.ignRequested = false;
-            this.ignLookup = null;
-            this.ignFallback = undefined;
-            this.identity = null;
-            this.runtimeSnapshot = undefined;
-            this.settingsRevision += 1;
-            this.publishOwner();
-            this.updateReachableRuntimes();
-            if (!this.isEffectivelyEnabled()) {
-                // A Steam-tab runtime may be outside the directly reachable windows.
-                const ownerId = JSON.stringify(this.ownerId);
-                const settings = JSON.stringify(this.effectiveSettings());
-                const revision = this.settingsRevision;
-                void this.runInSteamTab(`(() => {
-          const runtime = window.${RUNTIME_KEY};
-          if (runtime?.ownerId !== ${ownerId} || typeof runtime.update !== "function") return;
-          return runtime.update(${settings}, ${revision}, null, undefined);
-        })()`);
-            }
-            else {
-                void this.poll();
-            }
-        }
-        this.syncPolling();
-        this.emit();
-    }
-    buildSnapshot() {
-        const remote = this.runtimeSnapshot;
-        return {
-            settings: { ...this.settings },
-            appId: remote?.appId,
-            sourceAppId: remote?.sourceAppId ?? this.identity?.sourceAppId,
-            status: this.conflict.pluginName && this.settings.enabled
-                ? t("trailers.pausedWhilePlugin", { name: this.conflict.pluginName }) : this.status,
-            trailerName: remote?.trailerName,
-            gameTitle: remote?.gameTitle,
-            displayWidth: remote?.displayWidth ?? null,
-            displayHeight: remote?.displayHeight ?? null,
-            targetHeight: remote?.targetHeight ?? (this.settings.quality === "auto" ? 720 : this.settings.quality),
-            settingsLoaded: this.settingsLoaded,
-            busy: this.settingsBusy,
-            settingsError: this.settingsError,
-            matchRevision: this.matchRevision,
-            conflict: this.conflict,
-            effectiveEnabled: this.isEffectivelyEnabled(),
-        };
-    }
-    emit() {
-        this.snapshot = this.buildSnapshot();
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* A panel update cannot block the controller. */ }
-        }
-    }
-    async loadSettings() {
-        try {
-            const loaded = normalizeSettings(await getTrailerSettings());
-            if (!this.mounted)
-                return;
-            this.settings = loaded;
-            this.confirmedSettings = { ...loaded };
-            this.settingsLoaded = true;
-            this.settingsError = "";
-            this.settingsRevision += 1;
-            this.publishOwner();
-            this.syncPolling();
-            this.status = loaded.enabled ? t("trailers.waitingSteamGamePage") : t("trailers.disabled");
-            this.emit();
-            await this.poll();
-        }
-        catch (error) {
-            if (!this.mounted)
-                return;
-            this.settingsError = t("trailers.settingsLoadError", { error: translateBackendError(error) });
-            this.status = t("trailers.settingsUnavailable");
-            this.emit();
-        }
-    }
-    async updateSettings(change) {
-        if (!this.mounted || !this.settingsLoaded)
-            return false;
-        if (change.enabled === true && !this.settings.enabled && this.conflict.pluginName)
-            return false;
-        const previous = { ...this.settings };
-        const next = normalizeSettings({ ...this.settings, ...change });
-        if (next.enabled === previous.enabled && next.detailEnabled === previous.detailEnabled &&
-            next.homeEnabled === previous.homeEnabled && next.audioEnabled === previous.audioEnabled &&
-            next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
-            next.detailFadeInDelaySeconds === previous.detailFadeInDelaySeconds &&
-            next.homeFadeInDelaySeconds === previous.homeFadeInDelaySeconds) {
-            return true;
-        }
-        this.settings = next;
-        const ownerId = this.ownerId;
-        const transactionId = ++this.settingsTransactionId;
-        this.pendingSettingsWrites += 1;
-        this.settingsBusy = true;
-        this.settingsError = "";
-        this.syncPolling();
-        if (!this.isEffectivelyEnabled() || !next.homeEnabled) {
-            this.homeSelection = null;
-            this.cancelHomeDelay();
-        }
-        else if (next.homeFadeInDelaySeconds !== previous.homeFadeInDelaySeconds && this.homeSelection && !this.identity) {
-            this.scheduleHomeIdentity();
-        }
-        if (!this.isEffectivelyEnabled() || (this.identity?.view === "detail" && !next.detailEnabled) ||
-            (this.identity?.view === "home" && !next.homeEnabled)) {
-            this.identityRequestEpoch += 1;
-            this.resetPlaybackIdentity();
-        }
-        this.settingsRevision += 1;
-        this.publishOwner();
-        const direct = this.updateReachableRuntimes();
-        this.status = !next.enabled ? t("trailers.disabled") : next.detailEnabled || next.homeEnabled
-            ? t("trailers.checkingCurrentGame") : t("trailers.detailAndHomeOff");
-        this.emit();
-        if (!direct)
-            void this.runInSteamTab(runtimeMissingScript());
-        if (!direct && this.isEffectivelyEnabled())
-            void this.poll();
-        let succeeded = true;
-        const save = this.settingsSaveQueue.then(async () => {
-            if (!this.ownsMount(ownerId))
-                return;
-            await setTrailerSettings(next);
-        });
-        this.settingsSaveQueue = save.then(() => {
-            if (this.ownsMount(ownerId))
-                this.confirmedSettings = { ...next };
-        }, () => undefined);
-        try {
-            await save;
-        }
-        catch (error) {
-            succeeded = false;
-            if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
-                this.settings = { ...this.confirmedSettings };
-                this.syncPolling();
-                if (!this.settings.homeEnabled || !this.isEffectivelyEnabled()) {
-                    this.homeSelection = null;
-                    this.cancelHomeDelay();
-                }
-                if (!this.isEffectivelyEnabled() ||
-                    (this.identity?.view === "detail" && !this.settings.detailEnabled) ||
-                    (this.identity?.view === "home" && !this.settings.homeEnabled)) {
-                    this.identityRequestEpoch += 1;
-                    this.resetPlaybackIdentity();
-                }
-                this.settingsRevision += 1;
-                this.publishOwner();
-                if (!this.updateReachableRuntimes())
-                    void this.runInSteamTab(runtimeMissingScript());
-                this.settingsError = t("trailers.settingsSaveError", { error: translateBackendError(error) });
-                this.status = t("trailers.settingsRestored");
-            }
-        }
-        finally {
-            if (this.ownsMount(ownerId)) {
-                this.pendingSettingsWrites = Math.max(0, this.pendingSettingsWrites - 1);
-                this.settingsBusy = this.pendingSettingsWrites > 0;
-                this.emit();
-            }
-        }
-        if (succeeded && this.ownsMount(ownerId) && this.isEffectivelyEnabled())
-            void this.poll();
-        return succeeded;
-    }
-    ownsMount(ownerId) {
-        const owner = window[OWNER_KEY];
-        return this.mounted && this.ownerId === ownerId && owner?.ownerId === ownerId && owner.active;
-    }
-    publishOwner() {
-        const record = {
-            ownerId: this.ownerId,
-            active: this.mounted,
-            settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
-            settingsRevision: this.settingsRevision,
-            homeSelectionRevision: this.homeSelectionRevision,
-            identity: this.identity,
-            ignFallback: this.ignFallback,
-        };
-        window[OWNER_KEY] = record;
-    }
-    destroyOlderRuntimes() {
-        for (const doc of steamUiDocuments()) {
-            try {
-                const target = doc.defaultView;
-                const runtime = target?.[RUNTIME_KEY];
-                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId === this.ownerId ||
-                    typeof runtime.destroy !== "function")
-                    continue;
-                runtime.destroy();
-                if (target?.[RUNTIME_KEY] === runtime)
-                    delete target[RUNTIME_KEY];
-            }
-            catch { /* A closing window does not own this mount. */ }
-        }
-    }
-    refreshAudioListeners() {
-        const current = new Set([window]);
-        for (const doc of steamUiDocuments()) {
-            try {
-                if (doc.defaultView)
-                    current.add(doc.defaultView);
-            }
-            catch { }
-        }
-        for (const [target, listener] of this.audioWindows) {
-            if (current.has(target))
-                continue;
-            try {
-                target.removeEventListener(AUDIO_CHANGE_EVENT, listener);
-            }
-            catch { }
-            this.audioWindows.delete(target);
-        }
-        for (const target of current) {
-            if (this.audioWindows.has(target))
-                continue;
-            try {
-                target.addEventListener(AUDIO_CHANGE_EVENT, this.handleAudioChange);
-                this.audioWindows.set(target, this.handleAudioChange);
-            }
-            catch { /* Popups can become cross-origin or close between polls. */ }
-        }
-    }
-    async resolveCurrentIdentity() {
-        const route = currentRoutePath();
-        if (!this.isEffectivelyEnabled())
-            return { identity: null, status: t("trailers.disabled") };
-        const home = isTrailerHomeRoute(route);
-        const selection = home ? this.homeSelection : null;
-        if (home && !this.settings.homeEnabled)
-            return { identity: null, status: t("trailers.homeTrailersOff") };
-        if (home && !selection) {
-            return { identity: null, status: t("trailers.waitingHomeSelection") };
-        }
-        if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
-            if (this.homeDelayTimer === undefined)
-                this.scheduleHomeIdentity();
-            return { identity: null, status: t("trailers.waitingHomeDelay") };
-        }
-        if (!home && !this.settings.detailEnabled)
-            return { identity: null, status: t("trailers.detailTrailersOff") };
-        const pageAppId = home ? selection.appId : parseTrailerRootRoute(route);
-        if (!pageAppId)
-            return { identity: null, status: t("trailers.openGamePage") };
-        if (pageAppId !== this.pageAppId) {
-            this.pageAppId = pageAppId;
-            this.pageOverview = null;
-        }
-        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
-            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
-            this.pageOverview = getNativeOverview(pageAppId);
-        }
-        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
-            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
-            return { identity: null, status: t("trailers.gameNotAvailable") };
-        }
-        if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
-            return { identity: null, status: t("trailers.notNativeShortcut") };
-        }
-        if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
-            try {
-                await ensureMetadataCache();
-            }
-            catch {
-                return { identity: null, status: t("trailers.matchesUnavailable") };
-            }
-            if (!this.isEffectivelyEnabled())
-                return { identity: null, status: t("trailers.disabled") };
-        }
-        const metadata = metadataCache[String(pageAppId)] ?? null;
-        const context = {
-            overview: this.pageOverview, metadata,
-            hydrated: pageAppId < SHORTCUT_APP_ID_BOUNDARY || metadataState.metadataLoaded,
-        };
-        const resolved = home
-            ? resolveTrailerAppSource({ ...context, appId: pageAppId })
-            : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
-        if (!resolved)
-            return { identity: null, status: t("trailers.gameTrailerUnavailable") };
-        const gameUrl = ignGameUrl(metadata);
-        const title = nativeTrailerGameTitle(this.pageOverview) ||
-            (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
-            (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
-        return {
-            identity: {
-                view: home ? "home" : "detail",
-                pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId,
-                ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
-            },
-            ignLookup: title ? { title, gameUrl } : null,
-            status: resolved.sourceAppId === null ? t("trailers.waitingIgnTrailer") : t("trailers.waitingSteamTrailer"),
-        };
-    }
-    async refreshPageIdentity() {
-        if (!this.mounted)
-            return;
-        const epoch = ++this.identityRequestEpoch;
-        const route = currentRoutePath();
-        const selection = this.homeSelection;
-        const next = await this.resolveCurrentIdentity();
-        if (!this.mounted || epoch !== this.identityRequestEpoch ||
-            route !== currentRoutePath() || (isTrailerHomeRoute(route) && selection !== this.homeSelection))
-            return;
-        if (!this.isEffectivelyEnabled()) {
-            next.identity = null;
-            next.ignLookup = null;
-            next.status = t("trailers.disabled");
-        }
-        const lookup = next.ignLookup ?? null;
-        if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup)))
-            return;
-        this.ignRequestEpoch += 1;
-        this.ignRequested = false;
-        this.ignFallback = undefined;
-        this.ignLookup = lookup;
-        this.identity = next.identity;
-        this.runtimeSnapshot = undefined;
-        this.status = next.status;
-        this.settingsRevision += 1;
-        this.publishOwner();
-        const direct = this.updateReachableRuntimes();
-        this.emit();
-        if (!direct && this.isEffectivelyEnabled() && this.identity)
-            void this.installOrUpdate();
-    }
-    updateReachableRuntimes() {
-        let found = false;
-        for (const doc of steamUiDocuments()) {
-            try {
-                const runtime = doc.defaultView?.[RUNTIME_KEY];
-                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
-                    typeof runtime.update !== "function")
-                    continue;
-                const result = runtime.update(this.effectiveSettings(), this.settingsRevision, this.identity, this.ignFallback);
-                if (isRuntimeSnapshot(result))
-                    this.runtimeSnapshot = result;
-                found = true;
-            }
-            catch { /* The CEF bridge can recover a missing or inaccessible runtime. */ }
-        }
-        return found;
-    }
-    readReachableRuntime() {
-        for (const doc of steamUiDocuments()) {
-            try {
-                const runtime = doc.defaultView?.[RUNTIME_KEY];
-                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
-                    typeof runtime.snapshot !== "function")
-                    continue;
-                const result = runtime.snapshot();
-                if (isRuntimeSnapshot(result)) {
-                    this.runtimeSnapshot = result;
-                    this.status = result.status;
-                    return true;
-                }
-            }
-            catch { }
-        }
-        return false;
-    }
-    buildInstallScript() {
-        return `(() => {
-      const settings = ${JSON.stringify(this.effectiveSettings())};
-      const ownerId = ${JSON.stringify(this.ownerId)};
-      const settingsRevision = ${this.settingsRevision};
-      const identity = ${JSON.stringify(this.identity)};
-      const ignFallback = ${JSON.stringify(this.ignFallback) ?? "undefined"};
-      const translations = ${JSON.stringify(runtimeTranslations())};
-      const factory = ${deckyMetadataTrailerRuntimeFactory.toString()};
-      return factory(settings, ownerId, settingsRevision, translations, identity, ignFallback);
-    })()`;
-    }
-    withTimeout(promise, timeoutMs) {
-        return new Promise((resolve, reject) => {
-            const timer = window.setTimeout(() => reject(new Error("Steam debugger timed out")), timeoutMs);
-            Promise.resolve(promise).then(resolve, reject).finally(() => window.clearTimeout(timer));
-        });
-    }
-    async runInSteamTab(code) {
-        try {
-            const result = await this.withTimeout(evalInBigPicture(code), BRIDGE_TIMEOUT_MS);
-            return result && typeof result === "object" ? result : undefined;
-        }
-        catch {
-            this.runtimeSnapshot = undefined;
-            this.status = t("trailers.steamUiUnavailable");
-            this.emit();
-            return undefined;
-        }
-    }
-    async installOrUpdate() {
-        // Either trailer feature may need the runtime before the first identity poll.
-        if (!this.isEffectivelyEnabled())
-            return;
-        if (this.installInFlight) {
-            this.pendingInstall = true;
-            return;
-        }
-        const ownerId = this.ownerId;
-        this.installInFlight = true;
-        try {
-            do {
-                this.pendingInstall = false;
-                if (!this.isEffectivelyEnabled())
-                    return;
-                const revision = this.settingsRevision;
-                const result = await this.runInSteamTab(this.buildInstallScript());
-                if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId)
-                    return;
-                if (result?.runtimeMissing !== true && isRuntimeSnapshot(result)) {
-                    this.installedRevision = revision;
-                    this.remoteRevision = revision;
-                }
-                this.resetRemoteBackoff();
-                this.applyRemoteResult(result);
-                this.refreshAudioListeners();
-            } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
-        }
-        finally {
-            this.installInFlight = false;
-            if (this.mounted && this.pendingInstall)
-                void this.installOrUpdate();
-        }
-    }
-    applyRemoteResult(result) {
-        if (!result)
-            return;
-        if (result.runtimeMissing === true) {
-            this.installedRevision = -1;
-            this.status = String(result.status || t("trailers.steamUiUnavailable"));
-            this.runtimeSnapshot = undefined;
-            this.emit();
-            return;
-        }
-        if (!isRuntimeSnapshot(result))
-            return;
-        this.runtimeSnapshot = result;
-        this.status = result.status;
-        this.emit();
-        if (result.needsIgnFallback)
-            void this.loadIgnFallback();
-    }
-    /** Only an unchanged, idle snapshot earns remote backoff; older runtimes omit `pending`. */
-    noteRemoteResult(result) {
-        let snapshot;
-        if (result?.runtimeMissing !== true && isRuntimeSnapshot(result))
-            snapshot = result;
-        const key = snapshot ? JSON.stringify([
-            snapshot.appId, snapshot.sourceAppId, snapshot.status, snapshot.trailerName,
-            snapshot.trailerAudioEnabled, snapshot.displayWidth, snapshot.displayHeight,
-            snapshot.targetHeight, snapshot.needsIgnFallback, snapshot.pending,
-        ]) : "";
-        const settled = snapshot !== undefined && snapshot.pending === false && !snapshot.needsIgnFallback &&
-            key === this.lastRemoteKey && !this.panelVisible;
-        this.remoteIntervalMs = settled ? Math.min(this.remoteIntervalMs * 2, REMOTE_BACKOFF_MAX_MS) : POLL_INTERVAL_MS;
-        this.lastRemoteKey = key;
-        this.nextRemoteAt = Date.now() + this.remoteIntervalMs;
-    }
-    async loadIgnFallback() {
-        if (!this.isEffectivelyEnabled() || !this.identity || this.ignRequested)
-            return;
-        this.ignRequested = true;
-        const epoch = this.ignRequestEpoch;
-        const ownerId = this.ownerId;
-        const identity = this.identity;
-        const lookup = this.ignLookup;
-        let result = null;
-        try {
-            if (lookup)
-                result = await findIgnTrailer(lookup.title, lookup.gameUrl);
-        }
-        catch { /* A failed IGN lookup leaves the original artwork in place. */ }
-        if (!this.ownsMount(ownerId) || epoch !== this.ignRequestEpoch ||
-            !sameIdentity(identity, this.identity) || !sameIgnLookup(lookup, this.ignLookup))
-            return;
-        this.ignFallback = result;
-        this.settingsRevision += 1;
-        this.publishOwner();
-        this.updateReachableRuntimes();
-        this.emit();
-    }
-    async poll() {
-        if (!this.mounted || this.pollInFlight)
-            return;
-        this.pollInFlight = true;
-        try {
-            this.refreshAudioListeners();
-            await this.refreshPageIdentity();
-            this.syncPolling();
-            if (!this.isEffectivelyEnabled() || this.installInFlight)
-                return;
-            if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
-                // The full runtime is installed once per revision; later ticks use the cheap check.
-                if (this.installedRevision !== this.settingsRevision) {
-                    await this.installOrUpdate();
-                    return;
-                }
-            }
-            else if (this.readReachableRuntime()) {
-                this.emit();
-                if (this.runtimeSnapshot?.needsIgnFallback)
-                    void this.loadIgnFallback();
-                return;
-            }
-            // No game page and Home trailers off: the runtime follows its own route.
-            if (!this.identity && !this.settings.homeEnabled && this.remoteRevision === this.settingsRevision)
-                return;
-            if (this.settingsRevision !== this.remoteRevision)
-                this.resetRemoteBackoff();
-            if (!this.panelVisible && Date.now() < this.nextRemoteAt)
-                return;
-            this.remoteRevision = this.settingsRevision;
-            const result = await this.runInSteamTab(runtimeMissingScript());
-            if (!this.mounted)
-                return;
-            this.applyRemoteResult(result);
-            if (result?.runtimeMissing === true && this.isEffectivelyEnabled())
-                await this.installOrUpdate();
-            this.noteRemoteResult(result);
-        }
-        finally {
-            this.pollInFlight = false;
-        }
-    }
-}
-const trailerController = new TrailerController();
-const startTrailerController = () => {
-    trailerController.mount();
-    return () => trailerController.stop();
-};
 
 const takeNativeFocus = (element) => {
     if (!element)
@@ -33943,25 +30006,8 @@ const Content = () => {
     }, []);
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
-    const panelVisibilityCleanup = SP_REACT.useRef(null);
     const { games, scan } = useScanGames();
     const focusPanel = SP_REACT.useCallback((element) => {
-        // QAM keeps this tree mounted while closed, so only its document reports visibility.
-        panelVisibilityCleanup.current?.();
-        panelVisibilityCleanup.current = null;
-        if (element) {
-            const panelDocument = element.ownerDocument;
-            const syncPanelVisibility = () => trailerController.setPanelVisible(panelDocument.visibilityState === "visible");
-            panelDocument.addEventListener("visibilitychange", syncPanelVisibility);
-            syncPanelVisibility();
-            panelVisibilityCleanup.current = () => {
-                panelDocument.removeEventListener("visibilitychange", syncPanelVisibility);
-                trailerController.setPanelVisible(false);
-            };
-        }
-        else {
-            trailerController.setPanelVisible(false);
-        }
         if (focusFrame.current !== null) {
             window.cancelAnimationFrame(focusFrame.current);
             focusFrame.current = null;
@@ -34354,6 +30400,185 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, disabled: disabled, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }) }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
                     ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
+}
+
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        const notice = t("conflicts.pluginConflict", {
+            pluginName: conflict.pluginName,
+            feature,
+        });
+        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
+    }
+    return conflict.detectionAvailable ? ""
+        : t("conflicts.detectionUnavailable", { feature });
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
 }
 
 let pending;
@@ -37477,16 +33702,16 @@ function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, c
         label: scopeLabel(data),
     }));
     const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), layout: "below", childrenContainerWidth: "max", rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
-                        compatibilityDefaultBusy ||
-                        compatibilityDefaultScopeBusy ||
-                        compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) }) })) : null] }));
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+                    compatibilityDefaultBusy ||
+                    compatibilityDefaultScopeBusy ||
+                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
 }
 
 /** Options for the Edit Metadata page that the game context menu opens. */
 function ContextMenuBody({ settings, error, onChange }) {
     const t = useT();
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => onChange("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => onChange("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => onChange("gameIcon", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => onChange("steamIconFallback", enabled) }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) })) : null] }));
 }
 
 function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, }) {
@@ -37505,7 +33730,7 @@ function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHom
     const display = state.displayWidth && state.displayHeight
         ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
         : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }) }), conflictNotice ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) }) })) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.detailHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: sectionHeadingStyle, children: t("qam.trailers.homeHeading") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), layout: "below", childrenContainerWidth: "max", rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", bottomSeparator: "none", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { fontSize: "14px", color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) }) })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }), conflictNotice ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.detailHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.homeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) })) : null] })] }));
 }
 
 function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onBlurChange, }) {
@@ -37536,12 +33761,12 @@ function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStat
     const updateAppearance = (key, value) => {
         void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
     };
-    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }) }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), layout: "below", childrenContainerWidth: "max", rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }) }, key)), SP_JSX.jsxs(DFL.PanelSectionRow, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: cacheStatus === "clearing" ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.hltb.clearingButton") }) : t("qam.hltb.clearCacheButton") }), cacheStatus !== "idle" ? SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) : null] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }) }), settings.style === "default" ? SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") }) })] }) : null, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!settingsLoaded ? SP_JSX.jsx("div", { style: compactTextStyle, children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) })] });
+    return SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }, key)), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.clearCacheButton"), disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: t("settings.action.clear") }), cacheStatus !== "idle" ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }), settings.style === "default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") })] }) : null, !settingsLoaded || notice || settingsError ? SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", children: [!settingsLoaded ? SP_JSX.jsx("div", { children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) : null] });
 }
 
 function LogsBody({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
     const t = useT();
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", disabled: logsBusy, onClick: onViewLogs, children: logsBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.logs.loading") }) : t("qam.logs.view") }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), bottomSeparator: "none", checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy, onChange: onToggleDebugLogging }) })] }));
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.logs.view"), disabled: logsBusy, onClick: onViewLogs, children: t("settings.action.view") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.logs.debugLogging"), description: t("qam.logs.debugLoggingDescription"), checked: debugLogging, disabled: !debugLoggingLoaded || debugLoggingBusy, onChange: onToggleDebugLogging })] }));
 }
 
 function MiniAchievementsBody({ state, onEnabledChange }) {
@@ -37549,12 +33774,7 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
     const enableDisabled = !state.settingsLoaded || state.busy ||
         (Boolean(state.conflict.pluginName) && !state.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, t("qam.miniAchievements.conflictFeature"), state.enabled);
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange, bottomSeparator: "none" }) }), (conflictNotice || state.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] }) })) : null] }));
-}
-
-// THIS FILE IS AUTO GENERATED
-function IoMdRefresh (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 388c-72.597 0-132-59.405-132-132 0-72.601 59.403-132 132-132 36.3 0 69.299 15.4 92.406 39.601L278 234h154V80l-51.698 51.702C348.406 99.798 304.406 80 256 80c-96.797 0-176 79.203-176 176s78.094 176 176 176c81.045 0 148.287-54.134 169.401-128H378.85c-18.745 49.561-67.138 84-122.85 84z"},"child":[]}]})(props);
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange }), (conflictNotice || state.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] })) : null] }));
 }
 
 function PluginUpdateBody() {
@@ -37571,30 +33791,32 @@ function PluginUpdateBody() {
     };
     const getStatusContent = () => {
         if (isChecking) {
-            return SP_JSX.jsxs("span", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
+            return SP_JSX.jsxs("span", { style: statusValueStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
         }
         if (errorMessage) {
-            return (SP_JSX.jsx("span", { style: inlineStatusStyle("error"), children: checkTimedOut
-                    ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-                    : t("qam.update.checkFailed") }));
+            return (SP_JSX.jsx("span", { style: statusValueStyle("error"), children: checkResult?.status === "failed"
+                    ? checkTimedOut
+                        ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+                        : t("qam.update.checkFailed")
+                    : t("updater.installation.failedTitle") }));
         }
         if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: inlineStatusStyle("success"), children: t("qam.update.upToDate") });
+            return SP_JSX.jsx("span", { style: statusValueStyle("success"), children: t("qam.update.upToDate") });
         }
         if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: inlineStatusStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
                     ? t("qam.update.latestDevelopment")
                     : t("qam.update.updateAvailable") }));
         }
-        return SP_JSX.jsx("span", { style: inlineStatusStyle("idle"), children: t("qam.update.neverChecked") });
+        return SP_JSX.jsx("span", { style: statusValueStyle("idle"), children: t("qam.update.neverChecked") });
     };
     const lastCheckedText = checkResult?.checked_at
         ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
         : undefined;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), padding: "standard", focusable: true, highlightOnFocus: true, children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded, onChange: handleToggleChannel }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, padding: "standard", focusable: true, highlightOnFocus: true, children: getStatusContent() }) }), errorMessage && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "standard", bottomSeparator: "none", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) }) })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.update.candidate"), padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsxs("div", { style: { fontSize: "14px" }, children: [SP_JSX.jsx("div", { children: t("qam.update.newVersion", {
-                                    version: candidate.version,
-                                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                                }) }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: t("qam.update.downgradeWarning") }))] }) }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: effectiveCurrentVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install })), candidate && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("qam.update.viewReleaseNotes") }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", bottomSeparator: "none", onClick: () => void checkNow(), disabled: isChecking || isInstalling, children: SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }, children: [isChecking ? SP_JSX.jsx(BusySpinner, {}) : SP_JSX.jsx(IoMdRefresh, {}), SP_JSX.jsx("span", { children: t("qam.update.checkNow") })] }) }) })] }));
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: effectiveCurrentVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
+                    version: candidate.version,
+                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+                }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }));
 }
 
 const dropdownValueStyle = { whiteSpace: "normal" };
@@ -37613,18 +33835,16 @@ function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange,
     const updateSetting = (key, value) => {
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), layout: "below", childrenContainerWidth: "max", bottomSeparator: "none", rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", bottomSeparator: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] }) })) : null] }));
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }));
 }
 
 function VersionsBody({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
     const t = useT();
     const unknown = t("common.unknown");
     const marker = "\u0000";
-    const pluginLabel = t("qam.versions.plugin", { version: marker }).split(marker)[0].trimEnd();
-    const deckyLabel = t("qam.versions.decky", { version: marker }).split(marker)[0].trimEnd();
-    const steamosLabel = t("qam.versions.steamos", { version: marker }).split(marker)[0].trimEnd();
-    const controllerTypesLabel = t("qam.versions.controllerTypes", { types: marker }).split(marker)[0].trimEnd();
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: pluginLabel, focusable: true, highlightOnFocus: true, children: pluginVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: deckyLabel, focusable: true, highlightOnFocus: true, children: deckyVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: steamosLabel, focusable: true, highlightOnFocus: true, children: steamosVersion.trim() || unknown }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: controllerTypesLabel, focusable: true, highlightOnFocus: true, children: formatConnectedControllerTypes(controllerTypes) }) })] }));
+    // The label is the text before the value; Steam labels carry no trailing colon.
+    const label = (key, param) => t(key, { [param]: marker }).split(marker)[0].replace(/\s*[：:]?\s*$/, "");
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: label("qam.versions.plugin", "version"), focusable: true, highlightOnFocus: true, children: pluginVersion.trim() || unknown }), SP_JSX.jsx(DFL.Field, { label: label("qam.versions.decky", "version"), focusable: true, highlightOnFocus: true, children: deckyVersion.trim() || unknown }), SP_JSX.jsx(DFL.Field, { label: label("qam.versions.steamos", "version"), focusable: true, highlightOnFocus: true, children: steamosVersion.trim() || unknown }), SP_JSX.jsx(DFL.Field, { label: label("qam.versions.controllerTypes", "types"), focusable: true, highlightOnFocus: true, children: formatConnectedControllerTypes(controllerTypes) })] }));
 }
 
 const HTML_ENTITIES = {
@@ -37996,7 +34216,7 @@ const fetchProtonDbTier = async (steamAppId) => {
         throw new Error("ProtonDB returned an invalid tier");
     return tier;
 };
-const validSteamAppId = (steamAppId) => Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000;
+const validSteamAppId$1 = (steamAppId) => Number.isSafeInteger(steamAppId) && steamAppId > 0 && steamAppId < 0x80000000;
 const ratingValue = (tier, status, updatedAt) => Object.freeze({ tier, status, updatedAt });
 const invalidRating = ratingValue(null, "idle", null);
 /** Shared in-memory ratings; fetches are owned by the currently visible subscribers. */
@@ -38046,7 +34266,7 @@ class ProtonDbRatingCache {
     /** Load saved ratings; never replaces a newer or in-flight in-memory rating. */
     seed(ratings) {
         for (const [steamAppId, tier, updatedAt] of ratings) {
-            if (!validSteamAppId(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0)
+            if (!validSteamAppId$1(steamAppId) || !Number.isFinite(updatedAt) || updatedAt < 0)
                 continue;
             if (tier !== null && !isProtonDbTier$1(tier))
                 continue;
@@ -38059,12 +34279,12 @@ class ProtonDbRatingCache {
         }
     }
     getRating(steamAppId) {
-        if (!validSteamAppId(steamAppId))
+        if (!validSteamAppId$1(steamAppId))
             return invalidRating;
         return this.getEntry(steamAppId).rating;
     }
     subscribeRating(steamAppId, listener) {
-        if (!validSteamAppId(steamAppId))
+        if (!validSteamAppId$1(steamAppId))
             return () => undefined;
         const entry = this.getEntry(steamAppId);
         entry.listeners.add(listener);
@@ -38734,30 +34954,32 @@ function useContextMenuSettings() {
     const [error, setError] = SP_REACT.useState("");
     // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
     const latest = SP_REACT.useRef(null);
+    // The last settings the backend has; a failed save goes back to these, never to another unsaved toggle.
+    const saved = SP_REACT.useRef(null);
     SP_REACT.useEffect(() => {
         let current = true;
         getEditorHeaderSettings().then((loaded) => {
             if (!current)
                 return;
             latest.current = loaded;
+            saved.current = loaded;
             setSettings(loaded);
         }, (loadError) => { if (current)
             setError(translateBackendError(loadError)); });
         return () => { current = false; };
     }, []);
     const onChange = (key, value) => {
-        const previous = latest.current;
-        if (!previous)
+        if (!latest.current)
             return;
-        const next = { ...previous, [key]: value };
+        const next = { ...latest.current, [key]: value };
         latest.current = next;
         setSettings(next);
         setError("");
-        setEditorHeaderSettings(next).catch((saveError) => {
+        setEditorHeaderSettings(next).then(() => { saved.current = next; }, (saveError) => {
             if (latest.current !== next)
                 return;
-            latest.current = previous;
-            setSettings(previous);
+            latest.current = saved.current;
+            setSettings(saved.current);
             setError(translateBackendError(saveError));
         });
     };
@@ -38786,23 +35008,25 @@ const useLogsSettings = () => {
     const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
     const [debugLoggingLoaded, setDebugLoggingLoaded] = SP_REACT.useState(false);
     const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
+    const mounted = SP_REACT.useRef(false);
     SP_REACT.useEffect(() => {
-        let cancelled = false;
+        mounted.current = true;
         void getDebugLogging()
             .then((enabled) => {
-            if (!cancelled) {
+            if (mounted.current) {
                 setDebugLoggingState(enabled);
                 setVerboseLogging(enabled);
             }
         })
             .catch((error) => warn("bridge", "debug logging setting load failed", error))
-            .finally(() => { if (!cancelled)
+            .finally(() => { if (mounted.current)
             setDebugLoggingLoaded(true); });
-        return () => { cancelled = true; };
+        return () => { mounted.current = false; };
     }, []);
     const onToggleDebugLogging = async (enabled) => {
         if (debugLoggingBusy)
             return;
+        const previous = debugLogging;
         setDebugLoggingBusy(true);
         setDebugLoggingState(enabled);
         setVerboseLogging(enabled);
@@ -38813,6 +35037,8 @@ const useLogsSettings = () => {
             info("bridge", "debug logging setting updated", saved);
         }
         catch (error) {
+            setDebugLoggingState(previous);
+            setVerboseLogging(previous);
             warn("bridge", "debug logging setting update failed", error);
         }
         finally {
@@ -38825,6 +35051,8 @@ const useLogsSettings = () => {
         setLogsBusy(true);
         try {
             const logs = await getPluginLogs();
+            if (!mounted.current)
+                return;
             let modal;
             modal = DFL.showModal(SP_REACT.createElement(PluginLogModal, { logs, closeModal: () => modal?.Close() }));
         }
@@ -39440,6 +35668,3923 @@ function startMiniAchievementsController() {
     return () => miniAchievementsController.stop();
 }
 
+const SHORTCUT_APP_ID_BOUNDARY = 0x80000000;
+const isTrailerHomeRoute = (route) => {
+    const first = String(route || "").trim().split(/\s+/, 1)[0];
+    if (!first)
+        return false;
+    try {
+        const parsed = new URL(first, "https://steamloopback.host/");
+        return parsed.hostname === "steamloopback.host" &&
+            /^\/(?:routes\/)?library\/home\/?$/i.test(parsed.pathname) &&
+            (!parsed.hash || parsed.hash.toLowerCase() === "#quickaccess");
+    }
+    catch {
+        return false;
+    }
+};
+const parseTrailerRootRoute = (route) => {
+    const routeText = String(route || "").trim();
+    const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+    if (hashes.some((hash) => hash && hash !== "quickaccess") || /\b(?:tab|page|section|subpage)=/i.test(routeText))
+        return null;
+    const first = routeText.split(/\s+/, 1)[0];
+    if (!first)
+        return null;
+    let path;
+    try {
+        const parsed = new URL(first, "https://steamloopback.host/");
+        if (parsed.hostname !== "steamloopback.host")
+            return null;
+        if ((parsed.hash && parsed.hash.toLowerCase() !== "#quickaccess") ||
+            ["tab", "page", "section", "subpage"].some((key) => parsed.searchParams.has(key)))
+            return null;
+        path = parsed.pathname.replace(/^\/routes(?=\/)/i, "");
+    }
+    catch {
+        return null;
+    }
+    const match = path.match(/^\/library\/(?:app|details)\/(\d{1,10})\/?$/i)
+        ?? path.match(/^\/library\/collection\/[^/]+\/(\d{1,10})\/?$/i)
+        ?? path.match(/^\/library\/collection\/[^/]+\/app\/(\d{1,10})\/?$/i);
+    if (!match)
+        return null;
+    const appId = Number(match[1]);
+    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
+};
+const nativeOverviewAppId = (value) => {
+    if (!value || typeof value !== "object")
+        return null;
+    const appId = Number(value.appid);
+    return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : null;
+};
+const isNativeShortcut = (value) => {
+    if (!value || typeof value !== "object")
+        return false;
+    const overview = value;
+    if (Number(overview.app_type) === 1073741824)
+        return true;
+    try {
+        return overview.BIsShortcut?.() === true;
+    }
+    catch {
+        return false;
+    }
+};
+const validSteamAppId = (value) => {
+    if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value)))
+        return null;
+    const appId = Number(value);
+    return Number.isSafeInteger(appId) && appId > 0 && appId < SHORTCUT_APP_ID_BOUNDARY
+        ? appId
+        : null;
+};
+const trailerTitle = (value) => {
+    const title = typeof value === "string" ? value.trim() : "";
+    return title.length <= 200 ? title : "";
+};
+const nativeTrailerGameTitle = (overview) => {
+    if (!overview || typeof overview !== "object")
+        return "";
+    const app = overview;
+    return trailerTitle(app.display_name) || trailerTitle(app.localized_name) ||
+        trailerTitle(app.name) || trailerTitle(app.strDisplayName);
+};
+const ignGameUrl = (metadata) => {
+    if (metadata?.source !== "IGN" || typeof metadata.source_url !== "string")
+        return null;
+    const url = metadata.source_url.trim();
+    return /^https:\/\/www\.ign\.com\/games\/[a-z0-9][a-z0-9-]{0,119}\/?$/i.test(url)
+        ? url.replace(/\/$/, "") : null;
+};
+/** Share native AppID validation without weakening the detail route/hero guard. */
+const resolveTrailerAppSource = (context) => {
+    const pageAppId = context.appId;
+    if (!context.hydrated || !Number.isInteger(pageAppId) || pageAppId <= 0 ||
+        pageAppId > 0xffffffff || nativeOverviewAppId(context.overview) !== pageAppId)
+        return null;
+    if (pageAppId < SHORTCUT_APP_ID_BOUNDARY) {
+        return isNativeShortcut(context.overview)
+            ? null
+            : { pageAppId, sourceAppId: pageAppId, kind: "steam" };
+    }
+    if (!isNativeShortcut(context.overview))
+        return null;
+    const sourceAppId = validSteamAppId(context.metadata?.steam_appid);
+    if (!sourceAppId && !nativeTrailerGameTitle(context.overview) &&
+        !(typeof context.metadata?.title === "string" && context.metadata.title.trim()) &&
+        !ignGameUrl(context.metadata))
+        return null;
+    return { pageAppId, sourceAppId, kind: "shortcut" };
+};
+/** Resolve detail playback only after the route and visible hero agree. */
+const resolveTrailerSource = (context) => {
+    const pageAppId = parseTrailerRootRoute(context.route);
+    if (!pageAppId || context.heroAppId !== pageAppId)
+        return null;
+    return resolveTrailerAppSource({
+        appId: pageAppId, overview: context.overview, metadata: context.metadata, hydrated: context.hydrated,
+    });
+};
+
+// @ts-nocheck
+// This self-contained function is serialized into Steam's default world.
+// Adapted from Decky-TrailerHero by LoZazaMastro; see NOTICE for inherited terms.
+function deckyMetadataTrailerRuntimeFactory(nextSettings, ownerId, settingsRevision, injectedTranslations, identity, nextIgnFallback) {
+    const runtimeKey = "__deckyMetadataTrailerRuntime";
+    const runtimeVersion = "0.2.0";
+    const styleId = "decky-metadata-trailer-style";
+    const videoClass = "decky-metadata-trailer-video";
+    const targetClass = "decky-metadata-trailer-target";
+    const homeTargetClass = "decky-metadata-home-trailer-target";
+    const readyClass = "decky-metadata-trailer-ready";
+    const visibleClass = "decky-metadata-trailer-visible";
+    const logoHiddenClass = "decky-metadata-trailer-logo-hidden";
+    const cleanViewClass = "decky-metadata-trailer-clean-view";
+    const audioHintId = "decky-metadata-trailer-audio-hint";
+    const viewHintId = "decky-metadata-trailer-view-hint";
+    const audioChangeEvent = "decky-metadata-trailer:audio-change";
+    const homeSelectionEvent = "decky-metadata-trailer:home-selection";
+    const homeNavigationKeys = { ArrowLeft: true, ArrowRight: true, ArrowUp: true, ArrowDown: true, Tab: true };
+    const routeScanIntervalMs = 2400;
+    const queuedScanDelayMs = 360;
+    // Steam's page-entry animation ends within about 0.5 s on a Deck.
+    const earlyBackdropMs = 1000;
+    const directPlaybackTimeoutMs = 12000;
+    const audioFadeDurationMs = 1200;
+    const MAX_METADATA_BYTES = 1024 * 1024;
+    const MAX_MANIFEST_BYTES = 2 * 1024 * 1024;
+    const MAX_INIT_BYTES = 4 * 1024 * 1024;
+    const MAX_SEGMENT_BYTES = 32 * 1024 * 1024;
+    // Shared on window so a reused runtime picks up the strings of the latest install.
+    const translationsKey = `${runtimeKey}Translations`;
+    if (injectedTranslations)
+        window[translationsKey] = injectedTranslations;
+    const rt = (key, vars = {}) => {
+        const template = window[translationsKey]?.[key] ?? key;
+        return template.replace(/\{(\w+)\}/g, (_match, name) => String(vars[name] ?? ""));
+    };
+    let nativeStatusRowClass;
+    let nativeBackgroundClass;
+    const isStatusBand = (element) => {
+        if (!nativeStatusRowClass || !nativeBackgroundClass) {
+            const candidates = [window];
+            try {
+                candidates.push(window.opener);
+            }
+            catch { }
+            try {
+                if (window.parent !== window)
+                    candidates.push(window.parent);
+            }
+            catch { }
+            for (const candidate of candidates) {
+                try {
+                    const value = candidate?.DFL?.playSectionClasses?.CloudStatusRow ||
+                        candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.cloudStatusRow;
+                    if (typeof value === "string" && value) {
+                        nativeStatusRowClass = value;
+                        const background = candidate?.DFL?.appDetailsHeaderClasses?.HeaderBackgroundImage ||
+                            candidate?.__DECKY_METADATA_NATIVE_CLASSES__?.headerBackgroundImage;
+                        if (typeof background === "string" && background)
+                            nativeBackgroundClass = background;
+                        break;
+                    }
+                }
+                catch { }
+            }
+        }
+        if (element.getAttribute?.("data-sdh-ludusavi-status-row") === "true" ||
+            element.getAttribute?.("data-sdh-ludusavi-artwork-band") === "true")
+            return true;
+        return Boolean(nativeStatusRowClass && element.classList?.contains(nativeStatusRowClass));
+    };
+    const clipsOverflow = (value) => value === "hidden" || value === "clip" || value === "auto" || value === "scroll";
+    const isPaintedStatusBand = (element, target) => {
+        if (element.getAttribute?.("aria-hidden") === "true")
+            return false;
+        const band = element.getBoundingClientRect();
+        for (let ancestor = element; ancestor; ancestor = ancestor.parentElement) {
+            if (ancestor.hidden)
+                return false;
+            const style = getComputedStyle(ancestor);
+            // Steam fades the whole entering page in from 0; an ancestor that also holds the art hides both alike.
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ancestor.contains?.(target)))
+                return false;
+            if (ancestor === element && (style.position === "absolute" || style.position === "fixed" || style.position === "sticky"))
+                return false;
+            if (ancestor !== element && typeof ancestor.getBoundingClientRect === "function") {
+                const bounds = ancestor.getBoundingClientRect();
+                if ((clipsOverflow(style.overflowX || style.overflow) && (band.left < bounds.left || band.right > bounds.right)) ||
+                    (clipsOverflow(style.overflowY || style.overflow) && (band.top < bounds.top || band.bottom > bounds.bottom)))
+                    return false;
+            }
+        }
+        return true;
+    };
+    const safeMediaUrl = (value, base) => {
+        if (typeof value !== "string" || !value.trim())
+            return null;
+        let parsed;
+        try {
+            parsed = base ? new URL(value, base) : new URL(value);
+        }
+        catch {
+            return null;
+        }
+        const host = parsed.hostname.toLowerCase().replace(/\.$/, "");
+        if (parsed.protocol !== "https:" || parsed.username || parsed.password || !host ||
+            host === "steamloopback.host" || host.endsWith(".steamloopback.host") ||
+            host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") ||
+            host.endsWith(".internal") || host.endsWith(".lan") || host.endsWith(".home") ||
+            host.endsWith(".onion") || /^\[.*\]$/.test(host) || /^\d+(?:\.\d+){0,3}$/.test(host))
+            return null;
+        return parsed.href;
+    };
+    const readBoundedBody = async (response, maximumBytes, asText) => {
+        const contentLength = response.headers?.get?.("content-length");
+        const lengthText = contentLength == null ? null : String(contentLength).trim();
+        if (lengthText !== null && !/^\d+$/.test(lengthText)) {
+            throw new Error("Steam media response has an invalid content length");
+        }
+        const declaredLength = lengthText === null ? null : Number(lengthText);
+        if (declaredLength !== null && !Number.isSafeInteger(declaredLength)) {
+            throw new Error("Steam media response has an invalid content length");
+        }
+        if (declaredLength !== null && declaredLength > maximumBytes) {
+            throw new Error("Steam media response is too large");
+        }
+        const reader = response.body?.getReader?.();
+        if (!reader)
+            throw new Error("Steam media response has no bounded streaming body");
+        const chunks = [];
+        let size = 0;
+        try {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done)
+                    break;
+                size += value.byteLength;
+                if (size > maximumBytes) {
+                    await reader.cancel();
+                    throw new Error("Steam media response is too large");
+                }
+                chunks.push(value);
+            }
+        }
+        catch (error) {
+            try {
+                await reader.cancel();
+            }
+            catch { }
+            throw error;
+        }
+        const bytes = new Uint8Array(size);
+        let offset = 0;
+        for (const chunk of chunks) {
+            bytes.set(chunk, offset);
+            offset += chunk.byteLength;
+        }
+        return asText ? new TextDecoder().decode(bytes) : bytes.buffer;
+    };
+    const validateResponseUrl = (response, requestedUrl) => {
+        if (response.redirected === true)
+            throw new Error("Steam media redirects are not allowed");
+        if (!response.url)
+            return;
+        const finalUrl = safeMediaUrl(response.url);
+        if (!finalUrl || finalUrl !== requestedUrl)
+            throw new Error("Steam media response URL changed");
+    };
+    const normalizeSettings = (value) => {
+        const parsed = value && typeof value === "object" && !Array.isArray(value) ? value : {};
+        const qualityOptions = ["auto", 720, 1080, 1440, 2160];
+        const detailEnabled = typeof parsed.detailEnabled === "boolean" ? parsed.detailEnabled : true;
+        const homeEnabled = typeof parsed.homeEnabled === "boolean" ? parsed.homeEnabled : false;
+        return {
+            enabled: parsed.enabled === true && (detailEnabled || homeEnabled),
+            detailEnabled,
+            homeEnabled,
+            audioEnabled: typeof parsed.audioEnabled === "boolean" ? parsed.audioEnabled : false,
+            hideLogoDuringTrailer: typeof parsed.hideLogoDuringTrailer === "boolean" ? parsed.hideLogoDuringTrailer : false,
+            quality: qualityOptions.includes(parsed.quality) ? parsed.quality : "auto",
+            detailFadeInDelaySeconds: Number.isInteger(parsed.detailFadeInDelaySeconds) &&
+                parsed.detailFadeInDelaySeconds >= 0 && parsed.detailFadeInDelaySeconds <= 10 ? parsed.detailFadeInDelaySeconds : 3,
+            homeFadeInDelaySeconds: Number.isInteger(parsed.homeFadeInDelaySeconds) &&
+                parsed.homeFadeInDelaySeconds >= 0 && parsed.homeFadeInDelaySeconds <= 10 ? parsed.homeFadeInDelaySeconds : 3
+        };
+    };
+    const findOwnerWindow = () => {
+        try {
+            if (window.opener?.__deckyMetadataTrailerOwner &&
+                typeof window.opener.__deckyMetadataTrailerOwner === "object")
+                return window.opener;
+        }
+        catch { }
+        if (window.__deckyMetadataTrailerOwner &&
+            typeof window.__deckyMetadataTrailerOwner === "object")
+            return window;
+        try {
+            if (window.parent !== window && window.parent?.__deckyMetadataTrailerOwner &&
+                typeof window.parent.__deckyMetadataTrailerOwner === "object")
+                return window.parent;
+        }
+        catch { }
+        return undefined;
+    };
+    const findOwnerRecord = () => findOwnerWindow()?.__deckyMetadataTrailerOwner;
+    let activeOwnerId = ownerId || "";
+    let activeRevision = Number.isSafeInteger(settingsRevision) && settingsRevision >= 0 ? settingsRevision : 0;
+    let settings = normalizeSettings(nextSettings);
+    const normalizeIdentity = (value) => {
+        const pageAppId = Number(value?.pageAppId);
+        const sourceAppId = value?.sourceAppId === null ? null : Number(value?.sourceAppId);
+        if (!Number.isInteger(pageAppId) || pageAppId <= 0 || pageAppId > 0xffffffff ||
+            (value?.view !== "detail" && value?.view !== "home") ||
+            (sourceAppId === null
+                ? pageAppId < 0x80000000
+                : !Number.isInteger(sourceAppId) || sourceAppId <= 0 || sourceAppId >= 0x80000000))
+            return null;
+        if (value.view === "home") {
+            if (!Number.isSafeInteger(value.selectionRevision) || value.selectionRevision < 0 ||
+                !Number.isSafeInteger(value.enteredAt) || value.enteredAt < 0)
+                return null;
+            return { view: "home", pageAppId, sourceAppId,
+                selectionRevision: value.selectionRevision, enteredAt: value.enteredAt };
+        }
+        return { view: "detail", pageAppId, sourceAppId };
+    };
+    const normalizeIgnFallback = (value) => {
+        if (value === undefined)
+            return undefined;
+        if (!value || typeof value.name !== "string" || !value.name.trim() || !Array.isArray(value.candidates))
+            return null;
+        const candidates = value.candidates.slice(0, 8).filter((item) => item?.format === "mp4" && typeof item.url === "string" && safeMediaUrl(item.url) &&
+            Number.isInteger(item.height) && item.height >= 360 && item.height <= 4320);
+        return candidates.length ? { name: value.name.trim().slice(0, 200), candidates } : null;
+    };
+    let activeIdentity = normalizeIdentity(identity);
+    let activeIgnFallback = normalizeIgnFallback(nextIgnFallback);
+    const ownerRecord = findOwnerRecord();
+    if (activeOwnerId && (!ownerRecord || ownerRecord.ownerId !== activeOwnerId || ownerRecord.active !== true)) {
+        return { status: rt("steamUiUnavailable"), runtimeMissing: true };
+    }
+    if (ownerRecord && ownerRecord.ownerId === activeOwnerId && Number.isSafeInteger(ownerRecord.settingsRevision) && ownerRecord.settingsRevision > activeRevision) {
+        activeRevision = ownerRecord.settingsRevision;
+        settings = normalizeSettings(ownerRecord.settings);
+        activeIdentity = normalizeIdentity(ownerRecord.identity);
+        activeIgnFallback = normalizeIgnFallback(ownerRecord.ignFallback);
+    }
+    const coerceAppId = (value) => {
+        if (typeof value !== "number" && (typeof value !== "string" || !/^\d{1,10}$/.test(value)))
+            return undefined;
+        const appId = Number(value);
+        return Number.isInteger(appId) && appId > 0 && appId <= 0xffffffff ? appId : undefined;
+    };
+    function getGameDetailsRouteAppId(value) {
+        let path;
+        try {
+            const routeText = String(value || "").trim();
+            const hashes = [...routeText.matchAll(/#([^\s]*)/g)].map((match) => match[1].toLowerCase());
+            if (hashes.some((hash) => hash && hash !== "quickaccess") ||
+                /\b(?:tab|page|section|subpage)=/i.test(routeText))
+                return undefined;
+            const route = new URL(routeText.split(/\s+/, 1)[0], window.location?.href ||
+                "https://steamloopback.host/");
+            if ((route.hash && route.hash.toLowerCase() !== "#quickaccess") ||
+                ["tab", "page", "section", "subpage"].some((key) => route.searchParams.has(key)))
+                return undefined;
+            path = route.pathname;
+        }
+        catch {
+            return undefined;
+        }
+        const match = path.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/)?(\d{1,10})\/?$/i) ??
+            path.match(/^\/(?:routes\/)?library\/collection\/[^/]+\/(?:app\/)?(\d{1,10})\/?$/i);
+        const appId = coerceAppId(match?.[1]);
+        return appId;
+    }
+    const getLocalRouteText = () => [window.location?.href, window.location?.pathname, window.location?.hash, document.URL].filter(Boolean).join(" ").toLowerCase();
+    function getOpenerRouteText() {
+        try {
+            const opener = window.opener;
+            if (!opener?.location || new URL(opener.location.href).hostname !== "steamloopback.host")
+                return "";
+            return [opener.location.href, opener.location.pathname, opener.location.hash, opener.document?.URL]
+                .filter(Boolean).join(" ").toLowerCase();
+        }
+        catch {
+            return "";
+        }
+    }
+    const activeRouteText = () => getOpenerRouteText() || getLocalRouteText();
+    const detectLocationAppId = () => getGameDetailsRouteAppId(activeRouteText());
+    const readRootRouteKey = () => {
+        try {
+            const first = activeRouteText().trim().split(/\s+/, 1)[0];
+            return new URL(first, window.location.href).pathname.replace(/^\/routes(?=\/)/, "").replace(/\/$/, "") || "/";
+        }
+        catch {
+            return "";
+        }
+    };
+    const getElementAssetText = (element) => {
+        let background = "";
+        try {
+            background = getComputedStyle(element).backgroundImage || "";
+        }
+        catch { }
+        return [element.getAttribute("style") || "", element.getAttribute("src") || "", element.getAttribute("href") || "", background].join(" ");
+    };
+    const extractAppIdFromText = (value) => {
+        const text = String(value || "");
+        const patterns = [
+            /(?:steam\/apps|store_item_assets\/steam\/apps|steamcommunity\/public\/images\/apps|assets)\/(\d{1,10})(?:[\/_?.&#-]|$)/i,
+            /(?:config\/grid|\/grid\/)(\d{1,10})(?:[._a-z-]|$)/i,
+            /\/customimages\/(\d{1,10})(?:[a-z_]*)(?:[._/?#-]|$)/i,
+            /store\.steampowered\.com\/app\/(\d{1,10})(?:[/?#-]|$)/i
+        ];
+        const match = patterns.map((pattern) => text.match(pattern)).find(Boolean);
+        const appId = coerceAppId(match?.[1]);
+        return appId;
+    };
+    const isUsableRect = (rect) => {
+        const minWidth = Math.min(420, window.innerWidth * 0.35);
+        const minHeight = Math.min(180, window.innerHeight * 0.28);
+        return rect.width >= minWidth && rect.height >= minHeight && rect.bottom > 0 && rect.right > 0 && rect.top < window.innerHeight && rect.left < window.innerWidth;
+    };
+    const scoreHeroElement = (element, assetText) => {
+        const rect = element.getBoundingClientRect();
+        if (!isUsableRect(rect))
+            return 0;
+        const classText = String(element.className || "").toLowerCase();
+        const assetLower = assetText.toLowerCase();
+        if (assetLower.includes("movie") || assetLower.includes("trailer"))
+            return 0;
+        const areaScore = Math.min(900, rect.width * rect.height / 900);
+        const topBias = Math.max(0, 260 - Math.abs(rect.top)) / 2;
+        const heroBias = assetLower.includes("library_hero") || classText.includes("hero") ? 500 : 0;
+        const customHeroBias = assetLower.includes("/customimages/") && assetLower.includes("_hero") ? 700 : 0;
+        const backgroundBias = classText.includes("background") || assetLower.includes("page_bg") ? 180 : 0;
+        const smallMediaPenalty = element.tagName === "IMG" && rect.height < window.innerHeight * 0.32 ? 350 : 0;
+        const offscreenPenalty = Math.max(0, Math.abs(rect.left) - 4) * 4 + Math.max(0, Math.abs(rect.top) - 8) * 4;
+        return areaScore + topBias + heroBias + customHeroBias + backgroundBias - smallMediaPenalty - offscreenPenalty;
+    };
+    function findHeroCandidate(preferredAppId = detectLocationAppId(), within) {
+        const selector = [
+            "[style*='steam/apps']", "[style*='store_item_assets']", "[style*='/assets/']", "[style*='/customimages/']", "[style*='library_hero']",
+            "img[src*='steam/apps']", "img[src*='store_item_assets']", "img[src*='/assets/']", "img[src*='/customimages/']", "img[src*='library_hero']", "a[href*='/app/']"
+        ].join(",");
+        const nodes = Array.from(document.querySelectorAll(selector)).slice(0, 900);
+        let best;
+        for (const node of nodes) {
+            const assetText = getElementAssetText(node);
+            const appId = extractAppIdFromText(assetText);
+            if (!appId || (preferredAppId && appId !== preferredAppId))
+                continue;
+            const target = node.tagName === "IMG" ? node.parentElement : node;
+            if (!(target instanceof HTMLElement) || (within && !target.closest?.(within)))
+                continue;
+            const score = scoreHeroElement(target, assetText);
+            if (score > 0 && (!best || score > best.score))
+                best = { appId, element: target, score, assetText };
+        }
+        return best;
+    }
+    function findGameLogo(appId, hero) {
+        const heroRect = hero.getBoundingClientRect();
+        const nativePrefix = `/assets/${appId}/`;
+        const customPrefix = `/customimages/${appId}_logo.`;
+        const logos = document.querySelectorAll(`img[src*="${nativePrefix}"],img[src*="${customPrefix}"]`);
+        for (const logo of logos) {
+            const source = logo.getAttribute("src");
+            if (!source)
+                continue;
+            let asset;
+            try {
+                asset = new URL(source, window.location.href);
+            }
+            catch {
+                continue;
+            }
+            if (asset.origin !== window.location.origin)
+                continue;
+            const path = asset.pathname.toLowerCase();
+            const nativeLogo = path.startsWith(nativePrefix) &&
+                /\/(?:library_)?logo\.(?:png|jpe?g|webp)$/.test(path);
+            const customLogo = path.startsWith(customPrefix) &&
+                /^(?:png|jpe?g|webp)$/.test(path.slice(customPrefix.length));
+            if (!nativeLogo && !customLogo)
+                continue;
+            const rect = logo.getBoundingClientRect();
+            if (rect.width <= 0 || rect.height <= 0 || rect.right <= heroRect.left ||
+                rect.left >= heroRect.right || rect.bottom <= heroRect.top || rect.top >= heroRect.bottom)
+                continue;
+            return logo;
+        }
+        return undefined;
+    }
+    function otherTrailerPluginActive() {
+        return Boolean(document.getElementById("trailerhero-style") ||
+            document.querySelector(".trailerhero-video") ||
+            document.getElementById("decky-trailerhero-style") ||
+            document.querySelector(".decky-trailerhero-video"));
+    }
+    function isProbablyGameDetailsPage() {
+        if (!document.body)
+            return false;
+        const routeText = activeRouteText();
+        const routeAppId = getGameDetailsRouteAppId(routeText);
+        if (!routeAppId || activeIdentity?.view !== "detail" || activeIdentity.pageAppId !== routeAppId)
+            return false;
+        const hero = findHeroCandidate(routeAppId);
+        return Boolean(hero && hero.appId === routeAppId);
+    }
+    const normalizeActionText = (value) => String(value || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, " ").trim().toLowerCase();
+    function isLaunchActionElement(target) {
+        if (!(target instanceof HTMLElement))
+            return false;
+        let playButtonClass;
+        let appActionButtonClass;
+        const candidates = [window];
+        try {
+            candidates.push(window.opener);
+        }
+        catch { }
+        try {
+            if (window.parent !== window)
+                candidates.push(window.parent);
+        }
+        catch { }
+        for (const candidate of candidates) {
+            try {
+                const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
+                const playButton = candidate?.DFL?.appActionButtonClasses?.PlayButton;
+                const appActionButton = candidate?.DFL?.basicAppDetailsSectionStylerClasses?.AppActionButton;
+                if (!playButtonClass) {
+                    if (typeof playButton === "string" && playButton)
+                        playButtonClass = playButton;
+                    else if (typeof translated?.playButton === "string" && translated.playButton)
+                        playButtonClass = translated.playButton;
+                }
+                if (!appActionButtonClass) {
+                    if (typeof appActionButton === "string" && appActionButton)
+                        appActionButtonClass = appActionButton;
+                    else if (typeof translated?.appActionButton === "string" && translated.appActionButton)
+                        appActionButtonClass = translated.appActionButton;
+                }
+            }
+            catch { }
+        }
+        const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
+            ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
+        const nativeSelector = [playButtonClass, appActionButtonClass]
+            .map((value) => typeof value === "string" ? escape(value) : "")
+            .filter(Boolean).map((value) => `.${value}`).join(", ");
+        const control = target.closest(nativeSelector || "button, a, [role='button'], [tabindex], [class*='Button'], [class*='button']");
+        if (!control)
+            return false;
+        const rect = control.getBoundingClientRect();
+        if (rect.width < 44 || rect.height < 28 || rect.bottom < 0 || rect.top > window.innerHeight)
+            return false;
+        if (nativeSelector)
+            return true;
+        const text = normalizeActionText([control.innerText, control.textContent, control.getAttribute("aria-label"), control.getAttribute("title")].filter(Boolean).join(" "));
+        return /\b(play|launch|install|resume|update|stream|gioca|avvia|installa|riprendi|aggiorna|jouer|lancer|installer|reprendre|jugar|iniciar|instalar|reanudar|actualizar|jogar|continuar|spielen|installieren|fortsetzen)\b/.test(text) || ["开始游戏", "开始", "安装", "继续", "更新", "プレイ", "起動", "インストール", "再開"].some((word) => text.includes(word));
+    }
+    const detectGameTitle = (appId) => {
+        try {
+            const overview = window.appStore?.GetAppOverviewByAppID?.(appId);
+            return String(overview?.display_name || overview?.name || overview?.strDisplayName || "");
+        }
+        catch {
+            return "";
+        }
+    };
+    function readPlaybackDisplaySize(hostWindow) {
+        const dpr = Number.isFinite(hostWindow.devicePixelRatio) && hostWindow.devicePixelRatio > 0
+            ? hostWindow.devicePixelRatio : 1;
+        const valid = (width, height) => Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0;
+        const screen = hostWindow.screen;
+        const width = valid(screen?.width, screen?.height) ? screen.width : hostWindow.innerWidth;
+        const height = valid(screen?.width, screen?.height) ? screen.height : hostWindow.innerHeight;
+        if (!valid(width, height))
+            return null;
+        return { width: Math.round(width * dpr), height: Math.round(height * dpr) };
+    }
+    function resolveQualityTarget(quality, displaySize) {
+        return typeof quality === "number" && [720, 1080, 1440, 2160].includes(quality)
+            ? quality : displaySize ? Math.min(2160, displaySize.height) : 720;
+    }
+    function createStyle() {
+        return `
+      .${targetClass}{position:relative!important;overflow:hidden!important;isolation:isolate!important}
+      .${videoClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:cover!important;pointer-events:none!important;opacity:0!important;transform:scale(1.015)!important;transition:opacity ${audioFadeDurationMs}ms linear,transform 7000ms ease!important;z-index:1!important;background:#000!important}
+      .${videoClass}.${visibleClass}{opacity:1!important;transform:scale(1.04)!important}
+      .${homeTargetClass}>.${videoClass}{transform:none!important;transition:opacity ${audioFadeDurationMs}ms linear!important}
+      .${targetClass}.${readyClass}::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;opacity:.38;background:linear-gradient(90deg,rgba(0,0,0,.7),rgba(0,0,0,.18) 48%,rgba(0,0,0,.52)),linear-gradient(0deg,rgba(0,0,0,.72),rgba(0,0,0,.04) 42%)}
+      .${cleanViewClass} .${videoClass},.${cleanViewClass} .${videoClass}.${visibleClass}{position:absolute!important;inset:0!important;width:100%!important;height:100%!important;object-fit:contain!important;opacity:1!important;transform:none!important;transition:none!important}
+      img.${logoHiddenClass}{opacity:0!important}
+    `;
+    }
+    class AdaptiveSession {
+        constructor(video, presentation, candidate) {
+            this.video = video;
+            this.presentation = presentation;
+            this.candidate = candidate;
+            this.requests = new Set();
+            this.operation = Promise.resolve();
+            this.generation = 0;
+            this.pendingPump = false;
+            this.starting = true;
+            this.disposed = false;
+            this.failed = false;
+            this.handlers = [];
+        }
+        assertCurrent() {
+            if (this.disposed || !this.candidate.isCurrent()) {
+                const error = new Error("Trailer request changed");
+                error.name = "AbortError";
+                throw error;
+            }
+        }
+        waitFor(target, eventName, timeoutMs, action) {
+            return new Promise((resolve, reject) => {
+                const signal = this.candidate.controller.signal;
+                let timer;
+                const cleanup = () => {
+                    target.removeEventListener(eventName, done);
+                    target.removeEventListener("error", failed);
+                    signal.removeEventListener("abort", cancelled);
+                    window.clearTimeout(timer);
+                };
+                const done = () => { cleanup(); resolve(); };
+                const failed = () => { cleanup(); reject(new Error(`${eventName} failed`)); };
+                const cancelled = () => {
+                    cleanup();
+                    const error = new Error("Trailer request stopped");
+                    error.name = "AbortError";
+                    reject(error);
+                };
+                if (signal.aborted || this.disposed) {
+                    cancelled();
+                    return;
+                }
+                target.addEventListener(eventName, done);
+                target.addEventListener("error", failed);
+                signal.addEventListener("abort", cancelled, { once: true });
+                timer = window.setTimeout(() => {
+                    cleanup();
+                    reject(new Error(`${eventName} timed out`));
+                }, timeoutMs);
+                if (action) {
+                    try {
+                        action();
+                    }
+                    catch (error) {
+                        cleanup();
+                        reject(error);
+                    }
+                }
+            });
+        }
+        async fetchBytes(url, generation, segment = false) {
+            this.assertCurrent();
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl)
+                throw new Error("Steam media URL is not safe HTTPS");
+            const controller = new AbortController();
+            const request = { controller, generation, segment };
+            this.requests.add(request);
+            const cancel = () => controller.abort();
+            this.candidate.controller.signal.addEventListener("abort", cancel, { once: true });
+            const timeout = window.setTimeout(() => controller.abort(), 12000);
+            try {
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
+                if (!response.ok)
+                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const data = await readBoundedBody(response, segment ? MAX_SEGMENT_BYTES : MAX_INIT_BYTES, false);
+                this.assertCurrent();
+                if (segment && generation !== this.generation) {
+                    const error = new Error("Obsolete seek request");
+                    error.name = "AbortError";
+                    throw error;
+                }
+                return data;
+            }
+            finally {
+                window.clearTimeout(timeout);
+                this.candidate.controller.signal.removeEventListener("abort", cancel);
+                this.requests.delete(request);
+            }
+        }
+        async mutate(buffer, action) {
+            const previous = this.operation;
+            let release;
+            this.operation = new Promise((resolve) => { release = resolve; });
+            await previous;
+            try {
+                this.assertCurrent();
+                await this.waitFor(buffer, "updateend", 12000, action);
+            }
+            finally {
+                release();
+            }
+        }
+        async start() {
+            try {
+                this.assertCurrent();
+                if (!Number.isFinite(this.presentation.duration) || this.presentation.duration <= 0 ||
+                    !this.presentation.tracks.length || this.presentation.tracks.some((track) => !track.initUrl || !track.segments.length || track.segments.some((segment) => !Number.isFinite(segment.start) || !Number.isFinite(segment.end) || segment.end <= segment.start))) {
+                    throw new Error("Invalid adaptive presentation");
+                }
+                this.mediaSource = new MediaSource();
+                this.objectUrl = URL.createObjectURL(this.mediaSource);
+                const opened = this.waitFor(this.mediaSource, "sourceopen", 12000);
+                this.video.loop = false;
+                this.video.src = this.objectUrl;
+                this.video.load();
+                await opened;
+                this.assertCurrent();
+                // CEF rejects a second SourceBuffer if any init data was appended
+                // before it was allocated. Allocate every track synchronously.
+                this.tracks = this.presentation.tracks.map((track) => {
+                    const buffer = this.mediaSource.addSourceBuffer(track.mimeType);
+                    buffer.mode = "segments";
+                    const timestampOffset = Number(track.timestampOffset ?? 0);
+                    if (!Number.isFinite(timestampOffset))
+                        throw new Error("Invalid media timestamp offset");
+                    buffer.timestampOffset = timestampOffset;
+                    return { track, buffer, appended: new Set(),
+                        pinned: new Set(track.segments.flatMap((segment, index) => segment.start < 8 ? [index] : [])) };
+                });
+                this.mediaSource.duration = this.presentation.duration;
+                for (const state of this.tracks) {
+                    const data = await this.fetchBytes(state.track.initUrl);
+                    this.assertCurrent();
+                    await this.mutate(state.buffer, () => state.buffer.appendBuffer(data));
+                }
+                await this.pumpWindow(this.generation, true);
+                this.assertCurrent();
+                this.starting = false;
+                const listen = (target, name, handler) => {
+                    target.addEventListener(name, handler);
+                    this.handlers.push([target, name, handler]);
+                };
+                listen(this.video, "timeupdate", () => this.requestPump());
+                listen(this.video, "waiting", () => this.requestPump());
+                listen(this.video, "play", () => this.requestPump());
+                listen(this.video, "seeking", () => this.seek(this.video.currentTime));
+                listen(this.video, "ended", () => {
+                    if (this.disposed)
+                        return;
+                    this.video.currentTime = 0;
+                    this.seek(0);
+                    this.video.play().catch(() => undefined);
+                });
+                this.pumpTimer = window.setInterval(() => this.requestPump(), 700);
+                if (this.pendingPump)
+                    this.requestPump();
+            }
+            catch (error) {
+                this.fail(error);
+                throw error;
+            }
+        }
+        seek(_time) {
+            if (this.disposed)
+                return;
+            this.generation++;
+            for (const request of this.requests)
+                if (request.segment)
+                    request.controller.abort();
+            this.requestPump();
+        }
+        requestPump() {
+            if (this.disposed)
+                return;
+            this.pendingPump = true;
+            if (this.starting || this.pumping)
+                return;
+            this.pumping = true;
+            void (async () => {
+                do {
+                    this.pendingPump = false;
+                    await this.pumpWindow(this.generation, false);
+                } while (this.pendingPump && !this.disposed);
+            })().catch((error) => this.fail(error)).finally(() => {
+                this.pumping = false;
+                if (this.pendingPump && !this.disposed)
+                    this.requestPump();
+            });
+        }
+        async pumpWindow(generation, priming) {
+            this.assertCurrent();
+            const time = Math.min(this.presentation.duration, Math.max(0, Number(this.video.currentTime) || 0));
+            const from = Math.max(0, time - 6);
+            const until = Math.min(this.presentation.duration, time + 12);
+            for (const state of this.tracks) {
+                if (generation !== this.generation)
+                    return;
+                const segments = state.track.segments;
+                const wanted = new Set(state.pinned);
+                segments.forEach((segment, index) => {
+                    if (segment.start < until && segment.end > from)
+                        wanted.add(index);
+                });
+                let removeStart, removeEnd;
+                const flushRemoval = async () => {
+                    if (removeStart === undefined)
+                        return;
+                    const start = removeStart, end = removeEnd;
+                    removeStart = removeEnd = undefined;
+                    await this.mutate(state.buffer, () => state.buffer.remove(start, end));
+                };
+                for (const index of [...state.appended].sort((a, b) => a - b)) {
+                    if (generation !== this.generation)
+                        return;
+                    if (wanted.has(index)) {
+                        await flushRemoval();
+                        continue;
+                    }
+                    const segment = segments[index];
+                    if (removeStart === undefined)
+                        removeStart = segment.start;
+                    else if (segment.start > removeEnd + 0.0001) {
+                        await flushRemoval();
+                        removeStart = segment.start;
+                    }
+                    removeEnd = segment.end;
+                    state.appended.delete(index);
+                }
+                await flushRemoval();
+                if (!priming && this.video.paused)
+                    continue;
+                for (const index of [...wanted].sort((a, b) => a - b)) {
+                    if (generation !== this.generation)
+                        return;
+                    if (state.appended.has(index))
+                        continue;
+                    const segment = segments[index];
+                    let data;
+                    try {
+                        data = await this.fetchBytes(segment.url, generation, true);
+                    }
+                    catch (error) {
+                        if (generation !== this.generation && !this.disposed)
+                            return;
+                        throw error;
+                    }
+                    if (generation !== this.generation)
+                        return;
+                    this.assertCurrent();
+                    await this.mutate(state.buffer, () => state.buffer.appendBuffer(data));
+                    state.appended.add(index);
+                }
+            }
+            if (generation === this.generation && !this.video.seeking &&
+                this.mediaSource.readyState === "open" &&
+                this.tracks.every(({ track, appended }) => appended.has(track.segments.length - 1)) &&
+                this.tracks.every(({ buffer }) => !buffer.updating)) {
+                this.mediaSource.endOfStream();
+            }
+        }
+        fail(error) {
+            if (this.failed || this.disposed || !this.candidate.isCurrent())
+                return;
+            this.failed = true;
+            this.candidate.onFailure(error);
+        }
+        dispose() {
+            if (this.disposed)
+                return;
+            this.disposed = true;
+            this.candidate.controller.abort();
+            for (const request of this.requests)
+                request.controller.abort();
+            if (this.pumpTimer)
+                window.clearInterval(this.pumpTimer);
+            for (const [target, name, handler] of this.handlers)
+                target.removeEventListener(name, handler);
+            this.handlers.length = 0;
+            this.video.pause();
+            this.video.removeAttribute("src");
+            this.video.load();
+            if (this.mediaSource?.readyState === "open") {
+                for (const { buffer } of this.tracks ?? []) {
+                    try {
+                        if (!buffer.updating)
+                            this.mediaSource.removeSourceBuffer(buffer);
+                    }
+                    catch { }
+                }
+            }
+            if (this.objectUrl) {
+                URL.revokeObjectURL(this.objectUrl);
+                this.objectUrl = undefined;
+            }
+            this.video.remove();
+        }
+    }
+    class Runtime {
+        constructor(initialSettings, runtimeOwnerId, revision, initialIgnFallback = activeIgnFallback) {
+            this.product = "decky-metadata-trailer";
+            this.version = runtimeVersion;
+            this.ownerId = runtimeOwnerId || "";
+            this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : 0;
+            this.identity = activeIdentity;
+            this.settings = normalizeSettings(initialSettings);
+            this.ignFallback = normalizeIgnFallback(initialIgnFallback);
+            this.needsIgnFallback = false;
+            this.steamUnavailable = false;
+            this.status = rt(this.settings.enabled ? "waitingGamePage" : "disabled");
+            this.requestToken = 0;
+            this.trailerCache = new Map();
+            this.resumeAttemptCandidate = undefined;
+            this.displaySize = readPlaybackDisplaySize(window);
+            this.targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
+            this.trailerAudioEnabled = this.settings.audioEnabled;
+            this.lastSecondaryPressAt = -Infinity;
+            this.homeInputMode = document.activeElement?.classList?.contains("gpfocus") ? "controller" : "pointer";
+            const homeRevision = findOwnerRecord()?.homeSelectionRevision;
+            this.homeSelectionRevision = Number.isSafeInteger(homeRevision) && homeRevision >= 0 ? homeRevision : 0;
+            this.homeFocusTask = () => {
+                this.refreshHomeSelection();
+            };
+            this.handleHomeFocus = () => queueMicrotask(this.homeFocusTask);
+            this.handleHomePointerMove = (event) => {
+                if (!event.isTrusted || !this.homeMonitoring)
+                    return;
+                if (this.homePointerX === event.clientX && this.homePointerY === event.clientY)
+                    return;
+                this.homePointerX = event.clientX;
+                this.homePointerY = event.clientY;
+                this.homeInputMode = "pointer";
+                this.homePointerCard = event.target?.closest?.("[data-id]");
+                this.refreshHomeSelection();
+            };
+            this.handleHomePointerOut = (event) => {
+                if (this.homeInputMode !== "pointer")
+                    return;
+                const card = event.relatedTarget?.closest?.("[data-id]");
+                if (card === this.homePointerCard)
+                    return;
+                this.homePointerCard = card;
+                this.refreshHomeSelection();
+            };
+            this.handleHomeKeyDown = (event) => {
+                if (homeNavigationKeys[event.key] !== true)
+                    return;
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
+            this.handleHomeGamepadInput = () => {
+                this.homeInputMode = "controller";
+                queueMicrotask(this.homeFocusTask);
+            };
+            this.scanQueued = false;
+            this.launchHeld = false;
+            this.statusBackdrop = undefined;
+            this.rootRouteKey = readRootRouteKey();
+            this.handleResize = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                const target = this.currentTarget ?? this.statusBackdrop?.target;
+                if (target) {
+                    this.restoreStatusBackdrop();
+                    this.syncStatusBackdrop(target);
+                }
+                this.queueScan();
+            };
+            this.handleRouteChange = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
+                    activeRouteText().toLowerCase().includes("#quickaccess")))
+                    this.exitCleanViewing();
+                if (this.checkRootRoute())
+                    void this.scan();
+            };
+            this.handleVisibilityChange = () => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                this.failedVisit = undefined;
+                if (document.hidden) {
+                    this.pageEnteredAt = undefined;
+                    this.setHomeSelection(undefined, undefined);
+                    this.cleanupVideo(true);
+                }
+                else {
+                    this.launchHeld = false;
+                    this.pageEnteredAt = undefined;
+                    void this.scan();
+                }
+            };
+            this.handleLaunchIntent = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                this.stopTrailerForLaunch(event.target);
+            };
+            this.handleLaunchKeyDown = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                if (this.cleanViewingOverlay && (event.key === "Escape" || event.key === "Backspace")) {
+                    this.exitCleanViewing();
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    return;
+                }
+                if (event.key === "Enter" || event.key === " ")
+                    this.stopTrailerForLaunch(event.target ?? document.activeElement);
+            };
+            this.steamSideMenuVisible = () => {
+                try {
+                    const store = window.opener?.SteamUIStore?.m_WindowStore ??
+                        window.SteamUIStore?.m_WindowStore;
+                    return store?.GamepadUIMainWindowInstance?.m_MenuStore?.IsAnySideMenuVisible?.() === true;
+                }
+                catch {
+                    return false;
+                }
+            };
+            this.handleGamepadButtonDown = (event) => {
+                if (this.destroyed || !this.settings.enabled)
+                    return;
+                const button = Number(event?.detail?.button);
+                if (event?.detail?.is_repeat || this.steamSideMenuVisible())
+                    return;
+                const editable = (element) => element instanceof HTMLElement && Boolean(element.closest("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']"));
+                if (editable(event.target) || editable(document.activeElement))
+                    return;
+                const overlayVisible = Array.from(document.querySelectorAll("[role='dialog'],[role='menu']"))
+                    .some((element) => {
+                    if (!(element instanceof HTMLElement) || element.hidden ||
+                        element.getAttribute("aria-hidden") === "true")
+                        return false;
+                    const rect = element.getBoundingClientRect();
+                    const style = getComputedStyle(element);
+                    return rect.width > 0 && rect.height > 0 && style.display !== "none" &&
+                        style.visibility !== "hidden";
+                });
+                if (overlayVisible)
+                    return;
+                let handled = false;
+                if (button === 4)
+                    handled = this.toggleCleanViewing();
+                else if (button === 2 && this.cleanViewingOverlay) {
+                    this.exitCleanViewing();
+                    handled = true;
+                }
+                else if (button === 3 && Date.now() - this.lastSecondaryPressAt >= 350 &&
+                    this.toggleTrailerAudio()) {
+                    this.lastSecondaryPressAt = Date.now();
+                    handled = true;
+                }
+                if (!handled)
+                    return;
+                event.preventDefault?.();
+                event.stopPropagation?.();
+                event.stopImmediatePropagation?.();
+            };
+        }
+        resolveHomeStyles() {
+            if (this.homeStyles)
+                return this.homeStyles;
+            const predicate = (module) => typeof module?.RecentGamesContainer === "string" &&
+                (typeof module?.RecentGamesBackgroundImages === "string" ||
+                    typeof module?.RecentGamesBackgroundContainer === "string") ? module : undefined;
+            for (const candidate of [window.opener, window, window.parent]) {
+                try {
+                    const styles = candidate?.DFL?.findModuleChild?.(predicate);
+                    const translated = candidate?.__DECKY_METADATA_NATIVE_CLASSES__;
+                    const rawContainer = styles?.RecentGamesContainer || translated?.recentGamesContainer;
+                    const rawBackground = styles?.RecentGamesBackgroundImages || translated?.recentGamesBackgroundImages;
+                    const rawBackgroundFallback = styles?.RecentGamesBackgroundContainer || translated?.recentGamesBackgroundContainer;
+                    if (!rawContainer || (!rawBackground && !rawBackgroundFallback))
+                        continue;
+                    const escape = (value) => typeof CSS !== "undefined" && typeof CSS.escape === "function"
+                        ? CSS.escape(value) : /^[A-Za-z_][A-Za-z0-9_-]*$/.test(value) ? value : "";
+                    const container = escape(rawContainer);
+                    const backgrounds = [rawBackground, rawBackgroundFallback]
+                        .map((value) => value ? escape(value) : "")
+                        .filter(Boolean)
+                        .map((value) => `.${value}`);
+                    if (!container || !backgrounds.length)
+                        continue;
+                    this.homeStyles = { container: `.${container}`, backgrounds };
+                    return this.homeStyles;
+                }
+                catch { }
+            }
+            return undefined;
+        }
+        isHomeRoute() {
+            return /^\/library\/home$/i.test(readRootRouteKey());
+        }
+        getHomeCardAppId(card) {
+            const styles = this.resolveHomeStyles();
+            if (!styles || !card?.isConnected || !card.closest?.(styles.container) ||
+                !card.querySelector?.("[role='link']"))
+                return undefined;
+            return coerceAppId(card.getAttribute("data-id"));
+        }
+        refreshHomeSelection() {
+            if (!this.homeMonitoring || this.destroyed)
+                return;
+            const owner = findOwnerRecord();
+            if (!this.settings.enabled || !this.settings.homeEnabled || owner?.active !== true ||
+                owner.ownerId !== this.ownerId || owner.settings?.enabled !== true ||
+                owner.settings?.homeEnabled !== true || !this.isHomeRoute() || document.hidden ||
+                document.hasFocus?.() === false || this.steamSideMenuVisible() || this.launchHeld ||
+                document.activeElement?.closest?.("input,textarea,select,[contenteditable],[role='dialog'],[role='menu']")) {
+                this.setHomeSelection(undefined, undefined);
+                return;
+            }
+            let card;
+            if (this.homeInputMode === "pointer") {
+                card = this.homePointerCard;
+            }
+            else if (document.activeElement?.classList?.contains("gpfocus")) {
+                card = document.activeElement.closest?.("[data-id]");
+            }
+            this.setHomeSelection(this.getHomeCardAppId(card), card);
+        }
+        setHomeSelection(appId, card) {
+            card = appId ? card : undefined;
+            if (this.homeAppId === appId && this.homeCard === card)
+                return;
+            this.homeAppId = appId;
+            this.homeCard = card;
+            this.homeSelectionRevision += 1;
+            this.homeEnteredAt = Date.now();
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
+            this.failedVisit = undefined;
+            this.cleanupVideo(true);
+            const target = findOwnerWindow();
+            const owner = target?.__deckyMetadataTrailerOwner;
+            if (owner?.ownerId !== this.ownerId || owner.active !== true)
+                return;
+            const detail = { ownerId: this.ownerId, settingsRevision: owner.settingsRevision,
+                appId: appId ?? null, selectionRevision: this.homeSelectionRevision, enteredAt: this.homeEnteredAt };
+            try {
+                target.dispatchEvent(new target.CustomEvent(homeSelectionEvent, { detail }));
+            }
+            catch { }
+        }
+        startHomeTracking() {
+            if (this.homeMonitoring || !this.monitoring || !this.settings.homeEnabled)
+                return;
+            this.homeMonitoring = true;
+            const styles = this.resolveHomeStyles();
+            this.homePointerCard = styles
+                ? document.querySelector(`${styles.container} [data-id]:hover`) ?? undefined : undefined;
+            this.homeInputMode = this.homePointerCard && !document.activeElement?.classList?.contains("gpfocus")
+                ? "pointer" : "controller";
+            document.addEventListener("pointermove", this.handleHomePointerMove, true);
+            document.addEventListener("pointerout", this.handleHomePointerOut, true);
+            document.addEventListener("focusin", this.handleHomeFocus, true);
+            document.addEventListener("focusout", this.handleHomeFocus, true);
+            document.addEventListener("keydown", this.handleHomeKeyDown, true);
+            document.addEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.addEventListener("blur", this.handleHomeFocus);
+            this.refreshHomeSelection();
+        }
+        stopHomeTracking() {
+            this.homeMonitoring = false;
+            document.removeEventListener("pointermove", this.handleHomePointerMove, true);
+            document.removeEventListener("pointerout", this.handleHomePointerOut, true);
+            document.removeEventListener("focusin", this.handleHomeFocus, true);
+            document.removeEventListener("focusout", this.handleHomeFocus, true);
+            document.removeEventListener("keydown", this.handleHomeKeyDown, true);
+            document.removeEventListener("vgp_onbuttondown", this.handleHomeGamepadInput, true);
+            window.removeEventListener("blur", this.handleHomeFocus);
+            this.homePointerCard = undefined;
+            this.homePointerX = undefined;
+            this.homePointerY = undefined;
+            this.setHomeSelection(undefined, undefined);
+        }
+        homeIdentityIsCurrent() {
+            const owner = findOwnerRecord();
+            return this.settings.homeEnabled && owner?.settings?.enabled === true &&
+                owner.settings.homeEnabled === true && this.isHomeRoute() && !document.hidden &&
+                document.hasFocus?.() !== false && !this.steamSideMenuVisible() &&
+                this.identity?.view === "home" && this.homeAppId === this.identity.pageAppId &&
+                this.homeSelectionRevision === this.identity.selectionRevision && this.homeCard?.isConnected;
+        }
+        findHomeBackground() {
+            const styles = this.resolveHomeStyles();
+            if (!styles)
+                return undefined;
+            const container = this.homeCard?.closest?.(styles.container);
+            let element;
+            for (const selector of styles.backgrounds) {
+                const candidate = container?.querySelector?.(selector);
+                if (candidate?.isConnected) {
+                    element = candidate;
+                    break;
+                }
+            }
+            if (!element)
+                return undefined;
+            const rect = element.getBoundingClientRect();
+            return rect.width > 0 && rect.height > 0 ? { appId: this.homeAppId, element } : undefined;
+        }
+        reservedBandHeight(target) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height"))
+                return 0;
+            const value = Number.parseFloat(style.getPropertyValue("--sdh-status-band-height") || "30");
+            return Number.isFinite(value) ? Math.max(0, value) : 0;
+        }
+        reserveThemeBand(target, height) {
+            const style = getComputedStyle(target);
+            if (style.getPropertyValue?.("--sdh-status-band-reserved") !== "1" ||
+                !style.getPropertyValue("--CGV-image-height") || !nativeBackgroundClass)
+                return;
+            const background = target.closest?.("." + nativeBackgroundClass);
+            if (!background)
+                return;
+            if (this.reservationBackground !== background)
+                this.releaseThemeBand();
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations ?? (host.__sdhStatusBandReservations = new WeakMap());
+            let reservation = reservations.get(background);
+            if (!reservation) {
+                reservation = {
+                    original: background.style.getPropertyValue("--sdh-status-band-height"),
+                    priority: background.style.getPropertyPriority("--sdh-status-band-height"),
+                    owner: this
+                };
+                reservations.set(background, reservation);
+            }
+            reservation.owner = this;
+            this.reservationBackground = background;
+            const value = height + "px";
+            if (background.style.getPropertyValue("--sdh-status-band-height") !== value ||
+                background.style.getPropertyPriority("--sdh-status-band-height") !== "") {
+                background.style.setProperty("--sdh-status-band-height", value);
+            }
+        }
+        releaseThemeBand() {
+            const background = this.reservationBackground;
+            this.reservationBackground = undefined;
+            if (!background)
+                return;
+            const host = background.ownerDocument?.defaultView ?? window;
+            const reservations = host.__sdhStatusBandReservations;
+            const reservation = reservations?.get(background);
+            if (reservation?.owner !== this)
+                return;
+            if (reservation.original)
+                background.style.setProperty("--sdh-status-band-height", reservation.original, reservation.priority);
+            else
+                background.style.removeProperty("--sdh-status-band-height");
+            reservations.delete(background);
+        }
+        restoreStatusBackdrop() {
+            const backdrop = this.statusBackdrop;
+            if (!backdrop)
+                return;
+            this.statusBackdrop = undefined;
+            backdrop.target.style.setProperty("height", backdrop.inlineHeight, backdrop.priority);
+        }
+        statusBandLayoutHeight(element, hero, edge) {
+            if (!isStatusBand(element) || !element.textContent?.trim())
+                return 0;
+            const band = element.getBoundingClientRect();
+            if (element.offsetHeight <= 0 || Math.abs(band.top - edge) > 1 ||
+                Math.abs(band.width - hero.width) > 2)
+                return 0;
+            const style = getComputedStyle(element);
+            const ownSuppression = element.getAttribute?.("data-sdh-ludusavi-paint-suppressed") === "true";
+            if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                (style.opacity !== undefined && Number(style.opacity) <= 0 && !ownSuppression) ||
+                style.position === "absolute" || style.position === "fixed" || style.position === "sticky")
+                return 0;
+            return element.offsetHeight;
+        }
+        syncStatusBackdrop(target) {
+            if (this.statusBackdrop?.target !== target)
+                this.restoreStatusBackdrop();
+            if (!target?.style || typeof document.elementFromPoint !== "function")
+                return;
+            const layoutHeight = target.offsetHeight;
+            if (layoutHeight <= 0) {
+                this.restoreStatusBackdrop();
+                return;
+            }
+            const hero = target.getBoundingClientRect();
+            // Steam scales the page on entry; only hit-testing uses screen heights.
+            const scaleY = hero.height / layoutHeight;
+            const naturalHeight = this.statusBackdrop?.naturalHeight ?? layoutHeight - this.reservedBandHeight(target);
+            const edge = hero.top + naturalHeight * scaleY;
+            const hit = document.elementFromPoint(hero.left + hero.width / 2, edge + 4);
+            let element = hit;
+            let bandHeight = 0;
+            let reservationHeight = 0;
+            let hasStatusBand = false;
+            while (element && element !== document.body) {
+                if (isStatusBand(element))
+                    hasStatusBand = true;
+                const height = this.statusBandLayoutHeight(element, hero, edge);
+                if (height) {
+                    reservationHeight = height;
+                    if (isPaintedStatusBand(element, target)) {
+                        bandHeight = height;
+                        break;
+                    }
+                }
+                element = element.parentElement;
+            }
+            if (!reservationHeight) {
+                // Occlusion must not change layout; on-page cover still blocks paint.
+                isStatusBand(target);
+                const selector = '[data-sdh-ludusavi-status-row="true"]' +
+                    (nativeStatusRowClass ? ",." + nativeStatusRowClass : "");
+                for (const row of document.querySelectorAll(selector)) {
+                    hasStatusBand = true;
+                    reservationHeight = this.statusBandLayoutHeight(row, hero, edge);
+                    if (!reservationHeight)
+                        continue;
+                    // Steam's outgoing page covers the entering one for its first frames; that cover is not occlusion.
+                    let page = row.parentElement;
+                    while (page && !page.contains(target))
+                        page = page.parentElement;
+                    if (hit && page && !page.contains(hit) && isPaintedStatusBand(row, target))
+                        bandHeight = reservationHeight;
+                    break;
+                }
+            }
+            if (!bandHeight) {
+                this.restoreStatusBackdrop();
+                if (hasStatusBand)
+                    this.reserveThemeBand(target, reservationHeight);
+                else
+                    this.releaseThemeBand();
+                return;
+            }
+            this.reserveThemeBand(target, bandHeight);
+            if (this.statusBackdrop?.bandHeight === bandHeight)
+                return;
+            if (this.statusBackdrop) {
+                this.statusBackdrop.bandHeight = bandHeight;
+            }
+            else {
+                this.statusBackdrop = {
+                    target, naturalHeight, bandHeight,
+                    inlineHeight: target.style.getPropertyValue("height"),
+                    priority: target.style.getPropertyPriority("height")
+                };
+            }
+            // Extend the clipped artwork and trailer, not Steam's play-section layout.
+            target.style.setProperty("height", `${naturalHeight + bandHeight}px`, "important");
+        }
+        syncDetailBackdrop(target) {
+            if (this.identity?.view !== "home")
+                this.syncStatusBackdrop(target);
+        }
+        // The current detail route's hero; nothing when this runtime does not paint that route.
+        routeHero(within) {
+            if (!this.settings.enabled || !this.settings.detailEnabled || this.isHomeRoute())
+                return undefined;
+            const appId = detectLocationAppId();
+            const hero = appId ? findHeroCandidate(appId, within) : undefined;
+            return hero && hero.appId === appId ? hero : undefined;
+        }
+        // cleanupVideo restores the inline height, so a band kept for this hero is detached and re-attached around it.
+        // Route-derived: playback still needs identity, but the band must not wait for it, and a repeat scan writes nothing.
+        syncRouteBackdrop(hero = this.routeHero()) {
+            const keep = hero && this.statusBackdrop?.target === hero.element ? this.statusBackdrop : undefined;
+            if (keep)
+                this.statusBackdrop = undefined;
+            this.cleanupVideo(true);
+            if (keep)
+                this.statusBackdrop = keep;
+            if (hero)
+                this.syncStatusBackdrop(hero.element);
+        }
+        // The queued scan lands after Steam's entry animation; size the art while the page is still entering.
+        syncEarlyBackdrop() {
+            const appId = detectLocationAppId();
+            const now = Date.now();
+            if (this.earlyBackdrop?.appId !== appId)
+                this.earlyBackdrop = { appId, until: now + earlyBackdropMs };
+            if (!appId || now > this.earlyBackdrop.until)
+                return;
+            // The same stops as scan(): a held launch, a hidden page, or TrailerHero owning the art.
+            if (this.launchHeld || document.hidden || otherTrailerPluginActive())
+                return;
+            isStatusBand(document.body); // resolves Steam's class names
+            // Library Home's background can show the same hero while it leaves; only the game page's header art counts.
+            const hero = this.routeHero(nativeBackgroundClass && "." + nativeBackgroundClass);
+            if (hero && this.statusBackdrop?.target !== hero.element)
+                this.syncStatusBackdrop(hero.element);
+        }
+        mount() {
+            this.mounted = true;
+            this.installStyle();
+            this.cleanupVideo();
+            this.startMonitoring();
+            if (this.settings.enabled)
+                void this.scan();
+        }
+        startMonitoring() {
+            if (!this.mounted || this.monitoring || this.destroyed || !this.settings.enabled)
+                return;
+            this.monitoring = true;
+            const generation = this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
+            const isCurrent = () => this.monitoring && !this.destroyed && this.settings.enabled &&
+                generation === this.monitoringGeneration;
+            if (document.body) {
+                this.observer = new MutationObserver((mutations) => {
+                    if (!isCurrent())
+                        return;
+                    if (this.settings.homeEnabled && mutations.some((mutation) => mutation.type === "childList" || mutation.attributeName === "class"))
+                        this.refreshHomeSelection();
+                    if (mutations.some((mutation) => this.shouldQueueScanForMutation(mutation))) {
+                        this.queueScan();
+                        this.syncEarlyBackdrop();
+                    }
+                });
+                this.observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["style", "src", "href", "class"] });
+                if (document.head) {
+                    this.themeObserver = new MutationObserver(() => { if (isCurrent())
+                        this.handleResize(); });
+                    this.themeObserver.observe(document.head, { childList: true, characterData: true, subtree: true, attributes: true });
+                }
+            }
+            document.addEventListener("pointerdown", this.handleLaunchIntent, true);
+            document.addEventListener("click", this.handleLaunchIntent, true);
+            document.addEventListener("keydown", this.handleLaunchKeyDown, true);
+            document.addEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
+            this.routeWindows = [window];
+            try {
+                if (window.opener && new URL(window.opener.location.href).hostname === "steamloopback.host") {
+                    this.routeWindows.push(window.opener);
+                }
+            }
+            catch { }
+            for (const routeWindow of this.routeWindows) {
+                routeWindow.addEventListener("hashchange", this.handleRouteChange);
+                routeWindow.addEventListener("popstate", this.handleRouteChange);
+            }
+            window.addEventListener("resize", this.handleResize);
+            document.addEventListener("visibilitychange", this.handleVisibilityChange);
+            this.scanTimer = window.setInterval(() => {
+                if (isCurrent() && !document.hidden)
+                    void this.scan();
+            }, routeScanIntervalMs);
+            this.startHomeTracking();
+        }
+        update(nextSettings, revision = this.settingsRevision, nextIdentity = this.identity, nextFallback) {
+            if (Number.isSafeInteger(revision) && revision < this.settingsRevision)
+                return this.snapshot();
+            const previous = this.settings;
+            const previousIdentity = this.identity;
+            const previousFallback = this.ignFallback;
+            this.settings = normalizeSettings(nextSettings);
+            this.settingsRevision = Number.isSafeInteger(revision) && revision >= 0 ? revision : this.settingsRevision;
+            activeRevision = this.settingsRevision;
+            this.identity = normalizeIdentity(nextIdentity);
+            activeIdentity = this.identity;
+            const identityChanged = previousIdentity?.view !== this.identity?.view ||
+                previousIdentity?.pageAppId !== this.identity?.pageAppId ||
+                previousIdentity?.sourceAppId !== this.identity?.sourceAppId ||
+                previousIdentity?.selectionRevision !== this.identity?.selectionRevision;
+            this.ignFallback = normalizeIgnFallback(arguments.length >= 4 ? nextFallback :
+                identityChanged ? undefined : previousFallback);
+            const fallbackChanged = (previousFallback === undefined) !== (this.ignFallback === undefined) ||
+                (previousFallback === null) !== (this.ignFallback === null);
+            if (identityChanged) {
+                this.steamUnavailable = false;
+                this.needsIgnFallback = false;
+                this.failedVisit = undefined;
+                this.pageEnteredAt = this.identity?.view === "home" ? this.identity.enteredAt : Date.now();
+                this.syncRouteBackdrop();
+            }
+            if (fallbackChanged && !identityChanged) {
+                this.failedVisit = undefined;
+                this.needsIgnFallback = false;
+                if (this.ignFallback === undefined) {
+                    this.steamUnavailable = false;
+                    this.syncRouteBackdrop();
+                }
+            }
+            if (previous.audioEnabled !== this.settings.audioEnabled)
+                this.setTrailerAudioEnabled(this.settings.audioEnabled, false);
+            if (previous.hideLogoDuringTrailer !== this.settings.hideLogoDuringTrailer)
+                this.syncLogoVisibility();
+            if (!this.settings.enabled) {
+                this.stopMonitoring();
+                this.pageEnteredAt = undefined;
+                this.cleanupVideo(true);
+                this.releaseThemeBand();
+                this.status = rt("disabled");
+                return this.snapshot();
+            }
+            if (!previous.enabled) {
+                this.startMonitoring();
+                this.launchHeld = false;
+                this.failedVisit = undefined;
+                this.steamUnavailable = false;
+                this.needsIgnFallback = false;
+                this.pageEnteredAt = undefined;
+            }
+            if (this.settings.homeEnabled)
+                this.startHomeTracking();
+            else if (this.homeMonitoring)
+                this.stopHomeTracking();
+            const delayChanged = this.identity?.view === "home"
+                ? previous.homeFadeInDelaySeconds !== this.settings.homeFadeInDelaySeconds
+                : previous.detailFadeInDelaySeconds !== this.settings.detailFadeInDelaySeconds;
+            if (delayChanged && this.currentVideo && this.currentTarget && this.activeCandidate) {
+                this.scheduleTrailerReveal(this.activeCandidate, this.currentVideo, this.currentTarget);
+            }
+            this.refreshDisplayTarget();
+            void this.scan();
+            return this.snapshot();
+        }
+        refreshDisplayTarget() {
+            this.displaySize = readPlaybackDisplaySize(window);
+            const targetHeight = resolveQualityTarget(this.settings.quality, this.displaySize);
+            if (this.targetHeight === targetHeight)
+                return;
+            this.targetHeight = targetHeight;
+            this.failedVisit = undefined;
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
+            this.pageEnteredAt = Date.now();
+            this.cleanupVideo(true);
+        }
+        checkRootRoute() {
+            const key = readRootRouteKey();
+            if (key === this.rootRouteKey)
+                return false;
+            this.rootRouteKey = key;
+            this.launchHeld = false;
+            this.steamUnavailable = false;
+            this.needsIgnFallback = false;
+            this.failedVisit = undefined;
+            this.pageEnteredAt = undefined;
+            this.cleanupVideo(true);
+            return true;
+        }
+        snapshot() {
+            const video = this.currentVideo;
+            return {
+                appId: this.currentAppId,
+                sourceAppId: this.identity?.sourceAppId,
+                status: this.status,
+                trailerName: this.currentTrailerName,
+                gameTitle: this.currentGameTitle,
+                trailerAudioEnabled: this.trailerAudioEnabled,
+                quality: this.settings.quality,
+                displayWidth: this.displaySize?.width ?? null,
+                displayHeight: this.displaySize?.height ?? null,
+                targetHeight: this.targetHeight,
+                needsIgnFallback: this.needsIgnFallback,
+                // Still resolving or starting a source; bridge-only polling continues until this clears.
+                pending: this.pendingRequestToken !== undefined ||
+                    Boolean(video?.isConnected && !video.classList?.contains(visibleClass) &&
+                        !this.failedVisit && !this.needsIgnFallback)
+            };
+        }
+        destroy() {
+            this.destroyed = true;
+            this.stopMonitoring();
+            this.cleanupVideo(true);
+            this.releaseThemeBand();
+            document.getElementById(styleId)?.remove();
+        }
+        stopMonitoring() {
+            this.monitoring = false;
+            this.stopHomeTracking();
+            this.monitoringGeneration = (this.monitoringGeneration || 0) + 1;
+            this.observer?.disconnect();
+            this.themeObserver?.disconnect();
+            this.observer = undefined;
+            this.themeObserver = undefined;
+            if (this.scanTimer)
+                window.clearInterval(this.scanTimer);
+            if (this.queuedScanTimer)
+                window.clearTimeout(this.queuedScanTimer);
+            this.scanTimer = undefined;
+            this.queuedScanTimer = undefined;
+            this.scanQueued = false;
+            for (const routeWindow of this.routeWindows ?? []) {
+                routeWindow.removeEventListener("hashchange", this.handleRouteChange);
+                routeWindow.removeEventListener("popstate", this.handleRouteChange);
+            }
+            this.routeWindows = [];
+            window.removeEventListener("resize", this.handleResize);
+            document.removeEventListener("pointerdown", this.handleLaunchIntent, true);
+            document.removeEventListener("click", this.handleLaunchIntent, true);
+            document.removeEventListener("keydown", this.handleLaunchKeyDown, true);
+            document.removeEventListener("vgp_onbuttondown", this.handleGamepadButtonDown, true);
+            document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+        }
+        installStyle() {
+            let style = document.getElementById(styleId);
+            if (!style) {
+                style = document.createElement("style");
+                style.id = styleId;
+                document.head.appendChild(style);
+            }
+            style.textContent = createStyle();
+        }
+        shouldQueueScanForMutation(mutation) {
+            const target = mutation.target instanceof HTMLElement ? mutation.target : undefined;
+            if (target?.closest(`.${videoClass}`))
+                return false;
+            if (mutation.type === "attributes" && target) {
+                const assetText = getElementAssetText(target).toLowerCase();
+                return assetText.includes("library_hero") || assetText.includes("_hero") || assetText.includes("customimages");
+            }
+            return true;
+        }
+        stopTrailerForLaunch(target) {
+            if (!this.currentAppId || !isLaunchActionElement(target))
+                return;
+            this.launchHeld = true;
+            this.pageEnteredAt = undefined;
+            this.cleanupVideo(true);
+            this.status = rt("stoppedForLaunch");
+        }
+        stopAudioFade() {
+            if (this.audioFadeTimer)
+                window.clearInterval(this.audioFadeTimer);
+            this.audioFadeTimer = undefined;
+        }
+        applyCurrentMediaAudioState(fadeIn = false) {
+            this.stopAudioFade();
+            const video = this.currentVideo;
+            if (!video)
+                return;
+            const audible = this.identity?.view !== "home" && this.trailerAudioEnabled &&
+                this.currentMediaReady === true && video.classList.contains(visibleClass);
+            video.volume = audible && !fadeIn ? 1 : 0;
+            video.muted = !audible;
+            video.defaultMuted = !audible;
+            if (!audible || !fadeIn)
+                return;
+            const startedAt = Date.now();
+            this.audioFadeTimer = window.setInterval(() => {
+                if (this.currentVideo !== video || !video.isConnected) {
+                    this.stopAudioFade();
+                    return;
+                }
+                video.volume = Math.min(1, (Date.now() - startedAt) / audioFadeDurationMs);
+                if (video.volume === 1)
+                    this.stopAudioFade();
+            }, 50);
+        }
+        dispatchAudioChange() {
+            const detail = { ownerId: this.ownerId, settingsRevision: this.settingsRevision, audioEnabled: this.trailerAudioEnabled };
+            const targets = [window];
+            try {
+                if (window.opener && !targets.includes(window.opener))
+                    targets.push(window.opener);
+            }
+            catch { }
+            for (const target of targets) {
+                try {
+                    target.dispatchEvent(new target.CustomEvent(audioChangeEvent, { detail }));
+                }
+                catch { }
+            }
+        }
+        setTrailerAudioEnabled(enabled, notify = true) {
+            if (typeof enabled !== "boolean")
+                return false;
+            const changed = this.trailerAudioEnabled !== enabled;
+            this.trailerAudioEnabled = enabled;
+            this.settings = { ...this.settings, audioEnabled: enabled };
+            this.applyCurrentMediaAudioState();
+            this.updateTrailerHints();
+            if (notify && changed)
+                this.dispatchAudioChange();
+            return true;
+        }
+        toggleTrailerAudio() {
+            if (!isProbablyGameDetailsPage() || !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass))
+                return false;
+            return this.setTrailerAudioEnabled(!this.trailerAudioEnabled);
+        }
+        toggleCleanViewing() {
+            if (this.cleanViewingOverlay) {
+                this.exitCleanViewing();
+                return true;
+            }
+            const video = this.currentVideo;
+            if (!video?.isConnected || !video.classList.contains(visibleClass) ||
+                !isProbablyGameDetailsPage() || !document.body)
+                return false;
+            const overlay = document.createElement("div");
+            overlay.className = cleanViewClass;
+            Object.assign(overlay.style, {
+                position: "fixed", inset: "0", background: "#000", zIndex: "2147483646"
+            });
+            overlay.addEventListener("click", () => this.exitCleanViewing());
+            document.body.appendChild(overlay);
+            overlay.appendChild(video);
+            this.cleanViewingOverlay = overlay;
+            return true;
+        }
+        exitCleanViewing() {
+            const overlay = this.cleanViewingOverlay;
+            if (!overlay)
+                return;
+            this.cleanViewingOverlay = undefined;
+            if (this.currentVideo?.parentElement === overlay && this.currentTarget?.isConnected) {
+                this.currentTarget.insertBefore(this.currentVideo, this.currentTarget.firstChild);
+            }
+            overlay.remove();
+        }
+        removeTrailerHints() {
+            document.getElementById(audioHintId)?.remove();
+            document.getElementById(viewHintId)?.remove();
+        }
+        updateTrailerHints() {
+            const hasVideo = Boolean(this.currentVideo?.isConnected &&
+                this.currentVideo.classList.contains(visibleClass) && isProbablyGameDetailsPage());
+            if (!hasVideo) {
+                this.removeTrailerHints();
+                return;
+            }
+            const footer = document.querySelector("#Footer > div");
+            if (!(footer instanceof HTMLElement))
+                return;
+            const nativeActions = Array.from(footer.children).filter((element) => element.id !== audioHintId && element.id !== viewHintId);
+            const template = nativeActions.find((element) => /_button_[ab](?=[./?#]|$)/i.test(element.querySelector("img")?.src ?? "")) ?? nativeActions.find((element) => element.querySelector("img"));
+            const nativeGlyph = template?.querySelector("img");
+            const nativeGlyphSrc = nativeGlyph?.src ?? "";
+            const nativeButtonToken = /_button_[a-z0-9]+(?=[./?#]|$)/i;
+            const nativeLabel = Array.from(template?.children ?? []).find((element) => !element.querySelector("img"));
+            if (!(template instanceof HTMLElement) || !nativeGlyph?.parentElement || !nativeLabel)
+                return;
+            if (!nativeButtonToken.test(nativeGlyphSrc)) {
+                this.removeTrailerHints();
+                return;
+            }
+            for (const [id, button, labelText] of [
+                [audioHintId, "x", rt(this.trailerAudioEnabled ? "muteTrailer" : "audio")],
+                [viewHintId, "y", rt("expandTrailer")],
+            ]) {
+                let hint = document.getElementById(id);
+                if (!hint || hint.parentElement !== footer) {
+                    hint?.remove();
+                    hint = document.createElement("div");
+                    hint.id = id;
+                    hint.className = template.className;
+                    hint.style.pointerEvents = "none";
+                    hint.setAttribute("aria-hidden", "true");
+                    const iconContainer = document.createElement("div");
+                    iconContainer.className = nativeGlyph.parentElement.className;
+                    const glyph = document.createElement("img");
+                    glyph.className = nativeGlyph.className;
+                    glyph.src = nativeGlyphSrc.replace(nativeButtonToken, `_button_${button}`);
+                    glyph.alt = "";
+                    iconContainer.appendChild(glyph);
+                    const label = document.createElement("div");
+                    label.className = `${nativeLabel.className} decky-metadata-trailer-hint-label`;
+                    hint.append(iconContainer, label);
+                    const firstAction = Array.from(footer.children).find((element) => element.querySelector("img[src*='shared_button_a']"));
+                    footer.insertBefore(hint, firstAction ?? null);
+                }
+                const label = hint.querySelector(".decky-metadata-trailer-hint-label");
+                if (label)
+                    label.textContent = labelText;
+            }
+        }
+        restoreLogo() {
+            this.hiddenLogo?.classList.remove(logoHiddenClass);
+            this.hiddenLogo = undefined;
+        }
+        syncLogoVisibility() {
+            const appId = this.currentAppId;
+            if (!this.settings.enabled || !this.settings.hideLogoDuringTrailer ||
+                !this.currentVideo?.isConnected || !this.currentVideo.classList.contains(visibleClass) ||
+                !this.currentTarget || !appId || this.identity?.pageAppId !== appId ||
+                detectLocationAppId() !== appId) {
+                this.restoreLogo();
+                return;
+            }
+            const logo = findGameLogo(appId, this.currentTarget);
+            if (this.hiddenLogo === logo) {
+                if (logo && !logo.classList.contains(logoHiddenClass))
+                    logo.classList.add(logoHiddenClass);
+                return;
+            }
+            this.restoreLogo();
+            if (logo) {
+                logo.classList.add(logoHiddenClass);
+                this.hiddenLogo = logo;
+            }
+        }
+        queueScan() {
+            if (this.scanQueued || this.destroyed || !this.settings.enabled)
+                return;
+            this.scanQueued = true;
+            const generation = this.monitoringGeneration;
+            this.queuedScanTimer = window.setTimeout(() => {
+                if (generation !== this.monitoringGeneration)
+                    return;
+                this.queuedScanTimer = undefined;
+                this.scanQueued = false;
+                if (!this.destroyed && this.settings.enabled)
+                    void this.scan();
+            }, queuedScanDelayMs);
+        }
+        async scan() {
+            if (this.destroyed || !this.settings.enabled)
+                return;
+            if (this.reservationBackground?.isConnected === false)
+                this.releaseThemeBand();
+            const owner = findOwnerRecord();
+            if (!activeOwnerId || !owner || owner.ownerId !== activeOwnerId || owner.active !== true) {
+                this.destroy();
+                if (window[runtimeKey] === this)
+                    delete window[runtimeKey];
+                return;
+            }
+            if (Number.isSafeInteger(owner.settingsRevision) && owner.settingsRevision > this.settingsRevision) {
+                this.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
+                return;
+            }
+            if (this.cleanViewingOverlay && (this.steamSideMenuVisible() ||
+                !this.cleanViewingOverlay.isConnected ||
+                activeRouteText().toLowerCase().includes("#quickaccess")))
+                this.exitCleanViewing();
+            this.refreshDisplayTarget();
+            this.checkRootRoute();
+            if (this.homeMonitoring)
+                this.refreshHomeSelection();
+            if (!this.settings.enabled) {
+                this.cleanupVideo(true);
+                this.releaseThemeBand();
+                this.status = rt("disabled");
+                return;
+            }
+            if (document.hidden) {
+                this.cleanupVideo(true);
+                return;
+            }
+            if (otherTrailerPluginActive()) {
+                this.cleanupVideo(true);
+                this.status = rt("otherPluginActive");
+                return;
+            }
+            if (this.launchHeld) {
+                if (this.currentVideo?.isConnected)
+                    this.cleanupVideo(true);
+                this.status = rt("stoppedForLaunch");
+                return;
+            }
+            const home = this.isHomeRoute() && this.settings.homeEnabled;
+            // Route-derived, not identity-derived: the status band must not wait for the identity poll.
+            if (!document.body || (!home && (!this.settings.detailEnabled || !detectLocationAppId()))) {
+                this.failedVisit = undefined;
+                this.currentAppId = undefined;
+                this.currentGameTitle = undefined;
+                this.currentTrailerName = undefined;
+                this.cleanupVideo(true);
+                this.status = rt("waitingGamePage");
+                return;
+            }
+            const appId = home ? this.homeAppId : detectLocationAppId();
+            const hero = home ? this.findHomeBackground() : appId ? findHeroCandidate(appId) : undefined;
+            if (!appId || !this.identity || this.identity.pageAppId !== appId ||
+                (home && !this.homeIdentityIsCurrent()) || (!home && this.identity.view !== "detail") ||
+                !hero || hero.appId !== appId) {
+                this.needsIgnFallback = false;
+                this.currentAppId = undefined;
+                this.failedVisit = undefined;
+                // Identity can arrive a poll interval late; the art takes its band height now instead of after it.
+                this.syncRouteBackdrop(!home && hero?.appId === appId ? hero : undefined);
+                this.status = rt(home && this.homeAppId ? "waitingHomeDelay" : home ? "waitingHomeSelection" : "waitingGamePage");
+                return;
+            }
+            if (this.needsIgnFallback && this.ignFallback === undefined &&
+                this.currentAppId === appId && this.currentTarget === hero.element)
+                return;
+            if (this.failedVisit?.appId === appId && this.failedVisit?.hero === hero.element)
+                return;
+            if (this.currentTarget === hero.element && this.currentAppId === appId && this.currentMediaSignature === this.getDesiredMediaSignature() && this.currentVideo?.isConnected) {
+                if (!home)
+                    this.syncStatusBackdrop(hero.element);
+                this.resumeVisiblePausedVideo(appId, hero.element);
+                this.syncLogoVisibility();
+                if (this.currentVideo?.classList.contains(visibleClass) &&
+                    (!document.getElementById(audioHintId) || !document.getElementById(viewHintId))) {
+                    this.updateTrailerHints();
+                }
+                return;
+            }
+            if (this.pendingAppId === appId && this.pendingTarget === hero.element && this.pendingRequestToken === this.requestToken)
+                return;
+            const priorAppId = this.currentAppId;
+            this.cleanupVideo(true);
+            const token = ++this.requestToken;
+            this.currentAppId = appId;
+            this.currentGameTitle = detectGameTitle(appId);
+            this.pageEnteredAt = home ? this.identity.enteredAt
+                : priorAppId === appId ? (this.pageEnteredAt ?? Date.now()) : Date.now();
+            this.currentTarget = hero.element;
+            // After cleanupVideo, so the art already has its final height when the page paints.
+            this.syncDetailBackdrop(hero.element);
+            this.pendingAppId = appId;
+            this.pendingTarget = hero.element;
+            this.pendingRequestToken = token;
+            this.status = rt("searchTrailerForApp", { appId });
+            const sourceAppId = this.identity.sourceAppId;
+            let trailer, sourceKind = "steam";
+            if (sourceAppId === null || this.steamUnavailable) {
+                sourceKind = "ign";
+            }
+            else {
+                trailer = await this.getTrailer(sourceAppId);
+                if (token !== this.requestToken || this.destroyed || (home && !this.homeIdentityIsCurrent()))
+                    return;
+                if (!trailer.ok || !trailer.candidates?.length) {
+                    this.steamUnavailable = true;
+                    this.trailerCache.delete(sourceAppId);
+                    sourceKind = "ign";
+                }
+            }
+            if (sourceKind === "ign") {
+                if (this.ignFallback === undefined) {
+                    this.needsIgnFallback = true;
+                    this.status = rt("searchIgnTrailer");
+                    this.pendingAppId = undefined;
+                    this.pendingTarget = undefined;
+                    this.pendingRequestToken = undefined;
+                    return;
+                }
+                trailer = this.ignFallback
+                    ? { ok: true, name: this.ignFallback.name, candidates: this.ignFallback.candidates }
+                    : { ok: false, error: rt("noGameTrailer") };
+            }
+            this.needsIgnFallback = false;
+            this.pendingAppId = undefined;
+            this.pendingTarget = undefined;
+            this.pendingRequestToken = undefined;
+            if (!trailer.ok || !trailer.candidates?.length) {
+                // The art keeps its status-band height without a trailer; leaving the page restores it.
+                this.failedVisit = { appId, hero: hero.element };
+                this.releaseThemeBand();
+                this.status = trailer.error || rt("noGameTrailer");
+                return;
+            }
+            this.currentTrailerName = trailer.name;
+            this.attachVideo(hero.element, appId, this.orderCandidates(trailer.candidates), token, { mediaSignature: this.getDesiredMediaSignature(), sourceKind });
+        }
+        resumeVisiblePausedVideo(appId, hero) {
+            const video = this.currentVideo;
+            const candidate = this.activeCandidate;
+            if (!video?.isConnected || !video.paused || !this.currentMediaReady || document.hidden ||
+                this.launchHeld || !this.settings.enabled || !candidate?.isCurrent?.() ||
+                this.resumeAttemptCandidate === candidate)
+                return;
+            this.resumeAttemptCandidate = candidate;
+            let playback;
+            try {
+                playback = video.play();
+            }
+            catch (error) {
+                playback = Promise.reject(error);
+            }
+            Promise.resolve(playback).then(() => {
+                if (!candidate.isCurrent())
+                    return;
+                if (video.paused)
+                    throw new Error("Trailer stayed paused after wake");
+                this.status = this.currentTrailerName
+                    ? rt("trailerLabel", { name: this.currentTrailerName })
+                    : rt("trailerActive");
+                this.updateTrailerHints();
+                this.scheduleTrailerReveal(candidate, video, hero);
+            }).catch(() => {
+                if (!candidate.isCurrent())
+                    return;
+                this.failedVisit = { appId, hero };
+                this.cleanupVideo(true);
+                this.syncDetailBackdrop(hero);
+                this.releaseThemeBand();
+                this.status = rt("autoplayBlocked");
+            });
+        }
+        scheduleTrailerReveal(candidate, video, target) {
+            if (!candidate.isCurrent() || !this.currentMediaReady || video.paused ||
+                video.classList.contains(visibleClass))
+                return;
+            if (this.fadeTimer)
+                window.clearTimeout(this.fadeTimer);
+            const delaySeconds = this.identity?.view === "home"
+                ? this.settings.homeFadeInDelaySeconds : this.settings.detailFadeInDelaySeconds;
+            const delay = Math.max(0, delaySeconds * 1000 - (Date.now() - (this.pageEnteredAt ?? Date.now())));
+            this.fadeTimer = window.setTimeout(() => {
+                this.fadeTimer = undefined;
+                if (!candidate.isCurrent() || video.paused)
+                    return;
+                target.classList.add(readyClass);
+                video.classList.add(visibleClass);
+                this.applyCurrentMediaAudioState(true);
+                this.syncLogoVisibility();
+                this.updateTrailerHints();
+                this.status = this.currentTrailerName ? rt("trailerLabel", { name: this.currentTrailerName }) : rt("trailerActive");
+            }, delay);
+        }
+        getDesiredMediaSignature() {
+            return `${this.identity?.view}:${this.targetHeight}:${this.identity?.sourceAppId || 0}:${this.identity?.selectionRevision ?? 0}`;
+        }
+        async getTrailer(appId) {
+            const cached = this.trailerCache.get(appId);
+            if (cached) {
+                this.trailerCache.delete(appId);
+                this.trailerCache.set(appId, cached);
+                return cached;
+            }
+            const controller = new AbortController();
+            this.metadataController = controller;
+            const timeout = window.setTimeout(() => controller.abort(), 9000);
+            try {
+                const requestUrl = `https://store.steampowered.com/api/appdetails?appids=${appId}&filters=movies`;
+                const response = await fetch(requestUrl, {
+                    signal: controller.signal, cache: "default", redirect: "error"
+                });
+                validateResponseUrl(response, requestUrl);
+                if (!response.ok)
+                    throw new Error(`HTTP ${response.status}`);
+                const payload = JSON.parse(await readBoundedBody(response, MAX_METADATA_BYTES, true));
+                if (controller.signal.aborted)
+                    throw new Error("Steam metadata request stopped");
+                const movies = payload?.[String(appId)]?.data?.movies ?? [];
+                if (!Array.isArray(movies) || !movies.length)
+                    return { ok: false, error: rt("noSteamTrailer") };
+                const movie = movies.find((entry) => entry?.highlight) ?? movies[0];
+                if (!movie?.id)
+                    return { ok: false, error: rt("steamTrailerNotPlayable") };
+                const candidates = [];
+                const add = (url, format, label = "") => {
+                    if (typeof url !== "string")
+                        return;
+                    const safeUrl = safeMediaUrl(url);
+                    if (!safeUrl)
+                        return;
+                    const height = Number(String(label).match(/(?:^|[^0-9])(2160|1440|1080|720|480|360)(?:p|[^0-9]|$)/i)?.[1]
+                        ?? url.match(/movie[_-]?(2160|1440|1080|720|480|360)/i)?.[1] ?? 0);
+                    candidates.push({ url: safeUrl, format, height });
+                };
+                for (const format of ["mp4", "webm"]) {
+                    if (!movie[format] || typeof movie[format] !== "object")
+                        continue;
+                    for (const [label, url] of Object.entries(movie[format]))
+                        add(url, format, label);
+                }
+                for (const format of ["dash_h264", "hls_h264", "dash_av1"])
+                    add(movie[format], format);
+                if (!candidates.length)
+                    return { ok: false, error: rt("steamTrailerNotPlayable") };
+                return this.rememberTrailer(appId, { ok: true, name: movie.name ?? rt("steamTrailer"), candidates });
+            }
+            catch (error) {
+                return { ok: false, error: error instanceof Error ? error.message : rt("steamTrailerNotPlayable") };
+            }
+            finally {
+                window.clearTimeout(timeout);
+                if (this.metadataController === controller)
+                    this.metadataController = undefined;
+            }
+        }
+        rememberTrailer(appId, result) {
+            this.trailerCache.delete(appId);
+            this.trailerCache.set(appId, result);
+            while (this.trailerCache.size > 32)
+                this.trailerCache.delete(this.trailerCache.keys().next().value);
+            return result;
+        }
+        orderCandidates(candidates) {
+            const target = this.targetHeight;
+            const formatRank = { mp4: 0, webm: 1, dash_h264: 0, hls_h264: 1, dash_av1: 2 };
+            const ranked = candidates.filter((candidate) => {
+                if (!safeMediaUrl(candidate.url))
+                    return false;
+                if (candidate.format !== "dash_av1")
+                    return true;
+                return typeof MediaSource !== "undefined" &&
+                    MediaSource.isTypeSupported?.('video/mp4; codecs="av01.0.08M.08"');
+            }).map((candidate, index) => {
+                const adaptive = candidate.format.startsWith("dash_") || candidate.format.startsWith("hls_");
+                const height = candidate.height;
+                const group = !adaptive && height === target ? 0 : adaptive ? 1 : 2;
+                const range = height && height < target ? 0 : !height ? 1 : 2;
+                const distance = range === 0 ? -height : range === 2 ? height : index;
+                return { candidate, index, group, range, distance };
+            });
+            ranked.sort((a, b) => a.group - b.group ||
+                (a.group === 2 ? a.range - b.range || a.distance - b.distance : 0) ||
+                formatRank[a.candidate.format] - formatRank[b.candidate.format] || a.index - b.index);
+            const seen = new Set();
+            return ranked.map((entry) => entry.candidate).filter((candidate) => {
+                if (seen.has(candidate.url))
+                    return false;
+                seen.add(candidate.url);
+                return true;
+            });
+        }
+        attachVideo(target, appId, candidates, token, options = {}) {
+            let index = 0;
+            target.classList.add(this.identity?.view === "home" ? homeTargetClass : targetClass);
+            this.syncDetailBackdrop(target);
+            this.currentTarget = target;
+            this.currentAppId = appId;
+            this.currentMediaSignature = options.mediaSignature ?? this.getDesiredMediaSignature();
+            const clearWatchdog = () => {
+                if (this.candidateWatchdog)
+                    window.clearTimeout(this.candidateWatchdog);
+                this.candidateWatchdog = undefined;
+            };
+            const clearAttempt = () => {
+                clearWatchdog();
+                if (this.fadeTimer)
+                    window.clearTimeout(this.fadeTimer);
+                this.stopAudioFade();
+                this.exitCleanViewing();
+                this.fadeTimer = undefined;
+                this.restoreLogo();
+                this.removeVideoHandlers(this.currentVideo);
+                this.activeCandidate?.controller.abort();
+                this.activeSession?.dispose();
+                this.activeSession = undefined;
+                this.currentMediaReady = false;
+                this.resumeAttemptCandidate = undefined;
+                const video = this.currentVideo;
+                if (video?.isConnected) {
+                    video.pause();
+                    video.removeAttribute("src");
+                    video.load();
+                    video.remove();
+                }
+                this.currentVideo = undefined;
+                this.activeCandidate = undefined;
+                target.classList.remove(readyClass);
+                this.removeTrailerHints();
+            };
+            const tryCandidate = () => {
+                if (token !== this.requestToken || this.destroyed)
+                    return;
+                const source = candidates[index++];
+                if (!source) {
+                    if (options.sourceKind !== "ign" && this.identity?.sourceAppId != null) {
+                        this.steamUnavailable = true;
+                        this.trailerCache.delete(this.identity.sourceAppId);
+                        if (this.ignFallback) {
+                            this.currentTrailerName = this.ignFallback.name;
+                            this.needsIgnFallback = false;
+                            this.attachVideo(target, appId, this.orderCandidates(this.ignFallback.candidates), token, { mediaSignature: this.getDesiredMediaSignature(), sourceKind: "ign" });
+                            return;
+                        }
+                        if (this.ignFallback === undefined) {
+                            this.needsIgnFallback = true;
+                            this.failedVisit = { appId, hero: target };
+                            this.cleanupVideo();
+                            this.syncDetailBackdrop(target);
+                            this.status = rt("searchIgnTrailer");
+                            return;
+                        }
+                    }
+                    this.failedVisit = { appId, hero: target };
+                    this.cleanupVideo();
+                    this.syncDetailBackdrop(target);
+                    this.releaseThemeBand();
+                    this.status = rt("noGameTrailer");
+                    return;
+                }
+                const video = document.createElement("video");
+                video.className = videoClass;
+                video.autoplay = true;
+                video.loop = source.format === "mp4" || source.format === "webm";
+                video.muted = true;
+                video.defaultMuted = true;
+                video.playsInline = true;
+                video.preload = "auto";
+                video.volume = 0;
+                video.setAttribute("playsinline", "true");
+                video.setAttribute("webkit-playsinline", "true");
+                video.setAttribute("aria-hidden", "true");
+                target.insertBefore(video, target.firstChild);
+                const id = this.attemptId = (this.attemptId || 0) + 1;
+                const candidate = {
+                    id,
+                    controller: new AbortController(),
+                    isCurrent: () => !this.destroyed && this.requestToken === token &&
+                        this.attemptId === id && this.activeCandidate === candidate &&
+                        this.currentVideo === video && video.isConnected &&
+                        (this.identity?.view !== "home" || this.homeIdentityIsCurrent()),
+                    onFailure: (error) => {
+                        if (!candidate.isCurrent() || candidate.failed)
+                            return;
+                        candidate.failed = true;
+                        clearAttempt();
+                        tryCandidate();
+                    }
+                };
+                this.activeCandidate = candidate;
+                this.resumeAttemptCandidate = undefined;
+                this.currentVideo = video;
+                this.currentMediaReady = false;
+                let readyForPlayback = source.format === "mp4" || source.format === "webm";
+                let started = false;
+                let lastProgress = 0;
+                const watchProgress = () => {
+                    clearWatchdog();
+                    this.candidateWatchdog = window.setTimeout(() => {
+                        if (candidate.isCurrent() && !candidate.controller.signal.aborted) {
+                            candidate.onFailure(new Error(`Steam video stalled: ${source.url}`));
+                        }
+                    }, directPlaybackTimeoutMs);
+                };
+                const onCanPlay = () => {
+                    if (!candidate.isCurrent() || !readyForPlayback || started)
+                        return;
+                    started = true;
+                    video.play().then(() => {
+                        if (!candidate.isCurrent())
+                            return;
+                        this.currentMediaReady = true;
+                        this.applyCurrentMediaAudioState();
+                        this.scheduleTrailerReveal(candidate, video, target);
+                    }).catch(() => {
+                        if (!candidate.isCurrent())
+                            return;
+                        clearWatchdog();
+                        this.status = rt("autoplayBlocked");
+                    });
+                };
+                const handlers = [];
+                const listen = (name, handler) => {
+                    video.addEventListener(name, handler);
+                    handlers.push([name, handler]);
+                };
+                video.__deckyMetadataTrailerHandlers = handlers;
+                listen("canplay", onCanPlay);
+                listen("error", () => candidate.onFailure(new Error(`Steam video error ${video.error?.code ?? 0}`)));
+                listen("timeupdate", () => {
+                    if (!candidate.isCurrent() || video.paused || !Number.isFinite(video.currentTime))
+                        return;
+                    if (video.currentTime > lastProgress + 0.05 || video.currentTime + 0.05 < lastProgress) {
+                        lastProgress = video.currentTime;
+                        if (this.resumeAttemptCandidate === candidate)
+                            this.resumeAttemptCandidate = undefined;
+                        watchProgress();
+                    }
+                });
+                listen("seeking", () => {
+                    if (!candidate.isCurrent())
+                        return;
+                    lastProgress = Number.isFinite(video.currentTime) ? video.currentTime : 0;
+                    if (!started || !video.paused)
+                        watchProgress();
+                });
+                listen("pause", () => { if (started && candidate.isCurrent())
+                    clearWatchdog(); });
+                listen("play", () => { if (candidate.isCurrent())
+                    watchProgress(); });
+                listen("playing", () => {
+                    if (!candidate.isCurrent())
+                        return;
+                    if (this.resumeAttemptCandidate === candidate)
+                        this.resumeAttemptCandidate = undefined;
+                    watchProgress();
+                });
+                watchProgress();
+                if (readyForPlayback) {
+                    // Native direct playback keeps browser-managed buffering. The browser follows
+                    // redirects for these declared MP4/WebM URLs without exposing the target here.
+                    video.src = source.url;
+                    video.load();
+                }
+                else {
+                    const playback = source.format === "hls_h264"
+                        ? this.playHls(video, source.url, candidate)
+                        : this.playDash(video, source.url, candidate);
+                    playback.then(() => {
+                        if (!candidate.isCurrent())
+                            return;
+                        readyForPlayback = true;
+                        if (video.readyState >= 2)
+                            onCanPlay();
+                    }).catch((error) => candidate.onFailure(error));
+                }
+            };
+            tryCandidate();
+        }
+        async playAdaptive(video, presentation, candidate) {
+            if (this.activeSession)
+                this.activeSession.dispose();
+            const session = new AdaptiveSession(video, presentation, candidate);
+            this.activeSession = session;
+            await session.start();
+        }
+        async playHls(video, masterUrl, candidate) {
+            if (typeof MediaSource === "undefined")
+                throw new Error(rt("mediaSourceUnavailable"));
+            const variant = this.selectHlsVariant(await this.fetchText(masterUrl, candidate), masterUrl);
+            if (!candidate.isCurrent())
+                return;
+            const media = this.parseHlsMediaPlaylist(await this.fetchText(variant.url, candidate), variant.url);
+            const tracks = [{ kind: "video", mimeType: variant.mimeType, initUrl: media.initUrl, segments: media.segments }];
+            if (variant.audio) {
+                const audio = this.parseHlsMediaPlaylist(await this.fetchText(variant.audio.url, candidate), variant.audio.url);
+                if (Math.abs(media.duration - audio.duration) > 0.5)
+                    throw new Error("HLS audio timeline differs from video");
+                tracks.push({ kind: "audio", mimeType: variant.audio.mimeType, initUrl: audio.initUrl, segments: audio.segments });
+            }
+            if (!candidate.isCurrent())
+                return;
+            await this.playAdaptive(video, { duration: media.duration, tracks }, candidate);
+        }
+        async playDash(video, manifestUrl, candidate) {
+            if (typeof MediaSource === "undefined")
+                throw new Error(rt("mediaSourceUnavailable"));
+            const presentation = this.selectDashVariant(await this.fetchText(manifestUrl, candidate), manifestUrl);
+            if (!candidate.isCurrent())
+                return;
+            await this.playAdaptive(video, presentation, candidate);
+        }
+        async fetchText(url, candidate) {
+            const requestUrl = safeMediaUrl(url);
+            if (!requestUrl)
+                throw new Error("Steam manifest URL is not safe HTTPS");
+            const controller = new AbortController();
+            const cancel = () => controller.abort();
+            candidate.controller.signal.addEventListener("abort", cancel, { once: true });
+            const timeout = window.setTimeout(() => controller.abort(), 9000);
+            try {
+                if (!candidate.isCurrent())
+                    throw new Error("Trailer request changed");
+                const response = await fetch(requestUrl, { signal: controller.signal, cache: "default", redirect: "error" });
+                validateResponseUrl(response, requestUrl);
+                if (!response.ok)
+                    throw new Error(`HTTP ${response.status}: ${requestUrl}`);
+                const text = await readBoundedBody(response, MAX_MANIFEST_BYTES, true);
+                if (controller.signal.aborted || !candidate.isCurrent())
+                    throw new Error("Trailer request changed");
+                return text;
+            }
+            finally {
+                window.clearTimeout(timeout);
+                candidate.controller.signal.removeEventListener("abort", cancel);
+            }
+        }
+        rankRenditions(left, right) {
+            const category = (height) => !Number.isFinite(height) || height <= 0 ? 2 : height <= this.targetHeight ? 0 : 1;
+            const leftCategory = category(left.height);
+            const rightCategory = category(right.height);
+            return leftCategory - rightCategory ||
+                (leftCategory === 0 ? right.height - left.height : left.height - right.height) ||
+                left.bandwidth - right.bandwidth;
+        }
+        parseHlsAttributes(value) {
+            const attributes = {};
+            let start = 0, quoted = false;
+            const parse = (field) => {
+                const separator = field.indexOf("=");
+                if (separator <= 0)
+                    throw new Error("Malformed HLS attributes");
+                const key = field.slice(0, separator).trim();
+                const raw = field.slice(separator + 1).trim();
+                if (!/^[A-Z0-9-]+$/.test(key) || !raw)
+                    throw new Error("Malformed HLS attributes");
+                attributes[key] = raw.startsWith('"') && raw.endsWith('"') ? raw.slice(1, -1) : raw;
+            };
+            for (let index = 0; index < value.length; index++) {
+                if (value[index] === '"' && value[index - 1] !== "\\")
+                    quoted = !quoted;
+                if (value[index] === "," && !quoted) {
+                    parse(value.slice(start, index));
+                    start = index + 1;
+                }
+            }
+            if (quoted)
+                throw new Error("Unclosed HLS attribute");
+            parse(value.slice(start));
+            return attributes;
+        }
+        selectHlsVariant(masterText, masterUrl) {
+            const lines = masterText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+            if (lines[0] !== "#EXTM3U")
+                throw new Error("Invalid HLS master playlist");
+            const groups = new Map();
+            const variants = [];
+            for (let index = 1; index < lines.length; index++) {
+                const line = lines[index];
+                if (line.startsWith("#EXT-X-SESSION-KEY:")) {
+                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-SESSION-KEY:".length));
+                    if (attributes.METHOD !== "NONE")
+                        throw new Error("Encrypted HLS is unsupported");
+                }
+                if (line.startsWith("#EXT-X-MEDIA:")) {
+                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-MEDIA:".length));
+                    if (attributes.TYPE === "AUDIO") {
+                        const group = groups.get(attributes["GROUP-ID"]) ?? [];
+                        group.push(attributes);
+                        groups.set(attributes["GROUP-ID"], group);
+                    }
+                    continue;
+                }
+                if (!line.startsWith("#EXT-X-STREAM-INF:"))
+                    continue;
+                const attributes = this.parseHlsAttributes(line.slice("#EXT-X-STREAM-INF:".length));
+                const uri = lines[index + 1];
+                if (!uri || uri.startsWith("#"))
+                    continue;
+                index++;
+                const codecs = (attributes.CODECS || "").split(",").map((codec) => codec.trim()).filter(Boolean);
+                const videoCodec = codecs.find((codec) => /^avc1\./i.test(codec));
+                if (!videoCodec)
+                    continue;
+                const videoMimeType = `video/mp4; codecs="${attributes.AUDIO ? videoCodec : codecs.join(",")}"`;
+                if (!MediaSource.isTypeSupported(videoMimeType))
+                    continue;
+                const height = Number(attributes.RESOLUTION?.match(/^\d+x(\d+)$/)?.[1] || 0);
+                const bandwidth = Number(attributes.BANDWIDTH || 0);
+                const resolvedUrl = safeMediaUrl(uri, masterUrl);
+                if (!resolvedUrl)
+                    continue;
+                variants.push({ url: resolvedUrl, mimeType: videoMimeType,
+                    height, bandwidth, audioGroup: attributes.AUDIO, codecs });
+            }
+            if (!variants.length)
+                throw new Error("HLS playlist has no supported video variants");
+            variants.sort((left, right) => this.rankRenditions(left, right));
+            const selected = variants[0];
+            if (selected.audioGroup) {
+                const group = groups.get(selected.audioGroup) || [];
+                const rendition = group.find((item) => item.DEFAULT === "YES") ?? group[0];
+                const codec = selected.codecs.find((item) => /^mp4a\./i.test(item));
+                if (!rendition?.URI || !codec)
+                    throw new Error("HLS audio group is unavailable");
+                const mimeType = `audio/mp4; codecs="${codec}"`;
+                if (!MediaSource.isTypeSupported(mimeType))
+                    throw new Error("Unsupported HLS audio codec");
+                const audioUrl = safeMediaUrl(rendition.URI, masterUrl);
+                if (!audioUrl)
+                    throw new Error("HLS audio URL is not safe HTTPS");
+                selected.audio = { url: audioUrl, mimeType };
+            }
+            return selected;
+        }
+        selectDashVariant(manifestText, manifestUrl) {
+            const xml = new DOMParser().parseFromString(manifestText, "application/xml");
+            const root = xml.documentElement;
+            if (root?.localName !== "MPD" || xml.querySelector("parsererror") ||
+                root.getAttribute("type") !== "static" ||
+                xml.getElementsByTagName("SegmentBase").length || xml.getElementsByTagName("SegmentList").length ||
+                Array.from(xml.getElementsByTagName("*")).some((element) => element.localName === "ContentProtection")) {
+                throw new Error("Unsupported DASH manifest");
+            }
+            const children = (node, name) => Array.from(node?.children ?? []).filter((child) => child.localName === name);
+            const periods = children(root, "Period");
+            if (periods.length !== 1)
+                throw new Error("DASH requires a single Period");
+            const period = periods[0];
+            if (period.hasAttribute("start") && this.parseIsoDurationSeconds(period.getAttribute("start")) !== 0) {
+                throw new Error("DASH Period must start at zero");
+            }
+            const duration = this.parseIsoDurationSeconds(period.getAttribute("duration") || root.getAttribute("mediaPresentationDuration") || "");
+            if (!Number.isFinite(duration) || duration <= 0)
+                throw new Error("DASH presentation duration is invalid");
+            const resolveBase = (node, base) => {
+                const relative = children(node, "BaseURL")[0]?.textContent?.trim();
+                const resolved = relative ? safeMediaUrl(relative, base) : safeMediaUrl(base);
+                if (!resolved)
+                    throw new Error("DASH BaseURL is not safe HTTPS");
+                return resolved;
+            };
+            const periodBase = resolveBase(period, resolveBase(root, manifestUrl));
+            const videos = [], audio = [];
+            let advertisedAudio = false;
+            for (const adaptation of children(period, "AdaptationSet")) {
+                const contentType = adaptation.getAttribute("contentType") || "";
+                const adaptationMime = adaptation.getAttribute("mimeType") || "";
+                const isAudio = contentType === "audio" || adaptationMime.startsWith("audio/");
+                const isVideo = contentType === "video" || adaptationMime.startsWith("video/") || (!contentType && !adaptationMime);
+                if (!isAudio && !isVideo)
+                    continue;
+                if (isAudio)
+                    advertisedAudio = true;
+                const adaptationBase = resolveBase(adaptation, periodBase);
+                for (const representation of children(adaptation, "Representation")) {
+                    const codec = representation.getAttribute("codecs") || adaptation.getAttribute("codecs") || "";
+                    const mime = representation.getAttribute("mimeType") || adaptationMime;
+                    const supportedCodec = isAudio ? /^mp4a\./i.test(codec) : /^(avc1|av01)\./i.test(codec);
+                    const mimeType = `${mime}; codecs="${codec}"`;
+                    if (!supportedCodec || mime !== (isAudio ? "audio/mp4" : "video/mp4") ||
+                        !MediaSource.isTypeSupported(mimeType))
+                        continue;
+                    const templates = [root, period, adaptation, representation]
+                        .map((node) => children(node, "SegmentTemplate")[0]).filter(Boolean);
+                    const attribute = (name) => {
+                        for (let index = templates.length - 1; index >= 0; index--) {
+                            if (templates[index].hasAttribute(name))
+                                return templates[index].getAttribute(name);
+                        }
+                        return null;
+                    };
+                    const representationId = representation.getAttribute("id") || "";
+                    const bandwidth = Number(representation.getAttribute("bandwidth") || 0);
+                    const height = Number(representation.getAttribute("height") || adaptation.getAttribute("maxHeight") || 0);
+                    if (!representationId || !Number.isFinite(bandwidth) || bandwidth < 0 || !templates.length)
+                        continue;
+                    const initTemplate = attribute("initialization"), mediaTemplate = attribute("media");
+                    if (!initTemplate || !mediaTemplate)
+                        continue;
+                    const base = resolveBase(representation, adaptationBase);
+                    const timeline = [...templates].reverse()
+                        .map((template) => children(template, "SegmentTimeline")[0]).find(Boolean);
+                    const spec = {
+                        media: mediaTemplate,
+                        timescale: Number(attribute("timescale") ?? 1),
+                        durationTicks: Number(attribute("duration") ?? 0),
+                        offset: Number(attribute("presentationTimeOffset") ?? 0),
+                        startNumber: Number(attribute("startNumber") ?? 1),
+                        timeline: timeline ? children(timeline, "S").map((item) => ({
+                            t: item.hasAttribute("t") ? Number(item.getAttribute("t")) : null,
+                            d: Number(item.getAttribute("d")),
+                            r: Number(item.getAttribute("r") ?? 0)
+                        })) : null
+                    };
+                    let segments;
+                    try {
+                        segments = this.buildDashSegments(spec, representationId, bandwidth, duration, base);
+                    }
+                    catch {
+                        continue;
+                    }
+                    if (!segments.length)
+                        continue;
+                    const initUrl = safeMediaUrl(this.expandDashTemplate(initTemplate, representationId, bandwidth), base);
+                    if (!initUrl)
+                        continue;
+                    const track = {
+                        kind: isAudio ? "audio" : "video", mimeType,
+                        timestampOffset: -spec.offset / spec.timescale,
+                        initUrl,
+                        segments
+                    };
+                    const entry = { track, height, bandwidth };
+                    if (isAudio)
+                        audio.push(entry);
+                    else
+                        videos.push(entry);
+                }
+            }
+            if (!videos.length)
+                throw new Error("DASH manifest has no supported video rendition");
+            if (advertisedAudio && !audio.length)
+                throw new Error("DASH audio rendition is unsupported");
+            videos.sort((left, right) => this.rankRenditions(left, right));
+            audio.sort((left, right) => right.bandwidth - left.bandwidth);
+            return { duration, tracks: [videos[0].track, ...(audio.length ? [audio[0].track] : [])] };
+        }
+        buildDashSegments(spec, representationId, bandwidth, duration, base) {
+            const { timescale, durationTicks, offset, startNumber, timeline, media } = spec;
+            if (!Number.isSafeInteger(timescale) || timescale <= 0 ||
+                !Number.isSafeInteger(offset) || offset < 0 ||
+                !Number.isSafeInteger(startNumber) || startNumber < 0)
+                throw new Error("Invalid DASH timebase");
+            const segments = [];
+            let number = startNumber;
+            const push = (tick, endTick) => {
+                const start = Math.max(0, (tick - offset) / timescale);
+                const end = Math.min(duration, (endTick - offset) / timescale);
+                if (Number.isFinite(start) && Number.isFinite(end) && end > start && start < duration) {
+                    const url = safeMediaUrl(this.expandDashTemplate(media, representationId, bandwidth, number, tick), base);
+                    if (!url)
+                        throw new Error("DASH segment URL is not safe HTTPS");
+                    segments.push({
+                        url,
+                        start, end
+                    });
+                }
+                number++;
+                if (number - startNumber > 100000)
+                    throw new Error("DASH timeline is unbounded");
+            };
+            if (timeline) {
+                if (!timeline.length)
+                    throw new Error("Empty DASH SegmentTimeline");
+                let tick = 0;
+                for (let index = 0; index < timeline.length; index++) {
+                    const item = timeline[index];
+                    if (!Number.isSafeInteger(item.d) || item.d <= 0 ||
+                        !Number.isSafeInteger(item.r) || item.r < -1 ||
+                        (item.t !== null && (!Number.isSafeInteger(item.t) || item.t < 0))) {
+                        throw new Error("Invalid DASH SegmentTimeline");
+                    }
+                    if (item.t !== null)
+                        tick = item.t;
+                    const next = timeline.slice(index + 1).find((entry) => entry.t !== null);
+                    const boundary = item.r === -1 ? (next?.t ?? offset + duration * timescale) : Infinity;
+                    const count = item.r === -1 ? Math.ceil((boundary - tick) / item.d) : item.r + 1;
+                    if (!Number.isSafeInteger(count) || count < 1 || count > 100000)
+                        throw new Error("Invalid DASH repeat");
+                    for (let repeat = 0; repeat < count; repeat++) {
+                        push(tick, Math.min(tick + item.d, boundary));
+                        tick += item.d;
+                    }
+                }
+            }
+            else {
+                if (!Number.isSafeInteger(durationTicks) || durationTicks <= 0)
+                    throw new Error("Invalid DASH segment duration");
+                const count = Math.ceil(duration * timescale / durationTicks);
+                if (!Number.isSafeInteger(count) || count < 1 || count > 100000)
+                    throw new Error("Invalid DASH segment count");
+                for (let index = 0; index < count; index++) {
+                    const tick = offset + index * durationTicks;
+                    push(tick, tick + durationTicks);
+                }
+            }
+            return segments;
+        }
+        expandDashTemplate(value, representationId, bandwidth, number, time) {
+            return value.replace(/\$RepresentationID\$/g, representationId).replace(/\$Bandwidth\$/g, String(bandwidth)).replace(/\$Time\$/g, String(time ?? 0)).replace(/\$Number(?:%0(\d+)d)?\$/g, (_match, width) => {
+                const text = String(number ?? 0);
+                return width ? text.padStart(Number(width), "0") : text;
+            }).replace(/\$\$/g, "$");
+        }
+        parseIsoDurationSeconds(value) {
+            const match = String(value).match(/^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/);
+            if (!match || !match.slice(1).some(Boolean))
+                return NaN;
+            return Number(match[1] ?? 0) * 86400 + Number(match[2] ?? 0) * 3600 +
+                Number(match[3] ?? 0) * 60 + Number(match[4] ?? 0);
+        }
+        parseHlsMediaPlaylist(mediaText, mediaUrl) {
+            const lines = mediaText.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+            if (lines[0] !== "#EXTM3U" || !lines.includes("#EXT-X-ENDLIST"))
+                throw new Error("HLS requires static VOD");
+            let initUrl, duration = 0, pendingDuration, ended = false;
+            const segments = [];
+            for (const line of lines.slice(1)) {
+                if (line.startsWith("#EXT-X-KEY:")) {
+                    if (this.parseHlsAttributes(line.slice("#EXT-X-KEY:".length)).METHOD !== "NONE") {
+                        throw new Error("Encrypted HLS is unsupported");
+                    }
+                }
+                else if (line.startsWith("#EXT-X-BYTERANGE") || line.startsWith("#EXT-X-DISCONTINUITY") ||
+                    line.startsWith("#EXT-X-PART"))
+                    throw new Error("Unsupported HLS media timeline");
+                else if (line.startsWith("#EXT-X-MAP:")) {
+                    const attributes = this.parseHlsAttributes(line.slice("#EXT-X-MAP:".length));
+                    if (!attributes.URI || attributes.BYTERANGE || initUrl || segments.length) {
+                        throw new Error("Invalid HLS initialization segment");
+                    }
+                    initUrl = safeMediaUrl(attributes.URI, mediaUrl);
+                    if (!initUrl)
+                        throw new Error("HLS initialization URL is not safe HTTPS");
+                }
+                else if (line.startsWith("#EXTINF:")) {
+                    if (pendingDuration !== undefined || ended)
+                        throw new Error("Malformed HLS segment");
+                    pendingDuration = Number(line.slice("#EXTINF:".length).split(",", 1)[0]);
+                    if (!Number.isFinite(pendingDuration) || pendingDuration <= 0)
+                        throw new Error("Invalid HLS duration");
+                }
+                else if (line === "#EXT-X-ENDLIST")
+                    ended = true;
+                else if (!line.startsWith("#")) {
+                    if (ended || !initUrl || pendingDuration === undefined)
+                        throw new Error("Malformed HLS segment timeline");
+                    const end = duration + pendingDuration;
+                    if (!Number.isFinite(end) || end <= duration || segments.length >= 100000)
+                        throw new Error("Invalid HLS timeline");
+                    const url = safeMediaUrl(line, mediaUrl);
+                    if (!url)
+                        throw new Error("HLS segment URL is not safe HTTPS");
+                    segments.push({ url, start: duration, end });
+                    duration = end;
+                    pendingDuration = undefined;
+                }
+            }
+            if (!initUrl || !segments.length || pendingDuration !== undefined || !ended) {
+                throw new Error("Incomplete HLS VOD playlist");
+            }
+            return { initUrl, duration, segments };
+        }
+        removeVideoHandlers(video) {
+            for (const [name, handler] of video?.__deckyMetadataTrailerHandlers ?? []) {
+                video.removeEventListener(name, handler);
+            }
+            if (video)
+                delete video.__deckyMetadataTrailerHandlers;
+        }
+        cleanupVideo(cancelPending = false) {
+            this.exitCleanViewing();
+            this.removeTrailerHints();
+            this.restoreLogo();
+            if (cancelPending) {
+                this.metadataController?.abort();
+                this.metadataController = undefined;
+                this.requestToken += 1;
+                this.pendingAppId = undefined;
+                this.pendingTarget = undefined;
+                this.pendingRequestToken = undefined;
+            }
+            this.removeVideoHandlers(this.currentVideo);
+            this.activeCandidate?.controller.abort();
+            this.activeSession?.dispose();
+            this.activeCandidate = undefined;
+            this.resumeAttemptCandidate = undefined;
+            this.activeSession = undefined;
+            this.currentMediaReady = false;
+            if (this.fadeTimer)
+                window.clearTimeout(this.fadeTimer);
+            this.stopAudioFade();
+            if (this.candidateWatchdog)
+                window.clearTimeout(this.candidateWatchdog);
+            this.fadeTimer = undefined;
+            this.candidateWatchdog = undefined;
+            const video = this.currentVideo;
+            if (video?.isConnected) {
+                video.pause();
+                video.removeAttribute("src");
+                video.load();
+                video.remove();
+            }
+            this.currentVideo = undefined;
+            this.restoreStatusBackdrop();
+            this.currentTarget?.classList.remove(targetClass, homeTargetClass, readyClass);
+            this.currentTarget = undefined;
+            this.currentMediaSignature = undefined;
+            document.querySelectorAll(`.${videoClass}`).forEach((element) => element.remove());
+            document.querySelectorAll(`.${targetClass},.${homeTargetClass}`).forEach((element) => element.classList.remove(targetClass, homeTargetClass, readyClass));
+        }
+    }
+    const existing = window[runtimeKey];
+    if (existing) {
+        if (existing.product !== "decky-metadata-trailer") {
+            return { status: rt("runtimeConflict"), runtimeMissing: true };
+        }
+        if (existing.ownerId === activeOwnerId && existing.version === runtimeVersion) {
+            return existing.update(settings, activeRevision, activeIdentity, activeIgnFallback);
+        }
+        try {
+            existing.destroy?.();
+        }
+        catch { }
+        if (window[runtimeKey] === existing)
+            delete window[runtimeKey];
+    }
+    const runtime = new Runtime(settings, activeOwnerId, activeRevision, activeIgnFallback);
+    window[runtimeKey] = runtime;
+    runtime.mount();
+    return runtime.snapshot();
+}
+
+const DEFAULT_TRAILER_SETTINGS = {
+    enabled: false,
+    detailEnabled: true,
+    homeEnabled: false,
+    audioEnabled: false,
+    hideLogoDuringTrailer: false,
+    quality: "auto",
+    detailFadeInDelaySeconds: 3,
+    homeFadeInDelaySeconds: 3,
+};
+const POLL_INTERVAL_MS = 2000;
+// The 15 s target cap quantizes to the 2 s tick, so 8 ticks.
+const REMOTE_BACKOFF_MAX_MS = 16000;
+const BRIDGE_TIMEOUT_MS = 24000;
+const AUDIO_CHANGE_EVENT = "decky-metadata-trailer:audio-change";
+const HOME_SELECTION_EVENT = "decky-metadata-trailer:home-selection";
+const OWNER_KEY = "__deckyMetadataTrailerOwner";
+const RUNTIME_KEY = "__deckyMetadataTrailerRuntime";
+/** The serialized runtime cannot import i18n, so its whole table is resolved here at install time. */
+const runtimeTranslations = () => ({
+    audio: t("trailers.audio"),
+    autoplayBlocked: t("trailers.autoplayBlocked"),
+    disabled: t("trailers.disabled"),
+    noSteamTrailer: t("trailers.noSteamTrailer"),
+    // The runtime substitutes its own `{var}` placeholders from this table.
+    searchTrailerForApp: t("trailers.searchTrailerForApp", { appId: "{appId}" }),
+    steamTrailer: t("trailers.steamTrailer"),
+    steamTrailerNotPlayable: t("trailers.steamTrailerNotPlayable"),
+    searchIgnTrailer: t("trailers.searchIgnTrailer"),
+    noGameTrailer: t("trailers.noGameTrailer"),
+    stoppedForLaunch: t("trailers.stoppedForLaunch"),
+    trailerActive: t("trailers.trailerActive"),
+    trailerLabel: t("trailers.trailerLabel", { name: "{name}" }),
+    waitingGamePage: t("trailers.waitingGamePage"),
+    waitingHomeSelection: t("trailers.waitingHomeSelection"),
+    waitingHomeDelay: t("trailers.waitingHomeDelay"),
+    muteTrailer: t("trailers.muteTrailer"),
+    expandTrailer: t("trailers.expandTrailer"),
+    mediaSourceUnavailable: t("trailers.mediaSourceUnavailable"),
+    steamUiUnavailable: t("trailers.steamUiUnavailable"),
+    runtimeConflict: t("trailers.runtimeConflict"),
+    otherPluginActive: t("trailers.otherPluginActive"),
+});
+// `settings` is rebuilt each time; every other field is a primitive or a kept reference.
+const sameSnapshot = (a, b) => Object.keys(b).every((key) => key === "settings"
+    ? Object.keys(b.settings).every((field) => a.settings[field] === b.settings[field])
+    : a[key] === b[key]);
+const normalizeSettings = (value) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value))
+        return { ...DEFAULT_TRAILER_SETTINGS };
+    const enabled = "enabled" in value ? value.enabled : undefined;
+    const detailEnabled = "detailEnabled" in value ? value.detailEnabled : undefined;
+    const homeEnabled = "homeEnabled" in value ? value.homeEnabled : undefined;
+    const audioEnabled = "audioEnabled" in value ? value.audioEnabled : undefined;
+    const hideLogoDuringTrailer = "hideLogoDuringTrailer" in value ? value.hideLogoDuringTrailer : undefined;
+    const detailDelay = "detailFadeInDelaySeconds" in value ? value.detailFadeInDelaySeconds : undefined;
+    const homeDelay = "homeFadeInDelaySeconds" in value ? value.homeFadeInDelaySeconds : undefined;
+    const quality = "quality" in value ? value.quality : undefined;
+    return {
+        enabled: typeof enabled === "boolean" ? enabled : false,
+        detailEnabled: typeof detailEnabled === "boolean" ? detailEnabled : true,
+        homeEnabled: typeof homeEnabled === "boolean" ? homeEnabled : false,
+        audioEnabled: typeof audioEnabled === "boolean" ? audioEnabled : false,
+        hideLogoDuringTrailer: typeof hideLogoDuringTrailer === "boolean" ? hideLogoDuringTrailer : false,
+        detailFadeInDelaySeconds: typeof detailDelay === "number" &&
+            Number.isInteger(detailDelay) && detailDelay >= 0 && detailDelay <= 10 ? detailDelay : 3,
+        homeFadeInDelaySeconds: typeof homeDelay === "number" &&
+            Number.isInteger(homeDelay) && homeDelay >= 0 && homeDelay <= 10 ? homeDelay : 3,
+        quality: quality === "auto" || quality === 720 || quality === 1080 || quality === 1440 || quality === 2160
+            ? quality : "auto",
+    };
+};
+const sameIdentity = (left, right) => left?.view === right?.view && left?.pageAppId === right?.pageAppId &&
+    left?.sourceAppId === right?.sourceAppId && left?.selectionRevision === right?.selectionRevision;
+const sameIgnLookup = (left, right) => left?.title === right?.title && left?.gameUrl === right?.gameUrl;
+const isRuntimeSnapshot = (value) => value !== null && typeof value === "object" && "status" in value && typeof value.status === "string";
+const runtimeMissingScript = () => `(() => {
+  const runtime = window.${RUNTIME_KEY};
+  const owner = window.opener?.${OWNER_KEY} ?? window.${OWNER_KEY};
+  if (!owner?.active || runtime?.ownerId !== owner.ownerId) {
+    return { status: ${JSON.stringify(t("trailers.steamUiUnavailable"))}, runtimeMissing: true };
+  }
+  // A suspended Steam-tab runtime cannot scan its opener for a newer revision.
+  if (runtime.settingsRevision !== owner.settingsRevision && typeof runtime.update === 'function') {
+    return runtime.update(owner.settings, owner.settingsRevision, owner.identity, owner.ignFallback);
+  }
+  return runtime.snapshot();
+})()`;
+class TrailerController {
+    constructor(conflicts = pluginConflicts) {
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "settings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: { ...DEFAULT_TRAILER_SETTINGS }
+        });
+        Object.defineProperty(this, "confirmedSettings", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: { ...DEFAULT_TRAILER_SETTINGS }
+        });
+        Object.defineProperty(this, "settingsLoaded", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "settingsBusy", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "pendingSettingsWrites", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "settingsTransactionId", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "settingsError", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "status", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "runtimeSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "ownerId", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "settingsRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "identity", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "ignLookup", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "ignFallback", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "ignRequestEpoch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "ignRequested", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "pageAppId", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "pageOverview", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "homeSelection", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "homeSelectionRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "homeDelayTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "identityRequestEpoch", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "matchRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: metadataMatchRevisionSnapshot()
+        });
+        Object.defineProperty(this, "statusTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollInFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "installInFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "pendingInstall", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "remoteIntervalMs", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: POLL_INTERVAL_MS
+        });
+        Object.defineProperty(this, "nextRemoteAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "lastRemoteKey", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: ""
+        });
+        Object.defineProperty(this, "remoteRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: -1
+        });
+        Object.defineProperty(this, "installedRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: -1
+        });
+        Object.defineProperty(this, "panelVisible", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "settingsSaveQueue", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: Promise.resolve()
+        });
+        Object.defineProperty(this, "audioWindows", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "unsubscribeMatchChanges", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeLanguage", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "conflict", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "handleAudioChange", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (event) => {
+                const detail = event.detail;
+                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+                    !("settingsRevision" in detail) || !("audioEnabled" in detail))
+                    return;
+                const owner = window[OWNER_KEY];
+                if (!this.mounted || owner?.ownerId !== this.ownerId ||
+                    detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
+                    typeof detail.audioEnabled !== "boolean" || detail.audioEnabled === this.settings.audioEnabled)
+                    return;
+                void this.updateSettings({ audioEnabled: detail.audioEnabled });
+            }
+        });
+        Object.defineProperty(this, "handleHomeSelection", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (event) => {
+                const detail = event.detail;
+                if (detail === null || typeof detail !== "object" || !("ownerId" in detail) ||
+                    !("settingsRevision" in detail) || !("selectionRevision" in detail) ||
+                    !("appId" in detail) || !("enteredAt" in detail))
+                    return;
+                const owner = window[OWNER_KEY];
+                if (!this.isEffectivelyEnabled() || !this.settings.homeEnabled ||
+                    !isTrailerHomeRoute(currentRoutePath()) || owner?.ownerId !== this.ownerId ||
+                    detail?.ownerId !== this.ownerId || detail.settingsRevision !== this.settingsRevision ||
+                    typeof detail.selectionRevision !== "number" ||
+                    !Number.isSafeInteger(detail.selectionRevision) || detail.selectionRevision < 0)
+                    return;
+                if (detail.appId !== null && (typeof detail.appId !== "number" || !Number.isInteger(detail.appId) ||
+                    detail.appId <= 0 || detail.appId > 0xffffffff || typeof detail.enteredAt !== "number" ||
+                    !Number.isSafeInteger(detail.enteredAt) || detail.enteredAt < 0))
+                    return;
+                if (detail.selectionRevision <= this.homeSelectionRevision)
+                    return;
+                this.homeSelectionRevision = detail.selectionRevision;
+                this.homeSelection = typeof detail.appId === "number" && typeof detail.enteredAt === "number" ? {
+                    appId: detail.appId, selectionRevision: detail.selectionRevision, enteredAt: detail.enteredAt,
+                } : null;
+                this.cancelHomeDelay();
+                this.identityRequestEpoch += 1;
+                this.resetPlaybackIdentity();
+                this.settingsRevision += 1;
+                this.publishOwner();
+                if (!this.updateReachableRuntimes())
+                    void this.runInSteamTab(runtimeMissingScript());
+                if (this.homeSelection)
+                    this.scheduleHomeIdentity();
+                this.emit();
+            }
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        this.conflict = conflicts.getConflict("trailers");
+        this.snapshot = this.buildSnapshot();
+    }
+    /** True while Settings > Game trailers is shown: its live status keeps the remote check at 2 s. */
+    setPanelVisible(visible) {
+        if (visible && !this.panelVisible)
+            this.resetRemoteBackoff();
+        this.panelVisible = visible;
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.ownerId = `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        this.mounted = true;
+        this.status = t("trailers.loadingSettings");
+        this.conflict = this.conflicts.getConflict("trailers");
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => this.syncConflict());
+        this.pendingSettingsWrites = 0;
+        this.settingsBusy = false;
+        this.resetRemoteBackoff();
+        this.remoteRevision = -1;
+        this.installedRevision = -1;
+        this.lastRemoteKey = "";
+        this.destroyOlderRuntimes();
+        this.publishOwner();
+        this.refreshAudioListeners();
+        window.addEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
+        this.unsubscribeMatchChanges = subscribeMetadataMatchChanges((appId, revision) => {
+            this.matchRevision = revision;
+            if (appId === this.pageAppId)
+                void this.refreshPageIdentity();
+            else
+                this.emit();
+        });
+        this.unsubscribeLanguage = onLanguageChange(() => void this.installOrUpdate());
+        void this.loadSettings();
+        this.emit();
+    }
+    /** Stop local playback ownership before any best-effort remote cleanup. */
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.ignRequestEpoch += 1;
+        this.identityRequestEpoch += 1;
+        this.cancelHomeDelay();
+        this.homeSelection = null;
+        window.removeEventListener(HOME_SELECTION_EVENT, this.handleHomeSelection);
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.ignRequested = false;
+        this.ignLookup = null;
+        this.ignFallback = undefined;
+        if (this.statusTimer !== undefined)
+            window.clearInterval(this.statusTimer);
+        this.statusTimer = undefined;
+        this.unsubscribeMatchChanges?.();
+        this.unsubscribeMatchChanges = undefined;
+        this.unsubscribeLanguage?.();
+        this.unsubscribeLanguage = undefined;
+        const owner = window[OWNER_KEY];
+        if (owner?.ownerId === this.ownerId)
+            owner.active = false;
+        for (const [target, listener] of this.audioWindows) {
+            try {
+                target.removeEventListener(AUDIO_CHANGE_EVENT, listener);
+            }
+            catch { }
+        }
+        this.audioWindows.clear();
+        for (const doc of steamUiDocuments()) {
+            try {
+                const target = doc.defaultView;
+                const runtime = target?.[RUNTIME_KEY];
+                if (runtime?.ownerId !== this.ownerId || typeof runtime.destroy !== "function")
+                    continue;
+                runtime.destroy();
+                if (target?.[RUNTIME_KEY] === runtime)
+                    delete target[RUNTIME_KEY];
+            }
+            catch { /* Direct teardown is best effort for closing Steam windows. */ }
+        }
+        if (window[OWNER_KEY]?.ownerId === this.ownerId)
+            delete window[OWNER_KEY];
+        const ownerId = JSON.stringify(this.ownerId);
+        const cleanup = `(() => { const runtime=window.${RUNTIME_KEY}; if(runtime?.ownerId!==${ownerId}) return {status:${JSON.stringify(t("trailers.steamUiUnavailable"))},runtimeMissing:true}; runtime.destroy?.(); if(window.${RUNTIME_KEY}===runtime) delete window.${RUNTIME_KEY}; return {status:${JSON.stringify(t("trailers.runtimeRemoved"))}}; })()`;
+        void evalInBigPicture(cleanup).catch(() => undefined);
+        this.listeners.clear();
+    }
+    setEnabled(enabled) {
+        return this.updateSettings({ enabled });
+    }
+    setDetailEnabled(detailEnabled) {
+        return this.updateSettings({ detailEnabled });
+    }
+    setHomeEnabled(homeEnabled) {
+        return this.updateSettings({ homeEnabled });
+    }
+    setAudioEnabled(audioEnabled) {
+        return this.updateSettings({ audioEnabled });
+    }
+    setHideLogoDuringTrailer(hideLogoDuringTrailer) {
+        return this.updateSettings({ hideLogoDuringTrailer });
+    }
+    setQuality(quality) {
+        return this.updateSettings({ quality });
+    }
+    setDetailFadeInDelaySeconds(detailFadeInDelaySeconds) {
+        return this.updateSettings({ detailFadeInDelaySeconds });
+    }
+    setHomeFadeInDelaySeconds(homeFadeInDelaySeconds) {
+        return this.updateSettings({ homeFadeInDelaySeconds });
+    }
+    isEffectivelyEnabled() {
+        return this.mounted && this.settingsLoaded && this.settings.enabled &&
+            (this.settings.detailEnabled || this.settings.homeEnabled) && !this.conflict.pluginName;
+    }
+    effectiveSettings() {
+        const enabled = this.isEffectivelyEnabled();
+        return enabled === this.settings.enabled ? this.settings : { ...this.settings, enabled };
+    }
+    syncPolling() {
+        if (this.isEffectivelyEnabled()) {
+            if (this.statusTimer === undefined) {
+                this.statusTimer = window.setInterval(() => void this.poll(), POLL_INTERVAL_MS);
+            }
+        }
+        else {
+            if (this.statusTimer !== undefined)
+                window.clearInterval(this.statusTimer);
+            this.statusTimer = undefined;
+            this.cancelHomeDelay();
+        }
+    }
+    resetRemoteBackoff() {
+        this.remoteIntervalMs = POLL_INTERVAL_MS;
+        this.nextRemoteAt = 0;
+    }
+    cancelHomeDelay() {
+        if (this.homeDelayTimer !== undefined)
+            window.clearTimeout(this.homeDelayTimer);
+        this.homeDelayTimer = undefined;
+    }
+    scheduleHomeIdentity() {
+        this.cancelHomeDelay();
+        const selection = this.homeSelection;
+        if (!selection || !this.isEffectivelyEnabled() || !this.settings.homeEnabled)
+            return;
+        const delay = Math.max(0, this.settings.homeFadeInDelaySeconds * 1000 - (Date.now() - selection.enteredAt));
+        this.status = t("trailers.waitingHomeDelay");
+        this.homeDelayTimer = window.setTimeout(() => {
+            this.homeDelayTimer = undefined;
+            if (this.homeSelection !== selection || !isTrailerHomeRoute(currentRoutePath()))
+                return;
+            void this.refreshPageIdentity();
+        }, delay);
+    }
+    resetPlaybackIdentity() {
+        this.ignRequestEpoch += 1;
+        this.ignRequested = false;
+        this.ignLookup = null;
+        this.ignFallback = undefined;
+        this.identity = null;
+        this.runtimeSnapshot = undefined;
+    }
+    syncConflict() {
+        const next = this.conflicts.getConflict("trailers");
+        if (next.pluginName === this.conflict.pluginName &&
+            next.detectionAvailable === this.conflict.detectionAvailable)
+            return;
+        const wasEnabled = this.isEffectivelyEnabled();
+        this.conflict = next;
+        if (wasEnabled !== this.isEffectivelyEnabled()) {
+            this.identityRequestEpoch += 1;
+            this.homeSelection = null;
+            this.cancelHomeDelay();
+            this.ignRequestEpoch += 1;
+            this.ignRequested = false;
+            this.ignLookup = null;
+            this.ignFallback = undefined;
+            this.identity = null;
+            this.runtimeSnapshot = undefined;
+            this.settingsRevision += 1;
+            this.publishOwner();
+            this.updateReachableRuntimes();
+            if (!this.isEffectivelyEnabled()) {
+                // A Steam-tab runtime may be outside the directly reachable windows.
+                const ownerId = JSON.stringify(this.ownerId);
+                const settings = JSON.stringify(this.effectiveSettings());
+                const revision = this.settingsRevision;
+                void this.runInSteamTab(`(() => {
+          const runtime = window.${RUNTIME_KEY};
+          if (runtime?.ownerId !== ${ownerId} || typeof runtime.update !== "function") return;
+          return runtime.update(${settings}, ${revision}, null, undefined);
+        })()`);
+            }
+            else {
+                void this.poll();
+            }
+        }
+        this.syncPolling();
+        this.emit();
+    }
+    buildSnapshot() {
+        const remote = this.runtimeSnapshot;
+        return {
+            settings: { ...this.settings },
+            appId: remote?.appId,
+            sourceAppId: remote?.sourceAppId ?? this.identity?.sourceAppId,
+            status: this.conflict.pluginName && this.settings.enabled
+                ? t("trailers.pausedWhilePlugin", { name: this.conflict.pluginName }) : this.status,
+            trailerName: remote?.trailerName,
+            gameTitle: remote?.gameTitle,
+            displayWidth: remote?.displayWidth ?? null,
+            displayHeight: remote?.displayHeight ?? null,
+            targetHeight: remote?.targetHeight ?? (this.settings.quality === "auto" ? 720 : this.settings.quality),
+            settingsLoaded: this.settingsLoaded,
+            busy: this.settingsBusy,
+            settingsError: this.settingsError,
+            matchRevision: this.matchRevision,
+            conflict: this.conflict,
+            effectiveEnabled: this.isEffectivelyEnabled(),
+        };
+    }
+    emit() {
+        const next = this.buildSnapshot();
+        // The poll rebuilds the snapshot every 2 s; subscribers (the Settings page) re-render only on a real change.
+        if (sameSnapshot(this.snapshot, next))
+            return;
+        this.snapshot = next;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* A panel update cannot block the controller. */ }
+        }
+    }
+    async loadSettings() {
+        try {
+            const loaded = normalizeSettings(await getTrailerSettings());
+            if (!this.mounted)
+                return;
+            this.settings = loaded;
+            this.confirmedSettings = { ...loaded };
+            this.settingsLoaded = true;
+            this.settingsError = "";
+            this.settingsRevision += 1;
+            this.publishOwner();
+            this.syncPolling();
+            this.status = loaded.enabled ? t("trailers.waitingSteamGamePage") : t("trailers.disabled");
+            this.emit();
+            await this.poll();
+        }
+        catch (error) {
+            if (!this.mounted)
+                return;
+            this.settingsError = t("trailers.settingsLoadError", { error: translateBackendError(error) });
+            this.status = t("trailers.settingsUnavailable");
+            this.emit();
+        }
+    }
+    async updateSettings(change) {
+        if (!this.mounted || !this.settingsLoaded)
+            return false;
+        if (change.enabled === true && !this.settings.enabled && this.conflict.pluginName)
+            return false;
+        const previous = { ...this.settings };
+        const next = normalizeSettings({ ...this.settings, ...change });
+        if (next.enabled === previous.enabled && next.detailEnabled === previous.detailEnabled &&
+            next.homeEnabled === previous.homeEnabled && next.audioEnabled === previous.audioEnabled &&
+            next.hideLogoDuringTrailer === previous.hideLogoDuringTrailer && next.quality === previous.quality &&
+            next.detailFadeInDelaySeconds === previous.detailFadeInDelaySeconds &&
+            next.homeFadeInDelaySeconds === previous.homeFadeInDelaySeconds) {
+            return true;
+        }
+        this.settings = next;
+        const ownerId = this.ownerId;
+        const transactionId = ++this.settingsTransactionId;
+        this.pendingSettingsWrites += 1;
+        this.settingsBusy = true;
+        this.settingsError = "";
+        this.syncPolling();
+        if (!this.isEffectivelyEnabled() || !next.homeEnabled) {
+            this.homeSelection = null;
+            this.cancelHomeDelay();
+        }
+        else if (next.homeFadeInDelaySeconds !== previous.homeFadeInDelaySeconds && this.homeSelection && !this.identity) {
+            this.scheduleHomeIdentity();
+        }
+        if (!this.isEffectivelyEnabled() || (this.identity?.view === "detail" && !next.detailEnabled) ||
+            (this.identity?.view === "home" && !next.homeEnabled)) {
+            this.identityRequestEpoch += 1;
+            this.resetPlaybackIdentity();
+        }
+        this.settingsRevision += 1;
+        this.publishOwner();
+        const direct = this.updateReachableRuntimes();
+        this.status = !next.enabled ? t("trailers.disabled") : next.detailEnabled || next.homeEnabled
+            ? t("trailers.checkingCurrentGame") : t("trailers.detailAndHomeOff");
+        this.emit();
+        if (!direct)
+            void this.runInSteamTab(runtimeMissingScript());
+        if (!direct && this.isEffectivelyEnabled())
+            void this.poll();
+        let succeeded = true;
+        const save = this.settingsSaveQueue.then(async () => {
+            if (!this.ownsMount(ownerId))
+                return;
+            await setTrailerSettings(next);
+        });
+        this.settingsSaveQueue = save.then(() => {
+            if (this.ownsMount(ownerId))
+                this.confirmedSettings = { ...next };
+        }, () => undefined);
+        try {
+            await save;
+        }
+        catch (error) {
+            succeeded = false;
+            if (this.ownsMount(ownerId) && transactionId === this.settingsTransactionId) {
+                this.settings = { ...this.confirmedSettings };
+                this.syncPolling();
+                if (!this.settings.homeEnabled || !this.isEffectivelyEnabled()) {
+                    this.homeSelection = null;
+                    this.cancelHomeDelay();
+                }
+                if (!this.isEffectivelyEnabled() ||
+                    (this.identity?.view === "detail" && !this.settings.detailEnabled) ||
+                    (this.identity?.view === "home" && !this.settings.homeEnabled)) {
+                    this.identityRequestEpoch += 1;
+                    this.resetPlaybackIdentity();
+                }
+                this.settingsRevision += 1;
+                this.publishOwner();
+                if (!this.updateReachableRuntimes())
+                    void this.runInSteamTab(runtimeMissingScript());
+                this.settingsError = t("trailers.settingsSaveError", { error: translateBackendError(error) });
+                this.status = t("trailers.settingsRestored");
+            }
+        }
+        finally {
+            if (this.ownsMount(ownerId)) {
+                this.pendingSettingsWrites = Math.max(0, this.pendingSettingsWrites - 1);
+                this.settingsBusy = this.pendingSettingsWrites > 0;
+                this.emit();
+            }
+        }
+        if (succeeded && this.ownsMount(ownerId) && this.isEffectivelyEnabled())
+            void this.poll();
+        return succeeded;
+    }
+    ownsMount(ownerId) {
+        const owner = window[OWNER_KEY];
+        return this.mounted && this.ownerId === ownerId && owner?.ownerId === ownerId && owner.active;
+    }
+    publishOwner() {
+        const record = {
+            ownerId: this.ownerId,
+            active: this.mounted,
+            settings: { ...this.settings, enabled: this.isEffectivelyEnabled() },
+            settingsRevision: this.settingsRevision,
+            homeSelectionRevision: this.homeSelectionRevision,
+            identity: this.identity,
+            ignFallback: this.ignFallback,
+        };
+        window[OWNER_KEY] = record;
+    }
+    destroyOlderRuntimes() {
+        for (const doc of steamUiDocuments()) {
+            try {
+                const target = doc.defaultView;
+                const runtime = target?.[RUNTIME_KEY];
+                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId === this.ownerId ||
+                    typeof runtime.destroy !== "function")
+                    continue;
+                runtime.destroy();
+                if (target?.[RUNTIME_KEY] === runtime)
+                    delete target[RUNTIME_KEY];
+            }
+            catch { /* A closing window does not own this mount. */ }
+        }
+    }
+    refreshAudioListeners() {
+        const current = new Set([window]);
+        for (const doc of steamUiDocuments()) {
+            try {
+                if (doc.defaultView)
+                    current.add(doc.defaultView);
+            }
+            catch { }
+        }
+        for (const [target, listener] of this.audioWindows) {
+            if (current.has(target))
+                continue;
+            try {
+                target.removeEventListener(AUDIO_CHANGE_EVENT, listener);
+            }
+            catch { }
+            this.audioWindows.delete(target);
+        }
+        for (const target of current) {
+            if (this.audioWindows.has(target))
+                continue;
+            try {
+                target.addEventListener(AUDIO_CHANGE_EVENT, this.handleAudioChange);
+                this.audioWindows.set(target, this.handleAudioChange);
+            }
+            catch { /* Popups can become cross-origin or close between polls. */ }
+        }
+    }
+    async resolveCurrentIdentity() {
+        const route = currentRoutePath();
+        if (!this.isEffectivelyEnabled())
+            return { identity: null, status: t("trailers.disabled") };
+        const home = isTrailerHomeRoute(route);
+        const selection = home ? this.homeSelection : null;
+        if (home && !this.settings.homeEnabled)
+            return { identity: null, status: t("trailers.homeTrailersOff") };
+        if (home && !selection) {
+            return { identity: null, status: t("trailers.waitingHomeSelection") };
+        }
+        if (home && selection && Date.now() - selection.enteredAt < this.settings.homeFadeInDelaySeconds * 1000) {
+            if (this.homeDelayTimer === undefined)
+                this.scheduleHomeIdentity();
+            return { identity: null, status: t("trailers.waitingHomeDelay") };
+        }
+        if (!home && !this.settings.detailEnabled)
+            return { identity: null, status: t("trailers.detailTrailersOff") };
+        const pageAppId = home ? selection.appId : parseTrailerRootRoute(route);
+        if (!pageAppId)
+            return { identity: null, status: t("trailers.openGamePage") };
+        if (pageAppId !== this.pageAppId) {
+            this.pageAppId = pageAppId;
+            this.pageOverview = null;
+        }
+        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
+            this.pageOverview = getNativeOverview(pageAppId);
+        }
+        if (this.pageOverview === null || typeof this.pageOverview !== "object" ||
+            !("appid" in this.pageOverview) || Number(this.pageOverview.appid) !== pageAppId) {
+            return { identity: null, status: t("trailers.gameNotAvailable") };
+        }
+        if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !isNativeNonSteamShortcut(this.pageOverview)) {
+            return { identity: null, status: t("trailers.notNativeShortcut") };
+        }
+        if (pageAppId >= SHORTCUT_APP_ID_BOUNDARY && !metadataState.metadataLoaded) {
+            try {
+                await ensureMetadataCache();
+            }
+            catch {
+                return { identity: null, status: t("trailers.matchesUnavailable") };
+            }
+            if (!this.isEffectivelyEnabled())
+                return { identity: null, status: t("trailers.disabled") };
+        }
+        const metadata = metadataCache[String(pageAppId)] ?? null;
+        const context = {
+            overview: this.pageOverview, metadata,
+            hydrated: pageAppId < SHORTCUT_APP_ID_BOUNDARY || metadataState.metadataLoaded,
+        };
+        const resolved = home
+            ? resolveTrailerAppSource({ ...context, appId: pageAppId })
+            : resolveTrailerSource({ ...context, route, heroAppId: pageAppId });
+        if (!resolved)
+            return { identity: null, status: t("trailers.gameTrailerUnavailable") };
+        const gameUrl = ignGameUrl(metadata);
+        const title = nativeTrailerGameTitle(this.pageOverview) ||
+            (typeof metadata?.title === "string" ? metadata.title.trim() : "") ||
+            (gameUrl ? gameUrl.slice(gameUrl.lastIndexOf("/") + 1) : "");
+        return {
+            identity: {
+                view: home ? "home" : "detail",
+                pageAppId: resolved.pageAppId, sourceAppId: resolved.sourceAppId,
+                ...(selection ? { selectionRevision: selection.selectionRevision, enteredAt: selection.enteredAt } : {}),
+            },
+            ignLookup: title ? { title, gameUrl } : null,
+            status: resolved.sourceAppId === null ? t("trailers.waitingIgnTrailer") : t("trailers.waitingSteamTrailer"),
+        };
+    }
+    async refreshPageIdentity() {
+        if (!this.mounted)
+            return;
+        const epoch = ++this.identityRequestEpoch;
+        const route = currentRoutePath();
+        const selection = this.homeSelection;
+        const next = await this.resolveCurrentIdentity();
+        if (!this.mounted || epoch !== this.identityRequestEpoch ||
+            route !== currentRoutePath() || (isTrailerHomeRoute(route) && selection !== this.homeSelection))
+            return;
+        if (!this.isEffectivelyEnabled()) {
+            next.identity = null;
+            next.ignLookup = null;
+            next.status = t("trailers.disabled");
+        }
+        const lookup = next.ignLookup ?? null;
+        if (!this.mounted || (sameIdentity(next.identity, this.identity) && sameIgnLookup(lookup, this.ignLookup)))
+            return;
+        this.ignRequestEpoch += 1;
+        this.ignRequested = false;
+        this.ignFallback = undefined;
+        this.ignLookup = lookup;
+        this.identity = next.identity;
+        this.runtimeSnapshot = undefined;
+        this.status = next.status;
+        this.settingsRevision += 1;
+        this.publishOwner();
+        const direct = this.updateReachableRuntimes();
+        this.emit();
+        if (!direct && this.isEffectivelyEnabled() && this.identity)
+            void this.installOrUpdate();
+    }
+    updateReachableRuntimes() {
+        let found = false;
+        for (const doc of steamUiDocuments()) {
+            try {
+                const runtime = doc.defaultView?.[RUNTIME_KEY];
+                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
+                    typeof runtime.update !== "function")
+                    continue;
+                const result = runtime.update(this.effectiveSettings(), this.settingsRevision, this.identity, this.ignFallback);
+                if (isRuntimeSnapshot(result))
+                    this.runtimeSnapshot = result;
+                found = true;
+            }
+            catch { /* The CEF bridge can recover a missing or inaccessible runtime. */ }
+        }
+        return found;
+    }
+    readReachableRuntime() {
+        for (const doc of steamUiDocuments()) {
+            try {
+                const runtime = doc.defaultView?.[RUNTIME_KEY];
+                if (runtime?.product !== "decky-metadata-trailer" || runtime.ownerId !== this.ownerId ||
+                    typeof runtime.snapshot !== "function")
+                    continue;
+                const result = runtime.snapshot();
+                if (isRuntimeSnapshot(result)) {
+                    this.runtimeSnapshot = result;
+                    this.status = result.status;
+                    return true;
+                }
+            }
+            catch { }
+        }
+        return false;
+    }
+    buildInstallScript() {
+        return `(() => {
+      const settings = ${JSON.stringify(this.effectiveSettings())};
+      const ownerId = ${JSON.stringify(this.ownerId)};
+      const settingsRevision = ${this.settingsRevision};
+      const identity = ${JSON.stringify(this.identity)};
+      const ignFallback = ${JSON.stringify(this.ignFallback) ?? "undefined"};
+      const translations = ${JSON.stringify(runtimeTranslations())};
+      const factory = ${deckyMetadataTrailerRuntimeFactory.toString()};
+      return factory(settings, ownerId, settingsRevision, translations, identity, ignFallback);
+    })()`;
+    }
+    withTimeout(promise, timeoutMs) {
+        return new Promise((resolve, reject) => {
+            const timer = window.setTimeout(() => reject(new Error("Steam debugger timed out")), timeoutMs);
+            Promise.resolve(promise).then(resolve, reject).finally(() => window.clearTimeout(timer));
+        });
+    }
+    async runInSteamTab(code) {
+        try {
+            const result = await this.withTimeout(evalInBigPicture(code), BRIDGE_TIMEOUT_MS);
+            return result && typeof result === "object" ? result : undefined;
+        }
+        catch {
+            this.runtimeSnapshot = undefined;
+            this.status = t("trailers.steamUiUnavailable");
+            this.emit();
+            return undefined;
+        }
+    }
+    async installOrUpdate() {
+        // Either trailer feature may need the runtime before the first identity poll.
+        if (!this.isEffectivelyEnabled())
+            return;
+        if (this.installInFlight) {
+            this.pendingInstall = true;
+            return;
+        }
+        const ownerId = this.ownerId;
+        this.installInFlight = true;
+        try {
+            do {
+                this.pendingInstall = false;
+                if (!this.isEffectivelyEnabled())
+                    return;
+                const revision = this.settingsRevision;
+                const result = await this.runInSteamTab(this.buildInstallScript());
+                if (!this.mounted || this.ownerId !== ownerId || window[OWNER_KEY]?.ownerId !== ownerId)
+                    return;
+                if (result?.runtimeMissing !== true && isRuntimeSnapshot(result)) {
+                    this.installedRevision = revision;
+                    this.remoteRevision = revision;
+                }
+                this.resetRemoteBackoff();
+                this.applyRemoteResult(result);
+                this.refreshAudioListeners();
+            } while (this.isEffectivelyEnabled() && this.ownerId === ownerId && this.pendingInstall);
+        }
+        finally {
+            this.installInFlight = false;
+            if (this.mounted && this.pendingInstall)
+                void this.installOrUpdate();
+        }
+    }
+    applyRemoteResult(result) {
+        if (!result)
+            return;
+        if (result.runtimeMissing === true) {
+            this.installedRevision = -1;
+            this.status = String(result.status || t("trailers.steamUiUnavailable"));
+            this.runtimeSnapshot = undefined;
+            this.emit();
+            return;
+        }
+        if (!isRuntimeSnapshot(result))
+            return;
+        this.runtimeSnapshot = result;
+        this.status = result.status;
+        this.emit();
+        if (result.needsIgnFallback)
+            void this.loadIgnFallback();
+    }
+    /** Only an unchanged, idle snapshot earns remote backoff; older runtimes omit `pending`. */
+    noteRemoteResult(result) {
+        let snapshot;
+        if (result?.runtimeMissing !== true && isRuntimeSnapshot(result))
+            snapshot = result;
+        const key = snapshot ? JSON.stringify([
+            snapshot.appId, snapshot.sourceAppId, snapshot.status, snapshot.trailerName,
+            snapshot.trailerAudioEnabled, snapshot.displayWidth, snapshot.displayHeight,
+            snapshot.targetHeight, snapshot.needsIgnFallback, snapshot.pending,
+        ]) : "";
+        const settled = snapshot !== undefined && snapshot.pending === false && !snapshot.needsIgnFallback &&
+            key === this.lastRemoteKey && !this.panelVisible;
+        this.remoteIntervalMs = settled ? Math.min(this.remoteIntervalMs * 2, REMOTE_BACKOFF_MAX_MS) : POLL_INTERVAL_MS;
+        this.lastRemoteKey = key;
+        this.nextRemoteAt = Date.now() + this.remoteIntervalMs;
+    }
+    async loadIgnFallback() {
+        if (!this.isEffectivelyEnabled() || !this.identity || this.ignRequested)
+            return;
+        this.ignRequested = true;
+        const epoch = this.ignRequestEpoch;
+        const ownerId = this.ownerId;
+        const identity = this.identity;
+        const lookup = this.ignLookup;
+        let result = null;
+        try {
+            if (lookup)
+                result = await findIgnTrailer(lookup.title, lookup.gameUrl);
+        }
+        catch { /* A failed IGN lookup leaves the original artwork in place. */ }
+        if (!this.ownsMount(ownerId) || epoch !== this.ignRequestEpoch ||
+            !sameIdentity(identity, this.identity) || !sameIgnLookup(lookup, this.ignLookup))
+            return;
+        this.ignFallback = result;
+        this.settingsRevision += 1;
+        this.publishOwner();
+        this.updateReachableRuntimes();
+        this.emit();
+    }
+    async poll() {
+        if (!this.mounted || this.pollInFlight)
+            return;
+        this.pollInFlight = true;
+        try {
+            this.refreshAudioListeners();
+            await this.refreshPageIdentity();
+            this.syncPolling();
+            if (!this.isEffectivelyEnabled() || this.installInFlight)
+                return;
+            if (this.settings.homeEnabled && !this.identity && !this.readReachableRuntime()) {
+                // The full runtime is installed once per revision; later ticks use the cheap check.
+                if (this.installedRevision !== this.settingsRevision) {
+                    await this.installOrUpdate();
+                    return;
+                }
+            }
+            else if (this.readReachableRuntime()) {
+                this.emit();
+                if (this.runtimeSnapshot?.needsIgnFallback)
+                    void this.loadIgnFallback();
+                return;
+            }
+            // No game page and Home trailers off: the runtime follows its own route.
+            if (!this.identity && !this.settings.homeEnabled && this.remoteRevision === this.settingsRevision)
+                return;
+            if (this.settingsRevision !== this.remoteRevision)
+                this.resetRemoteBackoff();
+            if (!this.panelVisible && Date.now() < this.nextRemoteAt)
+                return;
+            this.remoteRevision = this.settingsRevision;
+            const result = await this.runInSteamTab(runtimeMissingScript());
+            if (!this.mounted)
+                return;
+            this.applyRemoteResult(result);
+            if (result?.runtimeMissing === true && this.isEffectivelyEnabled())
+                await this.installOrUpdate();
+            this.noteRemoteResult(result);
+        }
+        finally {
+            this.pollInFlight = false;
+        }
+    }
+}
+const trailerController = new TrailerController();
+const startTrailerController = () => {
+    trailerController.mount();
+    return () => trailerController.stop();
+};
+
 const rootClassName = "decky-metadata-settings";
 // Steam's settings wrapper fills the route host; without this the page stops short of the footer.
 const css = `.${rootClassName} { height: 100%; }`;
@@ -39456,10 +39601,51 @@ const icons = {
     updates: SP_JSX.jsx(FaSyncAlt, {}),
     versions: SP_JSX.jsx(FaInfoCircle, {}),
 };
+/** Subscribe in the tab that shows the snapshot: a change re-renders that tab, not the whole page. */
+function useStoreSnapshot(store) {
+    const [snapshot, setSnapshot] = SP_REACT.useState(store.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const unsubscribe = store.subscribe(() => setSnapshot(store.getSnapshot()));
+        setSnapshot(store.getSnapshot());
+        return unsubscribe;
+    }, [store]);
+    return snapshot;
+}
+// The feature controllers are module singletons, so their state survives a tab switch without a page-level hook.
+function ProtonDbTab() {
+    const protonDb = useStoreSnapshot(protonDbBadgeController);
+    return (SP_JSX.jsx(ProtonDbBadgesBody, { snapshot: protonDb, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: (coverPosition) => protonDbBadgeController.setSettings({
+            ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+        }) }));
+}
+function HltbTab() {
+    const hltb = useStoreSnapshot(hltbController);
+    return (SP_JSX.jsx(HltbBody, { settings: hltb.settings, settingsLoaded: hltb.settingsLoaded, conflict: hltb.conflict, settingsError: hltb.settingsError, cacheStatus: hltb.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: (style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style }), onBlurChange: (blur) => {
+            const current = hltbController.getSnapshot().settings;
+            return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+        } }));
+}
+function TrailersTab() {
+    const trailers = useStoreSnapshot(trailerController);
+    // The tab shows live trailer status, so the controller checks Steam every 2 s while it is open.
+    SP_REACT.useEffect(() => {
+        trailerController.setPanelVisible(true);
+        return () => trailerController.setPanelVisible(false);
+    }, []);
+    return (SP_JSX.jsx(GameTrailersBody, { state: trailers, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: (quality) => trailerController.setQuality(quality) }));
+}
+function MiniAchievementsTab() {
+    const miniAchievements = useStoreSnapshot(miniAchievementsController);
+    return (SP_JSX.jsx(MiniAchievementsBody, { state: miniAchievements, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }));
+}
+function VersionsTab(props) {
+    const { pluginVersion } = usePluginUpdateController();
+    return SP_JSX.jsx(VersionsBody, { pluginVersion: pluginVersion, ...props });
+}
 function SettingsPage() {
     const t = useT();
     const [page, setPage] = SP_REACT.useState("metadata");
-    // Every container hook runs here, above the layout: the native layout mounts only the active page,
+    // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
     const { games, scan } = useScanGames();
     const maintenance = useMetadataMaintenance(games);
@@ -39467,101 +39653,31 @@ function SettingsPage() {
     const logs = useLogsSettings();
     const versions = useVersions();
     const contextMenu = useContextMenuSettings();
-    const updates = usePluginUpdateController();
-    const [trailers, setTrailers] = SP_REACT.useState(trailerController.getSnapshot());
-    const [miniAchievements, setMiniAchievements] = SP_REACT.useState(miniAchievementsController.getSnapshot());
-    const [protonDb, setProtonDb] = SP_REACT.useState(protonDbBadgeController.getSnapshot());
-    const [hltb, setHltb] = SP_REACT.useState(hltbController.getSnapshot());
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
-    SP_REACT.useEffect(() => {
-        const unsubscribe = trailerController.subscribe(() => setTrailers(trailerController.getSnapshot()));
-        setTrailers(trailerController.getSnapshot());
-        return unsubscribe;
-    }, []);
-    SP_REACT.useEffect(() => {
-        const unsubscribe = miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot()));
-        setMiniAchievements(miniAchievementsController.getSnapshot());
-        return unsubscribe;
-    }, []);
-    SP_REACT.useEffect(() => {
-        const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
-        setProtonDb(protonDbBadgeController.getSnapshot());
-        return unsubscribe;
-    }, []);
-    SP_REACT.useEffect(() => {
-        const unsubscribe = hltbController.subscribe(() => setHltb(hltbController.getSnapshot()));
-        setHltb(hltbController.getSnapshot());
-        return unsubscribe;
-    }, []);
+    // Each body renders its own Steam settings sections.
     const pages = [
         {
             id: "metadata",
             label: t("qam.metadata.title"),
             icon: icons.metadata,
-            content: (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, ...maintenance })] })),
+            content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(MetadataScanBody, { inline: true, ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, ...maintenance })] })),
         },
-        {
-            id: "compat",
-            label: t("qam.compat.title"),
-            icon: icons.compat,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) })),
-        },
-        {
-            id: "protondb",
-            label: t("qam.protondb.title"),
-            icon: icons.protondb,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ProtonDbBadgesBody, { snapshot: protonDb, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: (coverPosition) => protonDbBadgeController.setSettings({
-                        ...protonDbBadgeController.getSnapshot().settings, coverPosition,
-                    }) }) })),
-        },
-        {
-            id: "hltb",
-            label: t("qam.hltb.title"),
-            icon: icons.hltb,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(HltbBody, { settings: hltb.settings, settingsLoaded: hltb.settingsLoaded, conflict: hltb.conflict, settingsError: hltb.settingsError, cacheStatus: hltb.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: (style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style }), onBlurChange: (blur) => {
-                        const current = hltbController.getSnapshot().settings;
-                        return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
-                    } }) })),
-        },
-        {
-            id: "trailers",
-            label: t("qam.trailers.title"),
-            icon: icons.trailers,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(GameTrailersBody, { state: trailers, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: (quality) => trailerController.setQuality(quality) }) })),
-        },
+        { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) },
+        { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: SP_JSX.jsx(ProtonDbTab, {}) },
+        { id: "hltb", label: t("qam.hltb.title"), icon: icons.hltb, content: SP_JSX.jsx(HltbTab, {}) },
+        { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: SP_JSX.jsx(TrailersTab, {}) },
         {
             id: "miniAchievements",
             label: t("qam.miniAchievements.title"),
             icon: icons.miniAchievements,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(MiniAchievementsBody, { state: miniAchievements, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }) })),
+            content: SP_JSX.jsx(MiniAchievementsTab, {}),
         },
-        {
-            id: "contextMenu",
-            label: t("qam.contextMenu.title"),
-            icon: icons.contextMenu,
-            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) }),
-        },
-        {
-            id: "logs",
-            label: t("qam.logs.title"),
-            icon: icons.logs,
-            separatorBefore: true,
-            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(LogsBody, { ...logs }) }),
-        },
-        {
-            id: "updates",
-            label: t("qam.update.title"),
-            icon: icons.updates,
-            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(PluginUpdateBody, {}) }),
-        },
-        {
-            id: "versions",
-            label: t("qam.versions.title"),
-            icon: icons.versions,
-            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(VersionsBody, { pluginVersion: updates.pluginVersion, ...versions }) })),
-        },
+        { id: "contextMenu", label: t("qam.contextMenu.title"), icon: icons.contextMenu, content: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) },
+        { id: "logs", label: t("qam.logs.title"), icon: icons.logs, separatorBefore: true, content: SP_JSX.jsx(LogsBody, { ...logs }) },
+        { id: "updates", label: t("qam.update.title"), icon: icons.updates, content: SP_JSX.jsx(PluginUpdateBody, {}) },
+        { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
     return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
 }

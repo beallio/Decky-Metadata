@@ -6,6 +6,7 @@ import {
   showModal,
 } from "@decky/ui";
 import type { PluginUpdateCandidate } from "../types";
+import type { ReactNode } from "react";
 import { useT } from "../i18n";
 import { ButtonLabel, inlineStatusStyle } from "../styles";
 import { isDeckyInstallerAvailable } from "./deckyInstaller";
@@ -17,6 +18,10 @@ export type PluginInstallActionProps = {
   isInstalling: boolean;
   isHandoffPending: boolean;
   onInstall: (candidate: PluginUpdateCandidate) => Promise<void>;
+  inline?: boolean;
+  /** Settings row text (inline only): the candidate version, and any warning about it. */
+  label?: ReactNode;
+  description?: ReactNode;
 };
 
 export function canInstallCandidate(candidate: PluginUpdateCandidate, currentVersion: string): boolean {
@@ -30,6 +35,9 @@ export function PluginInstallAction({
   isInstalling,
   isHandoffPending,
   onInstall,
+  inline = false,
+  label,
+  description,
 }: PluginInstallActionProps) {
   const t = useT();
   const isLocalBuild = currentVersion.includes("+");
@@ -60,28 +68,45 @@ export function PluginInstallAction({
     }
   };
 
-  return canInstall ? (
-    <PanelSectionRow>
+  if (canInstall) {
+    const actionText = isHandoffPending
+      ? t("qam.update.waitingForDecky")
+      : isInstalling
+        ? t("qam.update.preparing")
+        : getActionText();
+    return inline ? (
       <ButtonItem
-        layout="below"
+        layout="inline"
+        label={label}
+        description={description}
         onClick={handleInstallClick}
-        disabled={isChecking || isInstalling}
+        disabled={isChecking || isInstalling || isHandoffPending}
       >
-        <ButtonLabel busy={isInstalling}>
-          {isInstalling
-            ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
-            : getActionText()}
-        </ButtonLabel>
+        <ButtonLabel busy={isInstalling || isHandoffPending}>{actionText}</ButtonLabel>
       </ButtonItem>
-    </PanelSectionRow>
+    ) : (
+      <PanelSectionRow>
+        <ButtonItem
+          layout="below"
+          onClick={handleInstallClick}
+          disabled={isChecking || isInstalling || isHandoffPending}
+        >
+          <ButtonLabel busy={isInstalling || isHandoffPending}>{actionText}</ButtonLabel>
+        </ButtonItem>
+      </PanelSectionRow>
+    );
+  }
+  const unavailableText = isLocalBuild && candidate.channel !== "stable"
+    ? t("qam.update.localBuildOnlyStable")
+    : t("qam.update.manualInstallUnavailable");
+  return inline ? (
+    <Field label={label} description={description} childrenLayout="below" focusable highlightOnFocus>
+      <div style={inlineStatusStyle("error")}>{unavailableText}</div>
+    </Field>
   ) : (
     <PanelSectionRow>
       <Field focusable={true} highlightOnFocus={true} padding="standard">
-        <div style={inlineStatusStyle("error")}>
-          {isLocalBuild && candidate.channel !== "stable"
-            ? t("qam.update.localBuildOnlyStable")
-            : t("qam.update.manualInstallUnavailable")}
-        </div>
+        <div style={inlineStatusStyle("error")}>{unavailableText}</div>
       </Field>
     </PanelSectionRow>
   );

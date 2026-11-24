@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
-  PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({
   compactTextStyle: {},
@@ -79,8 +80,7 @@ describe("CompatibilityBody default scope", () => {
 
   it("uses the native readable four-option scope dropdown", () => {
     const dropdown = scopeDropdown({ compatibilityDefaultScope: "no-steam" });
-    expect(dropdown.layout).toBe("below");
-    expect(dropdown.childrenContainerWidth).toBe("max");
+    expect(dropdown.layout).toBeUndefined();
     expect(dropdown.rgOptions).toEqual([
       { data: "steam", label: "Steam-matched games" },
       { data: "no-steam", label: "Saved games without a Steam ID" },
@@ -88,6 +88,11 @@ describe("CompatibilityBody default scope", () => {
       { data: "all", label: "All non-Steam games" },
     ]);
     expect((dropdown.renderButtonValue as any)().props.children).toBe("Saved games without a Steam ID");
+    const defaultDropdown = nodes(render()).find(node =>
+      node.type === "DropdownItem" && node.props?.label === "Default compatibility status"
+    );
+    expect(defaultDropdown?.props?.layout).toBeUndefined();
+    expect(defaultDropdown?.props?.childrenContainerWidth).toBeUndefined();
   });
 
 });

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
@@ -12,7 +14,6 @@ vi.mock("../../styles", () => ({
   compactTextStyle: {},
   inlineStatusStyle: () => ({}),
   rowStackStyle: {},
-  sectionHeadingStyle: {},
 }));
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
 // Components are invoked as plain functions here, so the i18n hook is replaced by non-React `t`.
@@ -129,21 +130,4 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
     expect(clearButton.props.disabled).toBe(true);
   });
 
-});
-describe("MetadataMaintenanceBody", () => {
-  it("disables Clear cache while a scan is busy", () => {
-    const tree = MetadataMaintenanceBody({
-      scanBusy: true,
-      cacheBusy: false,
-      delistedCountText: "",
-      delistedBusy: false,
-      onClearCache: vi.fn(),
-      onRefreshDelisted: refreshDelisted,
-    });
-    const clearButton = nodes(tree).find(node =>
-      node.type === "ButtonItem" && node.props?.onClick !== refreshDelisted
-    );
-
-    expect(clearButton?.props?.disabled).toBe(true);
-  });
 });

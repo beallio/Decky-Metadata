@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "開啟設定" },
+  "settings": { "open": "開啟設定", "action": { "refresh": "重新整理", "clear": "清除", "view": "查看", "check": "檢查" } },
   "common": {
     "hours_other": "{{value}} 小時",
     "hoursShort": "{{value}} 小時",
@@ -244,9 +244,9 @@
     },
     "metadata": {
       "title": "中繼資料",
-      "detectedGames": "偵測到的非 Steam 遊戲：",
-      "saved": "已儲存的中繼資料：",
-      "missing": "缺少的中繼資料：",
+      "detectedGames": "偵測到的非 Steam 遊戲",
+      "saved": "已儲存的中繼資料",
+      "missing": "缺少的中繼資料",
       "refresh": "重新整理中繼資料",
       "refreshing": "正在重新整理...",
       "refreshingStatus": "正在重新整理中繼資料...",

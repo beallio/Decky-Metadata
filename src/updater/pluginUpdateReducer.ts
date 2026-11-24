@@ -41,6 +41,7 @@ export const initialUpdateState: UpdateState = {
 export type UpdateAction =
   | { type: "HYDRATION_COMPLETE"; installedReleasePublishedAt: string | null; pendingInstall?: { version: string; channel: UpdateChannel; preInstallVersion: string } }
   | { type: "CHECK_START" }
+  | { type: "CHECK_CANCELLED" }
   | { type: "CHECK_TIMEOUT"; message: string }
   | { type: "CHECK_FAILED"; message: string; result?: UpdateCheckResult }
   | { type: "CHECK_SUCCESS_CURRENT"; result: UpdateCheckResult }
@@ -48,7 +49,7 @@ export type UpdateAction =
   | { type: "INSTALL_START" }
   | { type: "INSTALL_HANDOFF_PENDING" }
   | { type: "INSTALL_SUCCESS"; version: string; channel: UpdateChannel; preInstallVersion: string }
-  | { type: "INSTALL_FAILED"; message: string }
+  | { type: "INSTALL_FAILED"; message: string; candidate: PluginUpdateCandidate }
   | { type: "CLEAR_INSTALLED_OVERRIDE" };
 
 export function updateReducer(state: UpdateState, action: UpdateAction): UpdateState {
@@ -79,6 +80,10 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         errorMessage: null,
         checkTimedOut: false,
       };
+
+    case "CHECK_CANCELLED":
+      // A dropped check with no replacement: leave "checking" without a result.
+      return state.phase === "checking" ? { ...state, phase: state.candidate ? "available" : "idle" } : state;
 
     case "CHECK_TIMEOUT":
       return {
@@ -156,9 +161,11 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
       };
 
     case "INSTALL_FAILED":
+      // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
       return {
         ...state,
         phase: "failed",
+        candidate: action.candidate,
         errorMessage: action.message,
         checkTimedOut: false,
         installedOverride: null,

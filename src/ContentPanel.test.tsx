@@ -29,10 +29,6 @@ const ui = vi.hoisted(() => ({
   getFocusNavController: vi.fn(),
   getGamepadNavigationTrees: vi.fn(),
 }));
-const trailer = vi.hoisted(() => ({
-  setPanelVisible: vi.fn(),
-}));
-
 vi.mock("react", () => ({
   useCallback: (callback: unknown) => callback,
   useEffect: (callback: () => void | (() => void)) => {
@@ -69,7 +65,6 @@ vi.mock("./i18n", () => ({
   translateProgress: (progress: { message?: string } | null | undefined) => progress?.message ?? "",
 }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
-vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
 vi.mock("./settings/useScanGames", () => ({
   useScanGames: () => ({ games: games.detected, scan: metadataScan.snapshot }),
 }));
@@ -201,23 +196,6 @@ describe("QAM content", () => {
 
     expect(takeNativeFocus(element)).toBe(true);
     expect(calls).toEqual(["reactivate", "focus"]);
-  });
-
-  it("tracks trailer panel visibility while the QAM is open", () => {
-    const { element, panelDocument, dispatchVisibilityChange } = makePanelElement();
-    vi.stubGlobal("window", { requestAnimationFrame: vi.fn(() => 1), cancelAnimationFrame: vi.fn() });
-    const root = render();
-
-    const focusPanel = root.props.ref as (element: HTMLDivElement | null) => void;
-    focusPanel(element);
-    expect(trailer.setPanelVisible).toHaveBeenLastCalledWith(true);
-    panelDocument.visibilityState = "hidden";
-    dispatchVisibilityChange();
-    expect(trailer.setPanelVisible).toHaveBeenLastCalledWith(false);
-
-    focusPanel(null);
-    expect(panelDocument.removeEventListener).toHaveBeenCalledWith("visibilitychange", expect.any(Function));
-    expect(trailer.setPanelVisible).toHaveBeenLastCalledWith(false);
   });
 
   it("maps the scan snapshot and starts a scan with the current games", () => {

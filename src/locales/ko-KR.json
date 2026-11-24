@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "설정 열기" },
+  "settings": { "open": "설정 열기", "action": { "refresh": "새로고침", "clear": "지우기", "view": "보기", "check": "확인" } },
   "common": {
     "hours_other": "{{value}}시간",
     "hoursShort": "{{value}}시간",
@@ -244,9 +244,9 @@
     },
     "metadata": {
       "title": "메타데이터",
-      "detectedGames": "감지된 비Steam 게임:",
-      "saved": "저장된 메타데이터:",
-      "missing": "메타데이터 없음:",
+      "detectedGames": "감지된 비Steam 게임",
+      "saved": "저장된 메타데이터",
+      "missing": "메타데이터 없음",
       "refresh": "메타데이터 새로 고침",
       "refreshing": "새로 고치는 중...",
       "refreshingStatus": "메타데이터를 새로 고치는 중...",

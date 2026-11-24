@@ -9,6 +9,8 @@ export function useContextMenuSettings() {
   const [error, setError] = useState("");
   // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
   const latest = useRef<EditorHeaderSettings | null>(null);
+  // The last settings the backend has; a failed save goes back to these, never to another unsaved toggle.
+  const saved = useRef<EditorHeaderSettings | null>(null);
 
   useEffect(() => {
     let current = true;
@@ -16,6 +18,7 @@ export function useContextMenuSettings() {
       (loaded) => {
         if (!current) return;
         latest.current = loaded;
+        saved.current = loaded;
         setSettings(loaded);
       },
       (loadError) => { if (current) setError(translateBackendError(loadError)); },
@@ -24,18 +27,20 @@ export function useContextMenuSettings() {
   }, []);
 
   const onChange = (key: keyof EditorHeaderSettings, value: boolean) => {
-    const previous = latest.current;
-    if (!previous) return;
-    const next = { ...previous, [key]: value };
+    if (!latest.current) return;
+    const next = { ...latest.current, [key]: value };
     latest.current = next;
     setSettings(next);
     setError("");
-    setEditorHeaderSettings(next).catch((saveError) => {
-      if (latest.current !== next) return;
-      latest.current = previous;
-      setSettings(previous);
-      setError(translateBackendError(saveError));
-    });
+    setEditorHeaderSettings(next).then(
+      () => { saved.current = next; },
+      (saveError) => {
+        if (latest.current !== next) return;
+        latest.current = saved.current;
+        setSettings(saved.current);
+        setError(translateBackendError(saveError));
+      },
+    );
   };
 
   return { settings, error, onChange };
