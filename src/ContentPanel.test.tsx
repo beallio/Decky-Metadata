@@ -43,6 +43,7 @@ vi.mock("react", () => ({
 vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   NavEntryPositionPreferences: { PREFERRED_CHILD: "preferred" },
+  PanelSection: "PanelSection",
   getFocusNavController: ui.getFocusNavController,
   getGamepadNavigationTrees: ui.getGamepadNavigationTrees,
 }));
@@ -235,6 +236,7 @@ describe("QAM content", () => {
     });
     expect(children(root).map((node) => node.type)).toEqual([
       "Focusable",
+      "PanelSection",
       "MetadataScanBody",
       "QamInstallRow",
       "OpenSettingsButton",
