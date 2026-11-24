@@ -39,6 +39,16 @@ All notable changes to this project are documented here in Keep a Changelog form
   again. The scan that starts after **Clear cache** now shows its progress too.
 - **Metadata counts show 0.** **Missing metadata** (and the other counts) showed
   nothing instead of **0**.
+- **Quick Access Menu refresh looks and behaves like Steam.** The
+  **Refresh metadata** progress bar now uses the full width of the panel, with
+  the current game above it, in place of a narrow bar at the right. The result
+  (games saved and not matched) now shows in the completion notification and
+  no longer stays in the panel or on the Settings page. The three count rows
+  can no longer be selected, so the controller goes straight to
+  **Refresh metadata**.
+- **Counts show sooner on the first Quick Access Menu open.** The plugin now
+  loads the game list and counts when it starts, and asks for the two counts
+  at the same time, so the first open after a restart does not wait for them.
 - **Edit Metadata... fills its boxes sooner.** The editor no longer waits for
   the shortcut-name check before it shows a game's saved details. The **Shortcut
   Name** actions stay off until that game's own shortcut details have loaded,

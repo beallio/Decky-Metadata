@@ -7,12 +7,11 @@ vi.mock("@decky/ui", () => ({
   DropdownItem: "DropdownItem",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
-  ProgressBarItem: "ProgressBarItem",
+  ProgressBarWithInfo: "ProgressBarWithInfo",
 }));
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
   compactTextStyle: {},
-  inlineStatusStyle: () => ({}),
   rowStackStyle: {},
 }));
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
@@ -34,7 +33,6 @@ const render = (overrides: Record<string, unknown> = {}) => {
     scanMessage: "",
     scanCompleted: 0,
     scanTotal: 0,
-    scanStatusKind: "idle" as const,
     cacheBusy: false,
     delistedCountText: "Delisted games: 24",
     delistedDateText: "Last updated: 9/29/2026",
@@ -116,10 +114,10 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
       scanMessage: "Scanning metadata",
       scanCompleted: 2,
       scanTotal: 4,
-    })).find(node => node.type === "ProgressBarItem");
+    })).find(node => node.type === "ProgressBarWithInfo");
 
     expect(progress.props.nProgress).toBe(50);
-    expect(progress.props.description).toBe("Scanning metadata");
+    expect(progress.props.sOperationText).toBe("Scanning metadata");
   });
   it("disables Clear cache while a metadata scan is busy", () => {
     const onClearCache = vi.fn();

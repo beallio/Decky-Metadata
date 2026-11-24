@@ -1,10 +1,6 @@
-import { ButtonItem, DialogControlsSection, DialogControlsSectionHeader, Field, PanelSectionRow, ProgressBarItem } from "@decky/ui";
+import { ButtonItem, DialogControlsSection, DialogControlsSectionHeader, Field, PanelSectionRow, ProgressBarWithInfo } from "@decky/ui";
 
-import {
-  ButtonLabel,
-  inlineStatusStyle,
-} from "../../styles";
-import type { StatusKind } from "../../tokens";
+import { ButtonLabel } from "../../styles";
 import { useT } from "../../i18n";
 
 type MetadataSectionProps = {
@@ -16,7 +12,6 @@ type MetadataSectionProps = {
   scanMessage: string;
   scanCompleted: number;
   scanTotal: number;
-  scanStatusKind: StatusKind;
   cacheBusy: boolean;
   delistedCountText: string;
   delistedDateText?: string;
@@ -36,12 +31,21 @@ export function MetadataScanBody({
   scanMessage,
   scanCompleted,
   scanTotal,
-  scanStatusKind,
   onRefreshMetadata,
   inline = false,
   listReady = true,
-}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata" | "listReady"> & { inline?: boolean }) {
+}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "onRefreshMetadata" | "listReady"> & { inline?: boolean }) {
   const t = useT();
+  // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
+  const progress = scanBusy ? (
+    <ProgressBarWithInfo
+      nProgress={scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0}
+      sOperationText={scanMessage || t("qam.metadata.refreshingStatus")}
+      childrenContainerWidth="max"
+      focusable={false}
+      bottomSeparator={inline ? undefined : "none"}
+    />
+  ) : null;
 
   if (inline) {
     return (
@@ -49,12 +53,7 @@ export function MetadataScanBody({
         <Field label={t("qam.metadata.detectedGames")}>{String(detectedCount)}</Field>
         <Field label={t("qam.metadata.saved")}>{String(savedCount)}</Field>
         <Field label={t("qam.metadata.missing")}>{String(missingCount)}</Field>
-        {scanBusy ? (
-          <ProgressBarItem
-            nProgress={scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0}
-            description={scanMessage || t("qam.metadata.refreshingStatus")}
-          />
-        ) : null}
+        {progress}
         <ButtonItem
           layout="inline"
           label={t("qam.metadata.refresh")}
@@ -64,7 +63,6 @@ export function MetadataScanBody({
         >
           {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("settings.action.refresh")}
         </ButtonItem>
-        {!scanBusy && scanMessage ? <Field focusable={false} childrenLayout="below">{scanMessage}</Field> : null}
       </DialogControlsSection>
     );
   }
@@ -72,18 +70,18 @@ export function MetadataScanBody({
   return (
     <>
       <PanelSectionRow>
-        <Field label={t("qam.metadata.detectedGames")} focusable highlightOnFocus bottomSeparator="none">
+        <Field label={t("qam.metadata.detectedGames")} bottomSeparator="none">
           {/* Steam's Field hides a falsy child, so 0 must be text. */}
           {String(detectedCount)}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <Field label={t("qam.metadata.saved")} focusable highlightOnFocus bottomSeparator="none">
+        <Field label={t("qam.metadata.saved")} bottomSeparator="none">
           {String(savedCount)}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
-        <Field label={t("qam.metadata.missing")} focusable highlightOnFocus bottomSeparator="none">
+        <Field label={t("qam.metadata.missing")} bottomSeparator="none">
           {String(missingCount)}
         </Field>
       </PanelSectionRow>
@@ -97,15 +95,8 @@ export function MetadataScanBody({
         >
           {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refresh")}
         </ButtonItem>
-        {!scanBusy && scanMessage ? <div style={inlineStatusStyle(scanStatusKind)}>{scanMessage}</div> : null}
       </PanelSectionRow>
-      {scanBusy ? (
-        <ProgressBarItem
-          nProgress={scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0}
-          description={scanMessage || t("qam.metadata.refreshingStatus")}
-          bottomSeparator="none"
-        />
-      ) : null}
+      {progress}
     </>
   );
 }
