@@ -10,11 +10,11 @@ import { MetadataScanBody } from "./components/qam/MetadataSection";
 import { OpenSettingsButton, QamInstallRow } from "./components/qam/QamActions";
 import { currentSteamLanguage, refreshLanguage } from "./i18n";
 import * as log from "./log";
-import { metadataScanStore, useMetadataScan } from "./metadataScan";
+import { metadataScanStore } from "./metadataScan";
 import { scanView } from "./settings/scanView";
+import { useScanGames } from "./settings/useScanGames";
 import { qamPanelStyle } from "./styles";
 import { trailerController } from "./trailers/controller";
-import { useNonSteamGames } from "./useNonSteamGames";
 
 type NativeFocusNode = {
   Element?: Element;
@@ -84,12 +84,7 @@ export const Content = () => {
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
   const panelVisibilityCleanup = useRef<(() => void) | null>(null);
-  const { games } = useNonSteamGames();
-  const scan = useMetadataScan();
-
-  useEffect(() => {
-    void metadataScanStore.refreshCounts(games);
-  }, [games]);
+  const { games, scan } = useScanGames();
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
     // QAM keeps this tree mounted while closed, so only its document reports visibility.

@@ -135,8 +135,8 @@ draws no row of its own.
    disabled and Metadata's toggle off, confirm the Play Time stat row has no
    achievement row.
 2. Open **Settings > Mini achievements**. Confirm the new preference starts
-   off and conflict notices are readable. Enable it on the already-mounted game
-   page. Confirm the row appears beside Play Time. Inspect the game page DOM:
+   off and conflict notices are readable. Enable it, then press B to return to
+   the game page, which Steam kept mounted. Confirm the row appears beside Play Time. Inspect the game page DOM:
    the row has Steam's `MiniAchievements` class, and no node with the class
    `decky-metadata-mini-achievements` exists.
    Confirm its `unlocked / total` equals Steam's own achievements page for the
@@ -337,16 +337,16 @@ Home/grid/Game Info state. Then, using the real Settings page and editor control
 3. Set one fixed per-game status and confirm changing the global setting only
    changes inheriting shortcuts. Return to Automatic and confirm an unmatched
    inheriting shortcut returns to its captured native baseline.
-4. Keep a matched shortcut on **Game Info** with Automatic/Playable, set global
-   **Verified** in **Settings > Compatibility status**. The active view must
-   remain Playable with rich content and links while other eligible shortcuts
-   and their native filter membership update. Open Settings and confirm the
-   active page is left and the held compatibility update applies at once.
-   Return to Game Info to confirm Verified. Repeat back to Automatic. Opening
-   **Change Metadata...** must release the held update, and a later editor Save
-   must take priority. Repeat changes before exit and verify only the latest
-   result applies. Navigate from game A to game B, replace/delete only a
-   disposable pending fixture, and confirm no state leaks or recreation occur.
+4. Keep a matched shortcut on **Game Info** with Automatic/Playable. Open
+   **Settings > Compatibility status** from the QAM gear (this leaves Game
+   Info), set global **Verified**, then press B. Game Info must show Verified
+   with rich content and links, and other eligible shortcuts and their native
+   filter membership must update. Repeat back to Automatic. Repeat several
+   changes in one Settings visit and verify only the latest result applies.
+   Navigate from game A to game B, replace/delete only a disposable pending
+   fixture, and confirm no state leaks or recreation occur. The held-update
+   rules (S33, S34, S46) need a change that reaches an active Game Info without
+   leaving it; test them with a plugin reload that loads a new saved default.
 5. Verify a shortcut that appears after bootstrap inherits the current default
    once its real native overview exists. Clear only disposable metadata and
    confirm its Activity cleanup and inherited status.

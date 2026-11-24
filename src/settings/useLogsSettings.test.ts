@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ values: [] as unknown[], effects: [] as (() => void)[] }));
+const state = vi.hoisted(() => ({ values: [] as unknown[], cursor: 0, effects: [] as (() => void)[] }));
 const deps = vi.hoisted(() => ({
   getDebugLogging: vi.fn<() => Promise<boolean>>(),
   setDebugLogging: vi.fn<(value: boolean) => Promise<boolean>>(),
@@ -8,9 +8,10 @@ const deps = vi.hoisted(() => ({
   setVerboseLogging: vi.fn(), showModal: vi.fn(), toastError: vi.fn(),
 }));
 vi.mock("react", () => ({
+  // Slots persist across calls like React state; mount() clears them, render() reuses them.
   useState: (initial: unknown) => {
-    const index = state.values.length;
-    state.values.push(typeof initial === "function" ? (initial as () => unknown)() : initial);
+    const index = state.cursor++;
+    if (index >= state.values.length) state.values.push(initial);
     return [state.values[index], (value: unknown) => { state.values[index] = value; }];
   },
   useEffect: (effect: () => void) => state.effects.push(effect),
@@ -25,17 +26,13 @@ vi.mock("../toast", () => ({ toastError: deps.toastError }));
 import { useLogsSettings } from "./useLogsSettings";
 
 const mount = () => {
-  state.values = []; state.effects = [];
+  state.values = []; state.effects = []; state.cursor = 0;
   useLogsSettings();
   state.effects.forEach((effect) => effect());
 };
-// Re-run the hook on the current state slots, as a React re-render would.
 const render = () => {
-  const values = state.values;
-  state.values = [];
-  const result = useLogsSettings();
-  state.values.splice(0, state.values.length, ...values);
-  return { ...result, debugLogging: values[1], debugLoggingLoaded: values[2] };
+  state.cursor = 0;
+  return useLogsSettings();
 };
 const flush = async () => { for (let i = 0; i < 8; i += 1) await Promise.resolve(); };
 

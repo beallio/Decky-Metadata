@@ -20,7 +20,6 @@ const metadataScan = vi.hoisted(() => ({
     savedCount: 0,
     missingCount: 0,
   } as MetadataScanSnapshot,
-  refreshCounts: vi.fn(),
   start: vi.fn(),
 }));
 const i18n = vi.hoisted(() => ({
@@ -61,7 +60,6 @@ vi.mock("./components/qam/QamActions", () => ({
 vi.mock("./log", () => ({ warn: vi.fn() }));
 vi.mock("./metadataScan", () => ({
   metadataScanStore: metadataScan,
-  useMetadataScan: () => metadataScan.snapshot,
   scanCompleteMessage: (progress: { message?: string }) => progress.message ?? "",
 }));
 vi.mock("./i18n", () => ({
@@ -72,8 +70,8 @@ vi.mock("./i18n", () => ({
 }));
 vi.mock("./styles", () => ({ qamPanelStyle: {} }));
 vi.mock("./trailers/controller", () => ({ trailerController: trailer }));
-vi.mock("./useNonSteamGames", () => ({
-  useNonSteamGames: () => ({ games: games.detected }),
+vi.mock("./settings/useScanGames", () => ({
+  useScanGames: () => ({ games: games.detected, scan: metadataScan.snapshot }),
 }));
 
 import { Content, takeNativeFocus } from "./ContentPanel";
@@ -147,7 +145,6 @@ beforeEach(() => {
     savedCount: 0,
     missingCount: 0,
   };
-  metadataScan.refreshCounts.mockResolvedValue(undefined);
   metadataScan.start.mockResolvedValue(undefined);
   i18n.currentSteamLanguage.mockResolvedValue("english");
 });
@@ -190,6 +187,22 @@ describe("QAM content", () => {
     expect(focus).not.toHaveBeenCalled();
   });
 
+  it("reactivates Steam's inactive QAM context before it takes focus", () => {
+    const { element } = makePanelElement();
+    const calls: string[] = [];
+    ui.getFocusNavController.mockReturnValue({
+      m_ActiveContext: null,
+      m_LastActiveContext: {},
+      FindAnActiveContext: () => calls.push("reactivate"),
+    });
+    ui.getGamepadNavigationTrees.mockReturnValue([
+      { Root: { Element: element, BTakeFocus: () => calls.push("focus") > 0 } },
+    ]);
+
+    expect(takeNativeFocus(element)).toBe(true);
+    expect(calls).toEqual(["reactivate", "focus"]);
+  });
+
   it("tracks trailer panel visibility while the QAM is open", () => {
     const { element, panelDocument, dispatchVisibilityChange } = makePanelElement();
     vi.stubGlobal("window", { requestAnimationFrame: vi.fn(() => 1), cancelAnimationFrame: vi.fn() });
@@ -207,7 +220,7 @@ describe("QAM content", () => {
     expect(trailer.setPanelVisible).toHaveBeenLastCalledWith(false);
   });
 
-  it("maps the scan snapshot and refreshes counts and scan using current games", () => {
+  it("maps the scan snapshot and starts a scan with the current games", () => {
     const game = { appid: 42, name: "Example" };
     games.detected = [game];
     metadataScan.snapshot = {

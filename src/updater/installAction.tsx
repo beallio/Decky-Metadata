@@ -7,7 +7,7 @@ import {
 } from "@decky/ui";
 import type { PluginUpdateCandidate } from "../types";
 import { useT } from "../i18n";
-import { BusySpinner, ButtonLabel, inlineStatusStyle } from "../styles";
+import { ButtonLabel, inlineStatusStyle } from "../styles";
 import { isDeckyInstallerAvailable } from "./deckyInstaller";
 
 export type PluginInstallActionProps = {

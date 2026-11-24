@@ -217,6 +217,42 @@ describe("plugin update controller", () => {
     expect(controller.getSnapshot().candidate?.channel).toBe("development");
   });
 
+  it("sends the channel save before the forced check, because the backend checks the saved channel", async () => {
+    const calls: string[] = [];
+    const { controller } = createController({
+      checkForPluginUpdate: vi.fn(async (_version: string, force: boolean): Promise<UpdateCheckResult> => {
+        calls.push(force ? "forced check" : "automatic check");
+        return { status: "current", checked_at: "now", channel: force ? "development" : "stable" };
+      }),
+      setUpdateChannel: vi.fn(async (channel: UpdateChannel): Promise<UpdateRpcResult<UpdateSettings>> => {
+        calls.push(`save ${channel}`);
+        return { update_channel: channel, automatic_update_checks: true };
+      }),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    await controller.setUpdateChannel(true);
+    await flushPromises();
+
+    expect(calls).toEqual(["automatic check", "save development", "forced check"]);
+    expect(controller.getSnapshot().isChecking).toBe(false);
+  });
+
+  it("falls back to stable with automatic checks and marks settings loaded after a failed envelope", async () => {
+    const { controller } = createController({
+      getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({ status: "failed" })),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    expect(controller.getSnapshot()).toMatchObject({
+      updateChannel: "stable",
+      automaticUpdateChecks: true,
+      settingsLoaded: true,
+    });
+  });
+
   it("disposes pending requests without publishing state or leaving a timer", async () => {
     vi.useFakeTimers();
     const request = deferred<UpdateCheckResult>();

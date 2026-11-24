@@ -102,6 +102,17 @@ const unmount = () => {
   harness.cleanups.clear();
 };
 
+// Leaving Settings and opening it again mounts a new hook instance while the shared save may still run.
+const remount = () => {
+  unmount();
+  harness.hooks = [];
+  harness.effectDeps = [];
+  harness.pendingEffects = [];
+  const mounted = render();
+  runEffects();
+  return mounted;
+};
+
 const flushPromises = async () => {
   for (let index = 0; index < 8; index += 1) await Promise.resolve();
 };
@@ -280,13 +291,13 @@ describe("useCompatibilityPolicy", () => {
     expect(render().compatibilityDefault).toBeNull();
   });
 
-  it("keeps a deferred scope save busy and visible", async () => {
+  it("keeps a deferred scope save busy and visible after the page remounts", async () => {
     const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
     backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
     const loaded = await mountLoaded();
 
     loaded.onCompatibilityDefaultScopeChange("steam");
-    const pending = render();
+    const pending = remount();
     expect(pending.compatibilityDefaultScopeBusy).toBe(true);
     expect(pending.compatibilityDefaultScope).toBe("steam");
     pending.onCompatibilityDefaultChange(2);
@@ -298,15 +309,16 @@ describe("useCompatibilityPolicy", () => {
     expect(render().compatibilityDefaultScope).toBe("steam");
   });
 
-  it("restores the previous value and error after a deferred scope save fails", async () => {
+  it("restores a remounted page after its deferred scope save fails", async () => {
     state.scope = "metadata";
     const save = deferred<"steam" | "no-steam" | "metadata" | "all">();
     backend.setCompatibilityDefaultScope.mockReturnValue(save.promise);
     const loaded = await mountLoaded();
 
     loaded.onCompatibilityDefaultScopeChange("steam");
-    expect(render().compatibilityDefaultScope).toBe("steam");
-    expect(render().compatibilityDefaultScopeBusy).toBe(true);
+    const pending = remount();
+    expect(pending.compatibilityDefaultScope).toBe("steam");
+    expect(pending.compatibilityDefaultScopeBusy).toBe(true);
     save.reject(new Error("disk unavailable"));
     await flushPromises();
 

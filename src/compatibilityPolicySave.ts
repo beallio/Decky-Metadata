@@ -48,7 +48,7 @@ const notifyCompatibilityPolicySave = () => {
   runtime.policySaveListeners.forEach((listener) => listener());
 };
 
-/** Keep one policy transaction alive while the native popup remounts QAM. */
+/** One policy transaction shared by the QAM and Settings bundles, so both show the same pending save. */
 export const compatibilityPolicySaveSnapshot = () => runtime.policySave;
 
 export const subscribeCompatibilityPolicySave = (listener: () => void) => {

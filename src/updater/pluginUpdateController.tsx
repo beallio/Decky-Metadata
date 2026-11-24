@@ -171,12 +171,14 @@ export class PluginUpdateControllerStore {
     const previousChannel = this.updateChannel;
     const requestedChannel = enabled ? "development" : "stable";
     const generation = this.generation;
+    // Send the save first: the backend checks the saved channel, and the optimistic apply below starts that check.
+    const request = this.deps.setUpdateChannel(requestedChannel);
     this.applySettings({
       update_channel: requestedChannel,
       automatic_update_checks: this.automaticUpdateChecks,
     });
     try {
-      const result = await this.deps.setUpdateChannel(requestedChannel);
+      const result = await request;
       if (generation !== this.generation) return;
       if ("status" in result) {
         const rolledBack = resolveSavedUpdateSettings(
@@ -210,19 +212,20 @@ export class PluginUpdateControllerStore {
 
   setAutomaticUpdateChecks = async (enabled: boolean): Promise<void> => {
     const previous = this.automaticUpdateChecks;
-    const previousChannel = this.updateChannel;
     const generation = this.generation;
+    // Send the save first, as for the channel: enabling checks starts one in the optimistic apply below.
+    const request = this.deps.setAutomaticUpdateChecks(enabled);
     this.applySettings({
-      update_channel: previousChannel,
+      update_channel: this.updateChannel,
       automatic_update_checks: enabled,
     });
     try {
-      const result = await this.deps.setAutomaticUpdateChecks(enabled);
+      const result = await request;
       if (generation !== this.generation) return;
       if ("status" in result) {
         const rolledBack = resolveSavedUpdateSettings(
           {
-            update_channel: previousChannel,
+            update_channel: this.updateChannel,
             automatic_update_checks: previous,
           },
           result

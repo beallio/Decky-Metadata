@@ -30,13 +30,14 @@ rows. Decky Metadata sets each row from the same choice. SteamOS has only
 follows Valve, each row uses the matched Steam game's own rating for that
 device when Steam has one.
 
-Saving a default in **Settings > Compatibility status** saves it immediately.
-Eligible shortcuts other than the game currently open on the **Game Info** tab
-update immediately. The active Game Info game keeps its applied value and rich
-content until the user leaves that tab. Opening Settings from a game's page
-leaves that page and applies its held update at once. The pending work then uses
-the latest default, match, and per-game choice, so a later editor Save wins over
-a formerly queued default.
+Saving a default in **Settings > Compatibility status** saves it immediately,
+and eligible shortcuts update immediately. Opening Settings leaves a game's
+**Game Info** tab, so a change made there applies to that game at once and shows
+when the user returns. A change that reaches an active Game Info without leaving
+it (for example a plugin reload that loads a new saved default) keeps that game's
+applied value and rich content until the user leaves the tab. The pending work
+then uses the latest default, match, and per-game choice, so a later editor Save
+wins over a formerly queued default.
 
 **Apply default to** has four choices, in this order:
 
@@ -94,9 +95,9 @@ same active-Game-Info deferral as any other default change.
 | S30 | Any | Global or per-game save fails/cancels | Last confirmed setting remains active; show failures. |
 | S31 | Any | Old load completes after successful save | New confirmed choice stays active. |
 | S32 | Automatic / Follow Valve | Nonzero Original and no Valve data | Preserve Original and bits 10 and above. |
-| S33 | Automatic -> Verified in Settings > Compatibility status | Inheriting matched Game Info is active with Valve Playable | Save Verified; other games update; active view stays Playable and intact until it exits. |
-| S34 | Several global changes in Settings > Compatibility status | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
-| S35 | Changed global default in Settings > Compatibility status | Open Settings from active Game Info | Leave Game Info; apply the held update at once. |
+| S33 | Automatic -> Verified reaches an active Game Info without leaving it (for example a plugin reload loads the new saved default) | Inheriting matched Game Info is active with Valve Playable | Other games update; active view stays Playable and intact until it exits. |
+| S34 | Several global changes reach the same active Game Info | Same Game Info stays active | Keep its old applied status; apply only the latest result after exit. |
+| S35 | Changed global default in Settings > Compatibility status | Settings was opened from Game Info | Opening Settings left Game Info, so the update applies at once; Game Info shows it on return. |
 | S36 | Changed global default | Open Change Metadata... from active Game Info | Editor navigation exits; its explicit Save wins over the old queued default. |
 | S37 | Changed global default | Navigate from game A Game Info to game B | Release A only; do not transfer A's state to B. |
 | S38 | Changed global default | Steam replaces or deletes an overview while pending | Keep the held status on a replacement; apply only to the current exact native object after exit; never recreate a deletion. |
@@ -107,7 +108,7 @@ same active-Game-Info deferral as any other default change.
 | S43 | Verified, Steam-matched games | IGN record with a valid Steam ID | Verified. |
 | S44 | Verified, all games with saved metadata | Shortcut with no record | Original; it is outside the scope. |
 | S45 | Automatic, any saved scope | Any shortcut | No visible change; the selector is unavailable and its value persists. |
-| S46 | Scope changes in Settings > Compatibility status | A Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. |
+| S46 | Scope change reaches an active Game Info without leaving it (for example a plugin reload) | A Game Info tab is active | Active view keeps its value until it exits; other eligible shortcuts update now. A scope change in Settings follows S35. |
 | S47 | Verified, Steam-matched games | An inheriting record loses its Steam ID | Valve category or Original; it leaves the scope. |
 | S48 | Verified, saved games without a Steam ID | A record gains a valid Steam ID | Valve category or Original; it leaves the scope. |
 | S49 | Automatic | Follow Valve on a non-Deck SteamOS device; Valve SteamOS Compatible | SteamOS row shows Compatible; Deck row shows the Valve Deck category. |

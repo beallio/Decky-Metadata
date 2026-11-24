@@ -5,16 +5,18 @@ import { useT } from "./i18n";
 // Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
 export const SETTINGS_ROUTE = "/decky-metadata-settings";
 
-type WindowStoreHost = {
-  WindowStore?: { GamepadUIMainWindowInstance?: { m_history?: { location?: { pathname?: string } } } };
-};
+type WindowStore = { GamepadUIMainWindowInstance?: { m_history?: { location?: { pathname?: string } } } };
 
 export const openSettings = () => {
   Navigation.CloseSideMenus();
   // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
   // Current Steam has SteamUIStore and no Router global; older builds have Router.
-  const host = globalThis as { SteamUIStore?: WindowStoreHost; Router?: WindowStoreHost };
-  const path = (host.SteamUIStore ?? host.Router)?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+  const host = globalThis as {
+    SteamUIStore?: { WindowStore?: WindowStore; m_WindowStore?: WindowStore };
+    Router?: { WindowStore?: WindowStore };
+  };
+  const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
+  const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
   if (path !== SETTINGS_ROUTE) Navigation.Navigate(SETTINGS_ROUTE);
 };
 

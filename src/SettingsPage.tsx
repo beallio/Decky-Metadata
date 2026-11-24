@@ -15,19 +15,20 @@ import { ProtonDbBadgesBody } from "./components/qam/ProtonDbBadgesSection";
 import { VersionsBody } from "./components/qam/VersionsSection";
 import { hltbController } from "./hltb/gameView";
 import { currentSteamLanguage, refreshLanguage, useT } from "./i18n";
-import { metadataScanStore, useMetadataScan } from "./metadataScan";
+import { metadataScanStore } from "./metadataScan";
 import { protonDbBadgeController } from "./protondb/controller";
 import { ProtonDbIcon } from "./protondb/Icon";
 import { useCompatibilityPolicy } from "./settings/useCompatibilityPolicy";
+import { useContextMenuSettings } from "./settings/useContextMenuSettings";
 import { useLogsSettings } from "./settings/useLogsSettings";
 import { useMetadataMaintenance } from "./settings/useMetadataMaintenance";
 import { useVersions } from "./settings/useVersions";
+import { useScanGames } from "./settings/useScanGames";
 import { scanView } from "./settings/scanView";
 import { SettingsLayout, type SettingsLayoutPage } from "./settingsLayout";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
 import { trailerController } from "./trailers/controller";
 import { usePluginUpdateController } from "./updater/pluginUpdateController";
-import { useNonSteamGames } from "./useNonSteamGames";
 
 const rootClassName = "decky-metadata-settings";
 // Steam's settings wrapper fills the route host; without this the page stops short of the footer.
@@ -53,12 +54,12 @@ export function SettingsPage() {
 
   // Every container hook runs here, above the layout: the native layout mounts only the active page,
   // so state kept in a page body would reset on a tab switch.
-  const { games } = useNonSteamGames();
-  const scan = useMetadataScan();
+  const { games, scan } = useScanGames();
   const maintenance = useMetadataMaintenance(games);
   const compatibility = useCompatibilityPolicy();
   const logs = useLogsSettings();
   const versions = useVersions();
+  const contextMenu = useContextMenuSettings();
   const updates = usePluginUpdateController();
   const [trailers, setTrailers] = useState(trailerController.getSnapshot());
   const [miniAchievements, setMiniAchievements] = useState(miniAchievementsController.getSnapshot());
@@ -68,8 +69,16 @@ export function SettingsPage() {
   useEffect(() => {
     void refreshLanguage();
   }, []);
-  useEffect(() => trailerController.subscribe(() => setTrailers(trailerController.getSnapshot())), []);
-  useEffect(() => miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot())), []);
+  useEffect(() => {
+    const unsubscribe = trailerController.subscribe(() => setTrailers(trailerController.getSnapshot()));
+    setTrailers(trailerController.getSnapshot());
+    return unsubscribe;
+  }, []);
+  useEffect(() => {
+    const unsubscribe = miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot()));
+    setMiniAchievements(miniAchievementsController.getSnapshot());
+    return unsubscribe;
+  }, []);
   useEffect(() => {
     const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
     setProtonDb(protonDbBadgeController.getSnapshot());
@@ -80,9 +89,6 @@ export function SettingsPage() {
     setHltb(hltbController.getSnapshot());
     return unsubscribe;
   }, []);
-  useEffect(() => {
-    void metadataScanStore.refreshCounts(games);
-  }, [games]);
 
   const pages: SettingsLayoutPage[] = [
     {
@@ -188,7 +194,7 @@ export function SettingsPage() {
       id: "contextMenu",
       label: t("qam.contextMenu.title"),
       icon: icons.contextMenu,
-      content: <DialogControlsSection><ContextMenuBody /></DialogControlsSection>,
+      content: <DialogControlsSection><ContextMenuBody {...contextMenu} /></DialogControlsSection>,
     },
     {
       id: "logs",

@@ -19118,7 +19118,8 @@ const openSettings = () => {
     // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
     // Current Steam has SteamUIStore and no Router global; older builds have Router.
     const host = globalThis;
-    const path = (host.SteamUIStore ?? host.Router)?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
+    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
     if (path !== SETTINGS_ROUTE)
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
@@ -19674,12 +19675,14 @@ class PluginUpdateControllerStore {
                 const previousChannel = this.updateChannel;
                 const requestedChannel = enabled ? "development" : "stable";
                 const generation = this.generation;
+                // Send the save first: the backend checks the saved channel, and the optimistic apply below starts that check.
+                const request = this.deps.setUpdateChannel(requestedChannel);
                 this.applySettings({
                     update_channel: requestedChannel,
                     automatic_update_checks: this.automaticUpdateChecks,
                 });
                 try {
-                    const result = await this.deps.setUpdateChannel(requestedChannel);
+                    const result = await request;
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
@@ -19714,19 +19717,20 @@ class PluginUpdateControllerStore {
             writable: true,
             value: async (enabled) => {
                 const previous = this.automaticUpdateChecks;
-                const previousChannel = this.updateChannel;
                 const generation = this.generation;
+                // Send the save first, as for the channel: enabling checks starts one in the optimistic apply below.
+                const request = this.deps.setAutomaticUpdateChecks(enabled);
                 this.applySettings({
-                    update_channel: previousChannel,
+                    update_channel: this.updateChannel,
                     automatic_update_checks: enabled,
                 });
                 try {
-                    const result = await this.deps.setAutomaticUpdateChecks(enabled);
+                    const result = await request;
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
                         const rolledBack = resolveSavedUpdateSettings({
-                            update_channel: previousChannel,
+                            update_channel: this.updateChannel,
                             automatic_update_checks: previous,
                         }, result);
                         this.applySettings(rolledBack);
@@ -29767,6 +29771,39 @@ function scanView(scan) {
     };
 }
 
+const useNonSteamGames = () => {
+    const [games, setGames] = SP_REACT.useState([]);
+    const [loaded, setLoaded] = SP_REACT.useState(false);
+    const loadGames = SP_REACT.useCallback(async () => {
+        const loadedGames = await allNonSteamGames();
+        setGames(loadedGames);
+        setLoaded(true);
+        return loadedGames;
+    }, []);
+    SP_REACT.useEffect(() => {
+        void loadGames();
+    }, [loadGames]);
+    return { games, loaded, loadGames };
+};
+
+/** Detected games plus the shared scan snapshot, with counts kept current for both QAM and Settings. */
+function useScanGames() {
+    const { games, loaded, loadGames } = useNonSteamGames();
+    const scan = useMetadataScan();
+    // Wait for the real list: counting [] would show 0 missing until the shortcuts load.
+    SP_REACT.useEffect(() => {
+        if (!loaded)
+            return;
+        metadataScanStore.refreshCounts(games).catch((error) => warn("bridge", "metadata count refresh failed", error));
+    }, [games, loaded]);
+    // Shortcuts can change while the QAM stays mounted; reload them after each scan, as the QAM did before.
+    SP_REACT.useEffect(() => {
+        if (scan.completedRevision > 0)
+            void loadGames();
+    }, [scan.completedRevision]);
+    return { games, scan };
+}
+
 const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
 const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
 const KNOWN_CONFLICTS = {
@@ -33855,19 +33892,6 @@ const startTrailerController = () => {
     return () => trailerController.stop();
 };
 
-const useNonSteamGames = () => {
-    const [games, setGames] = SP_REACT.useState([]);
-    const loadGames = SP_REACT.useCallback(async () => {
-        const loadedGames = await allNonSteamGames();
-        setGames(loadedGames);
-        return loadedGames;
-    }, []);
-    SP_REACT.useEffect(() => {
-        void loadGames();
-    }, [loadGames]);
-    return { games, loadGames };
-};
-
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
@@ -33925,11 +33949,7 @@ const Content = () => {
     const focusFrame = SP_REACT.useRef(null);
     const initialPanelFocusComplete = SP_REACT.useRef(false);
     const panelVisibilityCleanup = SP_REACT.useRef(null);
-    const { games } = useNonSteamGames();
-    const scan = useMetadataScan();
-    SP_REACT.useEffect(() => {
-        void metadataScanStore.refreshCounts(games);
-    }, [games]);
+    const { games, scan } = useScanGames();
     const focusPanel = SP_REACT.useCallback((element) => {
         // QAM keeps this tree mounted while closed, so only its document reports visibility.
         panelVisibilityCleanup.current?.();
@@ -37469,40 +37489,9 @@ function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, c
 }
 
 /** Options for the Edit Metadata page that the game context menu opens. */
-function ContextMenuBody() {
+function ContextMenuBody({ settings, error, onChange }) {
     const t = useT();
-    const [settings, setSettings] = SP_REACT.useState(null);
-    const [error, setError] = SP_REACT.useState("");
-    // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
-    const latest = SP_REACT.useRef(null);
-    SP_REACT.useEffect(() => {
-        let current = true;
-        getEditorHeaderSettings().then((loaded) => {
-            if (!current)
-                return;
-            latest.current = loaded;
-            setSettings(loaded);
-        }, (loadError) => { if (current)
-            setError(translateBackendError(loadError)); });
-        return () => { current = false; };
-    }, []);
-    const update = (key, value) => {
-        const previous = latest.current;
-        if (!previous)
-            return;
-        const next = { ...previous, [key]: value };
-        latest.current = next;
-        setSettings(next);
-        setError("");
-        setEditorHeaderSettings(next).catch((saveError) => {
-            if (latest.current !== next)
-                return;
-            latest.current = previous;
-            setSettings(previous);
-            setError(translateBackendError(saveError));
-        });
-    };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => update("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => update("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.headerIconLabel"), description: t("qam.contextMenu.headerIconDescription"), checked: settings?.gameIcon ?? false, disabled: !settings, onChange: (enabled) => onChange("gameIcon", enabled) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ToggleField, { label: t("qam.contextMenu.steamIconLabel"), description: t("qam.contextMenu.steamIconDescription"), checked: settings?.steamIconFallback ?? false, disabled: !settings?.gameIcon, onChange: (enabled) => onChange("steamIconFallback", enabled), bottomSeparator: "none" }) }), error ? (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { focusable: false, padding: "none", bottomSeparator: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: error }) }) })) : null] }));
 }
 
 function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHomeEnabledChange, onAudioChange, onHideLogoChange, onDetailFadeInDelayChange, onHomeFadeInDelayChange, onQualityChange, }) {
@@ -38554,7 +38543,7 @@ const runtime = compatibilityQamRuntime();
 const notifyCompatibilityPolicySave = () => {
     runtime.policySaveListeners.forEach((listener) => listener());
 };
-/** Keep one policy transaction alive while the native popup remounts QAM. */
+/** One policy transaction shared by the QAM and Settings bundles, so both show the same pending save. */
 const compatibilityPolicySaveSnapshot = () => runtime.policySave;
 const subscribeCompatibilityPolicySave = (listener) => {
     runtime.policySaveListeners.add(listener);
@@ -38742,6 +38731,42 @@ function useCompatibilityPolicy() {
         onCompatibilityDefaultChange,
         onCompatibilityDefaultScopeChange,
     };
+}
+
+/** Edit Metadata header options: ContextMenuBody props. */
+function useContextMenuSettings() {
+    const [settings, setSettings] = SP_REACT.useState(null);
+    const [error, setError] = SP_REACT.useState("");
+    // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
+    const latest = SP_REACT.useRef(null);
+    SP_REACT.useEffect(() => {
+        let current = true;
+        getEditorHeaderSettings().then((loaded) => {
+            if (!current)
+                return;
+            latest.current = loaded;
+            setSettings(loaded);
+        }, (loadError) => { if (current)
+            setError(translateBackendError(loadError)); });
+        return () => { current = false; };
+    }, []);
+    const onChange = (key, value) => {
+        const previous = latest.current;
+        if (!previous)
+            return;
+        const next = { ...previous, [key]: value };
+        latest.current = next;
+        setSettings(next);
+        setError("");
+        setEditorHeaderSettings(next).catch((saveError) => {
+            if (latest.current !== next)
+                return;
+            latest.current = previous;
+            setSettings(previous);
+            setError(translateBackendError(saveError));
+        });
+    };
+    return { settings, error, onChange };
 }
 
 function PluginLogModal({ logs, closeModal }) {
@@ -39441,12 +39466,12 @@ function SettingsPage() {
     const [page, setPage] = SP_REACT.useState("metadata");
     // Every container hook runs here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
-    const { games } = useNonSteamGames();
-    const scan = useMetadataScan();
+    const { games, scan } = useScanGames();
     const maintenance = useMetadataMaintenance(games);
     const compatibility = useCompatibilityPolicy();
     const logs = useLogsSettings();
     const versions = useVersions();
+    const contextMenu = useContextMenuSettings();
     const updates = usePluginUpdateController();
     const [trailers, setTrailers] = SP_REACT.useState(trailerController.getSnapshot());
     const [miniAchievements, setMiniAchievements] = SP_REACT.useState(miniAchievementsController.getSnapshot());
@@ -39455,8 +39480,16 @@ function SettingsPage() {
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
-    SP_REACT.useEffect(() => trailerController.subscribe(() => setTrailers(trailerController.getSnapshot())), []);
-    SP_REACT.useEffect(() => miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot())), []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = trailerController.subscribe(() => setTrailers(trailerController.getSnapshot()));
+        setTrailers(trailerController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot()));
+        setMiniAchievements(miniAchievementsController.getSnapshot());
+        return unsubscribe;
+    }, []);
     SP_REACT.useEffect(() => {
         const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
         setProtonDb(protonDbBadgeController.getSnapshot());
@@ -39467,9 +39500,6 @@ function SettingsPage() {
         setHltb(hltbController.getSnapshot());
         return unsubscribe;
     }, []);
-    SP_REACT.useEffect(() => {
-        void metadataScanStore.refreshCounts(games);
-    }, [games]);
     const pages = [
         {
             id: "metadata",
@@ -39516,7 +39546,7 @@ function SettingsPage() {
             id: "contextMenu",
             label: t("qam.contextMenu.title"),
             icon: icons.contextMenu,
-            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ContextMenuBody, {}) }),
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) }),
         },
         {
             id: "logs",

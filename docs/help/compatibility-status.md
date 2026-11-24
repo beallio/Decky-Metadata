@@ -49,10 +49,9 @@ Select **Save** when you finish.
 
 ## When a change appears
 
-Other eligible games update when you change the default or its scope. If the
-game's **Game Info** tab is already open, its current status stays in place
-until you leave that tab. Opening Settings from a game's page leaves that page
-and applies its held status update at once.
+Eligible games update when you change the default or its scope in Settings.
+Opening Settings leaves a game's **Game Info** tab, so that game shows the new
+status when you go back to it.
 
 ## What the status means
 

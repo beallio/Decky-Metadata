@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const calls: string[] = [];
 vi.mock("@decky/ui", () => ({
@@ -19,6 +19,9 @@ const setRoute = (pathname: string) =>
 describe("openSettings", () => {
   beforeEach(() => {
     calls.length = 0;
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("closes the QAM before it opens the Settings route", () => {
