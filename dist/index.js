@@ -19529,24 +19529,10 @@ const initialUpdateState = {
     errorMessage: null,
     checkTimedOut: false,
     installedReleasePublishedAt: null,
-    installedOverride: null,
-    pendingInstallVersion: null,
 };
 function updateReducer(state, action) {
     switch (action.type) {
         case "HYDRATION_COMPLETE":
-            if (action.pendingInstall) {
-                return {
-                    ...state,
-                    phase: "installed",
-                    installedReleasePublishedAt: action.installedReleasePublishedAt,
-                    installedOverride: action.pendingInstall,
-                    pendingInstallVersion: action.pendingInstall.version,
-                    candidate: null,
-                    errorMessage: null,
-                    checkResult: { status: "current", checked_at: new Date().toISOString(), channel: action.pendingInstall.channel }
-                };
-            }
             return {
                 ...state,
                 phase: "idle",
@@ -19612,41 +19598,20 @@ function updateReducer(state, action) {
                 ...state,
                 phase: "handoff_pending",
             };
-        case "INSTALL_SUCCESS":
+        case "INSTALL_HANDED_OFF":
+            // Decky answers when it queues its own install prompt; only a plugin reload proves the new version.
             return {
                 ...state,
-                phase: "installed",
-                candidate: null,
-                errorMessage: null,
-                installedOverride: {
-                    version: action.version,
-                    channel: action.channel,
-                    preInstallVersion: action.preInstallVersion,
-                },
-                pendingInstallVersion: action.version,
-                checkResult: {
-                    status: "current",
-                    checked_at: new Date().toISOString(),
-                    channel: action.channel
-                }
+                phase: "available",
+                candidate: action.candidate,
             };
         case "INSTALL_FAILED":
-            // Offer the same update again: INSTALL_SUCCESS cleared the candidate before the installer ran.
             return {
                 ...state,
                 phase: "failed",
                 candidate: action.candidate,
                 errorMessage: action.message,
                 checkTimedOut: false,
-                installedOverride: null,
-                pendingInstallVersion: null,
-            };
-        case "CLEAR_INSTALLED_OVERRIDE":
-            return {
-                ...state,
-                installedOverride: null,
-                pendingInstallVersion: null,
-                phase: state.phase === "installed" ? "idle" : state.phase,
             };
         default:
             return state;
@@ -19740,7 +19705,6 @@ class PluginUpdateControllerStore {
             writable: true,
             value: {
                 pluginVersion: "",
-                effectiveCurrentVersion: "",
                 updateChannel: "stable",
                 automaticUpdateChecks: true,
                 settingsLoaded: false,
@@ -19925,12 +19889,6 @@ class PluginUpdateControllerStore {
                         version: revalidation.version,
                         elapsed_ms: Math.round(performance.now() - recordStarted),
                     });
-                    this.dispatch({
-                        type: "INSTALL_SUCCESS",
-                        version: revalidation.version,
-                        channel: revalidation.channel,
-                        preInstallVersion: this.pluginVersion,
-                    });
                     const handoffStarted = performance.now();
                     logUpdate(traceId, "handoff_start", {
                         version: revalidation.version,
@@ -19969,7 +19927,7 @@ class PluginUpdateControllerStore {
                     await installerPromise;
                     if (generation !== this.generation)
                         return;
-                    await this.handleHandoffSuccess(revalidation.version, revalidation.channel, traceId, handoffStarted, generation);
+                    await this.handleHandoffSuccess(revalidation, traceId, handoffStarted, generation);
                 }
                 catch (error) {
                     if (generation !== this.generation)
@@ -20028,32 +19986,10 @@ class PluginUpdateControllerStore {
         this.confirmed = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
         this.settingsLoaded = true;
         const context = contextResult && !("status" in contextResult) ? contextResult : null;
-        const pendingInstall = context?.pending_update_install;
-        const isPendingInstallCurrent = !!pendingInstall?.version &&
-            context?.effective_installed_version === pendingInstall.version;
-        if (context && isPendingInstallCurrent && pendingInstall) {
-            const pendingChannel = pendingInstall.channel === "development" ? "development" : "stable";
-            this.pluginVersion = pendingInstall.version;
-            this.dispatch({
-                type: "HYDRATION_COMPLETE",
-                installedReleasePublishedAt: context.installed_release_published_at || null,
-                pendingInstall: {
-                    version: pendingInstall.version,
-                    channel: pendingChannel,
-                    preInstallVersion: context.installed_version || this.pluginVersion,
-                },
-            });
-        }
-        else {
-            this.dispatch({
-                type: "HYDRATION_COMPLETE",
-                installedReleasePublishedAt: context?.installed_release_published_at || null,
-            });
-        }
-        if (isPendingInstallCurrent) {
-            logUpdate(null, "initial_check_skipped_hydration");
-            return;
-        }
+        this.dispatch({
+            type: "HYDRATION_COMPLETE",
+            installedReleasePublishedAt: context?.installed_release_published_at || null,
+        });
         if (this.confirmed.automatic_update_checks) {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
         }
@@ -20090,37 +20026,18 @@ class PluginUpdateControllerStore {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
         }
     }
-    setPluginVersion(version) {
-        this.pluginVersion = version;
-        const installedOverride = this.state.installedOverride;
-        if (installedOverride &&
-            version &&
-            version !== "Loading..." &&
-            (version !== installedOverride.preInstallVersion ||
-                version === installedOverride.version)) {
-            this.dispatch({ type: "CLEAR_INSTALLED_OVERRIDE" });
-        }
-        else {
-            this.publish();
-        }
-    }
     async checkForUpdates(options) {
         if (this.installOwned) {
             logUpdate(null, "check_suppressed_install");
             return;
         }
-        const currentVersion = this.state.installedOverride?.version ?? this.pluginVersion;
+        const currentVersion = this.pluginVersion;
         if (!currentVersion || currentVersion === "Loading...")
             return;
         if (options.source === "automatic" && !this.settingsLoaded)
             return;
         if (options.source === "automatic" && !this.confirmed.automatic_update_checks) {
             logUpdate(null, "automatic_check_suppressed_disabled");
-            return;
-        }
-        if (options.source === "automatic" &&
-            (this.state.installedOverride || this.state.pendingInstallVersion)) {
-            logUpdate(null, "automatic_check_suppressed_pending_install");
             return;
         }
         // The backend checks its saved channel, so a pending channel choice does not count yet.
@@ -20176,10 +20093,7 @@ class PluginUpdateControllerStore {
                 }
                 else if (result.status === "available") {
                     const candidateVersion = result.candidate.version;
-                    const isStale = (this.state.installedOverride &&
-                        candidateVersion === this.state.installedOverride.version) ||
-                        candidateVersion === this.state.pendingInstallVersion ||
-                        candidateVersion === currentVersion;
+                    const isStale = candidateVersion === currentVersion;
                     if (isStale) {
                         logUpdate(null, "check_success", {
                             status: "current",
@@ -20246,15 +20160,9 @@ class PluginUpdateControllerStore {
         this.inFlightCheck = request;
         return request;
     }
-    async handleHandoffSuccess(version, channel, traceId, handoffStarted, generation) {
-        this.dispatch({
-            type: "INSTALL_SUCCESS",
-            version,
-            channel,
-            preInstallVersion: this.pluginVersion,
-        });
+    async handleHandoffSuccess(candidate, traceId, handoffStarted, generation) {
         try {
-            const result = await this.deps.confirmUpdateInstallHandoff(version);
+            const result = await this.deps.confirmUpdateInstallHandoff(candidate.version);
             if (generation !== this.generation)
                 return;
             if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
@@ -20275,10 +20183,10 @@ class PluginUpdateControllerStore {
             elapsed_ms: Math.round(performance.now() - handoffStarted),
         });
         this.installOwned = false;
-        this.setPluginVersion(version);
+        this.dispatch({ type: "INSTALL_HANDED_OFF", candidate });
         this.deps.toast({
             title: t("updater.installation.startedTitle"),
-            body: t("updater.installation.startedBody", { version }),
+            body: t("updater.installation.startedBody", { version: candidate.version }),
             duration: 3000,
         });
     }
@@ -20287,7 +20195,7 @@ class PluginUpdateControllerStore {
             await installerPromise;
             if (generation !== this.generation)
                 return;
-            await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
+            await this.handleHandoffSuccess(candidate, traceId, handoffStarted, generation);
         }
         catch (error) {
             if (generation !== this.generation)
@@ -20334,7 +20242,6 @@ class PluginUpdateControllerStore {
     publish() {
         this.snapshot = {
             pluginVersion: this.pluginVersion,
-            effectiveCurrentVersion: this.state.installedOverride?.version ?? this.pluginVersion,
             updateChannel: this.updateChannel,
             automaticUpdateChecks: this.automaticUpdateChecks,
             settingsLoaded: this.settingsLoaded,
@@ -20404,9 +20311,9 @@ function usePluginUpdateController() {
 function QamInstallRow() {
     const update = usePluginUpdateController();
     const candidate = update.candidate;
-    if (!candidate || !canInstallCandidate(candidate, update.effectiveCurrentVersion))
+    if (!candidate || !canInstallCandidate(candidate, update.pluginVersion))
         return null;
-    return (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: update.effectiveCurrentVersion, isChecking: update.isChecking, isInstalling: update.isInstalling, isHandoffPending: update.isHandoffPending, onInstall: update.install }));
+    return (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: update.pluginVersion, isChecking: update.isChecking, isInstalling: update.isInstalling, isHandoffPending: update.isHandoffPending, onInstall: update.install }));
 }
 
 let verbose = false;
@@ -33755,8 +33662,8 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
 
 function PluginUpdateBody() {
     const t = useT();
-    const { effectiveCurrentVersion, updateChannel, automaticUpdateChecks, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, } = usePluginUpdateController();
-    const isLocalBuild = effectiveCurrentVersion.includes("+");
+    const { pluginVersion, updateChannel, automaticUpdateChecks, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, } = usePluginUpdateController();
+    const isLocalBuild = pluginVersion.includes("+");
     const handleToggleChannel = (checked) => {
         if (checked) {
             DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => void setUpdateChannel(true) }));
@@ -33780,7 +33687,7 @@ function PluginUpdateBody() {
             return SP_JSX.jsx("span", { style: statusValueStyle("success"), children: t("qam.update.upToDate") });
         }
         if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
                     ? t("qam.update.latestDevelopment")
                     : t("qam.update.updateAvailable") }));
         }
@@ -33789,7 +33696,7 @@ function PluginUpdateBody() {
     const lastCheckedText = checkResult?.checked_at
         ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
         : undefined;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [effectiveCurrentVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: effectiveCurrentVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
                     version: candidate.version,
                     channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
                 }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }));

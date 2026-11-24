@@ -21,6 +21,13 @@ All notable changes to this project are documented here in Keep a Changelog form
   showed the wrong quick links, and the Community tab did not show the matched
   game's content. All three work again on the Beta, and the Steam Stable client
   keeps working as before. The Beta needs a Decky Loader build that supports it.
+- **Installed Version shows the version that runs, and Install stays
+  available.** After you selected **Install**, the plugin showed the new version
+  as installed and said **Up to date**, even when Decky Loader did not install
+  it, for example after its confirmation window closed. This lasted until the
+  plugin reloaded and for up to 15 minutes after that, and **Install** was
+  hidden meanwhile. The plugin now always shows the running version and keeps
+  offering the update until Decky Loader installs it.
 - **Debug Logging switch works again.** In **Settings > Logs**, turning
   **Debug Logging** on or off had no effect. It now saves the setting and
   turns detailed logging on or off at once.

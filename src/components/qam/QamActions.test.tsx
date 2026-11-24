@@ -4,7 +4,6 @@ import type { PluginUpdateCandidate } from "../../types";
 const controller = vi.hoisted(() => ({
   snapshot: {
     pluginVersion: "0.3.1",
-    effectiveCurrentVersion: "0.3.1",
     candidate: null as PluginUpdateCandidate | null,
     isChecking: false,
     isInstalling: false,
@@ -54,7 +53,6 @@ beforeEach(() => {
   controller.snapshot = {
     ...controller.snapshot,
     pluginVersion: "0.3.1",
-    effectiveCurrentVersion: "0.3.1",
     candidate: null,
     isChecking: false,
     isInstalling: false,
@@ -70,7 +68,7 @@ describe("QAM actions", () => {
   it("hides the install row for a local build with a development candidate", () => {
     controller.snapshot = {
       ...controller.snapshot,
-      effectiveCurrentVersion: "0.3.1+build",
+      pluginVersion: "0.3.1+build",
       candidate: candidate("development"),
     };
 

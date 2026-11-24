@@ -54,7 +54,6 @@ export const UPDATE_CHECK_UI_TIMEOUT_MS = 120000;
 
 export type PluginUpdateControllerSnapshot = {
   pluginVersion: string;
-  effectiveCurrentVersion: string;
   updateChannel: UpdateChannel;
   automaticUpdateChecks: boolean;
   settingsLoaded: boolean;
@@ -122,7 +121,6 @@ export class PluginUpdateControllerStore {
   private readonly listeners = new Set<() => void>();
   private snapshot: PluginUpdateControllerSnapshot = {
     pluginVersion: "",
-    effectiveCurrentVersion: "",
     updateChannel: "stable",
     automaticUpdateChecks: true,
     settingsLoaded: false,
@@ -273,13 +271,6 @@ export class PluginUpdateControllerStore {
         elapsed_ms: Math.round(performance.now() - recordStarted),
       });
 
-      this.dispatch({
-        type: "INSTALL_SUCCESS",
-        version: revalidation.version,
-        channel: revalidation.channel,
-        preInstallVersion: this.pluginVersion,
-      });
-
       const handoffStarted = performance.now();
       logUpdate(traceId, "handoff_start", {
         version: revalidation.version,
@@ -322,13 +313,7 @@ export class PluginUpdateControllerStore {
       }
       await installerPromise;
       if (generation !== this.generation) return;
-      await this.handleHandoffSuccess(
-        revalidation.version,
-        revalidation.channel,
-        traceId,
-        handoffStarted,
-        generation
-      );
+      await this.handleHandoffSuccess(revalidation, traceId, handoffStarted, generation);
     } catch (error) {
       if (generation !== this.generation) return;
       await this.failInstall(error, targetCandidate, traceId, generation);
@@ -366,36 +351,12 @@ export class PluginUpdateControllerStore {
     this.confirmed = resolveLoadedUpdateSettings(settingsResult ?? { status: "failed" });
     this.settingsLoaded = true;
 
-    const context =
-      contextResult && !("status" in contextResult) ? contextResult : null;
-    const pendingInstall = context?.pending_update_install;
-    const isPendingInstallCurrent =
-      !!pendingInstall?.version &&
-      context?.effective_installed_version === pendingInstall.version;
-    if (context && isPendingInstallCurrent && pendingInstall) {
-      const pendingChannel: UpdateChannel =
-        pendingInstall.channel === "development" ? "development" : "stable";
-      this.pluginVersion = pendingInstall.version;
-      this.dispatch({
-        type: "HYDRATION_COMPLETE",
-        installedReleasePublishedAt: context.installed_release_published_at || null,
-        pendingInstall: {
-          version: pendingInstall.version,
-          channel: pendingChannel,
-          preInstallVersion: context.installed_version || this.pluginVersion,
-        },
-      });
-    } else {
-      this.dispatch({
-        type: "HYDRATION_COMPLETE",
-        installedReleasePublishedAt: context?.installed_release_published_at || null,
-      });
-    }
+    const context = contextResult && !("status" in contextResult) ? contextResult : null;
+    this.dispatch({
+      type: "HYDRATION_COMPLETE",
+      installedReleasePublishedAt: context?.installed_release_published_at || null,
+    });
 
-    if (isPendingInstallCurrent) {
-      logUpdate(null, "initial_check_skipped_hydration");
-      return;
-    }
     if (this.confirmed.automatic_update_checks) {
       void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
     }
@@ -437,39 +398,16 @@ export class PluginUpdateControllerStore {
     }
   }
 
-  private setPluginVersion(version: string): void {
-    this.pluginVersion = version;
-    const installedOverride = this.state.installedOverride;
-    if (
-      installedOverride &&
-      version &&
-      version !== "Loading..." &&
-      (version !== installedOverride.preInstallVersion ||
-        version === installedOverride.version)
-    ) {
-      this.dispatch({ type: "CLEAR_INSTALLED_OVERRIDE" });
-    } else {
-      this.publish();
-    }
-  }
-
   private async checkForUpdates(options: CheckOptions): Promise<UpdateCheckResult | undefined> {
     if (this.installOwned) {
       logUpdate(null, "check_suppressed_install");
       return;
     }
-    const currentVersion = this.state.installedOverride?.version ?? this.pluginVersion;
+    const currentVersion = this.pluginVersion;
     if (!currentVersion || currentVersion === "Loading...") return;
     if (options.source === "automatic" && !this.settingsLoaded) return;
     if (options.source === "automatic" && !this.confirmed.automatic_update_checks) {
       logUpdate(null, "automatic_check_suppressed_disabled");
-      return;
-    }
-    if (
-      options.source === "automatic" &&
-      (this.state.installedOverride || this.state.pendingInstallVersion)
-    ) {
-      logUpdate(null, "automatic_check_suppressed_pending_install");
       return;
     }
 
@@ -526,11 +464,7 @@ export class PluginUpdateControllerStore {
           }
         } else if (result.status === "available") {
           const candidateVersion = result.candidate.version;
-          const isStale =
-            (this.state.installedOverride &&
-              candidateVersion === this.state.installedOverride.version) ||
-            candidateVersion === this.state.pendingInstallVersion ||
-            candidateVersion === currentVersion;
+          const isStale = candidateVersion === currentVersion;
           if (isStale) {
             logUpdate(null, "check_success", {
               status: "current",
@@ -597,21 +531,13 @@ export class PluginUpdateControllerStore {
   }
 
   private async handleHandoffSuccess(
-    version: string,
-    channel: UpdateChannel,
+    candidate: PluginUpdateCandidate,
     traceId: string,
     handoffStarted: number,
     generation: number
   ): Promise<void> {
-    this.dispatch({
-      type: "INSTALL_SUCCESS",
-      version,
-      channel,
-      preInstallVersion: this.pluginVersion,
-    });
-
     try {
-      const result = await this.deps.confirmUpdateInstallHandoff(version);
+      const result = await this.deps.confirmUpdateInstallHandoff(candidate.version);
       if (generation !== this.generation) return;
       if ("status" in result && (result.status === "failed" || result.status === "skipped")) {
         throw new Error(result.message || "Failed to confirm handoff");
@@ -628,10 +554,10 @@ export class PluginUpdateControllerStore {
       elapsed_ms: Math.round(performance.now() - handoffStarted),
     });
     this.installOwned = false;
-    this.setPluginVersion(version);
+    this.dispatch({ type: "INSTALL_HANDED_OFF", candidate });
     this.deps.toast({
       title: t("updater.installation.startedTitle"),
-      body: t("updater.installation.startedBody", { version }),
+      body: t("updater.installation.startedBody", { version: candidate.version }),
       duration: 3000,
     });
   }
@@ -646,7 +572,7 @@ export class PluginUpdateControllerStore {
     try {
       await installerPromise;
       if (generation !== this.generation) return;
-      await this.handleHandoffSuccess(candidate.version, candidate.channel, traceId, handoffStarted, generation);
+      await this.handleHandoffSuccess(candidate, traceId, handoffStarted, generation);
     } catch (error) {
       if (generation !== this.generation) return;
       logUpdate(traceId, "handoff_rejected", {
@@ -695,7 +621,6 @@ export class PluginUpdateControllerStore {
   private publish(): void {
     this.snapshot = {
       pluginVersion: this.pluginVersion,
-      effectiveCurrentVersion: this.state.installedOverride?.version ?? this.pluginVersion,
       updateChannel: this.updateChannel,
       automaticUpdateChecks: this.automaticUpdateChecks,
       settingsLoaded: this.settingsLoaded,

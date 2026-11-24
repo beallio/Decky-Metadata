@@ -55,7 +55,6 @@ const context = (channel: UpdateChannel = "stable"): UpdateCheckContext => ({
   update_channel: channel,
   automatic_update_checks: true,
   installed_version: "0.3.1",
-  effective_installed_version: "0.3.1",
   last_checked_at: null,
   last_checked_channel: null,
   last_available_tag: null,
@@ -170,7 +169,7 @@ describe("plugin update controller", () => {
 
     revalidation.resolve(candidate());
     await install;
-    expect(controller.getSnapshot().pluginVersion).toBe("0.4.0");
+    expect(controller.getSnapshot().pluginVersion).toBe("0.3.1");
     controller.dispose();
     unsubscribeAgain();
   });
@@ -450,7 +449,7 @@ describe("plugin update controller", () => {
     expect(controller.getSnapshot().automaticUpdateChecks).toBe(false);
   });
 
-  it("records and confirms an install, then publishes the installed version", async () => {
+  it("records and confirms an install, then keeps the loaded version until Decky reloads the plugin", async () => {
     const update = candidate();
     const { deps, controller } = createController();
     controller.subscribe(() => undefined);
@@ -466,7 +465,62 @@ describe("plugin update controller", () => {
       expect.any(String)
     );
     expect(deps.confirmUpdateInstallHandoff).toHaveBeenCalledWith("0.4.0");
-    expect(controller.getSnapshot().pluginVersion).toBe("0.4.0");
+    expect(controller.getSnapshot().pluginVersion).toBe("0.3.1");
+  });
+
+  it("keeps the update offered after a handoff that Decky never installs", async () => {
+    const available: UpdateCheckResult = { status: "available", checked_at: "now", channel: "stable", candidate: candidate() };
+    const { deps, controller } = createController({
+      checkForPluginUpdate: vi.fn(async () => available),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    // Decky resolves the handoff when it queues its install prompt, not when the files change.
+    await controller.install(candidate());
+    expect(controller.getSnapshot()).toMatchObject({
+      pluginVersion: "0.3.1",
+      candidate: { version: "0.4.0" },
+      isInstalling: false,
+    });
+
+    await controller.checkNow();
+    expect(deps.checkForPluginUpdate).toHaveBeenLastCalledWith("0.3.1", true);
+    expect(controller.getSnapshot()).toMatchObject({
+      candidate: { version: "0.4.0" },
+      checkResult: { status: "available" },
+    });
+  });
+
+  it("ignores a recent install record on load and checks with the loaded version", async () => {
+    const { deps, controller } = createController({
+      getUpdateCheckContext: vi.fn(async (): Promise<UpdateRpcResult<UpdateCheckContext>> => ({
+        ...context(),
+        pending_update_install: {
+          version: "0.4.0",
+          tag: "v0.4.0",
+          channel: "stable",
+          published_at: "now",
+          requested_at: "now",
+          handoff_confirmed_at: "now",
+        },
+      })),
+      checkForPluginUpdate: vi.fn(async (): Promise<UpdateCheckResult> => ({
+        status: "available",
+        checked_at: "now",
+        channel: "stable",
+        candidate: candidate(),
+      })),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledWith("0.3.1", false);
+    expect(controller.getSnapshot()).toMatchObject({
+      pluginVersion: "0.3.1",
+      candidate: { version: "0.4.0" },
+      checkResult: { status: "available" },
+    });
   });
   it("waits for first subscription and settings before its automatic check", async () => {
     const settings = deferred<UpdateRpcResult<UpdateSettings>>();
@@ -552,7 +606,7 @@ describe("plugin update controller", () => {
       errorMessage: "installer failed",
       isChecking: false,
       isInstalling: false,
-      effectiveCurrentVersion: "0.3.1",
+      pluginVersion: "0.3.1",
     });
   });
 

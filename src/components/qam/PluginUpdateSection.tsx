@@ -19,7 +19,7 @@ import { statusColor } from "../../tokens";
 export function PluginUpdateBody() {
   const t = useT();
   const {
-    effectiveCurrentVersion,
+    pluginVersion,
     updateChannel,
     automaticUpdateChecks,
     settingsLoaded,
@@ -36,7 +36,7 @@ export function PluginUpdateBody() {
     setUpdateChannel,
     setAutomaticUpdateChecks,
   } = usePluginUpdateController();
-  const isLocalBuild = effectiveCurrentVersion.includes("+");
+  const isLocalBuild = pluginVersion.includes("+");
   const handleToggleChannel = (checked: boolean) => {
     if (checked) {
       showModal(
@@ -71,7 +71,7 @@ export function PluginUpdateBody() {
     if (checkResult?.status === "available") {
       return (
         <span style={statusValueStyle("active")}>
-          {candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+          {candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
             ? t("qam.update.latestDevelopment")
             : t("qam.update.updateAvailable")}
         </span>
@@ -86,7 +86,7 @@ export function PluginUpdateBody() {
   return (
     <DialogControlsSection>
       <Field label={t("qam.update.installedVersion")}>
-        {effectiveCurrentVersion} {isLocalBuild ? t("qam.update.localBuild") : ""}
+        {pluginVersion} {isLocalBuild ? t("qam.update.localBuild") : ""}
       </Field>
       <ToggleField
         label={t("qam.update.receiveDevelopment")}
@@ -125,7 +125,7 @@ export function PluginUpdateBody() {
       {candidate && (
         <PluginInstallAction
           candidate={candidate}
-          currentVersion={effectiveCurrentVersion}
+          currentVersion={pluginVersion}
           isChecking={isChecking}
           isInstalling={isInstalling}
           isHandoffPending={isHandoffPending}
