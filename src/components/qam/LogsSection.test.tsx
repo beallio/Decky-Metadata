@@ -3,10 +3,9 @@ import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
-  PanelSectionRow: "PanelSectionRow",
+  DialogControlsSection: "DialogControlsSection",
   ToggleField: "ToggleField",
 }));
-vi.mock("../../styles", () => ({ ButtonLabel: "ButtonLabel" }));
 vi.mock("../../i18n", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();
   return { ...actual, useT: () => actual.t };

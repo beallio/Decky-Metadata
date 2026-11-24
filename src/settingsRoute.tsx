@@ -42,7 +42,15 @@ export function SettingsTitleView() {
       <div>{"Decky Metadata"}</div>
       <DialogButton
         aria-label={t("settings.open")}
-        style={{ height: "28px", width: "40px", minWidth: 0, padding: "10px 12px" }}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "28px",
+          width: "40px",
+          minWidth: 0,
+          padding: 0,
+        }}
         onClick={openSettings}
       >
         <FaGear />

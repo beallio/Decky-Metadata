@@ -53,4 +53,30 @@ describe("useContextMenuSettings", () => {
 
     expect(render()).toMatchObject({ settings: { gameIcon: false, steamIconFallback: false }, error: "translated:disk full" });
   });
+
+  it("rolls two failed quick toggles back to the saved settings, not to the first unsaved toggle", async () => {
+    deps.getEditorHeaderSettings.mockResolvedValue({ gameIcon: false, steamIconFallback: false });
+    deps.setEditorHeaderSettings.mockRejectedValue("disk full");
+    mount();
+    await flush();
+
+    render().onChange("gameIcon", true);
+    render().onChange("steamIconFallback", true);
+    await flush();
+
+    expect(render().settings).toEqual({ gameIcon: false, steamIconFallback: false });
+  });
+
+  it("rolls a failed toggle back to an earlier toggle that saved", async () => {
+    deps.getEditorHeaderSettings.mockResolvedValue({ gameIcon: false, steamIconFallback: false });
+    deps.setEditorHeaderSettings.mockResolvedValueOnce(undefined).mockRejectedValueOnce("disk full");
+    mount();
+    await flush();
+
+    render().onChange("gameIcon", true);
+    render().onChange("steamIconFallback", true);
+    await flush();
+
+    expect(render().settings).toEqual({ gameIcon: true, steamIconFallback: false });
+  });
 });

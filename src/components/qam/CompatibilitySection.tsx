@@ -1,4 +1,4 @@
-import { DropdownItem, Field, PanelSectionRow } from "@decky/ui";
+import { DialogControlsSection, DropdownItem, Field } from "@decky/ui";
 
 import { translateBackendError, useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
@@ -83,54 +83,42 @@ export function CompatibilityBody({
   }));
   const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
   return (
-    <>
-      <PanelSectionRow>
-        <DropdownItem
-          label={t("qam.compat.defaultStatus")}
-          layout="below"
-          childrenContainerWidth="max"
-          rgOptions={compatibilityDefaultOptions}
-          selectedOption={compatibilityDefault}
-          disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
-          onChange={(option) => onCompatibilityDefaultChange(option.data)}
-          renderButtonValue={() => (
-            <span style={dropdownValueStyle}>
-              {compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label}
-            </span>
-          )}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <DropdownItem
-          label={t("qam.compat.applyDefaultTo")}
-          description={scopeHelpDescription}
-          layout="below"
-          childrenContainerWidth="max"
-          bottomSeparator="none"
-          rgOptions={compatibilityDefaultScopeOptions}
-          selectedOption={compatibilityDefaultScope}
-          disabled={
-            !compatibilityDefaultLoaded ||
-            compatibilityDefaultBusy ||
-            compatibilityDefaultScopeBusy ||
-            compatibilityDefault === null
-          }
-          onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
-          renderButtonValue={() => (
-            <span style={dropdownValueStyle}>
-              {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
-            </span>
-          )}
-        />
-      </PanelSectionRow>
+    <DialogControlsSection>
+      <DropdownItem
+        label={t("qam.compat.defaultStatus")}
+        rgOptions={compatibilityDefaultOptions}
+        selectedOption={compatibilityDefault}
+        disabled={!compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy}
+        onChange={(option) => onCompatibilityDefaultChange(option.data)}
+        renderButtonValue={() => (
+          <span style={dropdownValueStyle}>
+            {compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label}
+          </span>
+        )}
+      />
+      <DropdownItem
+        label={t("qam.compat.applyDefaultTo")}
+        description={scopeHelpDescription}
+        rgOptions={compatibilityDefaultScopeOptions}
+        selectedOption={compatibilityDefaultScope}
+        disabled={
+          !compatibilityDefaultLoaded ||
+          compatibilityDefaultBusy ||
+          compatibilityDefaultScopeBusy ||
+          compatibilityDefault === null
+        }
+        onChange={(option) => onCompatibilityDefaultScopeChange(option.data)}
+        renderButtonValue={() => (
+          <span style={dropdownValueStyle}>
+            {compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label}
+          </span>
+        )}
+      />
       {compatibilityDefaultError ? (
-        <PanelSectionRow>
-          <Field focusable={false} padding="none" bottomSeparator="none">
-            <div style={inlineStatusStyle("error")}>{translateBackendError(compatibilityDefaultError)}</div>
-          </Field>
-        </PanelSectionRow>
+        <Field focusable={false} childrenLayout="below">
+          <div style={inlineStatusStyle("error")}>{translateBackendError(compatibilityDefaultError)}</div>
+        </Field>
       ) : null}
-    </>
+    </DialogControlsSection>
   );
 }
-

@@ -90,6 +90,14 @@ export const inlineStatusStyle = (kind: StatusKind) => ({
   color: statusColor(kind),
 });
 
+/** A status shown as a Field value: color only, so Steam's own value font applies. */
+export const statusValueStyle = (kind: StatusKind) => ({
+  display: "flex",
+  alignItems: "center",
+  gap: "10px",
+  color: statusColor(kind),
+});
+
 export const busySpinnerStyle = {
   width: "18px",
   height: "18px",
@@ -102,15 +110,6 @@ export const buttonLabelStyle = {
   justifyContent: "center",
   gap: "10px",
   minWidth: 136,
-} as const;
-
-export const sectionHeadingStyle = {
-  width: "100%",
-  paddingTop: space.md,
-  color: "#dcdedf",
-  fontSize: fontSize.lg,
-  fontWeight: fontWeight.medium,
-  lineHeight: "20px",
 } as const;
 
 export const focusableBlockStyle = {

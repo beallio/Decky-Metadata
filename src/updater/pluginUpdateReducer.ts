@@ -41,6 +41,7 @@ export const initialUpdateState: UpdateState = {
 export type UpdateAction =
   | { type: "HYDRATION_COMPLETE"; installedReleasePublishedAt: string | null; pendingInstall?: { version: string; channel: UpdateChannel; preInstallVersion: string } }
   | { type: "CHECK_START" }
+  | { type: "CHECK_CANCELLED" }
   | { type: "CHECK_TIMEOUT"; message: string }
   | { type: "CHECK_FAILED"; message: string; result?: UpdateCheckResult }
   | { type: "CHECK_SUCCESS_CURRENT"; result: UpdateCheckResult }
@@ -79,6 +80,10 @@ export function updateReducer(state: UpdateState, action: UpdateAction): UpdateS
         errorMessage: null,
         checkTimedOut: false,
       };
+
+    case "CHECK_CANCELLED":
+      // A dropped check with no replacement: leave "checking" without a result.
+      return state.phase === "checking" ? { ...state, phase: state.candidate ? "available" : "idle" } : state;
 
     case "CHECK_TIMEOUT":
       return {

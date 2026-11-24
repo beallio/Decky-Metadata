@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
-vi.mock("@decky/ui", () => ({ DropdownItem: "DropdownItem", Field: "Field", PanelSectionRow: "PanelSectionRow", ToggleField: "ToggleField" }));
+vi.mock("@decky/ui", () => ({ DialogControlsSection: "DialogControlsSection", DropdownItem: "DropdownItem", Field: "Field", ToggleField: "ToggleField" }));
 // The component is called as a plain function here, so the hook is stubbed with the same translator.
 vi.mock("../../i18n", async (importOriginal) => {
   const i18n = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();

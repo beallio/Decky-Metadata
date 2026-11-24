@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Deschide setările" },
+  "settings": { "open": "Deschide setările", "action": { "refresh": "Reîmprospătează", "clear": "Șterge", "view": "Vezi", "check": "Verifică" } },
   "common": {
     "hours_one": "{{value}} oră",
     "hours_few": "{{value}} ore",
@@ -246,9 +246,9 @@
     },
     "metadata": {
       "title": "Metadate",
-      "detectedGames": "Jocuri non-Steam detectate:",
-      "saved": "Metadate salvate:",
-      "missing": "Metadate lipsă:",
+      "detectedGames": "Jocuri non-Steam detectate",
+      "saved": "Metadate salvate",
+      "missing": "Metadate lipsă",
       "refresh": "Reîmprospătează metadatele",
       "refreshing": "Se reîmprospătează...",
       "refreshingStatus": "Se reîmprospătează metadatele...",

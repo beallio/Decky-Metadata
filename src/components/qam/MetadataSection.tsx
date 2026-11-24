@@ -1,14 +1,14 @@
-import { ButtonItem, Field, PanelSectionRow, ProgressBarItem } from "@decky/ui";
+import { ButtonItem, DialogControlsSection, DialogControlsSectionHeader, Field, PanelSectionRow, ProgressBarItem } from "@decky/ui";
 
 import {
   ButtonLabel,
   inlineStatusStyle,
-  sectionHeadingStyle,
 } from "../../styles";
 import type { StatusKind } from "../../tokens";
 import { useT } from "../../i18n";
 
 type MetadataSectionProps = {
+  inline?: boolean;
   detectedCount: number;
   savedCount: number;
   missingCount: number;
@@ -36,8 +36,35 @@ export function MetadataScanBody({
   scanTotal,
   scanStatusKind,
   onRefreshMetadata,
-}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata">) {
+  inline = false,
+}: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "scanStatusKind" | "onRefreshMetadata"> & { inline?: boolean }) {
   const t = useT();
+
+  if (inline) {
+    return (
+      <DialogControlsSection>
+        <Field label={t("qam.metadata.detectedGames")}>{String(detectedCount)}</Field>
+        <Field label={t("qam.metadata.saved")}>{String(savedCount)}</Field>
+        <Field label={t("qam.metadata.missing")}>{String(missingCount)}</Field>
+        {scanBusy ? (
+          <ProgressBarItem
+            nProgress={scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0}
+            description={scanMessage || t("qam.metadata.refreshingStatus")}
+          />
+        ) : null}
+        <ButtonItem
+          layout="inline"
+          label={t("qam.metadata.refresh")}
+          description={t("qam.metadata.refreshDescription")}
+          disabled={scanBusy || detectedCount === 0}
+          onClick={onRefreshMetadata}
+        >
+          {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("settings.action.refresh")}
+        </ButtonItem>
+        {!scanBusy && scanMessage ? <Field focusable={false} childrenLayout="below">{scanMessage}</Field> : null}
+      </DialogControlsSection>
+    );
+  }
 
   return (
     <>
@@ -94,31 +121,32 @@ export function MetadataMaintenanceBody({
 
   return (
     <>
-      <PanelSectionRow><div style={sectionHeadingStyle}>{t("qam.metadata.cacheHeading")}</div></PanelSectionRow>
-      <PanelSectionRow>
+      <DialogControlsSection>
+        <DialogControlsSectionHeader>{t("qam.metadata.cacheHeading")}</DialogControlsSectionHeader>
         <ButtonItem
-          layout="below"
+          layout="inline"
+          label={t("qam.metadata.clearCache")}
           description={t("qam.metadata.clearCacheDescription")}
-          bottomSeparator="none"
           disabled={cacheBusy || scanBusy}
           onClick={onClearCache}
         >
-          {cacheBusy ? <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel> : t("qam.metadata.clearCache")}
+          {cacheBusy ? <ButtonLabel busy={true}>{t("qam.metadata.clearing")}</ButtonLabel> : t("settings.action.clear")}
         </ButtonItem>
-      </PanelSectionRow>
-      <PanelSectionRow><div style={sectionHeadingStyle}>{t("qam.metadata.delistedHeading")}</div></PanelSectionRow>
-      <PanelSectionRow>
+      </DialogControlsSection>
+      <DialogControlsSection>
+        <DialogControlsSectionHeader>{t("qam.metadata.delistedHeading")}</DialogControlsSectionHeader>
         <ButtonItem
-          layout="below"
+          layout="inline"
+          label={t("qam.metadata.refreshDelisted")}
           description={delistedDescription}
-          bottomSeparator="none"
           disabled={delistedBusy}
           onClick={onRefreshDelisted}
         >
-          {delistedBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refreshDelisted")}
+          {delistedBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("settings.action.refresh")}
         </ButtonItem>
-      </PanelSectionRow>
+      </DialogControlsSection>
     </>
   );
 }
+
 

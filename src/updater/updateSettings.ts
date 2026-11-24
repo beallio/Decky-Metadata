@@ -8,8 +8,3 @@ export const DEFAULT_UPDATE_SETTINGS: UpdateSettings = {
 export const resolveLoadedUpdateSettings = (
   result: UpdateRpcResult<UpdateSettings>
 ): UpdateSettings => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
-
-export const resolveSavedUpdateSettings = (
-  previous: UpdateSettings,
-  result: UpdateRpcResult<UpdateSettings>
-): UpdateSettings => ("status" in result ? previous : result);

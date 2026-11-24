@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import * as log from "../log";
 import { metadataScanStore, useMetadataScan } from "../metadataScan";
 import { useNonSteamGames } from "../useNonSteamGames";
@@ -14,9 +14,13 @@ export function useScanGames() {
     metadataScanStore.refreshCounts(games).catch((error) => log.warn("bridge", "metadata count refresh failed", error));
   }, [games, loaded]);
 
-  // Shortcuts can change while the QAM stays mounted; reload them after each scan, as the QAM did before.
+  // Shortcuts can change while the QAM stays mounted; reload them after each scan that finishes while mounted.
+  // A scan that finished before mount needs nothing: the mount already loads the list.
+  const seenRevision = useRef(scan.completedRevision);
   useEffect(() => {
-    if (scan.completedRevision > 0) void loadGames();
+    if (scan.completedRevision === seenRevision.current) return;
+    seenRevision.current = scan.completedRevision;
+    void loadGames();
   }, [scan.completedRevision]);
 
   return { games, scan };

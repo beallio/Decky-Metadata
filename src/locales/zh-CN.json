@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "打开设置" },
+  "settings": { "open": "打开设置", "action": { "refresh": "刷新", "clear": "清除", "view": "查看", "check": "检查" } },
   "common": {
     "hours_other": "{{value}} 小时",
     "hoursShort": "{{value}} 小时",
@@ -244,9 +244,9 @@
     },
     "metadata": {
       "title": "元数据",
-      "detectedGames": "检测到的非 Steam 游戏：",
-      "saved": "已保存的元数据：",
-      "missing": "缺少元数据：",
+      "detectedGames": "检测到的非 Steam 游戏",
+      "saved": "已保存的元数据",
+      "missing": "缺少元数据",
       "refresh": "刷新元数据",
       "refreshing": "正在刷新...",
       "refreshingStatus": "正在刷新元数据...",

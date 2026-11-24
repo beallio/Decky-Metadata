@@ -14,7 +14,6 @@ import { metadataScanStore } from "./metadataScan";
 import { scanView } from "./settings/scanView";
 import { useScanGames } from "./settings/useScanGames";
 import { qamPanelStyle } from "./styles";
-import { trailerController } from "./trailers/controller";
 
 type NativeFocusNode = {
   Element?: Element;
@@ -83,25 +82,9 @@ export const Content = () => {
 
   const focusFrame = useRef<number | null>(null);
   const initialPanelFocusComplete = useRef(false);
-  const panelVisibilityCleanup = useRef<(() => void) | null>(null);
   const { games, scan } = useScanGames();
 
   const focusPanel = useCallback((element: HTMLDivElement | null) => {
-    // QAM keeps this tree mounted while closed, so only its document reports visibility.
-    panelVisibilityCleanup.current?.();
-    panelVisibilityCleanup.current = null;
-    if (element) {
-      const panelDocument = element.ownerDocument;
-      const syncPanelVisibility = () => trailerController.setPanelVisible(panelDocument.visibilityState === "visible");
-      panelDocument.addEventListener("visibilitychange", syncPanelVisibility);
-      syncPanelVisibility();
-      panelVisibilityCleanup.current = () => {
-        panelDocument.removeEventListener("visibilitychange", syncPanelVisibility);
-        trailerController.setPanelVisible(false);
-      };
-    } else {
-      trailerController.setPanelVisible(false);
-    }
     if (focusFrame.current !== null) {
       window.cancelAnimationFrame(focusFrame.current);
       focusFrame.current = null;

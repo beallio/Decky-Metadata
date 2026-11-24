@@ -2,13 +2,14 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
-  PanelSectionRow: "PanelSectionRow",
   SliderField: "SliderField",
   ToggleField: "ToggleField",
 }));
-vi.mock("../../styles", () => ({ inlineStatusStyle: () => ({}), sectionHeadingStyle: {} }));
+vi.mock("../../styles", () => ({ inlineStatusStyle: () => ({}) }));
 vi.mock("../../pluginConflicts", () => ({ featureConflictNotice: () => null }));
 vi.mock("../../i18n", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();

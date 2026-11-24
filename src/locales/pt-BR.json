@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Abrir configurações" },
+  "settings": { "open": "Abrir configurações", "action": { "refresh": "Atualizar", "clear": "Limpar", "view": "Ver", "check": "Verificar" } },
   "common": {
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} de horas",
@@ -246,9 +246,9 @@
     },
     "metadata": {
       "title": "Metadados",
-      "detectedGames": "Jogos não Steam detectados:",
-      "saved": "Metadados salvos:",
-      "missing": "Metadados ausentes:",
+      "detectedGames": "Jogos não Steam detectados",
+      "saved": "Metadados salvos",
+      "missing": "Metadados ausentes",
       "refresh": "Atualizar metadados",
       "refreshing": "Atualizando...",
       "refreshingStatus": "Atualizando metadados...",

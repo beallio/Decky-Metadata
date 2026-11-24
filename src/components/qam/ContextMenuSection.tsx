@@ -1,4 +1,4 @@
-import { Field, PanelSectionRow, ToggleField } from "@decky/ui";
+import { DialogControlsSection, Field, ToggleField } from "@decky/ui";
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { EditorHeaderSettings } from "../../types";
@@ -13,34 +13,27 @@ type ContextMenuBodyProps = {
 export function ContextMenuBody({ settings, error, onChange }: ContextMenuBodyProps) {
   const t = useT();
   return (
-    <>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.contextMenu.headerIconLabel")}
-          description={t("qam.contextMenu.headerIconDescription")}
-          checked={settings?.gameIcon ?? false}
-          disabled={!settings}
-          onChange={(enabled) => onChange("gameIcon", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.contextMenu.steamIconLabel")}
-          description={t("qam.contextMenu.steamIconDescription")}
-          checked={settings?.steamIconFallback ?? false}
-          disabled={!settings?.gameIcon}
-          onChange={(enabled) => onChange("steamIconFallback", enabled)}
-          bottomSeparator="none"
-        />
-      </PanelSectionRow>
+    <DialogControlsSection>
+      <ToggleField
+        label={t("qam.contextMenu.headerIconLabel")}
+        description={t("qam.contextMenu.headerIconDescription")}
+        checked={settings?.gameIcon ?? false}
+        disabled={!settings}
+        onChange={(enabled) => onChange("gameIcon", enabled)}
+      />
+      <ToggleField
+        label={t("qam.contextMenu.steamIconLabel")}
+        description={t("qam.contextMenu.steamIconDescription")}
+        checked={settings?.steamIconFallback ?? false}
+        disabled={!settings?.gameIcon}
+        onChange={(enabled) => onChange("steamIconFallback", enabled)}
+      />
       {error ? (
-        <PanelSectionRow>
-          <Field focusable={false} padding="none" bottomSeparator="none">
-            <div style={inlineStatusStyle("error")}>{error}</div>
-          </Field>
-        </PanelSectionRow>
+        <Field focusable={false} childrenLayout="below" padding="none">
+          <div style={inlineStatusStyle("error")}>{error}</div>
+        </Field>
       ) : null}
-    </>
+    </DialogControlsSection>
   );
 }
 

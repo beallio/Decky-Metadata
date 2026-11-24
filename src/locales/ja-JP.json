@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "設定を開く" },
+  "settings": { "open": "設定を開く", "action": { "refresh": "更新", "clear": "クリア", "view": "表示", "check": "確認" } },
   "common": {
     "hours_other": "{{value}}時間",
     "hoursShort": "{{value}}時間",
@@ -244,9 +244,9 @@
     },
     "metadata": {
       "title": "メタデータ",
-      "detectedGames": "検出された Steam 以外のゲーム:",
-      "saved": "保存済みメタデータ:",
-      "missing": "メタデータなし:",
+      "detectedGames": "検出された Steam 以外のゲーム",
+      "saved": "保存済みメタデータ",
+      "missing": "メタデータなし",
       "refresh": "メタデータを更新",
       "refreshing": "更新中...",
       "refreshingStatus": "メタデータを更新中...",

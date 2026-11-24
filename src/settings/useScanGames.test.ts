@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 const state = vi.hoisted(() => ({
   effects: [] as { effect: () => void; deps: unknown[] }[],
   previous: new Map<number, unknown[]>(),
+  ref: null as { current: unknown } | null,
 }));
 const mocks = vi.hoisted(() => ({
   games: { games: [] as unknown[], loaded: false, loadGames: vi.fn() },
@@ -12,6 +13,7 @@ const mocks = vi.hoisted(() => ({
 }));
 vi.mock("react", () => ({
   useEffect: (effect: () => void, deps: unknown[]) => state.effects.push({ effect, deps }),
+  useRef: (initial: unknown) => (state.ref ??= { current: initial }),
 }));
 vi.mock("../useNonSteamGames", () => ({ useNonSteamGames: () => mocks.games }));
 vi.mock("../metadataScan", () => ({
@@ -38,6 +40,7 @@ const flush = async () => { for (let i = 0; i < 4; i += 1) await Promise.resolve
 afterEach(() => {
   vi.clearAllMocks();
   state.previous.clear();
+  state.ref = null;
   mocks.games = { games: [], loaded: false, loadGames: vi.fn() };
   mocks.snapshot = { completedRevision: 0 };
 });
@@ -66,6 +69,17 @@ describe("useScanGames", () => {
     mocks.snapshot = { completedRevision: 1 };
     render();
 
+    expect(mocks.games.loadGames).toHaveBeenCalledOnce();
+  });
+
+  it("does not reload the games list on mount for a scan that finished earlier", () => {
+    mocks.games = { ...mocks.games, loaded: true };
+    mocks.snapshot = { completedRevision: 3 };
+    render();
+    expect(mocks.games.loadGames).not.toHaveBeenCalled();
+
+    mocks.snapshot = { completedRevision: 4 };
+    render();
     expect(mocks.games.loadGames).toHaveBeenCalledOnce();
   });
 });

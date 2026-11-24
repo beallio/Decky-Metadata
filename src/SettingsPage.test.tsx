@@ -22,6 +22,7 @@ const controller = (name: string) => {
   const store = {
     snapshot: { name, revision: 0, settings: {} } as Record<string, unknown>,
     getSnapshot: vi.fn(() => store.snapshot),
+    setPanelVisible: vi.fn(),
     subscribe: vi.fn((next: () => void) => {
       listener = next;
       return () => { listener = null; };
@@ -116,6 +117,20 @@ const layout = (root: ReactElement<Record<string, unknown>>) =>
   };
 const body = (root: ReactElement<Record<string, unknown>>, id: string, type: string) =>
   nodes(layout(root).pages.find((page) => page.id === id)!.content).find((node) => node.type === type)!.props!;
+// Mount a tab component on fresh hook slots, as React does when the native layout shows that page.
+const mountTab = (id: string) => {
+  const element = layout(render()).pages.find((page) => page.id === id)!.content as ReactElement<Record<string, unknown>>;
+  const Tab = element.type as (props: Record<string, unknown>) => ReactElement<Record<string, unknown>>;
+  const renderTab = () => {
+    harness.cursor = 0;
+    harness.effects = [];
+    return Tab(element.props);
+  };
+  harness.slots = [];
+  renderTab();
+  const cleanups = harness.effects.map((effect) => effect());
+  return { render: renderTab, unmount: () => cleanups.forEach((cleanup) => typeof cleanup === "function" && cleanup()) };
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -144,7 +159,7 @@ describe("SettingsPage", () => {
     expect(body(root, "compat", "CompatibilityBody")).toMatchObject(hooks.compatibility);
     expect(body(root, "contextMenu", "ContextMenuBody")).toMatchObject(hooks.contextMenu);
     expect(body(root, "logs", "LogsBody")).toMatchObject(hooks.logs);
-    expect(body(root, "versions", "VersionsBody")).toMatchObject({ pluginVersion: "0.6.7", ...hooks.versions });
+    expect(mountTab("versions").render().props).toMatchObject({ pluginVersion: "0.6.7", ...hooks.versions });
   });
 
   it("keeps the requested page across renders", () => {
@@ -153,15 +168,22 @@ describe("SettingsPage", () => {
     expect(layout(render()).page).toBe("logs");
   });
 
-  it("shows controller changes that happen after the page subscribes", () => {
-    render();
-    for (const effect of harness.effects) effect();
+  it("shows controller changes that happen after a feature tab subscribes", () => {
+    const trailers = mountTab("trailers");
     controllers.trailers.publish({ name: "trailers", revision: 1 });
-    controllers.hltb.publish({ name: "hltb", revision: 1, settings: { style: "clean" } });
+    expect(trailers.render().props.state).toMatchObject({ revision: 1 });
 
-    const root = render();
-    expect(body(root, "trailers", "GameTrailersBody").state).toMatchObject({ revision: 1 });
-    expect(body(root, "hltb", "HltbBody").settings).toEqual({ style: "clean" });
+    const hltb = mountTab("hltb");
+    controllers.hltb.publish({ name: "hltb", revision: 1, settings: { style: "clean" } });
+    expect(hltb.render().props.settings).toEqual({ style: "clean" });
+  });
+
+  it("checks trailer status quickly only while the Game trailers tab is shown", () => {
+    const trailers = mountTab("trailers");
+    expect(controllers.trailers.setPanelVisible).toHaveBeenLastCalledWith(true);
+
+    trailers.unmount();
+    expect(controllers.trailers.setPanelVisible).toHaveBeenLastCalledWith(false);
   });
 
   it("leaves Settings with B from the tab list", () => {

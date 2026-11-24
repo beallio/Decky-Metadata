@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
   Field: "Field",
-  PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({ compactTextStyle: {} }));
 // Components are invoked as plain functions here, so the i18n hook is replaced by non-React `t`.
@@ -44,10 +44,10 @@ describe("VersionsBody", () => {
   it("renders each version value in its own labeled Field", () => {
     const items = fields(render([]));
     expect(items.map(({ props }) => props.label)).toEqual([
-      "Decky Metadata:",
-      "Decky:",
-      "SteamOS:",
-      "Controller Types:",
+      "Decky Metadata",
+      "Decky",
+      "SteamOS",
+      "Controller Types",
     ]);
     expect(items.map(({ props }) => text(props.children))).toEqual([
       "0.3.0",

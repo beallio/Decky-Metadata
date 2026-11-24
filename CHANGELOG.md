@@ -10,7 +10,9 @@ All notable changes to this project are documented here in Keep a Changelog form
   Settings from the gear or **Open settings** button. The full-screen page
   puts settings in side tabs, and changes apply at once. The Quick Access Menu
   now shows metadata counts, **Refresh metadata**, its progress bar, **Open
-  settings**, and **Install** only when an update is available.
+  settings**, and **Install** only when an update is available. Each Settings
+  tab follows Steam's own Settings layout: grouped sections with headings, and
+  each action as a short button on the right of its label.
 
 ### Fixed
 
@@ -32,13 +34,18 @@ All notable changes to this project are documented here in Keep a Changelog form
   **Edit Metadata...** open writes one line with how long the saved details took
   to load and show. This helps find the cause when the editor is slow to fill.
 - **Update status no longer sticks on "Checking".** Changing **Receive
-  development releases** while a check was running, with automatic checks off,
-  could leave the status on "Checking" until the plugin reloaded. The channel
-  change now always runs its own check.
+  development releases** while a check was running, or pressing **Check now**
+  while the new channel was still saving, could leave the status on "Checking"
+  until the plugin reloaded. Checks now use the saved channel, and a stopped
+  check always ends.
 - **A failed install keeps the update offered.** When the installer failed,
   the update could disappear until the next check, or the error could be
-  replaced by a check result. The error now stays visible, and **Install**
-  stays available so you can try again.
+  replaced by a check result. The status now says the installation failed, and
+  **Install** stays available so you can try again. While an install runs,
+  **Check now** and the update switches are off.
+- **Quick setting changes no longer undo each other.** Turning two update
+  switches, or both **Context menu** switches, in quick succession could put
+  a switch back to a value that was never saved.
 - **Debug Logging switch returns to its saved value when the save fails.** Before,
   it showed the unsaved value. **View logs** no longer opens the log window after
   you have left Settings.

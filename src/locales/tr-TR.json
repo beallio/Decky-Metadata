@@ -1,5 +1,5 @@
 {
-  "settings": { "open": "Ayarları aç" },
+  "settings": { "open": "Ayarları aç", "action": { "refresh": "Yenile", "clear": "Temizle", "view": "Görüntüle", "check": "Kontrol et" } },
   "common": {
     "hours_one": "{{value}} saat",
     "hours_other": "{{value}} saat",
@@ -245,9 +245,9 @@
     },
     "metadata": {
       "title": "Meta veriler",
-      "detectedGames": "Algılanan Steam dışı oyunlar:",
-      "saved": "Kaydedilmiş meta veriler:",
-      "missing": "Eksik meta veriler:",
+      "detectedGames": "Algılanan Steam dışı oyunlar",
+      "saved": "Kaydedilmiş meta veriler",
+      "missing": "Eksik meta veriler",
       "refresh": "Meta verileri yenile",
       "refreshing": "Yenileniyor...",
       "refreshingStatus": "Meta veriler yenileniyor...",

@@ -10,6 +10,7 @@ const ui = vi.hoisted(() => ({
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
+  DialogControlsSection: "DialogControlsSection",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
   Spinner: "Spinner",
@@ -108,7 +109,29 @@ describe("PluginUpdateBody", () => {
     controller.settingsLoaded = true;
     const loaded = children(render()).filter((node) => node.type === "ToggleField");
     expect(loaded.every((toggle) => toggle.props?.disabled === false)).toBe(true);
+
   });
+
+  it("disables update controls while installation or handoff is active", () => {
+    controller.isHandoffPending = true;
+    const nodes = children(render());
+    expect(nodes.filter((node) => node.type === "ToggleField").every((toggle) => toggle.props?.disabled)).toBe(true);
+    const check = nodes.find((node) => node.type === "ButtonItem" && node.props?.label === "Check now");
+    expect(check?.props?.disabled).toBe(true);
+
+    controller.isHandoffPending = false;
+    controller.isInstalling = true;
+    const installingNodes = children(render());
+    expect(installingNodes.filter((node) => node.type === "ToggleField").every((toggle) => toggle.props?.disabled)).toBe(true);
+    expect(installingNodes.find((node) => node.type === "ButtonItem" && node.props?.label === "Check now")?.props?.disabled).toBe(true);
+  });
+
+  it("shows installation failure status for non-check errors", () => {
+    controller.errorMessage = "Install failed";
+    controller.checkResult = null;
+    expect(text(render())).toContain("Installation Failed");
+  });
+
 
   it("shows rate-limit retry time and offline failure detail", () => {
     controller.errorMessage = "Offline";

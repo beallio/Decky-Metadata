@@ -1,7 +1,7 @@
 import React from "react";
 import { describe, expect, it, vi } from "vitest";
 import type { Mock } from "vitest";
-vi.mock("@decky/ui", () => ({ ButtonItem: "ButtonItem", DropdownItem: "DropdownItem", Field: "Field", PanelSectionRow: "PanelSectionRow", SliderField: "SliderField", ToggleField: "ToggleField" }));
+vi.mock("@decky/ui", () => ({ ButtonItem: "ButtonItem", DialogControlsSection: "DialogControlsSection", DialogControlsSectionHeader: "DialogControlsSectionHeader", DropdownItem: "DropdownItem", Field: "Field", SliderField: "SliderField", ToggleField: "ToggleField" }));
 // The component is called as a plain function here, so the hook is stubbed with the same translator.
 vi.mock("../../i18n", async (importOriginal) => {
   const i18n = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();
@@ -106,7 +106,15 @@ describe("HLTB controls", () => {
     expect(applied(change, settings)).toEqual({ ...settings, appearance: { ...settings.appearance, barAlpha: 40 } });
     tree.find(node => node.type === "ButtonItem" && node.props.children === "Reset appearance")!.props.onClick();
     expect(applied(change, settings)).toEqual({ ...settings, appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true } });
-    tree.find(node => node.type === "ButtonItem" && node.props.children === "Clear HLTB cache")!.props.onClick();
+    tree.find(node => node.props.label === "Clear HLTB cache")!.props.onClick();
     expect(clear).toHaveBeenCalledOnce();
+  });
+  it("omits the empty trailing status field", () => {
+    const tree = nodes(HltbBody({
+      settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: true,
+      conflict: { pluginName: null, detectionAvailable: true },
+      onSettingsChange: vi.fn(), onClearCache: vi.fn(),
+    }));
+    expect(tree.some(node => node.type === "Field")).toBe(false);
   });
 });
