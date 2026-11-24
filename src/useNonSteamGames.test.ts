@@ -14,7 +14,7 @@ vi.mock("react", () => ({
 }));
 vi.mock("./steam", () => steam);
 
-import { useNonSteamGames } from "./useNonSteamGames";
+import { loadNonSteamGames, useNonSteamGames } from "./useNonSteamGames";
 
 const mount = () => {
   state.values = []; state.effects = []; state.cursor = 0;
@@ -44,5 +44,19 @@ describe("useNonSteamGames", () => {
     resolve(second);
     await flush();
     expect(render()).toMatchObject({ games: second, loaded: true });
+  });
+
+  it("gives the startup preload and a QAM mount the same list while one load is running", async () => {
+    const preloaded = [{ appid: 3, name: "Three" }];
+    let resolve!: (games: unknown) => void;
+    steam.allNonSteamGames.mockClear().mockReturnValueOnce(new Promise((done) => { resolve = done; }));
+    const preload = loadNonSteamGames();
+    mount();
+
+    resolve(preloaded);
+    await flush();
+    expect(steam.allNonSteamGames).toHaveBeenCalledTimes(1);
+    await expect(preload).resolves.toBe(preloaded);
+    expect(render()).toMatchObject({ games: preloaded, loaded: true });
   });
 });
