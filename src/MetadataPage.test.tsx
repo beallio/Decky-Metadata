@@ -1,7 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as I18n from "./i18n";
 import { hltbStore } from "./hltb/store";
 import type { HltbEntry } from "./backend";
+import { setVerboseLogging } from "./log";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const route = vi.hoisted(() => ({ appid: "100" }));
@@ -26,6 +27,7 @@ const backend = vi.hoisted(() => ({
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
   searchSteamMatches: vi.fn(),
+  frontendLog: vi.fn(),
 }));
 
 const steam = vi.hoisted(() => ({
@@ -78,6 +80,7 @@ const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null }));
 const state = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const refs = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 type MockEffect = (() => unknown) & { deps: readonly unknown[] | undefined };
+const layoutEffects = vi.hoisted(() => ({ callbacks: [] as MockEffect[] }));
 const effects = vi.hoisted(() => ({ enabled: false, callbacks: [] as MockEffect[] }));
 
 vi.mock("@decky/ui", () => ({
@@ -135,6 +138,9 @@ vi.mock("./hltb/gameView", () => ({
 vi.mock("react", () => ({
   createContext: () => ({}),
   useCallback: (callback: any) => callback,
+  useLayoutEffect: (callback: () => unknown, deps?: readonly unknown[]) => {
+    layoutEffects.callbacks.push(Object.assign(callback, { deps }));
+  },
   useEffect: (callback: () => unknown, deps?: readonly unknown[]) => {
     if (effects.enabled) effects.callbacks.push(Object.assign(callback, { deps }));
   },
@@ -162,7 +168,7 @@ import { MetadataPage } from "./MetadataPage";
 import { EditorLayout } from "./editorLayout";
 import { EDITOR_PAGE_ORDER, type EditorPageId } from "./editorPages";
 import { metadataTemplate } from "./metadataForm";
-import type { MetadataData } from "./types";
+import type { MetadataData, ShortcutNameManagement } from "./types";
 import { SteamMatchPicker } from "./SteamMatchPicker";
 import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { classifyShortcutNameState as actualClassifyShortcutNameState } from "./steam/shortcutNames";
@@ -1332,6 +1338,88 @@ describe("MetadataPage compatibility status", () => {
     editTitle(openPage("Details"), "Edited title");
     await clickSave();
     expect(backend.saveMetadata).toHaveBeenLastCalledWith(100, expect.objectContaining({ description: "Saved description" }));
+  });
+
+  it("hydrates metadata before shortcut-name management settles", async () => {
+    effects.enabled = true;
+    const pendingManagement = deferred<any>();
+    const saved = makeMetadata({ title: "Saved title", description: "Saved description" });
+    backend.getMetadata.mockResolvedValue(saved);
+    backend.getShortcutNameManagement.mockReturnValue(pendingManagement.promise);
+
+    renderPage();
+    const loading = effects.callbacks[0]();
+    await flushAsyncWork();
+
+    const details = renderPage();
+    expect(textField(details, "Title").props.value).toBe("Saved title");
+    expect(walk(details, (node) => node.type === "textarea")[0].props.value).toBe("Saved description");
+    expect(saveButton(details).props.disabled).toBe(true);
+
+    pendingManagement.resolve(shortcutState());
+    await loading;
+  });
+
+  it("hides prior shortcut-name actions while the next entry's management is pending", async () => {
+    effects.enabled = true;
+    const pendingB = deferred<any>();
+    const managedA = { original_name: "A original", applied_name: "Steam Name", steam_appid: 15100, updated_at: 1 };
+    backend.getMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15100, steam_store_name: "Steam Name" }));
+    backend.getShortcutNameManagement.mockImplementation((appId: number) =>
+      appId === 100 ? Promise.resolve(shortcutState({ state: managedA })) : pendingB.promise);
+    steam.classifyShortcutNameState.mockReturnValue("managed");
+    steam.nativeShortcutName.mockReturnValue("Steam Name");
+
+    renderPage();
+    await effects.callbacks[0]();
+    expect(text(openPage("Shortcut Name"))).toContain("A original");
+    expect(action(renderPage(), "Restore original name")).toBeDefined();
+
+    route.appid = "101";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    const loadingB = effects.callbacks[0]();
+    await flushAsyncWork();
+
+    const pageB = openPage("Shortcut Name");
+    expect(action(pageB, "Use Steam name")).toBeUndefined();
+    expect(action(pageB, "Restore original name")).toBeUndefined();
+    expect(action(pageB, "Forget saved name history")).toBeUndefined();
+    expect(text(pageB)).not.toContain("A original");
+
+    pendingB.resolve(shortcutState());
+    await loadingB;
+  });
+
+  it("ignores a late shortcut-management reply from the previous editor entry", async () => {
+    effects.enabled = true;
+    const pendingA = deferred<any>();
+    const managedA = { original_name: "A original", applied_name: "Steam Name", steam_appid: 15100, updated_at: 1 };
+    const managementB = shortcutState({ eligible: false, reason: "shortcut_not_found" });
+    backend.getMetadata.mockResolvedValue(makeMetadata({ steam_appid: 15100, steam_store_name: "Steam Name" }));
+    backend.getShortcutNameManagement.mockImplementation((appId: number) =>
+      appId === 100 ? pendingA.promise : Promise.resolve(managementB));
+
+    renderPage();
+    effects.callbacks[0]();
+    await flushAsyncWork();
+
+    route.appid = "101";
+    effects.callbacks = [];
+    renderPage();
+    effects.callbacks[1]();
+    await effects.callbacks[0]();
+    await flushAsyncWork();
+
+    expect(text(openPage("Shortcut Name"))).toContain("not found");
+    pendingA.resolve(shortcutState({ state: managedA }));
+    await flushAsyncWork();
+
+    const pageB = renderPage();
+    expect(text(pageB)).toContain("not found");
+    expect(action(pageB, "Restore original name")).toBeUndefined();
+    expect(text(pageB)).not.toContain("A original");
   });
 
   it("keeps a newer title edit while previewing a changed Steam match", async () => {
@@ -2779,4 +2867,173 @@ describe("Leaving the editor with a draft", () => {
     expect(text(saveButton(restored))).toBe("Save");
     expect(dropdown(restored).props.selectedOption).toBeNull();
   });
+});
+
+describe("MetadataPage editor load timing", () => {
+  beforeEach(() => {
+    vi.useRealTimers();
+    state.values = [];
+    state.cursor = 0;
+    refs.values = [];
+    refs.cursor = 0;
+    effects.enabled = true;
+    effects.callbacks = [];
+    layoutEffects.callbacks = [];
+    vi.clearAllMocks();
+    backend.frontendLog.mockReset().mockResolvedValue(true);
+    backend.getMetadata.mockReset().mockResolvedValue(makeMetadata({ title: "Hydrated title" }));
+    backend.getShortcutNameManagement.mockReset().mockResolvedValue(shortcutState());
+    route.appid = "100";
+    setVerboseLogging(true);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  const startLoad = () => {
+    renderPage();
+    effects.callbacks[0]();
+  };
+
+  const commitHydration = () => {
+    const nextLayoutEffect = layoutEffects.callbacks.length;
+    renderPage();
+    layoutEffects.callbacks[nextLayoutEffect]();
+  };
+
+  it("hydrates metadata before shortcut data and logs once when both are ready", async () => {
+    const metadata = deferred<MetadataData>();
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getMetadata.mockReturnValue(metadata.promise);
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    startLoad();
+    metadata.resolve(makeMetadata({ title: "Hydrated title" }));
+    await flushAsyncWork();
+
+    expect(state.values[0].title).toBe("Hydrated title");
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+
+    commitHydration();
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({
+        metadataMs: expect.any(Number),
+        shortcutMs: expect.any(Number),
+        commitMs: expect.any(Number),
+      }),
+      "debug",
+    );
+  });
+
+
+  it("logs metadata failure without waiting for a commit or shortcut result", async () => {
+    const metadata = deferred<MetadataData>();
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getMetadata.mockReturnValue(metadata.promise);
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    startLoad();
+    metadata.reject(new Error("metadata unavailable"));
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({
+        metadataOk: false,
+        metadataMs: expect.any(Number),
+        commitMs: null,
+        shortcutMs: null,
+      }),
+      "debug",
+    );
+
+    shortcut.resolve(shortcutState());
+    await flushAsyncWork();
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+  });
+  it("ignores late replies from an old entry and logs only the current entry", async () => {
+    vi.useFakeTimers();
+    const metadataA = deferred<MetadataData>();
+    const shortcutA = deferred<ShortcutNameManagement>();
+    const metadataB = deferred<MetadataData>();
+    const shortcutB = deferred<ShortcutNameManagement>();
+    backend.getMetadata.mockImplementation((appId: number) =>
+      appId === 100 ? metadataA.promise : metadataB.promise
+    );
+    backend.getShortcutNameManagement.mockImplementation((appId: number) =>
+      appId === 100 ? shortcutA.promise : shortcutB.promise
+    );
+
+    startLoad();
+    await vi.advanceTimersByTimeAsync(1_000);
+    route.appid = "101";
+    const secondRenderEffect = effects.callbacks.length;
+    renderPage();
+    effects.callbacks[secondRenderEffect]();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    metadataA.resolve(makeMetadata({ title: "A late result" }));
+    shortcutA.resolve(shortcutState());
+    await flushAsyncWork();
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    metadataB.resolve(makeMetadata({ title: "B result" }));
+    await flushAsyncWork();
+    commitHydration();
+    await vi.advanceTimersByTimeAsync(1_000);
+    shortcutB.resolve(shortcutState());
+    await flushAsyncWork();
+
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({
+        appId: 101,
+        metadataMs: 2_000,
+        shortcutMs: 3_000,
+        commitMs: 2_000,
+      }),
+      "debug",
+    );
+  });
+
+  it("does not log when verbose logging is disabled", async () => {
+    setVerboseLogging(false);
+    startLoad();
+    await flushAsyncWork();
+    commitHydration();
+
+    expect(backend.frontendLog).not.toHaveBeenCalled();
+  });
+
+  it("logs with null shortcut timing after the 15-second timeout", async () => {
+    vi.useFakeTimers();
+    const shortcut = deferred<ShortcutNameManagement>();
+    backend.getShortcutNameManagement.mockReturnValue(shortcut.promise);
+
+    startLoad();
+    await flushAsyncWork();
+    commitHydration();
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(backend.frontendLog).toHaveBeenCalledTimes(1);
+    expect(backend.frontendLog).toHaveBeenCalledWith(
+      "editor",
+      "load timing",
+      expect.objectContaining({ shortcutMs: null, shortcutOk: null, timedOut: true }),
+      "debug",
+    );
+  });
+
 });

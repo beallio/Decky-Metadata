@@ -21427,6 +21427,7 @@ let verbose = false;
 const setVerboseLogging = (enabled) => {
     verbose = !!enabled;
 };
+const isVerboseLogging = () => verbose;
 const prefix = (area) => `[Decky Metadata][${area}]`;
 const debug = (area, message, ...args) => {
     if (verbose)
@@ -38097,8 +38098,8 @@ const MetadataPage = () => {
     // The operation that owns the shared busy guard; only its control shows busy text.
     const [busy, setBusy] = SP_REACT.useState(false);
     const [steamAppIdText, setSteamAppIdText] = SP_REACT.useState("");
-    const [shortcutManagement, setShortcutManagement] = SP_REACT.useState(null);
-    const [shortcutManagementError, setShortcutManagementError] = SP_REACT.useState(false);
+    const [shortcutManagementState, setShortcutManagementState] = SP_REACT.useState(null);
+    const [shortcutManagementErrorState, setShortcutManagementErrorState] = SP_REACT.useState(false);
     const [currentShortcutName, setCurrentShortcutName] = SP_REACT.useState(null);
     const [steamNameLoading, setSteamNameLoading] = SP_REACT.useState(false);
     const [steamNameUnavailable, setSteamNameUnavailable] = SP_REACT.useState(false);
@@ -38249,24 +38250,44 @@ const MetadataPage = () => {
         const requestedEntry = editorEntryToken;
         try {
             const management = await getShortcutNameManagement(appId);
+            recordEditorLoadTiming(requestedEntry, (timing) => {
+                if (timing.shortcutSettledAt === null) {
+                    timing.shortcutSettledAt = performance.now();
+                    timing.shortcutOk = true;
+                }
+            });
+            emitEditorLoadTiming(requestedEntry);
             if (!isCurrentEditorEntry(requestedEntry))
                 return null;
-            setShortcutManagement(management);
-            setShortcutManagementError(false);
+            setShortcutManagementState(management);
+            setShortcutManagementErrorState(false);
+            setShortcutManagementEntry(requestedEntry);
             setCurrentShortcutName(nativeShortcutName(appId));
             return management;
         }
-        catch (_error) {
+        catch {
+            recordEditorLoadTiming(requestedEntry, (timing) => {
+                if (timing.shortcutSettledAt === null) {
+                    timing.shortcutSettledAt = performance.now();
+                    timing.shortcutOk = false;
+                }
+            });
+            emitEditorLoadTiming(requestedEntry);
             if (!isCurrentEditorEntry(requestedEntry))
                 return null;
-            setShortcutManagement(null);
-            setShortcutManagementError(true);
+            setShortcutManagementState(null);
+            setShortcutManagementErrorState(true);
+            setShortcutManagementEntry(requestedEntry);
             setCurrentShortcutName(nativeShortcutName(appId));
             return null;
         }
     }, [appId, editorEntryToken, isCurrentEditorEntry]);
     const load = SP_REACT.useCallback(async () => {
         const requestedEntry = editorEntryToken;
+        recordEditorLoadTiming(requestedEntry, (timing) => {
+            if (timing.loadStartAt === null)
+                timing.loadStartAt = performance.now();
+        });
         const requestedRevision = formRevisionRef.current;
         const baselineMetadata = metadataRef.current;
         const baselineDeveloperText = developerTextRef.current;
@@ -38274,10 +38295,16 @@ const MetadataPage = () => {
         const baselineReleaseText = releaseTextRef.current;
         const baselineRatingText = ratingTextRef.current;
         const baselineSteamAppIdText = steamAppIdTextRef.current;
-        const [metadataResult, managementResult] = await Promise.allSettled([
-            getMetadata(appId),
-            getShortcutNameManagement(appId),
-        ]);
+        void loadShortcutManagement();
+        const [metadataResult] = await Promise.allSettled([getMetadata(appId)]);
+        recordEditorLoadTiming(requestedEntry, (timing) => {
+            if (timing.metadataSettledAt === null) {
+                timing.metadataSettledAt = performance.now();
+                timing.metadataOk = metadataResult.status === "fulfilled";
+            }
+        });
+        if (metadataResult.status === "rejected")
+            emitEditorLoadTiming(requestedEntry);
         if (!isCurrentEditorEntry(requestedEntry))
             return;
         if (metadataResult.status === "fulfilled") {
@@ -38326,26 +38353,21 @@ const MetadataPage = () => {
         else {
             setMetadataHydratedEntry(null);
         }
-        if (managementResult.status === "fulfilled") {
-            setShortcutManagement(managementResult.value);
-            setShortcutManagementError(false);
-        }
-        else {
-            setShortcutManagement(null);
-            setShortcutManagementError(true);
-        }
-        setCurrentShortcutName(nativeShortcutName(appId));
     }, [
         appId,
         editorEntryToken,
         isCurrentEditorEntry,
         setFormMetadata,
+        loadShortcutManagement,
         setSteamAppIdInput,
     ]);
     SP_REACT.useEffect(() => {
         void load();
     }, [load]);
     SP_REACT.useEffect(() => {
+        setShortcutManagementState(null);
+        setShortcutManagementErrorState(false);
+        setShortcutManagementEntry(null);
         setSteamNameLoading(false);
         setSteamNameUnavailable(false);
         setMetadataHydratedEntry(null);
@@ -38499,6 +38521,105 @@ const MetadataPage = () => {
     const steamSearchRef = SP_REACT.useRef(null);
     // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
     const applySteamAppIdRef = SP_REACT.useRef(async () => undefined);
+    const [shortcutManagementEntry, setShortcutManagementEntry] = SP_REACT.useState(editorEntryToken);
+    const editorLoadTimingRef = SP_REACT.useRef(null);
+    let editorLoadTiming = editorLoadTimingRef.current;
+    if (editorLoadTiming === null || editorLoadTiming.entry !== editorEntryToken) {
+        editorLoadTiming = {
+            entry: editorEntryToken,
+            appId,
+            mountAt: performance.now(),
+            loadStartAt: null,
+            metadataSettledAt: null,
+            metadataOk: null,
+            shortcutSettledAt: null,
+            shortcutOk: null,
+            commitAt: null,
+            emitted: false,
+            timeoutId: null,
+        };
+        editorLoadTimingRef.current = editorLoadTiming;
+    }
+    const clearEditorLoadTimingTimeout = (timing) => {
+        if (timing.timeoutId === null)
+            return;
+        clearTimeout(timing.timeoutId);
+        timing.timeoutId = null;
+    };
+    const recordEditorLoadTiming = (entry, update) => {
+        const timing = editorLoadTimingRef.current;
+        if (timing === null ||
+            timing.entry !== entry ||
+            editorEntryRef.current.token !== entry) {
+            return;
+        }
+        update(timing);
+    };
+    const emitEditorLoadTiming = (entry, timedOut = false) => {
+        const timing = editorLoadTimingRef.current;
+        if (timing === null ||
+            timing.entry !== entry ||
+            editorEntryRef.current.token !== entry ||
+            timing.emitted) {
+            return;
+        }
+        const metadataFailed = timing.metadataSettledAt !== null && timing.metadataOk === false;
+        const ready = metadataFailed || (timing.commitAt !== null &&
+            (timing.shortcutSettledAt !== null || timedOut));
+        if (!ready)
+            return;
+        clearEditorLoadTimingTimeout(timing);
+        if (!isVerboseLogging())
+            return;
+        timing.emitted = true;
+        void frontendLog("editor", "load timing", {
+            appId: timing.appId,
+            metadataMs: timing.metadataSettledAt === null
+                ? null
+                : Math.round(timing.metadataSettledAt - timing.mountAt),
+            shortcutMs: timing.shortcutSettledAt === null
+                ? null
+                : Math.round(timing.shortcutSettledAt - timing.mountAt),
+            commitMs: timing.commitAt === null
+                ? null
+                : Math.round(timing.commitAt - timing.mountAt),
+            loadStartMs: timing.loadStartAt === null
+                ? null
+                : Math.round(timing.loadStartAt - timing.mountAt),
+            metadataOk: timing.metadataOk,
+            shortcutOk: timing.shortcutOk,
+            timedOut,
+        }, "debug").catch(() => undefined);
+    };
+    SP_REACT.useLayoutEffect(() => {
+        if (editorLoadTimingRef.current !== editorLoadTiming ||
+            editorLoadTiming.entry !== editorEntryToken ||
+            editorEntryRef.current.token !== editorEntryToken) {
+            return;
+        }
+        if (metadataHydratedEntry === editorEntryToken && editorLoadTiming.commitAt === null) {
+            editorLoadTiming.commitAt = performance.now();
+        }
+        if (editorLoadTiming.commitAt !== null) {
+            emitEditorLoadTiming(editorEntryToken);
+            if (!editorLoadTiming.emitted &&
+                editorLoadTiming.shortcutSettledAt === null &&
+                editorLoadTiming.timeoutId === null) {
+                editorLoadTiming.timeoutId = setTimeout(() => {
+                    if (editorLoadTimingRef.current !== editorLoadTiming ||
+                        editorEntryRef.current.token !== editorLoadTiming.entry ||
+                        editorLoadTiming.shortcutSettledAt !== null) {
+                        return;
+                    }
+                    editorLoadTiming.timeoutId = null;
+                    emitEditorLoadTiming(editorLoadTiming.entry, true);
+                }, 15000);
+            }
+        }
+        return () => clearEditorLoadTimingTimeout(editorLoadTiming);
+    }, [editorEntryToken, metadataHydratedEntry]);
+    const shortcutManagement = shortcutManagementEntry === editorEntryToken ? shortcutManagementState : null;
+    const shortcutManagementError = shortcutManagementEntry === editorEntryToken && shortcutManagementErrorState;
     const hltbIdText = hltbIdDraft ?? String(metadata.hltb_game_id || hltbMatch?.hltb_id || "");
     // The visible fields whose value differs from the stored record.
     const changed = changedDraftFields(savedRecordRef.current, {
@@ -38988,7 +39109,7 @@ const MetadataPage = () => {
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
             setCurrentShortcutName(observed);
-            setShortcutManagement({ ...shortcutManagement, state });
+            setShortcutManagementState({ ...shortcutManagement, state });
             toastSuccess(t("editor.toast.shortcutNameUpdatedTitle"), t("editor.toast.shortcutNameUpdatedBody"));
         }
         catch (error) {
@@ -39039,7 +39160,7 @@ const MetadataPage = () => {
             }
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setShortcutManagement({ ...shortcutManagement, state: null });
+            setShortcutManagementState({ ...shortcutManagement, state: null });
             toastSuccess(t("editor.toast.shortcutNameRestoredTitle"), t("editor.toast.shortcutNameRestoredBody"));
         }
         catch (error) {
@@ -39060,7 +39181,7 @@ const MetadataPage = () => {
             await clearShortcutNameState(appId);
             if (!isCurrentEditorEntry(requestedEntry))
                 return;
-            setShortcutManagement((current) => current ? { ...current, state: null } : current);
+            setShortcutManagementState((current) => current ? { ...current, state: null } : current);
             toastSuccess(t("editor.toast.nameHistoryForgottenTitle"), t("editor.toast.nameHistoryForgottenBody"));
         }
         catch (error) {
