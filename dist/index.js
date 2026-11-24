@@ -19672,39 +19672,31 @@ class PluginUpdateControllerStore {
             configurable: true,
             writable: true,
             value: async (enabled) => {
-                const previousChannel = this.updateChannel;
-                const requestedChannel = enabled ? "development" : "stable";
+                const previous = this.currentSettings();
                 const generation = this.generation;
-                // Send the save first: the backend checks the saved channel, and the optimistic apply below starts that check.
-                const request = this.deps.setUpdateChannel(requestedChannel);
-                this.applySettings({
-                    update_channel: requestedChannel,
-                    automatic_update_checks: this.automaticUpdateChecks,
-                });
+                // Show the choice at once, but check only after the backend saved it: the backend checks the saved channel.
+                this.showSettings({ ...previous, update_channel: enabled ? "development" : "stable" });
                 try {
-                    const result = await request;
+                    const result = await this.deps.setUpdateChannel(enabled ? "development" : "stable");
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
                         const rolledBack = resolveSavedUpdateSettings({
-                            update_channel: previousChannel,
+                            update_channel: previous.update_channel,
                             automatic_update_checks: this.automaticUpdateChecks,
                         }, result);
-                        this.applySettings(rolledBack);
+                        this.applySettings(rolledBack, previous);
                         this.deps.toastError(t("panel.toast.updates"), result.message
                             ? translateBackendError(result.message)
                             : t("panel.updateChannelSaveError"));
                         return;
                     }
-                    this.applySettings(result);
+                    this.applySettings(result, previous);
                 }
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    this.applySettings({
-                        update_channel: previousChannel,
-                        automatic_update_checks: this.automaticUpdateChecks,
-                    });
+                    this.applySettings({ ...this.currentSettings(), update_channel: previous.update_channel }, previous);
                     logUpdate(null, "update_channel_save_failed", {
                         message: error instanceof Error ? error.message : String(error),
                     });
@@ -19716,38 +19708,31 @@ class PluginUpdateControllerStore {
             configurable: true,
             writable: true,
             value: async (enabled) => {
-                const previous = this.automaticUpdateChecks;
+                const previous = this.currentSettings();
                 const generation = this.generation;
-                // Send the save first, as for the channel: enabling checks starts one in the optimistic apply below.
-                const request = this.deps.setAutomaticUpdateChecks(enabled);
-                this.applySettings({
-                    update_channel: this.updateChannel,
-                    automatic_update_checks: enabled,
-                });
+                // As for the channel: show at once, start the automatic check only after the save is confirmed.
+                this.showSettings({ ...previous, automatic_update_checks: enabled });
                 try {
-                    const result = await request;
+                    const result = await this.deps.setAutomaticUpdateChecks(enabled);
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
                         const rolledBack = resolveSavedUpdateSettings({
                             update_channel: this.updateChannel,
-                            automatic_update_checks: previous,
+                            automatic_update_checks: previous.automatic_update_checks,
                         }, result);
-                        this.applySettings(rolledBack);
+                        this.applySettings(rolledBack, previous);
                         this.deps.toastError(t("panel.toast.updates"), result.message
                             ? translateBackendError(result.message)
                             : t("panel.automaticUpdateSaveError"));
                         return;
                     }
-                    this.applySettings(result);
+                    this.applySettings(result, previous);
                 }
                 catch (error) {
                     if (generation !== this.generation)
                         return;
-                    this.applySettings({
-                        update_channel: this.updateChannel,
-                        automatic_update_checks: previous,
-                    });
+                    this.applySettings({ ...this.currentSettings(), automatic_update_checks: previous.automatic_update_checks }, previous);
                     logUpdate(null, "automatic_update_setting_save_failed", {
                         message: error instanceof Error ? error.message : String(error),
                     });
@@ -19940,9 +19925,19 @@ class PluginUpdateControllerStore {
             void this.checkForUpdates({ force: false, notify: false, source: "automatic" });
         }
     }
-    applySettings(settings) {
-        const channelChanged = this.updateChannel !== settings.update_channel;
-        const automaticChecksEnabled = !this.automaticUpdateChecks && settings.automatic_update_checks;
+    currentSettings() {
+        return { update_channel: this.updateChannel, automatic_update_checks: this.automaticUpdateChecks };
+    }
+    /** Optimistic display only: no check starts and in-flight checks keep running. */
+    showSettings(settings) {
+        this.updateChannel = settings.update_channel;
+        this.automaticUpdateChecks = settings.automatic_update_checks;
+        this.publish();
+    }
+    /** Apply settings the backend confirmed; checks follow the change from `previous`, the settings before the save. */
+    applySettings(settings, previous) {
+        const channelChanged = previous.update_channel !== settings.update_channel;
+        const automaticChecksEnabled = !previous.automatic_update_checks && settings.automatic_update_checks;
         if (channelChanged) {
             this.activeCheckId += 1;
             this.inFlightCheck = null;

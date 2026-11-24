@@ -217,16 +217,35 @@ describe("plugin update controller", () => {
     expect(controller.getSnapshot().candidate?.channel).toBe("development");
   });
 
-  it("sends the channel save before the forced check, because the backend checks the saved channel", async () => {
-    const calls: string[] = [];
-    const { controller } = createController({
-      checkForPluginUpdate: vi.fn(async (_version: string, force: boolean): Promise<UpdateCheckResult> => {
-        calls.push(force ? "forced check" : "automatic check");
-        return { status: "current", checked_at: "now", channel: force ? "development" : "stable" };
-      }),
-      setUpdateChannel: vi.fn(async (channel: UpdateChannel): Promise<UpdateRpcResult<UpdateSettings>> => {
-        calls.push(`save ${channel}`);
-        return { update_channel: channel, automatic_update_checks: true };
+  it("starts the channel check only after the backend confirms the channel save", async () => {
+    const save = deferred<UpdateRpcResult<UpdateSettings>>();
+    const { deps, controller } = createController({
+      checkForPluginUpdate: vi.fn(async (_version: string, force: boolean): Promise<UpdateCheckResult> => ({
+        status: "current", checked_at: "now", channel: force ? "development" : "stable",
+      })),
+      setUpdateChannel: vi.fn(() => save.promise),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+
+    const change = controller.setUpdateChannel(true);
+    await flushPromises();
+    expect(controller.getSnapshot().updateChannel).toBe("development");
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+
+    save.resolve({ update_channel: "development", automatic_update_checks: true });
+    await change;
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(deps.checkForPluginUpdate).mock.calls[1][1]).toBe(true);
+    expect(controller.getSnapshot()).toMatchObject({ isChecking: false, checkResult: { channel: "development" } });
+  });
+
+  it("runs no check for a channel whose save failed", async () => {
+    const { deps, controller } = createController({
+      setUpdateChannel: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => {
+        throw new Error("disk full");
       }),
     });
     controller.subscribe(() => undefined);
@@ -235,8 +254,31 @@ describe("plugin update controller", () => {
     await controller.setUpdateChannel(true);
     await flushPromises();
 
-    expect(calls).toEqual(["automatic check", "save development", "forced check"]);
-    expect(controller.getSnapshot().isChecking).toBe(false);
+    expect(controller.getSnapshot().updateChannel).toBe("stable");
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
+  });
+
+  it("starts the automatic check only after enabling automatic checks is saved", async () => {
+    const save = deferred<UpdateRpcResult<UpdateSettings>>();
+    const { deps, controller } = createController({
+      getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
+        update_channel: "stable",
+        automatic_update_checks: false,
+      })),
+      setAutomaticUpdateChecks: vi.fn(() => save.promise),
+    });
+    controller.subscribe(() => undefined);
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).not.toHaveBeenCalled();
+
+    const change = controller.setAutomaticUpdateChecks(true);
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).not.toHaveBeenCalled();
+
+    save.resolve({ update_channel: "stable", automatic_update_checks: true });
+    await change;
+    await flushPromises();
+    expect(deps.checkForPluginUpdate).toHaveBeenCalledOnce();
   });
 
   it("falls back to stable with automatic checks and marks settings loaded after a failed envelope", async () => {
