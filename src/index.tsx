@@ -9,6 +9,7 @@ import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
 import { setNativeCssClasses } from "./steam/nativeCssClasses";
 import { metadataScanStore } from "./metadataScan";
+import { pluginUpdateController } from "./updater/pluginUpdateController";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
@@ -145,6 +146,11 @@ export default definePlugin(() => {
         metadataScanStore.dispose();
       } catch (error) {
         log.error("patch", "metadata scan stop failed", error);
+      }
+      try {
+        pluginUpdateController.dispose();
+      } catch (error) {
+        log.error("patch", "plugin update controller stop failed", error);
       }
       const reloading = reloadGuard.isPending();
       // The bootstrap stopper invalidates the compatibility lifecycle. Retain

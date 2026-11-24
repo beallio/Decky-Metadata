@@ -15,15 +15,11 @@ const backend = vi.hoisted(() => ({
   getDelistedIndexStatus: vi.fn(),
   getMissingMetadataCount: vi.fn(),
   getPluginLogs: vi.fn(),
-  getPluginVersion: vi.fn(),
   getSystemVersions: vi.fn(),
-  getUpdateSettings: vi.fn(),
   refreshDelistedIndex: vi.fn(),
-  setAutomaticUpdateChecks: vi.fn(),
   setCompatibilityDefault: vi.fn(),
   setCompatibilityDefaultScope: vi.fn(),
   setDebugLogging: vi.fn(),
-  setUpdateChannel: vi.fn(),
   // The real metadataScan module (kept for its message helpers) builds its store from these at import.
   getScanProgress: vi.fn(),
   startScanMissing: vi.fn(),
@@ -59,6 +55,9 @@ const metadataScan = vi.hoisted(() => ({
   start: vi.fn(),
   getSnapshot: vi.fn(),
   subscribe: vi.fn(() => () => undefined),
+}));
+const pluginUpdateController = vi.hoisted(() => ({
+  snapshot: { pluginVersion: "0.3.1" },
 }));
 const i18n = vi.hoisted(() => ({
   currentSteamLanguage: vi.fn(() => Promise.resolve("english")),
@@ -140,6 +139,9 @@ vi.mock("./components/qam/PluginLogModal", () => ({
 }));
 vi.mock("./components/qam/PluginUpdateSection", () => ({
   PluginUpdateSection: "PluginUpdateSection",
+}));
+vi.mock("./updater/pluginUpdateController", () => ({
+  usePluginUpdateController: () => pluginUpdateController.snapshot,
 }));
 vi.mock("./components/qam/VersionsSection", () => ({
   VersionsSection: "VersionsSection",
@@ -256,9 +258,6 @@ const children = (node: any): any[] => {
   if (typeof node !== "object") return [];
   return [node, ...children(node.props?.children)];
 };
-
-const updateSection = (tree: any) =>
-  children(tree).find((node) => node.type === "PluginUpdateSection");
 
 const logsSection = (tree: unknown) =>
   children(tree).find((node) => node.type === "LogsSection");
@@ -501,6 +500,7 @@ describe("Content update settings", () => {
 
   beforeEach(() => {
     vi.resetAllMocks();
+    pluginUpdateController.snapshot = { pluginVersion: "0.3.1" };
     metadataScan.snapshot = {
       progress: null,
       busy: false,
@@ -546,12 +546,7 @@ describe("Content update settings", () => {
     backend.getDebugLogging.mockResolvedValue(false);
     backend.getDelistedIndexStatus.mockResolvedValue({ count: 0, fetched_at: 0 });
     backend.getMissingMetadataCount.mockResolvedValue(0);
-    backend.getPluginVersion.mockResolvedValue("0.3.1");
     backend.getSystemVersions.mockResolvedValue({ decky: "", steamos: "" });
-    backend.getUpdateSettings.mockResolvedValue({
-      update_channel: "stable",
-      automatic_update_checks: true,
-    });
   });
 
   afterEach(() => {
@@ -571,18 +566,14 @@ describe("Content update settings", () => {
     expect(section.props.snapshot.busy).toBe(false);
   });
 
-  it("falls back to defaults and marks settings loaded after a failed envelope", async () => {
-    backend.getUpdateSettings.mockResolvedValue({ status: "failed" });
+  it("passes the shared plugin version to VersionsSection", () => {
+    pluginUpdateController.snapshot.pluginVersion = "0.4.2";
     steam.getConnectedControllerTypes.mockReturnValue([4, 102]);
     render();
     runEffects();
-    await flushPromises();
-
-    const section = updateSection(render());
-    expect(section.props.updateChannel).toBe("stable");
-    expect(section.props.automaticUpdateChecks).toBe(true);
-    expect(section.props.settingsLoaded).toBe(true);
-    expect(versionsSection(render()).props.controllerTypes).toEqual([4, 102]);
+    const section = versionsSection(render());
+    expect(section.props.pluginVersion).toBe("0.4.2");
+    expect(section.props.controllerTypes).toEqual([4, 102]);
   });
   it("keeps debug logging disabled until its setting finishes loading", async () => {
     const loading = deferred<boolean>();
@@ -600,27 +591,6 @@ describe("Content update settings", () => {
   });
 
 
-  it("rolls both optimistic toggles back after failed or skipped saves", async () => {
-    backend.getUpdateSettings.mockResolvedValue({
-      update_channel: "development",
-      automatic_update_checks: false,
-    });
-    backend.setUpdateChannel.mockResolvedValue({ status: "failed", message: "no" });
-    backend.setAutomaticUpdateChecks.mockResolvedValue({ status: "skipped" });
-
-    render();
-    runEffects();
-    await flushPromises();
-
-    const section = updateSection(render());
-    section.props.onToggleUpdateChannel(false);
-    section.props.onToggleAutomaticUpdateChecks(true);
-    await flushPromises();
-
-    const rolledBack = updateSection(render());
-    expect(rolledBack.props.updateChannel).toBe("development");
-    expect(rolledBack.props.automaticUpdateChecks).toBe(false);
-  });
 
   it("keeps the global compatibility default disabled until it loads, then applies only a confirmed save", async () => {
     steam.ensureCompatibilityDefault.mockResolvedValue(3);

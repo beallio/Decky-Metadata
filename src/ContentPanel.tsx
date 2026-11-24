@@ -13,15 +13,11 @@ import {
   getDelistedIndexStatus,
   getMissingMetadataCount,
   getPluginLogs,
-  getPluginVersion,
   getSystemVersions,
-  getUpdateSettings,
   refreshDelistedIndex,
-  setAutomaticUpdateChecks,
   setCompatibilityDefault,
   setCompatibilityDefaultScope,
   setDebugLogging,
-  setUpdateChannel,
 } from "./backend";
 import { CompatibilitySection } from "./components/qam/CompatibilitySection";
 import { GameTrailersSection } from "./components/qam/GameTrailersSection";
@@ -85,21 +81,15 @@ import {
   GameOption,
   CompatibilityDefaultScope,
   DeckCompatibilityCategory,
-  UpdateChannel,
 } from "./types";
-import {
-  resolveLoadedUpdateSettings,
-  resolveSavedUpdateSettings,
-} from "./updater/updateSettings";
 import { useNonSteamGames } from "./useNonSteamGames";
 import { getConnectedControllerTypes } from "./steam";
 import { trailerController } from "./trailers/controller";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
 import { metadataScanStore, scanCompleteMessage, useMetadataScan } from "./metadataScan";
+import { usePluginUpdateController } from "./updater/pluginUpdateController";
 
-// Version is fetched from the backend on mount; "" means not yet loaded.
-export const PLUGIN_VERSION = "";
 // Keep retrying native focus while Steam rebuilds the navigation tree. The
 // shared attempt count keeps the handoff bounded across QAM remounts.
 const COMPATIBILITY_DROPDOWN_RETURN_FOCUS_MAX_FRAMES = 900;
@@ -242,13 +232,9 @@ export const Content = () => {
   const [debugLogging, setDebugLoggingState] = useState(false);
   const [debugLoggingLoaded, setDebugLoggingLoaded] = useState(false);
   const [debugLoggingBusy, setDebugLoggingBusy] = useState(false);
-  const [pluginVersion, setPluginVersion] = useState(PLUGIN_VERSION);
+  const updateController = usePluginUpdateController();
   const [deckyVersion, setDeckyVersion] = useState("");
   const [steamosVersion, setSteamosVersion] = useState("");
-  const [updateChannel, setUpdateChannelState] =
-    useState<UpdateChannel>("stable");
-  const [automaticUpdateChecks, setAutomaticUpdateChecksState] = useState(true);
-  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [compatibilityDefault, setCompatibilityDefaultState] = useState<DeckCompatibilityCategory | null>(
     initialPendingCompatibilityPolicySave?.category ?? compatibilityDefaultSnapshot(),
   );
@@ -587,44 +573,6 @@ export const Content = () => {
   }, [loadDelistedStatus]);
 
   useEffect(() => {
-    let cancelled = false;
-    void getPluginVersion()
-      .then((version) => {
-        if (!cancelled && version) {
-          setPluginVersion(version);
-        }
-      })
-      .catch((error) => log.warn("bridge", "plugin version load failed", error));
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-    void getUpdateSettings()
-      .then((settings) => {
-        if (cancelled) return;
-        const resolved = resolveLoadedUpdateSettings(settings);
-        setUpdateChannelState(resolved.update_channel);
-        setAutomaticUpdateChecksState(resolved.automatic_update_checks);
-      })
-      .catch((error) => {
-        if (!cancelled) {
-          setUpdateChannelState("stable");
-          setAutomaticUpdateChecksState(true);
-          log.warn("bridge", "update settings load failed", error);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSettingsLoaded(true);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
     setControllerTypes(getConnectedControllerTypes());
   }, []);
 
@@ -753,67 +701,6 @@ export const Content = () => {
       settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
       toastError(t("panel.toast.compatibility"), message);
       log.warn("bridge", "compatibility default scope save failed", error);
-    }
-  };
-
-  const saveUpdateChannel = async (enabled: boolean) => {
-    const previous = updateChannel;
-    const requested: UpdateChannel = enabled ? "development" : "stable";
-    setUpdateChannelState(requested);
-    try {
-      const saved = await setUpdateChannel(requested);
-      if ("status" in saved) {
-        const rolledBack = resolveSavedUpdateSettings(
-          {
-            update_channel: previous,
-            automatic_update_checks: automaticUpdateChecks,
-          },
-          saved
-        );
-        setUpdateChannelState(rolledBack.update_channel);
-        toastError(
-          t("panel.toast.updates"),
-          saved.message
-            ? translateBackendError(saved.message)
-            : t("panel.updateChannelSaveError")
-        );
-        return;
-      }
-      setUpdateChannelState(saved.update_channel);
-      setAutomaticUpdateChecksState(saved.automatic_update_checks);
-    } catch (error) {
-      setUpdateChannelState(previous);
-      log.warn("bridge", "update channel save failed", error);
-    }
-  };
-
-  const saveAutomaticUpdateChecks = async (enabled: boolean) => {
-    const previous = automaticUpdateChecks;
-    setAutomaticUpdateChecksState(enabled);
-    try {
-      const saved = await setAutomaticUpdateChecks(enabled);
-      if ("status" in saved) {
-        const rolledBack = resolveSavedUpdateSettings(
-          {
-            update_channel: updateChannel,
-            automatic_update_checks: previous,
-          },
-          saved
-        );
-        setAutomaticUpdateChecksState(rolledBack.automatic_update_checks);
-        toastError(
-          t("panel.toast.updates"),
-          saved.message
-            ? translateBackendError(saved.message)
-            : t("panel.automaticUpdateSaveError")
-        );
-        return;
-      }
-      setUpdateChannelState(saved.update_channel);
-      setAutomaticUpdateChecksState(saved.automatic_update_checks);
-    } catch (error) {
-      setAutomaticUpdateChecksState(previous);
-      log.warn("bridge", "automatic update setting save failed", error);
     }
   };
 
@@ -1042,19 +929,9 @@ export const Content = () => {
         onViewLogs={() => void viewLogs()}
         onToggleDebugLogging={(enabled) => void saveDebugLogging(enabled)}
       />
-      <PluginUpdateSection
-        currentVersion={pluginVersion}
-        updateChannel={updateChannel}
-        automaticUpdateChecks={automaticUpdateChecks}
-        settingsLoaded={settingsLoaded}
-        onToggleUpdateChannel={(enabled) => void saveUpdateChannel(enabled)}
-        onToggleAutomaticUpdateChecks={(enabled) =>
-          void saveAutomaticUpdateChecks(enabled)
-        }
-        onInstallVersionConfirmed={setPluginVersion}
-      />
+      <PluginUpdateSection />
       <VersionsSection
-        pluginVersion={pluginVersion}
+        pluginVersion={updateController.pluginVersion}
         deckyVersion={deckyVersion}
         steamosVersion={steamosVersion}
         controllerTypes={controllerTypes}
