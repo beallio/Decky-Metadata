@@ -22,6 +22,8 @@ All notable changes to this project are documented here in Keep a Changelog form
   stays off until the refresh finishes. Before, the panel could forget the
   refresh, and clearing the cache during it let the refresh save old matches
   again. The scan that starts after **Clear cache** now shows its progress too.
+- **Metadata counts show 0.** **Missing metadata** (and the other counts) showed
+  nothing instead of **0**.
 - **Edit Metadata... fills its boxes sooner.** The editor no longer waits for
   the shortcut-name check before it shows a game's saved details. The **Shortcut
   Name** actions stay off until that game's own shortcut details have loaded,

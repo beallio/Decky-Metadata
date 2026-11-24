@@ -43,17 +43,18 @@ export function MetadataScanBody({
     <>
       <PanelSectionRow>
         <Field label={t("qam.metadata.detectedGames")} focusable highlightOnFocus bottomSeparator="none">
-          {detectedCount}
+          {/* Steam's Field hides a falsy child, so 0 must be text. */}
+          {String(detectedCount)}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
         <Field label={t("qam.metadata.saved")} focusable highlightOnFocus bottomSeparator="none">
-          {savedCount}
+          {String(savedCount)}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>
         <Field label={t("qam.metadata.missing")} focusable highlightOnFocus bottomSeparator="none">
-          {missingCount}
+          {String(missingCount)}
         </Field>
       </PanelSectionRow>
       <PanelSectionRow>

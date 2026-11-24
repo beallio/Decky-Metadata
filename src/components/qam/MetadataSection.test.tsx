@@ -102,6 +102,13 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
     expect(refreshButton(tree).props.disabled).toBe(true);
     expect(text(refreshButton(tree))).toContain("Refreshing...");
   });
+  it("passes a count of 0 as text, because Steam's Field hides a falsy value", () => {
+    const counts = nodes(render({ detectedCount: 0, savedCount: 0, missingCount: 0 }))
+      .filter(node => node.type === "Field")
+      .map(node => node.props.children);
+
+    expect(counts).toEqual(["0", "0", "0"]);
+  });
   it("shows scan progress from the completed and total counts", () => {
     const progress = nodes(render({
       scanBusy: true,
