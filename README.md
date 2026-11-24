@@ -11,7 +11,7 @@ watch game trailers.
 For Steam games, you can restore the small achievement progress bar beside
 Play Time.
 
-![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20261003)
+![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20261124)
 
 ## Install
 
@@ -42,11 +42,12 @@ closes when Settings opens.
 Settings is a full-screen page with Steam-style side tabs. The tabs are
 Metadata, Compatibility status, ProtonDB badges, HLTB times, Game trailers,
 Mini achievements, and Context menu. After a separator are Logs, Updates, and
-Versions. Each tab has the settings from its old section. Changes apply at
-once; there is no Save button. Press **B** to return from a settings page to
-the tab list, then press **B** again to close Settings. Opening Settings from a
-game's page leaves that page. The **Metadata** tab includes **Clear cache** and
-**Delisted Steam games**.
+Versions. Changes apply at once; there is no Save button. Press **B** to return
+from a settings page to the tab list, then press **B** again to close Settings.
+Opening Settings from a game's page leaves that page. The **Metadata** tab
+includes **Clear cache** and **Delisted Steam games**.
+
+![Decky Metadata Settings page on the Metadata tab](assets/decky-metadata-settings.png?cacheBuster=20261124)
 
 To edit a non-Steam game, select **Edit Metadata...** from the Library card's
 **Options** menu or from the gear menu on the game page. The editor has a
