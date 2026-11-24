@@ -49,6 +49,9 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Debug Logging switch returns to its saved value when the save fails.** Before,
   it showed the unsaved value. **View logs** no longer opens the log window after
   you have left Settings.
+- **Quick Access Menu looks and loads like other plugins.** Its rows have the
+  standard Decky side padding again, and **Detected non-Steam games** no longer
+  shows **0** for a few seconds each time you open the page.
 
 ## [0.6.6] - 2026-11-22
 

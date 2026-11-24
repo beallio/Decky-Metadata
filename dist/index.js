@@ -29913,11 +29913,15 @@ function scanView(scan) {
     };
 }
 
+// Decky remounts the QAM page each time it opens from the plugin list. Start from the last list so the
+// detected count shows at once; `loaded` stays false until this mount's fresh list arrives.
+let lastGames = [];
 const useNonSteamGames = () => {
-    const [games, setGames] = SP_REACT.useState([]);
+    const [games, setGames] = SP_REACT.useState(lastGames);
     const [loaded, setLoaded] = SP_REACT.useState(false);
     const loadGames = SP_REACT.useCallback(async () => {
         const loadedGames = await allNonSteamGames();
+        lastGames = loadedGames;
         setGames(loadedGames);
         setLoaded(true);
         return loadedGames;
@@ -30030,7 +30034,7 @@ const Content = () => {
             });
         }
     }, []);
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }));
+    return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(QamInstallRow, {}), SP_JSX.jsx(OpenSettingsButton, {})] }) }));
 };
 
 // THIS FILE IS AUTO GENERATED

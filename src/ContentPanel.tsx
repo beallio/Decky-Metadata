@@ -3,6 +3,7 @@ import {
   getFocusNavController,
   getGamepadNavigationTrees,
   NavEntryPositionPreferences,
+  PanelSection,
 } from "@decky/ui";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -114,15 +115,18 @@ export const Content = () => {
       navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
       style={qamPanelStyle}
     >
-      <MetadataScanBody
-        {...scanView(scan)}
-        detectedCount={games.length}
-        savedCount={scan.savedCount}
-        missingCount={scan.missingCount}
-        onRefreshMetadata={() => void metadataScanStore.start(games, currentSteamLanguage)}
-      />
-      <QamInstallRow />
-      <OpenSettingsButton />
+      {/* PanelSection gives the standard Decky side padding that other plugins' QAM pages have. */}
+      <PanelSection>
+        <MetadataScanBody
+          {...scanView(scan)}
+          detectedCount={games.length}
+          savedCount={scan.savedCount}
+          missingCount={scan.missingCount}
+          onRefreshMetadata={() => void metadataScanStore.start(games, currentSteamLanguage)}
+        />
+        <QamInstallRow />
+        <OpenSettingsButton />
+      </PanelSection>
     </Focusable>
   );
 };
