@@ -507,6 +507,8 @@ describe("Content update settings", () => {
       statusKind: "idle",
       error: null,
       completedRevision: 0,
+      savedCount: 0,
+      missingCount: 0,
     };
     metadataScan.getSnapshot.mockImplementation(() => metadataScan.snapshot);
     metadataScan.subscribe.mockReturnValue(() => undefined);
@@ -1129,6 +1131,8 @@ describe("Content update settings", () => {
       statusKind: "active",
       error: null,
       completedRevision: 0,
+      savedCount: 0,
+      missingCount: 0,
     };
 
     const section = metadataSection(render());

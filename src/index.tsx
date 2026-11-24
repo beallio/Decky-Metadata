@@ -3,6 +3,8 @@ import { definePlugin, staticClasses } from "@decky/ui";
 import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
+import { SettingsPage } from "./SettingsPage";
+import { SETTINGS_ROUTE } from "./settingsRoute";
 import { clearCompatibilityDropdownReturn } from "./qamCompatibilityFocus";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
@@ -111,6 +113,7 @@ export default definePlugin(() => {
   const menuPatch = contextMenuPatch(LibraryContextMenu);
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
+  routerHook.addRoute(SETTINGS_ROUTE, () => <SettingsPage />, { exact: true });
 
   return {
     // Plugin identity used by Decky Loader (must match plugin.json "name" so
@@ -202,6 +205,11 @@ export default definePlugin(() => {
         routerHook.removeRoute(METADATA_ROUTE);
       } catch (error) {
         log.error("patch", "route remove failed", error);
+      }
+      try {
+        routerHook.removeRoute(SETTINGS_ROUTE);
+      } catch (error) {
+        log.error("patch", "settings route remove failed", error);
       }
     },
   };

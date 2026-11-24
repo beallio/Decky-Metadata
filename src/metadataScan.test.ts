@@ -3,8 +3,9 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 vi.mock("./backend", () => ({
   getScanProgress: vi.fn(),
   startScanMissing: vi.fn(),
+  getMissingMetadataCount: vi.fn(),
 }));
-vi.mock("./steam", () => ({ refreshMetadataCache: vi.fn() }));
+vi.mock("./steam", () => ({ refreshMetadataCache: vi.fn(), metadataCache: {} }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./i18n", () => ({
   t: (key: string, values?: Record<string, unknown>) => {
@@ -22,7 +23,8 @@ vi.mock("./i18n", () => ({
 
 import type { MetadataScanDeps } from "./metadataScan";
 import { MetadataScanStore, scanCompleteMessage, scanCompleteStatusKind } from "./metadataScan";
-import type { ScanProgress } from "./types";
+import { metadataCache } from "./steam";
+import type { GameOption, ScanProgress } from "./types";
 
 const flush = async () => {
   for (let index = 0; index < 8; index += 1) await Promise.resolve();
@@ -56,6 +58,7 @@ const setup = () => {
   const getScanProgress = vi.fn(async () => scan(false));
   const startScanMissing = vi.fn(async () => undefined);
   const refreshMetadataCache = vi.fn(async () => undefined);
+  const getMissingMetadataCount = vi.fn(async (_games: GameOption[]) => 0);
   const toastSuccess = vi.fn();
   const toastError = vi.fn();
   const setTimeout = vi.fn((callback: () => void, ms: number) => {
@@ -68,6 +71,7 @@ const setup = () => {
     getScanProgress,
     startScanMissing,
     refreshMetadataCache,
+    getMissingMetadataCount,
     toastSuccess,
     toastError,
     setTimeout,
@@ -87,6 +91,7 @@ const setup = () => {
     getScanProgress,
     startScanMissing,
     refreshMetadataCache,
+    getMissingMetadataCount,
     toastSuccess,
     toastError,
     setTimeout,
@@ -95,8 +100,10 @@ const setup = () => {
     runNextTimer,
   };
 };
-
-afterEach(() => vi.clearAllMocks());
+afterEach(() => {
+  vi.clearAllMocks();
+  Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+});
 
 describe("MetadataScanStore", () => {
   it("hydrates a running scan and completes once for two subscribers", async () => {
@@ -133,6 +140,77 @@ describe("MetadataScanStore", () => {
     unsubscribeFirst();
     unsubscribeSecond();
   });
+  it("refreshes counts once on scan completion for all subscribers", async () => {
+    const setupResult = setup();
+    const games = [{ appid: 42 } as GameOption];
+    Object.assign(metadataCache, { first: {}, second: {} });
+    setupResult.getMissingMetadataCount.mockResolvedValueOnce(3);
+    const firstListener = vi.fn();
+    const secondListener = vi.fn();
+    setupResult.store.subscribe(firstListener);
+    setupResult.store.subscribe(secondListener);
+    await flush();
+    await setupResult.store.start(games, async () => "english");
+    setupResult.runNextTimer();
+    await flush();
+
+    expect(setupResult.refreshMetadataCache).toHaveBeenCalledTimes(1);
+    expect(setupResult.getMissingMetadataCount).toHaveBeenCalledTimes(1);
+    expect(setupResult.getMissingMetadataCount).toHaveBeenCalledWith(games);
+    expect(setupResult.store.getSnapshot()).toMatchObject({ savedCount: 2, missingCount: 3 });
+    expect(firstListener).toHaveBeenCalled();
+    expect(secondListener).toHaveBeenCalled();
+    Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+  });
+
+  it("publishes refreshed counts to every subscriber", async () => {
+    const setupResult = setup();
+    Object.assign(metadataCache, { first: {}, second: {} });
+    setupResult.getMissingMetadataCount.mockResolvedValueOnce(4);
+    const listener = vi.fn();
+    setupResult.store.subscribe(listener);
+    await flush();
+    await setupResult.store.refreshCounts([]);
+
+    expect(setupResult.store.getSnapshot()).toMatchObject({ savedCount: 2, missingCount: 4 });
+    expect(listener).toHaveBeenCalled();
+    Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
+  });
+
+  it("ignores counts that finish after dispose", async () => {
+    const setupResult = setup();
+    const missing = deferred<number>();
+    setupResult.getMissingMetadataCount.mockReturnValueOnce(missing.promise);
+    const refreshing = setupResult.store.refreshCounts([]);
+    await flush();
+    const snapshot = setupResult.store.getSnapshot();
+    setupResult.store.dispose();
+    missing.resolve(5);
+    await refreshing;
+
+    expect(setupResult.store.getSnapshot()).toBe(snapshot);
+  });
+
+  it("ignores an older count request that finishes last", async () => {
+    const setupResult = setup();
+    Object.assign(metadataCache, { first: {}, second: {} });
+    const older = deferred<number>();
+    const newer = deferred<number>();
+    setupResult.getMissingMetadataCount
+      .mockReturnValueOnce(older.promise)
+      .mockReturnValueOnce(newer.promise);
+    const oldRefresh = setupResult.store.refreshCounts([]);
+    await flush();
+    const newRefresh = setupResult.store.refreshCounts([]);
+    await flush();
+    newer.resolve(2);
+    await newRefresh;
+    older.resolve(7);
+    await oldRefresh;
+
+    expect(setupResult.store.getSnapshot()).toMatchObject({ savedCount: 2, missingCount: 2 });
+  });
+
 
   it("continues polling after the last subscriber unsubscribes", async () => {
     const setupResult = setup();

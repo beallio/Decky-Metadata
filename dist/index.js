@@ -2030,7 +2030,7 @@ const transformOptions = options => {
   return options;
 };
 
-const noop = () => {};
+const noop$1 = () => {};
 const withDefaults = options => {
   const defOpts = get();
   const merged = {
@@ -2186,7 +2186,7 @@ class I18n extends EventEmitter {
       });
     }
     this.format = this.options.interpolation.format;
-    if (!callback) callback = noop;
+    if (!callback) callback = noop$1;
     if (this.options.fallbackLng && !this.services.languageDetector && !this.options.lng) {
       const codes = this.services.languageUtils.getFallbackCodes(this.options.fallbackLng);
       if (codes.length > 0 && codes[0] !== 'dev') this.options.lng = codes[0];
@@ -2226,7 +2226,7 @@ class I18n extends EventEmitter {
     }
     return deferred;
   }
-  loadResources(language, callback = noop) {
+  loadResources(language, callback = noop$1) {
     let usedCallback = callback;
     const usedLng = isString$1(language) ? language : this.language;
     if (typeof language === 'function') usedCallback = language;
@@ -2272,7 +2272,7 @@ class I18n extends EventEmitter {
       lngs = [...new Set([...(this.languages || []), ...requested])].filter(l => l !== 'cimode');
     }
     if (!ns) ns = this.options.ns;
-    if (!callback) callback = noop;
+    if (!callback) callback = noop$1;
     this.services.backendConnector.reload(lngs, ns, err => {
       deferred.resolve();
       callback(err);
@@ -2551,7 +2551,7 @@ class I18n extends EventEmitter {
     instance.createInstance = I18n.createInstance;
     return instance;
   }
-  cloneInstance(options = {}, callback = noop) {
+  cloneInstance(options = {}, callback = noop$1) {
     const forkResourceStore = options.forkResourceStore;
     if (forkResourceStore) {
       options = {
@@ -22388,7 +22388,7 @@ const menuButtonClasses = () => {
     }
     return menuButtonClassesCache ?? {};
 };
-const css$1 = `
+const css$2 = `
 /* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
 #decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
 .decky-metadata-hltb-info {
@@ -22462,7 +22462,7 @@ function HltbStats({ stats, hltbId, settings, launching }) {
     const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
     const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
     const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
                                 ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
                                 : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
 }
@@ -36400,6 +36400,8 @@ class MetadataScanStore {
                 statusKind: "idle",
                 error: null,
                 completedRevision: 0,
+                savedCount: 0,
+                missingCount: 0,
             }
         });
         Object.defineProperty(this, "listeners", {
@@ -36444,6 +36446,19 @@ class MetadataScanStore {
             writable: true,
             value: 0
         });
+        Object.defineProperty(this, "countRevision", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        // Last game list from start() or a surface's refreshCounts(); a hydrated scan has no start() call.
+        Object.defineProperty(this, "scanGames", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
     }
     getSnapshot() {
         return this.snapshot;
@@ -36477,11 +36492,33 @@ class MetadataScanStore {
         this.publish({ progress, busy: true, statusKind: "active", error: null });
         this.ensurePolling();
     }
+    async refreshCounts(games) {
+        this.scanGames = games;
+        const generation = this.generation;
+        const revision = ++this.countRevision;
+        await this.deps.refreshMetadataCache();
+        if (generation !== this.generation || revision !== this.countRevision)
+            return;
+        const savedCount = Object.keys(metadataCache).length;
+        let missingCount = this.snapshot.missingCount;
+        try {
+            missingCount = await this.deps.getMissingMetadataCount(games);
+        }
+        catch (error) {
+            if (generation === this.generation && revision === this.countRevision) {
+                warn("bridge", "missing metadata count load failed", error);
+            }
+        }
+        if (generation !== this.generation || revision !== this.countRevision)
+            return;
+        this.publish({ savedCount, missingCount });
+    }
     async start(games, getLanguage) {
         this.startRevision += 1;
         if (this.snapshot.busy)
             return;
         this.publish({ busy: true, statusKind: "active", progress: null, error: null });
+        this.scanGames = games;
         const generation = this.generation;
         let language;
         try {
@@ -36558,7 +36595,7 @@ class MetadataScanStore {
             return;
         }
         try {
-            await this.deps.refreshMetadataCache();
+            await this.refreshCounts(this.scanGames);
         }
         catch (error) {
             if (generation !== this.generation)
@@ -36591,6 +36628,7 @@ const metadataScanStore = new MetadataScanStore({
     getScanProgress,
     startScanMissing,
     refreshMetadataCache,
+    getMissingMetadataCount,
     toastSuccess,
     toastError,
     setTimeout: (fn, ms) => window.setTimeout(fn, ms),
@@ -36695,7 +36733,7 @@ const findScrollViewport = (element) => {
     }
     return null;
 };
-const epochToDate = (value) => {
+const epochToDate$1 = (value) => {
     if (!value)
         return "";
     const date = new Date(value * 1000);
@@ -37278,7 +37316,7 @@ const Content = () => {
         ? t("panel.delistedCount", { value: formatNumber(delistedStatus.count) })
         : t("panel.delistedNotDownloaded");
     const delistedDateText = delistedStatus?.count && delistedStatus.fetched_at
-        ? t("panel.delistedLastUpdated", { date: epochToDate(delistedStatus.fetched_at) })
+        ? t("panel.delistedLastUpdated", { date: epochToDate$1(delistedStatus.fetched_at) })
         : "";
     // A native dropdown remounts QAM; reopen its section before restoring focus.
     const returningDropdown = hasCompatibilityDropdownReturn()
@@ -38024,7 +38062,7 @@ const resolveNativePagedSettings = () => {
 };
 
 const layout = "decky-metadata-editor-layout";
-const css = `
+const css$1 = `
 .${layout}__tab-title {
   display: inline-flex;
   align-items: center;
@@ -38079,10 +38117,10 @@ const css = `
 }
 
 `;
-const NativePagedSettings = resolveNativePagedSettings();
-const PageContentContext = SP_REACT.createContext([]);
-function CurrentPageContent({ id }) {
-    const pages = SP_REACT.useContext(PageContentContext);
+const NativePagedSettings$1 = resolveNativePagedSettings();
+const PageContentContext$1 = SP_REACT.createContext([]);
+function CurrentPageContent$1({ id }) {
+    const pages = SP_REACT.useContext(PageContentContext$1);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
 function EditorTitle({ title, appId, steamAppId }) {
@@ -38124,16 +38162,16 @@ function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageReque
                 visible: editorPage.visible,
                 hideTitle: true,
                 // Steam's settings pages use DialogHeader + DialogBody; native CSS supplies their spacing.
-                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: editorPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent, { id: editorPage.id }, editorPage.id) })] })),
+                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: editorPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent$1, { id: editorPage.id }, editorPage.id) })] })),
             });
         }
         return mapped;
     }, pageDependencies);
-    return (SP_JSX.jsxs(PageContentContext.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
+    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
 }
 function EditorLayout(props) {
     const t = useT();
-    return NativePagedSettings
+    return NativePagedSettings$1
         ? SP_JSX.jsx(NativeEditorLayout, { ...props })
         : (
         // Focusable so B reaches the editor root and leaves; there is nothing else to focus.
@@ -39782,6 +39820,486 @@ const MetadataPage = () => {
         }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
+function useCompatibilityPolicy() {
+    const initialSave = compatibilityPolicySaveSnapshot();
+    const initialPendingSave = initialSave?.pendingKind ? initialSave : null;
+    const [compatibilityDefault, setCompatibilityDefault$1] = SP_REACT.useState(initialPendingSave ? initialPendingSave.category : compatibilityDefaultSnapshot());
+    const [compatibilityDefaultLoaded, setCompatibilityDefaultLoaded] = SP_REACT.useState(false);
+    const [compatibilityDefaultBusy, setCompatibilityDefaultBusy] = SP_REACT.useState(initialPendingSave?.pendingKind === "category");
+    const [compatibilityDefaultError, setCompatibilityDefaultError] = SP_REACT.useState(initialSave?.error ?? "");
+    const [compatibilityDefaultScope, setCompatibilityDefaultScope$1] = SP_REACT.useState(initialPendingSave ? initialPendingSave.scope : compatibilityDefaultScopeSnapshot());
+    const [compatibilityDefaultScopeBusy, setCompatibilityDefaultScopeBusy] = SP_REACT.useState(initialPendingSave?.pendingKind === "scope");
+    const compatibilityDefaultLoadVersion = SP_REACT.useRef(0);
+    const synchronizePolicySave = SP_REACT.useCallback((fallbackCategory = compatibilityDefaultSnapshot(), fallbackScope = compatibilityDefaultScopeSnapshot()) => {
+        const shared = compatibilityPolicySaveSnapshot();
+        if (shared
+            && shared.lifecycleGeneration === compatibilityLifecycleSnapshot()
+            && shared.pendingKind !== null) {
+            setCompatibilityDefault$1(shared.category);
+            setCompatibilityDefaultScope$1(shared.scope);
+            setCompatibilityDefaultBusy(shared.pendingKind === "category");
+            setCompatibilityDefaultScopeBusy(shared.pendingKind === "scope");
+            setCompatibilityDefaultError(shared.error);
+            return;
+        }
+        setCompatibilityDefault$1(fallbackCategory);
+        setCompatibilityDefaultScope$1(fallbackScope);
+        setCompatibilityDefaultBusy(false);
+        setCompatibilityDefaultScopeBusy(false);
+        setCompatibilityDefaultError(shared?.lifecycleGeneration === compatibilityLifecycleSnapshot() ? shared.error : "");
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        discardStaleCompatibilityPolicySave(compatibilityLifecycleSnapshot());
+        synchronizePolicySave();
+        const requestVersion = compatibilityDefaultLoadVersion.current;
+        void ensureCompatibilityDefault()
+            .then((value) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            synchronizePolicySave(value, compatibilityDefaultScopeSnapshot());
+            setCompatibilityDefaultLoaded(true);
+        })
+            .catch((error) => {
+            if (cancelled || requestVersion !== compatibilityDefaultLoadVersion.current)
+                return;
+            const shared = compatibilityPolicySaveSnapshot();
+            if (shared?.lifecycleGeneration === compatibilityLifecycleSnapshot()) {
+                synchronizePolicySave();
+                return;
+            }
+            setCompatibilityDefaultError(t("panel.compatibilityDefaultLoadError", {
+                error: translateBackendError(error),
+            }));
+            warn("bridge", "compatibility default load failed", error);
+        });
+        const unsubscribeRevision = subscribeCompatibilityRevision(() => {
+            if (cancelled || !compatibilityDefaultLoadedSnapshot())
+                return;
+            synchronizePolicySave();
+            setCompatibilityDefaultLoaded(true);
+        });
+        const unsubscribeSave = subscribeCompatibilityPolicySave(() => {
+            if (!cancelled)
+                synchronizePolicySave();
+        });
+        return () => {
+            cancelled = true;
+            unsubscribeRevision();
+            unsubscribeSave();
+        };
+    }, [synchronizePolicySave]);
+    const onCompatibilityDefaultChange = async (category) => {
+        if (hasPendingCompatibilityPolicySave() || !compatibilityDefaultLoaded)
+            return;
+        const previous = compatibilityDefault;
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        const saveId = beginCompatibilityPolicySave("category", lifecycleGeneration, previous, compatibilityDefaultScope);
+        compatibilityDefaultLoadVersion.current += 1;
+        try {
+            const saved = await setCompatibilityDefault(category);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const confirmed = setConfirmedCompatibilityDefault(saved, lifecycleGeneration);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, confirmed, compatibilityDefaultScope);
+            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilitySaved"));
+        }
+        catch (error) {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const message = t("panel.compatibilitySaveError", {
+                error: translateBackendError(error),
+            });
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, previous, compatibilityDefaultScope, message);
+            toastError(t("panel.toast.compatibility"), message);
+            warn("bridge", "compatibility default save failed", error);
+        }
+    };
+    const onCompatibilityDefaultScopeChange = async (scope) => {
+        if (hasPendingCompatibilityPolicySave()
+            || !compatibilityDefaultLoaded
+            || compatibilityDefault === null)
+            return;
+        const previous = compatibilityDefaultScope;
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        const saveId = beginCompatibilityPolicySave("scope", lifecycleGeneration, compatibilityDefault, scope);
+        compatibilityDefaultLoadVersion.current += 1;
+        try {
+            const saved = await setCompatibilityDefaultScope(scope);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const confirmed = setConfirmedCompatibilityDefaultScope(saved, lifecycleGeneration);
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, confirmed);
+            toastSuccess(t("panel.toast.compatibility"), t("panel.compatibilityScopeSaved"));
+        }
+        catch (error) {
+            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                return;
+            const message = t("panel.compatibilityScopeSaveError", {
+                error: translateBackendError(error),
+            });
+            settleCompatibilityPolicySave(saveId, lifecycleGeneration, compatibilityDefault, previous, message);
+            toastError(t("panel.toast.compatibility"), message);
+            warn("bridge", "compatibility default scope save failed", error);
+        }
+    };
+    return {
+        compatibilityDefault,
+        compatibilityDefaultLoaded,
+        compatibilityDefaultBusy,
+        compatibilityDefaultError,
+        compatibilityDefaultScope,
+        compatibilityDefaultScopeBusy,
+        onCompatibilityDefaultChange,
+        onCompatibilityDefaultScopeChange,
+    };
+}
+
+const useLogsSettings = () => {
+    const [logsBusy, setLogsBusy] = SP_REACT.useState(false);
+    const [debugLogging, setDebugLoggingState] = SP_REACT.useState(false);
+    const [debugLoggingLoaded, setDebugLoggingLoaded] = SP_REACT.useState(false);
+    const [debugLoggingBusy, setDebugLoggingBusy] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getDebugLogging()
+            .then((enabled) => {
+            if (!cancelled) {
+                setDebugLoggingState(enabled);
+                setVerboseLogging(enabled);
+            }
+        })
+            .catch((error) => warn("bridge", "debug logging setting load failed", error))
+            .finally(() => { if (!cancelled)
+            setDebugLoggingLoaded(true); });
+        return () => { cancelled = true; };
+    }, []);
+    const onToggleDebugLogging = async (enabled) => {
+        if (debugLoggingBusy)
+            return;
+        setDebugLoggingBusy(true);
+        setDebugLoggingState(enabled);
+        setVerboseLogging(enabled);
+        try {
+            const saved = await setDebugLogging(enabled);
+            setDebugLoggingState(saved);
+            setVerboseLogging(saved);
+            info("bridge", "debug logging setting updated", saved);
+        }
+        catch (error) {
+            warn("bridge", "debug logging setting update failed", error);
+        }
+        finally {
+            setDebugLoggingBusy(false);
+        }
+    };
+    const onViewLogs = async () => {
+        if (logsBusy)
+            return;
+        setLogsBusy(true);
+        try {
+            const logs = await getPluginLogs();
+            let modal;
+            modal = DFL.showModal(SP_REACT.createElement(PluginLogModal, { logs, closeModal: () => modal?.Close() }));
+        }
+        catch (error) {
+            warn("bridge", "plugin log load failed", error);
+            toastError(t("panel.toast.logs"), t("panel.logsLoadFailed"));
+        }
+        finally {
+            setLogsBusy(false);
+        }
+    };
+    return { logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging };
+};
+
+const epochToDate = (value) => {
+    if (!value)
+        return "";
+    const date = new Date(value * 1000);
+    if (Number.isNaN(date.getTime()))
+        return "";
+    return formatDate(date);
+};
+// Clear cache and the delisted Steam index: MetadataMaintenanceBody props.
+const useMetadataMaintenance = (games) => {
+    const t = useT();
+    const [cacheBusy, setCacheBusy] = SP_REACT.useState(false);
+    const [delistedStatus, setDelistedStatus] = SP_REACT.useState(null);
+    const [delistedBusy, setDelistedBusy] = SP_REACT.useState(false);
+    const loadDelistedStatus = SP_REACT.useCallback(async () => {
+        try {
+            setDelistedStatus(await getDelistedIndexStatus());
+        }
+        catch (error) {
+            warn("bridge", "delisted index status load failed", error);
+        }
+    }, []);
+    SP_REACT.useEffect(() => {
+        void loadDelistedStatus();
+    }, [loadDelistedStatus]);
+    const onClearCache = async () => {
+        if (cacheBusy || metadataScanStore.getSnapshot().busy)
+            return;
+        setCacheBusy(true);
+        try {
+            await clearMetadataCache();
+            // Clear cache takes every game off the removed list; HLTB must ask again.
+            hltbStore.reset();
+            await metadataScanStore.refreshCounts(games);
+            if (games.length)
+                void metadataScanStore.start(games, currentSteamLanguage);
+            toastSuccess(t("panel.toast.cache"), t("panel.cacheCleared"));
+        }
+        catch (error) {
+            toastError(t("panel.toast.cacheClearFailed"), translateBackendError(error));
+        }
+        finally {
+            setCacheBusy(false);
+        }
+    };
+    const onRefreshDelisted = async () => {
+        if (delistedBusy)
+            return;
+        setDelistedBusy(true);
+        try {
+            const result = await refreshDelistedIndex();
+            if (!result.ok) {
+                throw new Error("Delisted index refresh failed");
+            }
+            toastSuccess(t("panel.toast.delisted"), t("panel.delistedUpdated"));
+            await loadDelistedStatus();
+        }
+        catch (error) {
+            warn("bridge", "delisted index refresh failed", error);
+            toastError(t("panel.toast.delisted"), t("panel.delistedRefreshFailed"));
+        }
+        finally {
+            setDelistedBusy(false);
+        }
+    };
+    const downloaded = Boolean(delistedStatus?.count && delistedStatus.fetched_at);
+    return {
+        cacheBusy,
+        delistedBusy,
+        delistedCountText: downloaded
+            ? t("panel.delistedCount", { value: formatNumber(delistedStatus.count) })
+            : t("panel.delistedNotDownloaded"),
+        delistedDateText: downloaded
+            ? t("panel.delistedLastUpdated", { date: epochToDate(delistedStatus.fetched_at) })
+            : "",
+        onClearCache,
+        onRefreshDelisted,
+    };
+};
+
+const useVersions = () => {
+    const [deckyVersion, setDeckyVersion] = SP_REACT.useState("");
+    const [steamosVersion, setSteamosVersion] = SP_REACT.useState("");
+    const [controllerTypes, setControllerTypes] = SP_REACT.useState([]);
+    SP_REACT.useEffect(() => {
+        setControllerTypes(getConnectedControllerTypes());
+    }, []);
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        void getSystemVersions()
+            .then((versions) => {
+            if (!cancelled) {
+                setDeckyVersion(versions.decky || "");
+                setSteamosVersion(versions.steamos || "");
+            }
+        })
+            .catch((error) => warn("bridge", "system versions load failed", error));
+        return () => { cancelled = true; };
+    }, []);
+    return { deckyVersion, steamosVersion, controllerTypes };
+};
+
+// MetadataScanBody props from the shared scan snapshot; text is built at render time in the current language.
+function scanView(scan) {
+    const completed = Number(scan.progress?.completed || 0);
+    const total = Number(scan.progress?.total || 0);
+    const message = scan.statusKind === "error"
+        ? translateBackendError(scan.error)
+        : scan.busy
+            ? scan.progress
+                ? scan.progress.current || translateProgress(scan.progress) || `${completed}/${total}`
+                : ""
+            : (scan.statusKind === "success" || scan.statusKind === "warning") && scan.progress
+                ? scanCompleteMessage(scan.progress)
+                : "";
+    return {
+        scanBusy: scan.busy,
+        scanCompleted: completed,
+        scanTotal: total,
+        scanMessage: message,
+        scanStatusKind: scan.statusKind,
+    };
+}
+
+const NativePagedSettings = resolveNativePagedSettings();
+const PageContentContext = SP_REACT.createContext([]);
+function CurrentPageContent({ id }) {
+    const pages = SP_REACT.useContext(PageContentContext);
+    return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
+}
+function SettingsLayout({ pages, page, onPageRequested }) {
+    // Same rule as the editor: descriptors stay stable while bodies re-render; context supplies the latest content.
+    const pageDependencies = pages.flatMap(({ id, label, icon, separatorBefore }) => [id, label, icon, separatorBefore]);
+    const nativePages = SP_REACT.useMemo(() => {
+        const mapped = [];
+        for (const settingsPage of pages) {
+            if (settingsPage.separatorBefore)
+                mapped.push("separator");
+            mapped.push({
+                identifier: settingsPage.id,
+                title: settingsPage.label,
+                icon: settingsPage.icon,
+                // Native separators need every page visible.
+                visible: true,
+                hideTitle: true,
+                content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: settingsPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: SP_JSX.jsx(CurrentPageContent, { id: settingsPage.id }, settingsPage.id) })] })),
+            });
+        }
+        return mapped;
+    }, pageDependencies);
+    if (!NativePagedSettings) {
+        // Without Steam's component, show every page in one list so no setting is lost.
+        return (SP_JSX.jsx(DFL.ScrollPanelGroup, { children: pages.map((settingsPage) => (SP_JSX.jsxs(SP_REACT.Fragment, { children: [SP_JSX.jsx(DFL.DialogHeader, { children: settingsPage.label }), SP_JSX.jsx(DFL.DialogBody, { children: settingsPage.content })] }, settingsPage.id))) }));
+    }
+    return (SP_JSX.jsx(PageContentContext.Provider, { value: pages, children: SP_JSX.jsx(NativePagedSettings, { pages: nativePages, page: page, onPageRequested: onPageRequested, showTitle: false }) }));
+}
+
+const rootClassName = "decky-metadata-settings";
+// Steam's settings wrapper fills the route host; without this the page stops short of the footer.
+const css = `.${rootClassName} { height: 100%; }`;
+// Module constants so page descriptors stay stable across renders.
+const icons = {
+    metadata: SP_JSX.jsx(FaTags, {}),
+    compat: SP_JSX.jsx(SiSteamdeck, {}),
+    protondb: SP_JSX.jsx(ProtonDbIcon, {}),
+    hltb: SP_JSX.jsx(FaClock, {}),
+    trailers: SP_JSX.jsx(FaPlayCircle, {}),
+    miniAchievements: SP_JSX.jsx(FaTrophy, {}),
+    contextMenu: SP_JSX.jsx(FaBars, {}),
+    logs: SP_JSX.jsx(FaFileAlt, {}),
+    updates: SP_JSX.jsx(FaSyncAlt, {}),
+    versions: SP_JSX.jsx(FaInfoCircle, {}),
+};
+// shortcut: no-op dropdown-focus props until the QAM focus-return code and these props are removed (slice 3f).
+const noop = () => undefined;
+function SettingsPage() {
+    const t = useT();
+    const [page, setPage] = SP_REACT.useState("metadata");
+    // Every container hook runs here, above the layout: the native layout mounts only the active page,
+    // so state kept in a page body would reset on a tab switch.
+    const { games } = useNonSteamGames();
+    const scan = useMetadataScan();
+    const maintenance = useMetadataMaintenance(games);
+    const compatibility = useCompatibilityPolicy();
+    const logs = useLogsSettings();
+    const versions = useVersions();
+    const updates = usePluginUpdateController();
+    const [trailers, setTrailers] = SP_REACT.useState(trailerController.getSnapshot());
+    const [miniAchievements, setMiniAchievements] = SP_REACT.useState(miniAchievementsController.getSnapshot());
+    const [protonDb, setProtonDb] = SP_REACT.useState(protonDbBadgeController.getSnapshot());
+    const [hltb, setHltb] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        void refreshLanguage();
+    }, []);
+    SP_REACT.useEffect(() => trailerController.subscribe(() => setTrailers(trailerController.getSnapshot())), []);
+    SP_REACT.useEffect(() => miniAchievementsController.subscribe(() => setMiniAchievements(miniAchievementsController.getSnapshot())), []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = protonDbBadgeController.subscribe(() => setProtonDb(protonDbBadgeController.getSnapshot()));
+        setProtonDb(protonDbBadgeController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        const unsubscribe = hltbController.subscribe(() => setHltb(hltbController.getSnapshot()));
+        setHltb(hltbController.getSnapshot());
+        return unsubscribe;
+    }, []);
+    SP_REACT.useEffect(() => {
+        void metadataScanStore.refreshCounts(games);
+    }, [games]);
+    const pages = [
+        {
+            id: "metadata",
+            label: t("qam.metadata.title"),
+            icon: icons.metadata,
+            content: (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage) }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, ...maintenance })] })),
+        },
+        {
+            id: "compat",
+            label: t("qam.compat.title"),
+            icon: icons.compat,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(CompatibilityBody, { ...compatibility, onCompatibilityDefaultMenuWillOpen: noop, onCompatibilityDefaultControlRef: noop, onCompatibilityDefaultScopeControlRef: noop }) })),
+        },
+        {
+            id: "protondb",
+            label: t("qam.protondb.title"),
+            icon: icons.protondb,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ProtonDbBadgesBody, { snapshot: protonDb, onSettingsChange: (update) => protonDbBadgeController.setSettings(update(protonDbBadgeController.getSnapshot().settings)), onCoverPositionChange: (coverPosition) => protonDbBadgeController.setSettings({
+                        ...protonDbBadgeController.getSnapshot().settings, coverPosition,
+                    }), onCoverPositionMenuWillOpen: noop, onCoverPositionControlRef: noop }) })),
+        },
+        {
+            id: "hltb",
+            label: t("qam.hltb.title"),
+            icon: icons.hltb,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(HltbBody, { settings: hltb.settings, settingsLoaded: hltb.settingsLoaded, conflict: hltb.conflict, settingsError: hltb.settingsError, cacheStatus: hltb.cacheStatus, onSettingsChange: (update) => hltbController.setSettings(update(hltbController.getSnapshot().settings)), onClearCache: () => hltbController.clearCache(), onStyleChange: (style) => hltbController.setSettings({ ...hltbController.getSnapshot().settings, style }), onBlurChange: (blur) => {
+                        const current = hltbController.getSnapshot().settings;
+                        return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
+                    } }) })),
+        },
+        {
+            id: "trailers",
+            label: t("qam.trailers.title"),
+            icon: icons.trailers,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(GameTrailersBody, { state: trailers, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: (quality) => trailerController.setQuality(quality), onQualityMenuWillOpen: noop, onQualityControlRef: noop }) })),
+        },
+        {
+            id: "miniAchievements",
+            label: t("qam.miniAchievements.title"),
+            icon: icons.miniAchievements,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(MiniAchievementsBody, { state: miniAchievements, onEnabledChange: (enabled) => void miniAchievementsController.setEnabled(enabled) }) })),
+        },
+        {
+            id: "contextMenu",
+            label: t("qam.contextMenu.title"),
+            icon: icons.contextMenu,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(ContextMenuBody, {}) }),
+        },
+        {
+            id: "logs",
+            label: t("qam.logs.title"),
+            icon: icons.logs,
+            separatorBefore: true,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(LogsBody, { ...logs }) }),
+        },
+        {
+            id: "updates",
+            label: t("qam.update.title"),
+            icon: icons.updates,
+            content: SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(PluginUpdateBody, {}) }),
+        },
+        {
+            id: "versions",
+            label: t("qam.versions.title"),
+            icon: icons.versions,
+            content: (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(VersionsBody, { pluginVersion: updates.pluginVersion, ...versions }) })),
+        },
+    ];
+    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
+}
+
+// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
+const SETTINGS_ROUTE = "/decky-metadata-settings";
+
 const protonDbCoverSurface = (path) => {
     if (/^\/(?:routes\/)?library\/home(?:\/|$)/.test(path ?? ""))
         return "home";
@@ -41295,6 +41813,7 @@ var index = DFL.definePlugin(() => {
     const stopStoreInfoRow = installStoreInfoRow();
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
+    routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and
@@ -41387,6 +41906,12 @@ var index = DFL.definePlugin(() => {
             }
             catch (error$1) {
                 error("patch", "route remove failed", error$1);
+            }
+            try {
+                routerHook.removeRoute(SETTINGS_ROUTE);
+            }
+            catch (error$1) {
+                error("patch", "settings route remove failed", error$1);
             }
         },
     };
