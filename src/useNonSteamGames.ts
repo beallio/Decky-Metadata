@@ -6,8 +6,16 @@ import { GameOption } from "./types";
 // detected count shows at once; `loaded` stays false until this mount's fresh list arrives.
 let lastGames: GameOption[] = [];
 
-/** Loads the list and keeps it for the next mount; plugin load calls it so the first QAM open has data. */
-export const loadNonSteamGames = async () => (lastGames = await allNonSteamGames());
+let pendingLoad: Promise<GameOption[]> | null = null;
+
+/**
+ * Loads the list and keeps it for the next mount; plugin load calls it so the first QAM open has data.
+ * Callers share an in-flight load, so the startup preload and a mount count the same list.
+ */
+export const loadNonSteamGames = () =>
+  (pendingLoad ??= allNonSteamGames()
+    .then((games) => (lastGames = games))
+    .finally(() => { pendingLoad = null; }));
 
 export const useNonSteamGames = () => {
   const [games, setGames] = useState<GameOption[]>(lastGames);

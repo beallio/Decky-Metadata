@@ -29776,8 +29776,14 @@ function scanView(scan) {
 // Decky remounts the QAM page each time it opens from the plugin list. Start from the last list so the
 // detected count shows at once; `loaded` stays false until this mount's fresh list arrives.
 let lastGames = [];
-/** Loads the list and keeps it for the next mount; plugin load calls it so the first QAM open has data. */
-const loadNonSteamGames = async () => (lastGames = await allNonSteamGames());
+let pendingLoad = null;
+/**
+ * Loads the list and keeps it for the next mount; plugin load calls it so the first QAM open has data.
+ * Callers share an in-flight load, so the startup preload and a mount count the same list.
+ */
+const loadNonSteamGames = () => (pendingLoad ?? (pendingLoad = allNonSteamGames()
+    .then((games) => (lastGames = games))
+    .finally(() => { pendingLoad = null; })));
 const useNonSteamGames = () => {
     const [games, setGames] = SP_REACT.useState(lastGames);
     const [loaded, setLoaded] = SP_REACT.useState(false);
