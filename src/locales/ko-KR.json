@@ -60,7 +60,20 @@
     "shortcut_name_api_unavailable": "Steam 바로가기 이름 API를 사용할 수 없습니다",
     "shortcut_name_api_failed": "Steam 바로가기 이름 API가 실패했습니다",
     "shortcut_name_timeout": "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다.",
-    "invalid_steam_app_id": "이 게임은 유효한 Steam 게임이 아닙니다."
+    "invalid_steam_app_id": "이 게임은 유효한 Steam 게임이 아닙니다.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -302,7 +315,10 @@
       "checkNow": "지금 확인",
       "enableDevelopmentTitle": "개발 릴리스를 사용할까요?",
       "confirmRevertTitle": "안정 버전으로 되돌릴까요?",
-      "confirmRevertBody": "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다."
+      "confirmRevertBody": "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
     },
     "versions": {
       "title": "버전",
@@ -320,6 +336,38 @@
       "modalTitle": "플러그인 로그",
       "modalEmpty": "최근 로그가 없습니다",
       "ok": "확인"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -427,7 +475,8 @@
       "cacheClearFailed": "캐시 지우기에 실패했습니다",
       "delisted": "판매 중지된 Steam 게임",
       "logs": "로그"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "메타데이터 편집..."

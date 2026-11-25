@@ -13,6 +13,12 @@ All notable changes to this project are documented here in Keep a Changelog form
   *Gothic 1 - classic*). Per-game HLTB choices are stored separately from
   non-Steam metadata and apply only to Library game pages; Steam Store pages
   continue to use automatic matching.
+- **Testing tab for pull request builds.** Under **Updates → Developer**,
+  turn on **Enable Testing tab** to show a **Testing** tab in Settings. It lists
+  open pull requests from this repository (plus fork pull requests opted in with
+  the `test-build` label), lets you sort and open them on GitHub, and downloads
+  and SHA-256 verifies the CI build artifact before handing it to Decky Loader
+  to install.
 
 ## [0.6.7] - 2026-11-24
 
