@@ -232,7 +232,8 @@
       "positionTopLeft": "أعلى اليسار",
       "positionTopRight": "أعلى اليمين",
       "loadingPreferences": "جارٍ تحميل تفضيلات شارات ProtonDB...",
-      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+      "gameCoversHeading": "أغلفة الألعاب"
     },
     "miniAchievements": {
       "title": "الإنجازات المصغّرة",

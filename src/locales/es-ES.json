@@ -229,7 +229,8 @@
       "positionTopLeft": "Arriba a la izquierda",
       "positionTopRight": "Arriba a la derecha",
       "loadingPreferences": "Cargando las preferencias de las insignias de ProtonDB...",
-      "footnote": "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
+      "footnote": "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan.",
+      "gameCoversHeading": "Carátulas de juegos"
     },
     "miniAchievements": {
       "title": "Minilogros",

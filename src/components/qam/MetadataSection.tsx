@@ -78,9 +78,10 @@ export function MetadataScanBody({
     return (
       <DialogControlsSection>
         {progressStyle}
-        <Field label={t("qam.metadata.detectedGames")}>{String(detectedCount)}</Field>
-        <Field label={t("qam.metadata.saved")}>{String(savedCount)}</Field>
-        <Field label={t("qam.metadata.missing")}>{String(missingCount)}</Field>
+        {/* Focusable so the D-pad can highlight each stat row in Settings, matching Versions. */}
+        <Field label={t("qam.metadata.detectedGames")} focusable highlightOnFocus>{String(detectedCount)}</Field>
+        <Field label={t("qam.metadata.saved")} focusable highlightOnFocus>{String(savedCount)}</Field>
+        <Field label={t("qam.metadata.missing")} focusable highlightOnFocus>{String(missingCount)}</Field>
         {progress}
         <ButtonItem
           layout="inline"

@@ -230,7 +230,8 @@
       "positionTopLeft": "Lewy górny róg",
       "positionTopRight": "Prawy górny róg",
       "loadingPreferences": "Wczytywanie ustawień odznak ProtonDB...",
-      "footnote": "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane."
+      "footnote": "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane.",
+      "gameCoversHeading": "Okładki gier"
     },
     "miniAchievements": {
       "title": "Mini osiągnięcia",

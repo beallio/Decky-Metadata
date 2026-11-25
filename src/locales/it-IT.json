@@ -229,7 +229,8 @@
       "positionTopLeft": "In alto a sinistra",
       "positionTopRight": "In alto a destra",
       "loadingPreferences": "Caricamento delle preferenze dei badge ProtonDB...",
-      "footnote": "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
+      "footnote": "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti.",
+      "gameCoversHeading": "Copertine dei giochi"
     },
     "miniAchievements": {
       "title": "Mini obiettivi",

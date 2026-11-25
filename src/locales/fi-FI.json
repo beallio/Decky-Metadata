@@ -228,7 +228,8 @@
       "positionTopLeft": "Vasemmassa yläkulmassa",
       "positionTopRight": "Oikeassa yläkulmassa",
       "loadingPreferences": "Ladataan ProtonDB-tunnusten asetuksia...",
-      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+      "gameCoversHeading": "Pelien kannet"
     },
     "miniAchievements": {
       "title": "Minisaavutukset",

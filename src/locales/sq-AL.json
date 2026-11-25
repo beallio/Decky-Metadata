@@ -228,7 +228,8 @@
       "positionTopLeft": "Lart majtas",
       "positionTopRight": "Lart djathtas",
       "loadingPreferences": "Po ngarkohen preferencat e distinktivëve ProtonDB...",
-      "footnote": "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
+      "footnote": "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen.",
+      "gameCoversHeading": "Kopertinat e lojërave"
     },
     "miniAchievements": {
       "title": "Arritjet mini",

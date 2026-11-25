@@ -3097,7 +3097,8 @@ var qam$o = {
 		positionTopLeft: "أعلى اليسار",
 		positionTopRight: "أعلى اليمين",
 		loadingPreferences: "جارٍ تحميل تفضيلات شارات ProtonDB...",
-		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+		gameCoversHeading: "أغلفة الألعاب"
 	},
 	miniAchievements: {
 		title: "الإنجازات المصغّرة",
@@ -3807,7 +3808,8 @@ var qam$n = {
 		positionTopLeft: "Горе вляво",
 		positionTopRight: "Горе вдясно",
 		loadingPreferences: "Зареждане на предпочитанията за значките на ProtonDB...",
-		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
+		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват.",
+		gameCoversHeading: "Обложки на игри"
 	},
 	miniAchievements: {
 		title: "Мини постижения",
@@ -4519,7 +4521,8 @@ var qam$m = {
 		positionTopLeft: "Vlevo nahoře",
 		positionTopRight: "Vpravo nahoře",
 		loadingPreferences: "Načítání předvoleb odznaků ProtonDB...",
-		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
+		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají.",
+		gameCoversHeading: "Obaly her"
 	},
 	miniAchievements: {
 		title: "Mini achievementy",
@@ -5229,7 +5232,8 @@ var qam$l = {
 		positionTopLeft: "Oben links",
 		positionTopRight: "Oben rechts",
 		loadingPreferences: "ProtonDB-Abzeichen-Einstellungen werden geladen...",
-		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
+		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet.",
+		gameCoversHeading: "Spielcover"
 	},
 	miniAchievements: {
 		title: "Mini-Errungenschaften",
@@ -5939,7 +5943,8 @@ var qam$k = {
 		positionTopLeft: "Πάνω αριστερά",
 		positionTopRight: "Πάνω δεξιά",
 		loadingPreferences: "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
-		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
+		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται.",
+		gameCoversHeading: "Εξώφυλλα παιχνιδιών"
 	},
 	miniAchievements: {
 		title: "Μίνι επιτεύγματα",
@@ -6649,7 +6654,8 @@ var qam$j = {
 		positionTopLeft: "Top left",
 		positionTopRight: "Top right",
 		loadingPreferences: "Loading ProtonDB badge preferences...",
-		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
+		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+		gameCoversHeading: "Game covers"
 	},
 	miniAchievements: {
 		title: "Mini achievements",
@@ -7360,7 +7366,8 @@ var qam$i = {
 		positionTopLeft: "Arriba a la izquierda",
 		positionTopRight: "Arriba a la derecha",
 		loadingPreferences: "Cargando las preferencias de las insignias de ProtonDB...",
-		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
+		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan.",
+		gameCoversHeading: "Carátulas de juegos"
 	},
 	miniAchievements: {
 		title: "Minilogros",
@@ -8070,7 +8077,8 @@ var qam$h = {
 		positionTopLeft: "Vasemmassa yläkulmassa",
 		positionTopRight: "Oikeassa yläkulmassa",
 		loadingPreferences: "Ladataan ProtonDB-tunnusten asetuksia...",
-		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+		gameCoversHeading: "Pelien kannet"
 	},
 	miniAchievements: {
 		title: "Minisaavutukset",
@@ -8781,7 +8789,8 @@ var qam$g = {
 		positionTopLeft: "En haut à gauche",
 		positionTopRight: "En haut à droite",
 		loadingPreferences: "Chargement des préférences de badges ProtonDB...",
-		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
+		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+		gameCoversHeading: "Jaquettes de jeux"
 	},
 	miniAchievements: {
 		title: "Mini-succès",
@@ -9492,7 +9501,8 @@ var qam$f = {
 		positionTopLeft: "In alto a sinistra",
 		positionTopRight: "In alto a destra",
 		loadingPreferences: "Caricamento delle preferenze dei badge ProtonDB...",
-		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
+		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti.",
+		gameCoversHeading: "Copertine dei giochi"
 	},
 	miniAchievements: {
 		title: "Mini obiettivi",
@@ -10201,7 +10211,8 @@ var qam$e = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "ProtonDB バッジの設定を読み込み中...",
-		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
+		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。",
+		gameCoversHeading: "ゲームカバー"
 	},
 	miniAchievements: {
 		title: "ミニ実績",
@@ -10911,7 +10922,8 @@ var qam$d = {
 		positionTopLeft: "ზედა მარცხენა",
 		positionTopRight: "ზედა მარჯვენა",
 		loadingPreferences: "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
-		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
+		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება.",
+		gameCoversHeading: "თამაშის ყდები"
 	},
 	miniAchievements: {
 		title: "მინი მიღწევები",
@@ -11620,7 +11632,8 @@ var qam$c = {
 		positionTopLeft: "왼쪽 위",
 		positionTopRight: "오른쪽 위",
 		loadingPreferences: "ProtonDB 배지 환경설정을 불러오는 중...",
-		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다."
+		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다.",
+		gameCoversHeading: "게임 커버"
 	},
 	miniAchievements: {
 		title: "미니 도전 과제",
@@ -12330,7 +12343,8 @@ var qam$b = {
 		positionTopLeft: "Linksboven",
 		positionTopRight: "Rechtsboven",
 		loadingPreferences: "ProtonDB-badgevoorkeuren laden...",
-		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
+		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen.",
+		gameCoversHeading: "Gamehoezen"
 	},
 	miniAchievements: {
 		title: "Mini-prestaties",
@@ -13042,7 +13056,8 @@ var qam$a = {
 		positionTopLeft: "Lewy górny róg",
 		positionTopRight: "Prawy górny róg",
 		loadingPreferences: "Wczytywanie ustawień odznak ProtonDB...",
-		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane."
+		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane.",
+		gameCoversHeading: "Okładki gier"
 	},
 	miniAchievements: {
 		title: "Mini osiągnięcia",
@@ -13753,7 +13768,8 @@ var qam$9 = {
 		positionTopLeft: "Superior esquerda",
 		positionTopRight: "Superior direita",
 		loadingPreferences: "Carregando preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Mini conquistas",
@@ -14464,7 +14480,8 @@ var qam$8 = {
 		positionTopLeft: "Superior esquerdo",
 		positionTopRight: "Superior direito",
 		loadingPreferences: "A carregar preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Miniconquistas",
@@ -15175,7 +15192,8 @@ var qam$7 = {
 		positionTopLeft: "Sus stânga",
 		positionTopRight: "Sus dreapta",
 		loadingPreferences: "Se încarcă preferințele pentru insignele ProtonDB...",
-		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+		gameCoversHeading: "Coperți de jocuri"
 	},
 	miniAchievements: {
 		title: "Realizări mini",
@@ -15887,7 +15905,8 @@ var qam$6 = {
 		positionTopLeft: "Сверху слева",
 		positionTopRight: "Сверху справа",
 		loadingPreferences: "Загрузка настроек значков ProtonDB...",
-		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
+		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается.",
+		gameCoversHeading: "Обложки игр"
 	},
 	miniAchievements: {
 		title: "Мини-достижения",
@@ -16597,7 +16616,8 @@ var qam$5 = {
 		positionTopLeft: "Lart majtas",
 		positionTopRight: "Lart djathtas",
 		loadingPreferences: "Po ngarkohen preferencat e distinktivëve ProtonDB...",
-		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
+		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen.",
+		gameCoversHeading: "Kopertinat e lojërave"
 	},
 	miniAchievements: {
 		title: "Arritjet mini",
@@ -17307,7 +17327,8 @@ var qam$4 = {
 		positionTopLeft: "Övre vänster",
 		positionTopRight: "Övre höger",
 		loadingPreferences: "Läser in ProtonDB-märkesinställningar...",
-		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
+		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs.",
+		gameCoversHeading: "Spelomslag"
 	},
 	miniAchievements: {
 		title: "Miniprestationer",
@@ -18017,7 +18038,8 @@ var qam$3 = {
 		positionTopLeft: "Sol üst",
 		positionTopRight: "Sağ üst",
 		loadingPreferences: "ProtonDB rozet tercihleri yükleniyor...",
-		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
+		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir.",
+		gameCoversHeading: "Oyun kapakları"
 	},
 	miniAchievements: {
 		title: "Mini başarımlar",
@@ -18729,7 +18751,8 @@ var qam$2 = {
 		positionTopLeft: "Зверху ліворуч",
 		positionTopRight: "Зверху праворуч",
 		loadingPreferences: "Завантаження налаштувань значків ProtonDB...",
-		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+		gameCoversHeading: "Обкладинки ігор"
 	},
 	miniAchievements: {
 		title: "Мінідосягнення",
@@ -19438,7 +19461,8 @@ var qam$1 = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在加载 ProtonDB 徽章偏好设置...",
-		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
+		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。",
+		gameCoversHeading: "游戏封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -20147,7 +20171,8 @@ var qam = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在載入 ProtonDB 徽章偏好設定...",
-		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。"
+		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。",
+		gameCoversHeading: "遊戲封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -20918,7 +20943,7 @@ function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, s
     const progressStyle = scanBusy ? SP_JSX.jsx("style", { children: scanProgressCss }) : null;
     const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [progressStyle, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress ? SP_JSX.jsx(DFL.PanelSectionRow, { children: progress }) : null] }));
 }
@@ -35844,12 +35869,13 @@ function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange,
     const { settings } = snapshot;
     const controlsDisabled = !snapshot.settingsLoaded;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const coverOptionsDisabled = dependentControlsDisabled || (!settings.home && !settings.library);
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
     const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
     const updateSetting = (key, value) => {
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.protondb.gameCoversHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: coverOptionsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: coverOptionsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) })] })] }));
 }
 
 const iconButtonStyle = {

@@ -227,7 +227,8 @@
       "positionTopLeft": "왼쪽 위",
       "positionTopRight": "오른쪽 위",
       "loadingPreferences": "ProtonDB 배지 환경설정을 불러오는 중...",
-      "footnote": "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다."
+      "footnote": "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다.",
+      "gameCoversHeading": "게임 커버"
     },
     "miniAchievements": {
       "title": "미니 도전 과제",

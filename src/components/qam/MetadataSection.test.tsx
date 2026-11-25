@@ -108,6 +108,16 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
 
     expect(counts).toEqual(["0", "0", "0"]);
   });
+
+  it("makes the Settings metadata stat rows focusable and highlightable like Versions, while keeping QAM rows non-focusable", () => {
+    const settingsFields = nodes(render({ inline: true })[0]).filter(node => node.type === "Field");
+    expect(settingsFields).toHaveLength(3);
+    expect(settingsFields.every(field => field.props.focusable === true && field.props.highlightOnFocus === true)).toBe(true);
+
+    const qamFields = nodes(render({ inline: false })[0]).filter(node => node.type === "Field");
+    expect(qamFields).toHaveLength(3);
+    expect(qamFields.every(field => !field.props.focusable)).toBe(true);
+  });
   it("shows scan progress from the completed and total counts", () => {
     const tree = render({
       scanBusy: true,

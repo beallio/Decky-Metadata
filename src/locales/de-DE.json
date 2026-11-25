@@ -228,7 +228,8 @@
       "positionTopLeft": "Oben links",
       "positionTopRight": "Oben rechts",
       "loadingPreferences": "ProtonDB-Abzeichen-Einstellungen werden geladen...",
-      "footnote": "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
+      "footnote": "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet.",
+      "gameCoversHeading": "Spielcover"
     },
     "miniAchievements": {
       "title": "Mini-Errungenschaften",

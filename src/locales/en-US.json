@@ -228,7 +228,8 @@
       "positionTopLeft": "Top left",
       "positionTopRight": "Top right",
       "loadingPreferences": "Loading ProtonDB badge preferences...",
-      "footnote": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
+      "footnote": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+      "gameCoversHeading": "Game covers"
     },
     "miniAchievements": {
       "title": "Mini achievements",

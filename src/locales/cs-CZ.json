@@ -230,7 +230,8 @@
       "positionTopLeft": "Vlevo nahoře",
       "positionTopRight": "Vpravo nahoře",
       "loadingPreferences": "Načítání předvoleb odznaků ProtonDB...",
-      "footnote": "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
+      "footnote": "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají.",
+      "gameCoversHeading": "Obaly her"
     },
     "miniAchievements": {
       "title": "Mini achievementy",

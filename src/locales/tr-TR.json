@@ -228,7 +228,8 @@
       "positionTopLeft": "Sol üst",
       "positionTopRight": "Sağ üst",
       "loadingPreferences": "ProtonDB rozet tercihleri yükleniyor...",
-      "footnote": "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
+      "footnote": "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir.",
+      "gameCoversHeading": "Oyun kapakları"
     },
     "miniAchievements": {
       "title": "Mini başarımlar",

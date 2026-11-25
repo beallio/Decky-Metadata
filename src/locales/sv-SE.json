@@ -228,7 +228,8 @@
       "positionTopLeft": "Övre vänster",
       "positionTopRight": "Övre höger",
       "loadingPreferences": "Läser in ProtonDB-märkesinställningar...",
-      "footnote": "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
+      "footnote": "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs.",
+      "gameCoversHeading": "Spelomslag"
     },
     "miniAchievements": {
       "title": "Miniprestationer",

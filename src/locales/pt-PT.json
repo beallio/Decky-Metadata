@@ -229,7 +229,8 @@
       "positionTopLeft": "Superior esquerdo",
       "positionTopRight": "Superior direito",
       "loadingPreferences": "A carregar preferências do selo ProtonDB...",
-      "footnote": "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+      "footnote": "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+      "gameCoversHeading": "Capas de jogos"
     },
     "miniAchievements": {
       "title": "Miniconquistas",

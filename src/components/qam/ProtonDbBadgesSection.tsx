@@ -1,4 +1,4 @@
-import { DialogControlsSection, DropdownItem, Field, ToggleField } from "@decky/ui";
+import { DialogControlsSection, DialogControlsSectionHeader, DropdownItem, Field, ToggleField } from "@decky/ui";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
@@ -30,6 +30,7 @@ export function ProtonDbBadgesBody({
   const { settings } = snapshot;
   const controlsDisabled = !snapshot.settingsLoaded;
   const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+  const coverOptionsDisabled = dependentControlsDisabled || (!settings.home && !settings.library);
   const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
   const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
   const updateSetting = <K extends keyof ProtonDbBadgeSettings>(key: K, value: ProtonDbBadgeSettings[K]) => {
@@ -37,75 +38,79 @@ export function ProtonDbBadgesBody({
   };
 
   return (
-    <DialogControlsSection>
-      <ToggleField
-        label={t("qam.protondb.enableLabel")}
-        description={`${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`}
-        checked={settings.enabled}
-        disabled={enableDisabled}
-        onChange={(enabled) => updateSetting("enabled", enabled)}
-      />
-      <ToggleField
-        label={t("qam.protondb.homeLabel")}
-        description={t("qam.protondb.homeDescription")}
-        checked={settings.home}
-        disabled={dependentControlsDisabled}
-        onChange={(enabled) => updateSetting("home", enabled)}
-      />
-      <ToggleField
-        label={t("qam.protondb.libraryLabel")}
-        description={t("qam.protondb.libraryDescription")}
-        checked={settings.library}
-        disabled={dependentControlsDisabled}
-        onChange={(enabled) => updateSetting("library", enabled)}
-      />
-      <ToggleField
-        label={t("qam.protondb.gameViewLabel")}
-        description={t("qam.protondb.gameViewDescription")}
-        checked={settings.gameView}
-        disabled={dependentControlsDisabled}
-        onChange={(enabled) => updateSetting("gameView", enabled)}
-      />
-      <ToggleField
-        label={t("qam.protondb.storeLabel")}
-        description={t("qam.protondb.storeDescription")}
-        checked={settings.store}
-        disabled={dependentControlsDisabled}
-        onChange={(enabled) => updateSetting("store", enabled)}
-      />
-      <ToggleField
-        label={t("qam.protondb.focusOnlyLabel")}
-        description={t("qam.protondb.focusOnlyDescription")}
-        checked={settings.focusOnly}
-        disabled={dependentControlsDisabled}
-        onChange={(enabled) => updateSetting("focusOnly", enabled)}
-      />
-      <DropdownItem
-        label={t("qam.protondb.positionLabel")}
-        rgOptions={coverPositionOptions}
-        selectedOption={settings.coverPosition}
-        disabled={dependentControlsDisabled}
-        onChange={(option) => { void onCoverPositionChange(option.data); }}
-        renderButtonValue={() => (
-          <span style={dropdownValueStyle}>
-            {coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label}
-          </span>
-        )}
-      />
-      {(!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (
-        <Field focusable={false} childrenLayout="below" padding="none">
-          {!snapshot.settingsLoaded ? (
-            <div style={inlineStatusStyle("active")}>{t("qam.protondb.loadingPreferences")}</div>
-          ) : null}
-          {conflictNotice ? (
-            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
-          ) : null}
-          {snapshot.settingsError ? (
-            <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
-          ) : null}
-        </Field>
-      ) : null}
-    </DialogControlsSection>
+    <>
+      <DialogControlsSection>
+        <ToggleField
+          label={t("qam.protondb.enableLabel")}
+          description={`${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`}
+          checked={settings.enabled}
+          disabled={enableDisabled}
+          onChange={(enabled) => updateSetting("enabled", enabled)}
+        />
+        <ToggleField
+          label={t("qam.protondb.gameViewLabel")}
+          description={t("qam.protondb.gameViewDescription")}
+          checked={settings.gameView}
+          disabled={dependentControlsDisabled}
+          onChange={(enabled) => updateSetting("gameView", enabled)}
+        />
+        <ToggleField
+          label={t("qam.protondb.storeLabel")}
+          description={t("qam.protondb.storeDescription")}
+          checked={settings.store}
+          disabled={dependentControlsDisabled}
+          onChange={(enabled) => updateSetting("store", enabled)}
+        />
+        {(!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (
+          <Field focusable={false} childrenLayout="below" padding="none">
+            {!snapshot.settingsLoaded ? (
+              <div style={inlineStatusStyle("active")}>{t("qam.protondb.loadingPreferences")}</div>
+            ) : null}
+            {conflictNotice ? (
+              <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+            ) : null}
+            {snapshot.settingsError ? (
+              <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
+            ) : null}
+          </Field>
+        ) : null}
+      </DialogControlsSection>
+      <DialogControlsSection>
+        <DialogControlsSectionHeader>{t("qam.protondb.gameCoversHeading")}</DialogControlsSectionHeader>
+        <ToggleField
+          label={t("qam.protondb.homeLabel")}
+          description={t("qam.protondb.homeDescription")}
+          checked={settings.home}
+          disabled={dependentControlsDisabled}
+          onChange={(enabled) => updateSetting("home", enabled)}
+        />
+        <ToggleField
+          label={t("qam.protondb.libraryLabel")}
+          description={t("qam.protondb.libraryDescription")}
+          checked={settings.library}
+          disabled={dependentControlsDisabled}
+          onChange={(enabled) => updateSetting("library", enabled)}
+        />
+        <ToggleField
+          label={t("qam.protondb.focusOnlyLabel")}
+          description={t("qam.protondb.focusOnlyDescription")}
+          checked={settings.focusOnly}
+          disabled={coverOptionsDisabled}
+          onChange={(enabled) => updateSetting("focusOnly", enabled)}
+        />
+        <DropdownItem
+          label={t("qam.protondb.positionLabel")}
+          rgOptions={coverPositionOptions}
+          selectedOption={settings.coverPosition}
+          disabled={coverOptionsDisabled}
+          onChange={(option) => { void onCoverPositionChange(option.data); }}
+          renderButtonValue={() => (
+            <span style={dropdownValueStyle}>
+              {coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label}
+            </span>
+          )}
+        />
+      </DialogControlsSection>
+    </>
   );
 }
-

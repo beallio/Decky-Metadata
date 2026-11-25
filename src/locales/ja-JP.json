@@ -227,7 +227,8 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "ProtonDB バッジの設定を読み込み中...",
-      "footnote": "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
+      "footnote": "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。",
+      "gameCoversHeading": "ゲームカバー"
     },
     "miniAchievements": {
       "title": "ミニ実績",

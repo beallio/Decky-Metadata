@@ -229,7 +229,8 @@
       "positionTopLeft": "Sus stânga",
       "positionTopRight": "Sus dreapta",
       "loadingPreferences": "Se încarcă preferințele pentru insignele ProtonDB...",
-      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+      "gameCoversHeading": "Coperți de jocuri"
     },
     "miniAchievements": {
       "title": "Realizări mini",

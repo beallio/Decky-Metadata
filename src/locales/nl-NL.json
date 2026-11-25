@@ -228,7 +228,8 @@
       "positionTopLeft": "Linksboven",
       "positionTopRight": "Rechtsboven",
       "loadingPreferences": "ProtonDB-badgevoorkeuren laden...",
-      "footnote": "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
+      "footnote": "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen.",
+      "gameCoversHeading": "Gamehoezen"
     },
     "miniAchievements": {
       "title": "Mini-prestaties",

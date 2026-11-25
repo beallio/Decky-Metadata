@@ -229,7 +229,8 @@
       "positionTopLeft": "En haut à gauche",
       "positionTopRight": "En haut à droite",
       "loadingPreferences": "Chargement des préférences de badges ProtonDB...",
-      "footnote": "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
+      "footnote": "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+      "gameCoversHeading": "Jaquettes de jeux"
     },
     "miniAchievements": {
       "title": "Mini-succès",

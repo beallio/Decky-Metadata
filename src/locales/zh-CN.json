@@ -227,7 +227,8 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "正在加载 ProtonDB 徽章偏好设置...",
-      "footnote": "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
+      "footnote": "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。",
+      "gameCoversHeading": "游戏封面"
     },
     "miniAchievements": {
       "title": "迷你成就",
