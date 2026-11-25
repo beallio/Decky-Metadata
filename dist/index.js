@@ -32558,15 +32558,95 @@ function useScanGames() {
 const SETTINGS_ROUTE = "/decky-metadata-settings";
 // The QAM panel gives this button the first focus when it opens.
 const SETTINGS_BUTTON_CLASS = "decky-metadata-settings-button";
-const openSettings = () => {
-    DFL.Navigation.CloseSideMenus();
-    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+const RELOAD_TAB_GLOBAL_KEY = "__DECKY_METADATA_SETTINGS_RELOAD_TAB__";
+const RELOAD_TAB_MAX_AGE_MS = 15000;
+let activeSettingsTab = null;
+const setActiveSettingsTab = (tab) => {
+    activeSettingsTab = tab;
+};
+const rememberSettingsTabForReload = () => {
+    if (!activeSettingsTab || !isSettingsRouteOpen())
+        return;
+    const host = globalThis;
+    host[RELOAD_TAB_GLOBAL_KEY] = { tab: activeSettingsTab, savedAt: Date.now() };
+};
+const consumeReloadSettingsTab = () => {
+    const host = globalThis;
+    const saved = host[RELOAD_TAB_GLOBAL_KEY];
+    delete host[RELOAD_TAB_GLOBAL_KEY];
+    if (!saved || typeof saved.tab !== "string" || typeof saved.savedAt !== "number")
+        return null;
+    if (Date.now() - saved.savedAt > RELOAD_TAB_MAX_AGE_MS)
+        return null;
+    return saved.tab;
+};
+const getSteamHistory = () => {
     // Current Steam has SteamUIStore and no Router global; older builds have Router.
     const host = globalThis;
     const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
-    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
-    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
+    return windowStore?.GamepadUIMainWindowInstance?.m_history;
+};
+// Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+const normalizeRoutePath = (pathname) => pathname?.replace(/^\/routes(?=\/)/, "");
+const isSettingsRouteOpen = () => normalizeRoutePath(getSteamHistory()?.location?.pathname) === SETTINGS_ROUTE;
+/**
+ * Decky's router wrapper only rebuilds its route list when `routes.size` changes and returns
+ * the same Switch element reference, so an in-place plugin reload while Settings is open leaves
+ * the old SettingsPage mounted. Briefly adding a sentinel route forces the route list rebuild,
+ * and `history.replace` on the same path makes React Router swap in the new SettingsPage without
+ * adding a duplicate history entry.
+ */
+const refreshOpenSettingsRoute = (routes) => {
+    const history = getSteamHistory();
+    const loc = history?.location;
+    if (normalizeRoutePath(loc?.pathname) !== SETTINGS_ROUTE || typeof history?.replace !== "function") {
+        return () => undefined;
+    }
+    const sentinel = `${SETTINGS_ROUTE}-reload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let sentinelRegistered = true;
+    let replaceTimer;
+    let cleanupTimer;
+    const removeSentinel = () => {
+        if (!sentinelRegistered)
+            return;
+        sentinelRegistered = false;
+        try {
+            routes.removeRoute(sentinel);
+        }
+        catch {
+            // Ignore cleanup errors during dismount.
+        }
+    };
+    routes.addRoute(sentinel, () => null, { exact: true });
+    replaceTimer = setTimeout(() => {
+        replaceTimer = undefined;
+        const latestHistory = getSteamHistory();
+        const latestLoc = latestHistory?.location;
+        if (normalizeRoutePath(latestLoc?.pathname) === SETTINGS_ROUTE && typeof latestHistory?.replace === "function") {
+            latestHistory.replace({
+                pathname: latestLoc?.pathname ?? SETTINGS_ROUTE,
+                search: latestLoc?.search ?? "",
+                hash: latestLoc?.hash ?? "",
+                state: latestLoc?.state,
+            });
+        }
+        cleanupTimer = setTimeout(() => {
+            cleanupTimer = undefined;
+            removeSentinel();
+        }, 50);
+    }, 50);
+    return () => {
+        if (replaceTimer !== undefined)
+            clearTimeout(replaceTimer);
+        if (cleanupTimer !== undefined)
+            clearTimeout(cleanupTimer);
+        removeSentinel();
+    };
+};
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    if (!isSettingsRouteOpen())
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
@@ -41448,7 +41528,7 @@ function VersionsTab(props) {
 }
 function SettingsPage() {
     const t = useT();
-    const [page, setPage] = SP_REACT.useState("metadata");
+    const [page, setPage] = SP_REACT.useState(() => consumeReloadSettingsTab() ?? "metadata");
     // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
     const { games, loaded, scan } = useScanGames();
@@ -41461,6 +41541,10 @@ function SettingsPage() {
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
+    SP_REACT.useEffect(() => {
+        setActiveSettingsTab(page);
+        return () => setActiveSettingsTab(null);
+    }, [page]);
     // Each body renders its own Steam settings sections.
     const pages = [
         {
@@ -43030,6 +43114,7 @@ var index = DFL.definePlugin(() => {
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
+    const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and
@@ -43040,6 +43125,8 @@ var index = DFL.definePlugin(() => {
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
+            cancelSettingsRefresh();
+            rememberSettingsTabForReload();
             stopTrailerController();
             stopMiniAchievementsController();
             stopProtonDbCovers();
