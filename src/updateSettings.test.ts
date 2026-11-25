@@ -14,6 +14,7 @@ describe("update settings fallbacks", () => {
     const settings = {
       update_channel: "development" as const,
       automatic_update_checks: false,
+      testing_tab_enabled: true,
     };
     expect(resolveLoadedUpdateSettings(settings)).toEqual(settings);
   });

@@ -91,12 +91,21 @@ const colors = {
     success: "#5ba32b",
     warning: "#ffc53d",
     error: "#ec5d5e",
+    text: "#dcdedf",
     textSecondary: "#b8bcbf",
     surfaceKnockout: "#0e141b",
 };
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    sm: 8};
 // Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
 const fontSize = {
-    sm: 13};
+    xs: 12,
+    sm: 13,
+    lg: 16};
+const fontWeight = {
+    medium: 500,
+    bold: 700};
 // Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
 const fontFamily = '"Motiva Sans", Arial, sans-serif';
 const statusColor = (kind) => ({
@@ -2927,7 +2936,20 @@ var backend$p = {
 	shortcut_name_changed: "تغيّر اسم الاختصار قبل إعادة التسمية.",
 	shortcut_name_api_unavailable: "واجهة أسماء اختصارات Steam غير متاحة",
 	shortcut_name_api_failed: "فشلت واجهة أسماء اختصارات Steam",
-	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب."
+	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$o = {
 	check: {
@@ -3169,7 +3191,10 @@ var qam$o = {
 		checkNow: "تحقق الآن",
 		enableDevelopmentTitle: "هل تريد تفعيل إصدارات التطوير؟",
 		confirmRevertTitle: "هل تريد العودة إلى الإصدار المستقر؟",
-		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات."
+		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "الإصدارات",
@@ -3187,6 +3212,38 @@ var qam$o = {
 		modalTitle: "سجلات الإضافة",
 		modalEmpty: "لا سجلات حديثة",
 		ok: "حسنًا"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$o = {
@@ -3294,7 +3351,8 @@ var panel$o = {
 		cacheClearFailed: "فشل مسح الذاكرة المؤقتة",
 		delisted: "ألعاب Steam المحذوفة",
 		logs: "السجلات"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$o = {
 	editMetadata: "تحرير البيانات الوصفية..."
@@ -3571,7 +3629,20 @@ var backend$o = {
 	shortcut_name_changed: "Името на прекия път се промени преди преименуването.",
 	shortcut_name_api_unavailable: "API на Steam за имена на преки пътища не е достъпен",
 	shortcut_name_api_failed: "API на Steam за имена на преки пътища върна грешка",
-	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме."
+	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$n = {
 	check: {
@@ -3813,7 +3884,10 @@ var qam$n = {
 		checkNow: "Проверка сега",
 		enableDevelopmentTitle: "Да се активират ли развойни издания?",
 		confirmRevertTitle: "Да се върне ли към стабилна версия?",
-		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията."
+		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Версии",
@@ -3831,6 +3905,38 @@ var qam$n = {
 		modalTitle: "Дневници на приставката",
 		modalEmpty: "Няма скорошни записи",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$n = {
@@ -3938,7 +4044,8 @@ var panel$n = {
 		cacheClearFailed: "Изчистването на кеша е неуспешно",
 		delisted: "Премахнати от Steam игри",
 		logs: "Дневници"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$n = {
 	editMetadata: "Редактиране на метаданните..."
@@ -4217,7 +4324,20 @@ var backend$n = {
 	shortcut_name_changed: "Název zástupce se před přejmenováním změnil.",
 	shortcut_name_api_unavailable: "API názvů zástupců Steam není dostupné",
 	shortcut_name_api_failed: "API názvů zástupců Steam selhalo",
-	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce."
+	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$m = {
 	check: {
@@ -4459,7 +4579,10 @@ var qam$m = {
 		checkNow: "Zkontrolovat nyní",
 		enableDevelopmentTitle: "Povolit vývojová vydání?",
 		confirmRevertTitle: "Vrátit se na stabilní verzi?",
-		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací."
+		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Verze",
@@ -4477,6 +4600,38 @@ var qam$m = {
 		modalTitle: "Protokoly pluginu",
 		modalEmpty: "Žádné nedávné záznamy",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$m = {
@@ -4584,7 +4739,8 @@ var panel$m = {
 		cacheClearFailed: "Vymazání mezipaměti se nezdařilo",
 		delisted: "Hry vyřazené ze Steamu",
 		logs: "Protokoly"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$m = {
 	editMetadata: "Upravit metadata..."
@@ -4861,7 +5017,20 @@ var backend$m = {
 	shortcut_name_changed: "Der Verknüpfungsname hat sich vor dem Umbenennen geändert.",
 	shortcut_name_api_unavailable: "API für Steam-Verknüpfungsnamen ist nicht verfügbar",
 	shortcut_name_api_failed: "API für Steam-Verknüpfungsnamen ist fehlgeschlagen",
-	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt."
+	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$l = {
 	check: {
@@ -5103,7 +5272,10 @@ var qam$l = {
 		checkNow: "Jetzt prüfen",
 		enableDevelopmentTitle: "Entwicklungsversionen aktivieren?",
 		confirmRevertTitle: "Zu Stable zurückkehren?",
-		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen."
+		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versionen",
@@ -5121,6 +5293,38 @@ var qam$l = {
 		modalTitle: "Plugin-Protokolle",
 		modalEmpty: "Keine aktuellen Protokolle",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$l = {
@@ -5228,7 +5432,8 @@ var panel$l = {
 		cacheClearFailed: "Cache-Leerung fehlgeschlagen",
 		delisted: "Aus dem Shop entfernte Steam-Spiele",
 		logs: "Protokolle"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$l = {
 	editMetadata: "Metadaten bearbeiten..."
@@ -5505,7 +5710,20 @@ var backend$l = {
 	shortcut_name_changed: "Το όνομα της συντόμευσης άλλαξε πριν από τη μετονομασία.",
 	shortcut_name_api_unavailable: "Το API ονομάτων συντομεύσεων του Steam δεν είναι διαθέσιμο",
 	shortcut_name_api_failed: "Το API ονομάτων συντομεύσεων του Steam απέτυχε",
-	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως."
+	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$k = {
 	check: {
@@ -5747,7 +5965,10 @@ var qam$k = {
 		checkNow: "Έλεγχος τώρα",
 		enableDevelopmentTitle: "Ενεργοποίηση εκδόσεων ανάπτυξης;",
 		confirmRevertTitle: "Επιστροφή στο σταθερό κανάλι;",
-		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης."
+		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Εκδόσεις",
@@ -5765,6 +5986,38 @@ var qam$k = {
 		modalTitle: "Αρχεία καταγραφής πρόσθετου",
 		modalEmpty: "Δεν υπάρχουν πρόσφατες καταγραφές",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$k = {
@@ -5872,7 +6125,8 @@ var panel$k = {
 		cacheClearFailed: "Η εκκαθάριση προσωρινής μνήμης απέτυχε",
 		delisted: "Καταργημένα παιχνίδια Steam",
 		logs: "Αρχεία καταγραφής"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$k = {
 	editMetadata: "Επεξεργασία μεταδεδομένων..."
@@ -6149,7 +6403,20 @@ var backend$k = {
 	shortcut_name_changed: "The shortcut name changed before the rename.",
 	shortcut_name_api_unavailable: "Steam shortcut name API is unavailable",
 	shortcut_name_api_failed: "Steam shortcut name API failed",
-	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time."
+	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$j = {
 	check: {
@@ -6391,7 +6658,10 @@ var qam$j = {
 		checkNow: "Check now",
 		enableDevelopmentTitle: "Enable Development Releases?",
 		confirmRevertTitle: "Revert to Stable?",
-		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues."
+		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versions",
@@ -6409,6 +6679,38 @@ var qam$j = {
 		modalTitle: "Plugin Logs",
 		modalEmpty: "No recent logs",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$j = {
@@ -6516,7 +6818,8 @@ var panel$j = {
 		cacheClearFailed: "Cache clear failed",
 		delisted: "Delisted Steam games",
 		logs: "Logs"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$j = {
 	editMetadata: "Edit Metadata..."
@@ -6794,7 +7097,20 @@ var backend$j = {
 	shortcut_name_changed: "El nombre del acceso directo cambió antes de renombrarlo.",
 	shortcut_name_api_unavailable: "La API de nombres de accesos directos de Steam no está disponible",
 	shortcut_name_api_failed: "La API de nombres de accesos directos de Steam ha fallado",
-	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo."
+	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$i = {
 	check: {
@@ -7036,7 +7352,10 @@ var qam$i = {
 		checkNow: "Comprobar ahora",
 		enableDevelopmentTitle: "¿Activar las versiones de desarrollo?",
 		confirmRevertTitle: "¿Volver a la versión estable?",
-		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración."
+		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versiones",
@@ -7054,6 +7373,38 @@ var qam$i = {
 		modalTitle: "Registros del plugin",
 		modalEmpty: "No hay registros recientes",
 		ok: "Aceptar"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$i = {
@@ -7161,7 +7512,8 @@ var panel$i = {
 		cacheClearFailed: "Error al borrar la caché",
 		delisted: "Juegos de Steam retirados",
 		logs: "Registros"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$i = {
 	editMetadata: "Editar metadatos..."
@@ -7438,7 +7790,20 @@ var backend$i = {
 	shortcut_name_changed: "Pikakuvakkeen nimi muuttui ennen uudelleennimeämistä.",
 	shortcut_name_api_unavailable: "Steamin pikakuvakkeiden nimirajapinta ei ole käytettävissä",
 	shortcut_name_api_failed: "Steamin pikakuvakkeiden nimirajapinta epäonnistui",
-	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa."
+	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$h = {
 	check: {
@@ -7680,7 +8045,10 @@ var qam$h = {
 		checkNow: "Tarkista nyt",
 		enableDevelopmentTitle: "Otetaanko kehitysjulkaisut käyttöön?",
 		confirmRevertTitle: "Palataanko vakaaseen versioon?",
-		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin."
+		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versiot",
@@ -7698,6 +8066,38 @@ var qam$h = {
 		modalTitle: "Liitännäisen lokit",
 		modalEmpty: "Ei viimeaikaisia lokeja",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$h = {
@@ -7805,7 +8205,8 @@ var panel$h = {
 		cacheClearFailed: "Välimuistin tyhjennys epäonnistui",
 		delisted: "Poistetut Steam-pelit",
 		logs: "Lokit"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$h = {
 	editMetadata: "Muokkaa metatietoja..."
@@ -8083,7 +8484,20 @@ var backend$h = {
 	shortcut_name_changed: "Le nom du raccourci a changé avant le renommage.",
 	shortcut_name_api_unavailable: "L'API de nom de raccourci de Steam est indisponible",
 	shortcut_name_api_failed: "L'API de nom de raccourci de Steam a échoué",
-	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps."
+	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$g = {
 	check: {
@@ -8325,7 +8739,10 @@ var qam$g = {
 		checkNow: "Vérifier maintenant",
 		enableDevelopmentTitle: "Activer les versions de développement ?",
 		confirmRevertTitle: "Revenir à la version stable ?",
-		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration."
+		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versions",
@@ -8343,6 +8760,38 @@ var qam$g = {
 		modalTitle: "Journaux du plugin",
 		modalEmpty: "Aucun journal récent",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$g = {
@@ -8450,7 +8899,8 @@ var panel$g = {
 		cacheClearFailed: "Échec du vidage du cache",
 		delisted: "Jeux Steam retirés",
 		logs: "Journaux"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$g = {
 	editMetadata: "Modifier les métadonnées..."
@@ -8728,7 +9178,20 @@ var backend$g = {
 	shortcut_name_changed: "Il nome del collegamento è cambiato prima della rinomina.",
 	shortcut_name_api_unavailable: "L'API di Steam per il nome dei collegamenti non è disponibile",
 	shortcut_name_api_failed: "L'API di Steam per il nome dei collegamenti ha restituito un errore",
-	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento."
+	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$f = {
 	check: {
@@ -8970,7 +9433,10 @@ var qam$f = {
 		checkNow: "Controlla ora",
 		enableDevelopmentTitle: "Abilitare le versioni di sviluppo?",
 		confirmRevertTitle: "Tornare alla versione stabile?",
-		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione."
+		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versioni",
@@ -8988,6 +9454,38 @@ var qam$f = {
 		modalTitle: "Log del plugin",
 		modalEmpty: "Nessun log recente",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$f = {
@@ -9095,7 +9593,8 @@ var panel$f = {
 		cacheClearFailed: "Svuotamento della cache non riuscito",
 		delisted: "Giochi Steam rimossi",
 		logs: "Log"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$f = {
 	editMetadata: "Modifica metadati..."
@@ -9371,7 +9870,20 @@ var backend$f = {
 	shortcut_name_changed: "名前を変更する前にショートカット名が変更されました。",
 	shortcut_name_api_unavailable: "Steam のショートカット名 API を利用できません",
 	shortcut_name_api_failed: "Steam のショートカット名 API が失敗しました",
-	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。"
+	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$e = {
 	check: {
@@ -9613,7 +10125,10 @@ var qam$e = {
 		checkNow: "今すぐ確認",
 		enableDevelopmentTitle: "開発リリースを有効にしますか？",
 		confirmRevertTitle: "安定版に戻しますか？",
-		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。"
+		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "バージョン",
@@ -9631,6 +10146,38 @@ var qam$e = {
 		modalTitle: "プラグインのログ",
 		modalEmpty: "最近のログはありません",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$e = {
@@ -9738,7 +10285,8 @@ var panel$e = {
 		cacheClearFailed: "キャッシュの消去に失敗しました",
 		delisted: "配信終了した Steam ゲーム",
 		logs: "ログ"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$e = {
 	editMetadata: "メタデータを編集..."
@@ -10015,7 +10563,20 @@ var backend$e = {
 	shortcut_name_changed: "მალსახმობის სახელი გადარქმევამდე შეიცვალა.",
 	shortcut_name_api_unavailable: "Steam-ის მალსახმობის სახელის API მიუწვდომელია",
 	shortcut_name_api_failed: "Steam-ის მალსახმობის სახელის API ვერ შესრულდა",
-	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი."
+	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$d = {
 	check: {
@@ -10257,7 +10818,10 @@ var qam$d = {
 		checkNow: "ახლა შემოწმება",
 		enableDevelopmentTitle: "ჩაირთოს განვითარების გამოშვებები?",
 		confirmRevertTitle: "დავუბრუნდეთ სტაბილურს?",
-		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები."
+		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "ვერსიები",
@@ -10275,6 +10839,38 @@ var qam$d = {
 		modalTitle: "პლაგინის ლოგები",
 		modalEmpty: "ბოლო ლოგები არ არის",
 		ok: "კარგი"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$d = {
@@ -10382,7 +10978,8 @@ var panel$d = {
 		cacheClearFailed: "ქეშის გასუფთავება ვერ მოხერხდა",
 		delisted: "გაყიდვიდან მოხსნილი Steam თამაშები",
 		logs: "ლოგები"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$d = {
 	editMetadata: "მეტამონაცემების რედაქტირება..."
@@ -10658,7 +11255,20 @@ var backend$d = {
 	shortcut_name_changed: "이름을 바꾸기 전에 바로가기 이름이 변경되었습니다.",
 	shortcut_name_api_unavailable: "Steam 바로가기 이름 API를 사용할 수 없습니다",
 	shortcut_name_api_failed: "Steam 바로가기 이름 API가 실패했습니다",
-	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다."
+	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$c = {
 	check: {
@@ -10900,7 +11510,10 @@ var qam$c = {
 		checkNow: "지금 확인",
 		enableDevelopmentTitle: "개발 릴리스를 사용할까요?",
 		confirmRevertTitle: "안정 버전으로 되돌릴까요?",
-		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다."
+		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "버전",
@@ -10918,6 +11531,38 @@ var qam$c = {
 		modalTitle: "플러그인 로그",
 		modalEmpty: "최근 로그가 없습니다",
 		ok: "확인"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$c = {
@@ -11025,7 +11670,8 @@ var panel$c = {
 		cacheClearFailed: "캐시 지우기에 실패했습니다",
 		delisted: "판매 중지된 Steam 게임",
 		logs: "로그"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$c = {
 	editMetadata: "메타데이터 편집..."
@@ -11302,7 +11948,20 @@ var backend$c = {
 	shortcut_name_changed: "De naam van de snelkoppeling is gewijzigd voordat deze werd hernoemd.",
 	shortcut_name_api_unavailable: "API voor Steam-snelkoppelingsnamen is niet beschikbaar",
 	shortcut_name_api_failed: "API voor Steam-snelkoppelingsnamen is mislukt",
-	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd."
+	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$b = {
 	check: {
@@ -11544,7 +12203,10 @@ var qam$b = {
 		checkNow: "Nu controleren",
 		enableDevelopmentTitle: "Ontwikkelreleases inschakelen?",
 		confirmRevertTitle: "Terug naar stabiele versie?",
-		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen."
+		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versies",
@@ -11562,6 +12224,38 @@ var qam$b = {
 		modalTitle: "Plug-inlogboeken",
 		modalEmpty: "Geen recente logboeken",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$b = {
@@ -11669,7 +12363,8 @@ var panel$b = {
 		cacheClearFailed: "Cache wissen mislukt",
 		delisted: "Uit de winkel verwijderde Steam-games",
 		logs: "Logboeken"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$b = {
 	editMetadata: "Metadata bewerken..."
@@ -11948,7 +12643,20 @@ var backend$b = {
 	shortcut_name_changed: "Nazwa skrótu zmieniła się przed aktualizacją.",
 	shortcut_name_api_unavailable: "Interfejs API nazw skrótów Steam jest niedostępny",
 	shortcut_name_api_failed: "Błąd interfejsu API nazw skrótów Steam",
-	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu."
+	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$a = {
 	check: {
@@ -12190,7 +12898,10 @@ var qam$a = {
 		checkNow: "Sprawdź teraz",
 		enableDevelopmentTitle: "Włączyć wydania deweloperskie?",
 		confirmRevertTitle: "Wrócić do stabilnej wersji?",
-		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją."
+		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Wersje",
@@ -12208,6 +12919,38 @@ var qam$a = {
 		modalTitle: "Dzienniki wtyczki",
 		modalEmpty: "Brak ostatnich wpisów",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$a = {
@@ -12315,7 +13058,8 @@ var panel$a = {
 		cacheClearFailed: "Czyszczenie pamięci podręcznej nie powiodło się",
 		delisted: "Gry usunięte ze Steam",
 		logs: "Dzienniki"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$a = {
 	editMetadata: "Edytuj metadane..."
@@ -12593,7 +13337,20 @@ var backend$a = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nome de atalho da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nome de atalho da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$9 = {
 	check: {
@@ -12835,7 +13592,10 @@ var qam$9 = {
 		checkNow: "Verificar agora",
 		enableDevelopmentTitle: "Ativar versões de desenvolvimento?",
 		confirmRevertTitle: "Reverter para o canal estável?",
-		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração."
+		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versões",
@@ -12853,6 +13613,38 @@ var qam$9 = {
 		modalTitle: "Logs do plugin",
 		modalEmpty: "Nenhum log recente",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$9 = {
@@ -12960,7 +13752,8 @@ var panel$9 = {
 		cacheClearFailed: "Falha ao limpar o cache",
 		delisted: "Jogos removidos da Loja Steam",
 		logs: "Logs"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$9 = {
 	editMetadata: "Editar metadados..."
@@ -13238,7 +14031,20 @@ var backend$9 = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nomes de atalhos da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nomes de atalhos da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$8 = {
 	check: {
@@ -13480,7 +14286,10 @@ var qam$8 = {
 		checkNow: "Verificar agora",
 		enableDevelopmentTitle: "Ativar versões de desenvolvimento?",
 		confirmRevertTitle: "Reverter para o canal estável?",
-		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração."
+		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versões",
@@ -13498,6 +14307,38 @@ var qam$8 = {
 		modalTitle: "Registos do plugin",
 		modalEmpty: "Sem registos recentes",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$8 = {
@@ -13605,7 +14446,8 @@ var panel$8 = {
 		cacheClearFailed: "Falha ao limpar a cache",
 		delisted: "Jogos removidos da Loja Steam",
 		logs: "Registos"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$8 = {
 	editMetadata: "Editar metadados..."
@@ -13883,7 +14725,20 @@ var backend$8 = {
 	shortcut_name_changed: "Numele scurtăturii s-a schimbat înainte de redenumire.",
 	shortcut_name_api_unavailable: "API-ul Steam pentru numele scurtăturilor nu este disponibil",
 	shortcut_name_api_failed: "API-ul Steam pentru numele scurtăturilor a eșuat",
-	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii."
+	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$7 = {
 	check: {
@@ -14125,7 +14980,10 @@ var qam$7 = {
 		checkNow: "Verifică acum",
 		enableDevelopmentTitle: "Activezi versiunile de dezvoltare?",
 		confirmRevertTitle: "Revii la versiunea stabilă?",
-		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare."
+		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versiuni",
@@ -14143,6 +15001,38 @@ var qam$7 = {
 		modalTitle: "Jurnalele pluginului",
 		modalEmpty: "Niciun jurnal recent",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$7 = {
@@ -14250,7 +15140,8 @@ var panel$7 = {
 		cacheClearFailed: "Golirea memoriei cache a eșuat",
 		delisted: "Jocuri Steam retrase",
 		logs: "Jurnale"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$7 = {
 	editMetadata: "Editează metadatele..."
@@ -14529,7 +15420,20 @@ var backend$7 = {
 	shortcut_name_changed: "Название ярлыка изменилось до переименования.",
 	shortcut_name_api_unavailable: "API названий ярлыков Steam недоступен",
 	shortcut_name_api_failed: "Сбой API названий ярлыков Steam",
-	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя."
+	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$6 = {
 	check: {
@@ -14771,7 +15675,10 @@ var qam$6 = {
 		checkNow: "Проверить сейчас",
 		enableDevelopmentTitle: "Включить сборки для разработки?",
 		confirmRevertTitle: "Вернуться к стабильной версии?",
-		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией."
+		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Версии",
@@ -14789,6 +15696,38 @@ var qam$6 = {
 		modalTitle: "Журналы плагина",
 		modalEmpty: "Нет недавних записей",
 		ok: "ОК"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$6 = {
@@ -14896,7 +15835,8 @@ var panel$6 = {
 		cacheClearFailed: "Не удалось очистить кэш",
 		delisted: "Игры, удалённые из Steam",
 		logs: "Журналы"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$6 = {
 	editMetadata: "Редактировать метаданные..."
@@ -15173,7 +16113,20 @@ var backend$6 = {
 	shortcut_name_changed: "Emri i shkurtores ndryshoi përpara riemërtimit.",
 	shortcut_name_api_unavailable: "API i emrave të shkurtoreve të Steam nuk është i disponueshëm",
 	shortcut_name_api_failed: "API i emrave të shkurtoreve të Steam dështoi",
-	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë."
+	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$5 = {
 	check: {
@@ -15415,7 +16368,10 @@ var qam$5 = {
 		checkNow: "Kontrollo tani",
 		enableDevelopmentTitle: "Të aktivizohen publikimet e zhvillimit?",
 		confirmRevertTitle: "Të kthehesh te versioni i qëndrueshëm?",
-		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi."
+		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versionet",
@@ -15433,6 +16389,38 @@ var qam$5 = {
 		modalTitle: "Regjistrat e shtojcës",
 		modalEmpty: "Nuk ka regjistra të fundit",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$5 = {
@@ -15540,7 +16528,8 @@ var panel$5 = {
 		cacheClearFailed: "Pastrimi i cache-it dështoi",
 		delisted: "Lojëra të hequra nga Steam",
 		logs: "Regjistrat"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$5 = {
 	editMetadata: "Redakto metadatat..."
@@ -15817,7 +16806,20 @@ var backend$5 = {
 	shortcut_name_changed: "Genvägens namn ändrades före namnbytet.",
 	shortcut_name_api_unavailable: "Steams API för genvägsnamn är inte tillgängligt",
 	shortcut_name_api_failed: "Steams API för genvägsnamn misslyckades",
-	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid."
+	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$4 = {
 	check: {
@@ -16059,7 +17061,10 @@ var qam$4 = {
 		checkNow: "Kontrollera nu",
 		enableDevelopmentTitle: "Aktivera utvecklingsutgåvor?",
 		confirmRevertTitle: "Återgå till stabil version?",
-		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem."
+		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Versioner",
@@ -16077,6 +17082,38 @@ var qam$4 = {
 		modalTitle: "Plugin-loggar",
 		modalEmpty: "Inga aktuella loggar",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$4 = {
@@ -16184,7 +17221,8 @@ var panel$4 = {
 		cacheClearFailed: "Det gick inte att rensa cachen",
 		delisted: "Borttagna Steam-spel",
 		logs: "Loggar"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$4 = {
 	editMetadata: "Redigera metadata..."
@@ -16461,7 +17499,20 @@ var backend$4 = {
 	shortcut_name_changed: "Kısayol adı, yeniden adlandırmadan önce değişti.",
 	shortcut_name_api_unavailable: "Steam kısayol adı API'si kullanılamıyor",
 	shortcut_name_api_failed: "Steam kısayol adı API'si başarısız oldu",
-	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı."
+	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$3 = {
 	check: {
@@ -16703,7 +17754,10 @@ var qam$3 = {
 		checkNow: "Şimdi denetle",
 		enableDevelopmentTitle: "Geliştirme Sürümleri Etkinleştirilsin mi?",
 		confirmRevertTitle: "Kararlı Sürüme Dönülsün mü?",
-		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir."
+		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Sürümler",
@@ -16721,6 +17775,38 @@ var qam$3 = {
 		modalTitle: "Eklenti Günlükleri",
 		modalEmpty: "Yakın tarihli günlük yok",
 		ok: "Tamam"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$3 = {
@@ -16828,7 +17914,8 @@ var panel$3 = {
 		cacheClearFailed: "Önbellek temizleme başarısız oldu",
 		delisted: "Satıştan kaldırılmış Steam oyunları",
 		logs: "Günlükler"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$3 = {
 	editMetadata: "Meta Verileri Düzenle..."
@@ -17107,7 +18194,20 @@ var backend$3 = {
 	shortcut_name_changed: "Назва ярлика змінилася до перейменування.",
 	shortcut_name_api_unavailable: "API назв ярликів Steam недоступний",
 	shortcut_name_api_failed: "Збій API назв ярликів Steam",
-	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно."
+	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$2 = {
 	check: {
@@ -17349,7 +18449,10 @@ var qam$2 = {
 		checkNow: "Перевірити зараз",
 		enableDevelopmentTitle: "Увімкнути збірки для розробки?",
 		confirmRevertTitle: "Повернутися до стабільної версії?",
-		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією."
+		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "Версії",
@@ -17367,6 +18470,38 @@ var qam$2 = {
 		modalTitle: "Журнали плагіна",
 		modalEmpty: "Немає недавніх записів",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$2 = {
@@ -17474,7 +18609,8 @@ var panel$2 = {
 		cacheClearFailed: "Не вдалося очистити кеш",
 		delisted: "Ігри, вилучені зі Steam",
 		logs: "Журнали"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$2 = {
 	editMetadata: "Редагувати метадані..."
@@ -17750,7 +18886,20 @@ var backend$2 = {
 	shortcut_name_changed: "重命名前快捷方式名称已更改。",
 	shortcut_name_api_unavailable: "Steam 快捷方式名称 API 不可用",
 	shortcut_name_api_failed: "Steam 快捷方式名称 API 调用失败",
-	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。"
+	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$1 = {
 	check: {
@@ -17992,7 +19141,10 @@ var qam$1 = {
 		checkNow: "立即检查",
 		enableDevelopmentTitle: "启用开发版本？",
 		confirmRevertTitle: "回退到稳定版？",
-		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。"
+		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "版本",
@@ -18010,6 +19162,38 @@ var qam$1 = {
 		modalTitle: "插件日志",
 		modalEmpty: "没有最近的日志",
 		ok: "确定"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$1 = {
@@ -18117,7 +19301,8 @@ var panel$1 = {
 		cacheClearFailed: "清除缓存失败",
 		delisted: "已下架的 Steam 游戏",
 		logs: "日志"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$1 = {
 	editMetadata: "编辑元数据..."
@@ -18393,7 +19578,20 @@ var backend$1 = {
 	shortcut_name_changed: "重新命名前捷徑名稱已變更。",
 	shortcut_name_api_unavailable: "Steam 捷徑名稱 API 無法使用",
 	shortcut_name_api_failed: "Steam 捷徑名稱 API 呼叫失敗",
-	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。"
+	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater = {
 	check: {
@@ -18635,7 +19833,10 @@ var qam = {
 		checkNow: "立即檢查",
 		enableDevelopmentTitle: "啟用開發版本？",
 		confirmRevertTitle: "回復至穩定版？",
-		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。"
+		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
 	},
 	versions: {
 		title: "版本",
@@ -18653,6 +19854,38 @@ var qam = {
 		modalTitle: "外掛日誌",
 		modalEmpty: "沒有最近的日誌",
 		ok: "確定"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow = {
@@ -18760,7 +19993,8 @@ var panel = {
 		cacheClearFailed: "清除快取失敗",
 		delisted: "已下架的 Steam 遊戲",
 		logs: "日誌"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu = {
 	editMetadata: "編輯中繼資料..."
@@ -19309,6 +20543,9 @@ const getUpdateCheckContext = callable("get_update_check_context");
 const getUpdateSettings = callable("get_update_settings");
 const setUpdateChannel = callable("set_update_channel");
 const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
+const setTestingTabEnabled = callable("set_testing_tab_enabled");
+const getTestingVersions = callable("get_testing_versions");
+const prepareTestingVersion = callable("prepare_testing_version");
 const getTrailerSettings = callable("get_trailer_settings");
 const setTrailerSettings = callable("set_trailer_settings");
 const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
@@ -19366,9 +20603,11 @@ var backend = /*#__PURE__*/Object.freeze({
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
     getSystemVersions: getSystemVersions,
+    getTestingVersions: getTestingVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
+    prepareTestingVersion: prepareTestingVersion,
     previewFetchedMetadata: previewFetchedMetadata,
     previewSteamMetadata: previewSteamMetadata,
     putProtonDbCache: putProtonDbCache,
@@ -19392,6 +20631,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setProtonDbBadgeSettings: setProtonDbBadgeSettings,
+    setTestingTabEnabled: setTestingTabEnabled,
     setTrailerSettings: setTrailerSettings,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -19479,26 +20719,40 @@ function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalli
 // THIS FILE IS AUTO GENERATED
 function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 496 512"},"child":[{"tag":"path","attr":{"d":"M496 256c0 137-111.2 248-248.4 248-113.8 0-209.6-76.3-239-180.4l95.2 39.3c6.4 32.1 34.9 56.4 68.9 56.4 39.2 0 71.9-32.4 70.2-73.5l84.5-60.2c52.1 1.3 95.8-40.9 95.8-93.5 0-51.6-42-93.5-93.7-93.5s-93.7 42-93.7 93.5v1.2L176.6 279c-15.5-.9-30.7 3.4-43.5 12.1L0 236.1C10.2 108.4 117.1 8 247.6 8 384.8 8 496 119 496 256zM155.7 384.3l-30.5-12.6a52.79 52.79 0 0 0 27.2 25.8c26.9 11.2 57.8-1.6 69-28.4 5.4-13 5.5-27.3.1-40.3-5.4-13-15.5-23.2-28.5-28.6-12.9-5.4-26.7-5.2-38.9-.6l31.5 13c19.8 8.2 29.2 30.9 20.9 50.7-8.3 19.9-31 29.2-50.8 21zm173.8-129.9c-34.4 0-62.4-28-62.4-62.3s28-62.3 62.4-62.3 62.4 28 62.4 62.3-27.9 62.3-62.4 62.3zm.1-15.6c25.9 0 46.9-21 46.9-46.8 0-25.9-21-46.8-46.9-46.8s-46.9 21-46.9 46.8c.1 25.8 21.1 46.8 46.9 46.8z"},"child":[]}]})(props);
+}function FaUser (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"},"child":[]}]})(props);
 }function FaTrophy (props) {
   return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"},"child":[]}]})(props);
 }function FaSyncAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
+}function FaSortAmountUpAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M240 96h64a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16h-64a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm0 128h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm256 192H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h256a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm-256-64h192a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zM16 160h48v304a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16V160h48c14.21 0 21.39-17.24 11.31-27.31l-80-96a16 16 0 0 0-22.62 0l-80 96C-5.35 142.74 1.78 160 16 160z"},"child":[]}]})(props);
+}function FaSortAmountDownAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M240 96h64a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16h-64a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm0 128h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm256 192H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h256a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm-256-64h192a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm-64 0h-48V48a16 16 0 0 0-16-16H80a16 16 0 0 0-16 16v304H16c-14.19 0-21.37 17.24-11.29 27.31l80 96a16 16 0 0 0 22.62 0l80-96C197.35 369.26 190.22 352 176 352z"},"child":[]}]})(props);
 }function FaPlayCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
 }function FaPencilAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"},"child":[]}]})(props);
+}function FaInfo (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 192 512"},"child":[{"tag":"path","attr":{"d":"M20 424.229h20V279.771H20c-11.046 0-20-8.954-20-20V212c0-11.046 8.954-20 20-20h112c11.046 0 20 8.954 20 20v212.229h20c11.046 0 20 8.954 20 20V492c0 11.046-8.954 20-20 20H20c-11.046 0-20-8.954-20-20v-47.771c0-11.046 8.954-20 20-20zM96 0C56.235 0 24 32.235 24 72s32.235 72 72 72 72-32.235 72-72S135.764 0 96 0z"},"child":[]}]})(props);
 }function FaInfoCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
+}function FaFlask (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M437.2 403.5L320 215V64h8c13.3 0 24-10.7 24-24V24c0-13.3-10.7-24-24-24H120c-13.3 0-24 10.7-24 24v16c0 13.3 10.7 24 24 24h8v151L10.8 403.5C-18.5 450.6 15.3 512 70.9 512h306.2c55.7 0 89.4-61.5 60.1-108.5zM137.9 320l48.2-77.6c3.7-5.2 5.8-11.6 5.8-18.4V64h64v160c0 6.9 2.2 13.2 5.8 18.4l48.2 77.6h-172z"},"child":[]}]})(props);
 }function FaFileAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
 }function FaExclamationTriangle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaDownload (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"},"child":[]}]})(props);
 }function FaCog (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
 }function FaClock (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
 }function FaCheckCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
+}function FaCaretDown (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 320 512"},"child":[{"tag":"path","attr":{"d":"M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"},"child":[]}]})(props);
 }function FaBars (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"},"child":[]}]})(props);
 }
@@ -19623,8 +20877,15 @@ function updateReducer(state, action) {
 const DEFAULT_UPDATE_SETTINGS = {
     update_channel: "stable",
     automatic_update_checks: true,
+    testing_tab_enabled: false,
 };
-const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
+const resolveLoadedUpdateSettings = (result) => "status" in result
+    ? DEFAULT_UPDATE_SETTINGS
+    : {
+        ...DEFAULT_UPDATE_SETTINGS,
+        ...result,
+        testing_tab_enabled: Boolean(result.testing_tab_enabled),
+    };
 
 function logUpdate(traceId, stage, details) {
     const detailsStr = details
@@ -19682,6 +20943,12 @@ class PluginUpdateControllerStore {
             writable: true,
             value: null
         });
+        Object.defineProperty(this, "pendingTestingTab", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         // True from the Install click until Decky answers or the install fails: no check or second install meanwhile.
         Object.defineProperty(this, "installOwned", {
             enumerable: true,
@@ -19709,6 +20976,7 @@ class PluginUpdateControllerStore {
                 pluginVersion: "",
                 updateChannel: "stable",
                 automaticUpdateChecks: true,
+                testingTabEnabled: false,
                 settingsLoaded: false,
                 candidate: null,
                 checkResult: null,
@@ -19836,6 +21104,42 @@ class PluginUpdateControllerStore {
                 }
                 if (this.pendingAutomatic === pending)
                     this.pendingAutomatic = null;
+                if (saved)
+                    this.applySettings(saved);
+                else
+                    this.publish();
+            }
+        });
+        Object.defineProperty(this, "setTestingTabEnabled", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async (enabled) => {
+                const pending = { value: enabled };
+                const generation = this.generation;
+                this.pendingTestingTab = pending;
+                this.publish();
+                let saved = null;
+                try {
+                    const result = await this.deps.setTestingTabEnabled(enabled);
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in result) {
+                        this.deps.toastError(t("panel.toast.updates"), result.message ? translateBackendError(result.message) : t("panel.testingTabSaveError"));
+                    }
+                    else {
+                        saved = resolveLoadedUpdateSettings(result);
+                    }
+                }
+                catch (error) {
+                    if (generation !== this.generation)
+                        return;
+                    logUpdate(null, "testing_tab_setting_save_failed", {
+                        message: error instanceof Error ? error.message : String(error),
+                    });
+                }
+                if (this.pendingTestingTab === pending)
+                    this.pendingTestingTab = null;
                 if (saved)
                     this.applySettings(saved);
                 else
@@ -20001,6 +21305,9 @@ class PluginUpdateControllerStore {
     }
     get automaticUpdateChecks() {
         return this.pendingAutomatic?.value ?? this.confirmed.automatic_update_checks;
+    }
+    get testingTabEnabled() {
+        return this.pendingTestingTab?.value ?? this.confirmed.testing_tab_enabled;
     }
     dropActiveCheck() {
         this.activeCheckId += 1;
@@ -20246,6 +21553,7 @@ class PluginUpdateControllerStore {
             pluginVersion: this.pluginVersion,
             updateChannel: this.updateChannel,
             automaticUpdateChecks: this.automaticUpdateChecks,
+            testingTabEnabled: this.testingTabEnabled,
             settingsLoaded: this.settingsLoaded,
             candidate: this.state.candidate,
             checkResult: this.state.checkResult,
@@ -20283,6 +21591,7 @@ const pluginUpdateController = new PluginUpdateControllerStore({
     checkForPluginUpdate,
     setUpdateChannel,
     setAutomaticUpdateChecks,
+    setTestingTabEnabled,
     clearPendingUpdateInstall,
     confirmUpdateInstallHandoff,
     recordUpdateInstallRequested,
@@ -20307,6 +21616,7 @@ function usePluginUpdateController() {
         install: pluginUpdateController.install,
         setUpdateChannel: pluginUpdateController.setUpdateChannel,
         setAutomaticUpdateChecks: pluginUpdateController.setAutomaticUpdateChecks,
+        setTestingTabEnabled: pluginUpdateController.setTestingTabEnabled,
     };
 }
 
@@ -33702,7 +35012,7 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
 
 function PluginUpdateBody() {
     const t = useT();
-    const { pluginVersion, updateChannel, automaticUpdateChecks, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, } = usePluginUpdateController();
+    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
     const isLocalBuild = pluginVersion.includes("+");
     const handleToggleChannel = (checked) => {
         if (checked) {
@@ -33736,10 +35046,10 @@ function PluginUpdateBody() {
     const lastCheckedText = checkResult?.checked_at
         ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
         : undefined;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
-                    version: candidate.version,
-                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
+                            version: candidate.version,
+                            channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+                        }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
 }
 
 const dropdownValueStyle = { whiteSpace: "normal" };
@@ -33759,6 +35069,258 @@ function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange,
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
     return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }));
+}
+
+const iconButtonStyle = {
+    height: "40px",
+    width: "40px",
+    minWidth: "40px",
+    padding: "10px 12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+};
+const testingCss = `
+.decky-metadata-testing-focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.decky-metadata-testing-meta-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: ${colors.textSecondary};
+}
+`;
+function sortTestingPullRequests(items, sortField, sortDescending) {
+    const primaryValue = (pr) => {
+        switch (sortField) {
+            case "opened":
+                return new Date(pr.created_at).getTime();
+            case "number":
+                return pr.id;
+            case "author":
+                return (pr.author ?? "").toLowerCase();
+            case "title":
+                return pr.name.toLowerCase();
+            case "updated":
+            default:
+                return new Date(pr.updated_at).getTime();
+        }
+    };
+    return [...items].sort((a, b) => {
+        const aValue = primaryValue(a);
+        const bValue = primaryValue(b);
+        const comparison = typeof aValue === "number" && typeof bValue === "number"
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue));
+        if (comparison !== 0) {
+            return sortDescending ? -comparison : comparison;
+        }
+        return b.id - a.id;
+    });
+}
+function generateTestingTraceId(prId) {
+    return `pr-${prId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+function TestingInstallModal({ pr, closeModal }) {
+    const t = useT();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [error, setError] = SP_REACT.useState(null);
+    const [retryAfter, setRetryAfter] = SP_REACT.useState(null);
+    const handleConfirm = async () => {
+        if (busy)
+            return;
+        if (!isDeckyInstallerAvailable()) {
+            setError(t("qam.update.manualInstallUnavailable"));
+            return;
+        }
+        setBusy(true);
+        setError(null);
+        setRetryAfter(null);
+        let recordedVersion = null;
+        try {
+            const prepared = await prepareTestingVersion(pr.id, pr.head_sha);
+            if (prepared.status !== "ready") {
+                const message = prepared.message
+                    ? translateBackendError(prepared.message)
+                    : t("qam.testing.prepareFailed");
+                setError(message);
+                setRetryAfter(prepared.retry_after ?? null);
+                setBusy(false);
+                return;
+            }
+            const traceId = generateTestingTraceId(pr.id);
+            recordedVersion = prepared.version;
+            await recordUpdateInstallRequested({
+                version: prepared.version,
+                tag: prepared.tag,
+                channel: prepared.channel,
+                artifact_url: prepared.artifact_url,
+                sha256: prepared.sha256,
+                release_url: pr.link,
+                published_at: prepared.published_at,
+                action: "update",
+                updateTraceId: traceId,
+            }).catch(() => undefined);
+            await invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId);
+            await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
+            toaster.toast({
+                title: t("updater.installation.startedTitle"),
+                body: t("updater.installation.startedBody", { version: prepared.version }),
+                duration: 3000,
+            });
+            closeModal?.();
+        }
+        catch (caught) {
+            if (recordedVersion) {
+                await clearPendingUpdateInstall(recordedVersion).catch(() => undefined);
+            }
+            setError(translateBackendError(caught));
+            setBusy(false);
+        }
+    };
+    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy ? t("qam.testing.installing") : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, onOK: () => void handleConfirm(), onCancel: () => {
+            if (!busy)
+                closeModal?.();
+        }, onEscKeypress: () => {
+            if (!busy)
+                closeModal?.();
+        }, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: space.sm }, children: [SP_JSX.jsx("div", { style: { color: colors.text, fontWeight: fontWeight.medium }, children: pr.name }), SP_JSX.jsx("div", { style: { color: colors.textSecondary, fontSize: fontSize.sm }, children: t("qam.testing.modalDetails", {
+                        author: pr.author || t("common.unknown"),
+                        sha: pr.head_sha.slice(0, 7),
+                    }) }), SP_JSX.jsx("div", { style: { color: colors.textSecondary, fontSize: fontSize.sm }, children: t("qam.testing.installModalDescription") }), busy && (SP_JSX.jsxs("div", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), SP_JSX.jsx("span", { children: t("qam.testing.downloadingArtifact", { id: pr.id }) })] })), error && (SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: error }), retryAfter && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(retryAfter)) }) }))] })] }))] }) }));
+}
+function TestingBody() {
+    const t = useT();
+    const [items, setItems] = SP_REACT.useState([]);
+    const [loading, setLoading] = SP_REACT.useState(true);
+    const [errorMessage, setErrorMessage] = SP_REACT.useState(null);
+    const [retryAfter, setRetryAfter] = SP_REACT.useState(null);
+    const [sortField, setSortField] = SP_REACT.useState("updated");
+    const [sortDescending, setSortDescending] = SP_REACT.useState(true);
+    const loadPullRequests = SP_REACT.useCallback(async () => {
+        setLoading(true);
+        setErrorMessage(null);
+        setRetryAfter(null);
+        try {
+            const result = await getTestingVersions();
+            if (result.status === "ok") {
+                setItems(result.items);
+            }
+            else {
+                setErrorMessage(result.message
+                    ? translateBackendError(result.message)
+                    : t("qam.testing.loadError"));
+                setRetryAfter(result.retry_after ?? null);
+            }
+        }
+        catch (error) {
+            setErrorMessage(translateBackendError(error));
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [t]);
+    SP_REACT.useEffect(() => {
+        void loadPullRequests();
+    }, [loadPullRequests]);
+    const sortedItems = SP_REACT.useMemo(() => sortTestingPullRequests(items, sortField, sortDescending), [items, sortField, sortDescending]);
+    const sortOptions = [
+        { label: t("qam.testing.sort.updated"), data: "updated" },
+        { label: t("qam.testing.sort.opened"), data: "opened" },
+        { label: t("qam.testing.sort.number"), data: "number" },
+        { label: t("qam.testing.sort.author"), data: "author" },
+        { label: t("qam.testing.sort.title"), data: "title" },
+    ];
+    const sortLabel = sortOptions.find((option) => option.data === sortField)?.label ?? sortOptions[0].label;
+    const sortValue = (pr) => {
+        switch (sortField) {
+            case "opened":
+                return formatDate(new Date(pr.created_at));
+            case "updated":
+                return formatDate(new Date(pr.updated_at));
+            case "author":
+                return pr.author || t("common.unknown");
+            case "number":
+            case "title":
+            default:
+                return `#${pr.id}`;
+        }
+    };
+    const openSortMenu = (target) => {
+        DFL.showContextMenu(SP_JSX.jsx(DFL.Menu, { label: t("qam.testing.items"), children: sortOptions.map((option) => (SP_JSX.jsx(DFL.MenuItem, { selected: option.data === sortField, onSelected: () => setSortField(option.data), children: option.label }, option.data))) }), target ?? window);
+    };
+    const openInstallModal = (pr) => {
+        DFL.showModal(SP_JSX.jsx(TestingInstallModal, { pr: pr }));
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("style", { children: testingCss }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.testing.header") }), SP_JSX.jsx(DFL.Field, { focusable: false, description: t("qam.testing.eligibilityNote") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.testing.refreshLabel"), onClick: () => void loadPullRequests(), disabled: loading, children: t("settings.action.refresh") }), loading && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), SP_JSX.jsx("span", { children: t("qam.testing.loading") })] }) })), !loading && errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMessage }), retryAfter && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(retryAfter)) }) }))] })] }) })), !loading && !errorMessage && sortedItems.length === 0 && (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("qam.testing.noPrs") })), !loading && !errorMessage && sortedItems.length > 0 && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.Focusable, { style: { display: "flex", alignItems: "center", padding: "8px 8px 0" }, children: [SP_JSX.jsx("span", { style: {
+                                            color: colors.text,
+                                            fontSize: `${fontSize.lg}px`,
+                                            fontWeight: fontWeight.medium,
+                                            lineHeight: "20px",
+                                            whiteSpace: "nowrap",
+                                        }, children: t("qam.testing.items") }), SP_JSX.jsx("span", { style: {
+                                            color: colors.textSecondary,
+                                            fontSize: `${fontSize.lg}px`,
+                                            fontWeight: fontWeight.medium,
+                                            lineHeight: "20px",
+                                            marginLeft: "8px",
+                                        }, children: sortedItems.length }), SP_JSX.jsx("div", { "aria-hidden": "true", style: {
+                                            flexGrow: 1,
+                                            height: "2px",
+                                            margin: "0 10px",
+                                            backgroundColor: "rgba(103, 112, 123, 0.3)",
+                                        } }), SP_JSX.jsxs(DFL.Focusable, { role: "button", "aria-label": sortLabel, "aria-haspopup": "menu", onActivate: (event) => openSortMenu(event.currentTarget), focusClassName: "decky-metadata-testing-focus", style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            height: "28px",
+                                            padding: "4px 0",
+                                            marginTop: "1px",
+                                            cursor: "pointer",
+                                        }, children: [SP_JSX.jsx(FaCaretDown, { size: 16, style: { margin: "2px 8px 2px 0", flexShrink: 0 } }), SP_JSX.jsx("span", { style: { fontSize: `${fontSize.lg}px`, lineHeight: "20px", whiteSpace: "nowrap" }, children: sortLabel })] }), SP_JSX.jsx(DFL.Focusable, { role: "button", "aria-label": sortDescending ? t("qam.testing.sortAscending") : t("qam.testing.sortDescending"), onActivate: () => setSortDescending((descending) => !descending), focusClassName: "decky-metadata-testing-focus", style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "28px",
+                                            height: "28px",
+                                            marginLeft: "13px",
+                                            flexShrink: 0,
+                                            cursor: "pointer",
+                                        }, children: sortDescending ? (SP_JSX.jsx(FaSortAmountDownAlt, { "aria-hidden": "true", size: 16 })) : (SP_JSX.jsx(FaSortAmountUpAlt, { "aria-hidden": "true", size: 16 })) })] }), SP_JSX.jsx("ul", { style: { listStyleType: "none", padding: 0, margin: 0 }, children: sortedItems.map((pr) => (SP_JSX.jsx("li", { children: SP_JSX.jsxs("div", { style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            minHeight: "58px",
+                                            padding: "6px 8px",
+                                        }, children: [SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }, children: [SP_JSX.jsx("div", { style: {
+                                                            color: colors.text,
+                                                            fontSize: `${fontSize.lg}px`,
+                                                            fontWeight: fontWeight.medium,
+                                                            lineHeight: "20px",
+                                                            marginBottom: "4px",
+                                                        }, children: pr.name }), SP_JSX.jsxs("div", { style: {
+                                                            color: colors.textSecondary,
+                                                            fontSize: `${fontSize.xs}px`,
+                                                            fontWeight: fontWeight.bold,
+                                                            lineHeight: "20px",
+                                                            letterSpacing: "0.4px",
+                                                            textTransform: "uppercase",
+                                                        }, children: [SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaUser, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.author", { author: pr.author || t("common.unknown") }), " · ", SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaClock, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.opened", { date: formatDate(new Date(pr.created_at)) }), " · ", SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaSyncAlt, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.updated", { date: formatDate(new Date(pr.updated_at)) }), pr.is_fork ? ` · ${t("qam.testing.forkBadge")}` : "", pr.draft ? ` · ${t("qam.testing.draftBadge")}` : ""] })] }), SP_JSX.jsx("span", { style: {
+                                                    color: colors.text,
+                                                    fontSize: `${fontSize.xs}px`,
+                                                    fontWeight: fontWeight.bold,
+                                                    lineHeight: "20px",
+                                                    letterSpacing: "0.4px",
+                                                    textTransform: "uppercase",
+                                                    whiteSpace: "nowrap",
+                                                    maxWidth: "30%",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    margin: "0 8px",
+                                                    flexShrink: 0,
+                                                }, children: sortValue(pr) }), SP_JSX.jsxs(DFL.Focusable, { style: { display: "flex", gap: "8px", height: "40px", flexShrink: 0 }, navEntryPreferPosition: DFL.NavEntryPositionPreferences.MAINTAIN_X, children: [SP_JSX.jsx(DFL.DialogButton, { style: iconButtonStyle, "aria-label": t("qam.testing.install"), onClick: () => openInstallModal(pr), children: SP_JSX.jsx(FaDownload, { "aria-hidden": "true", style: { display: "block" } }) }), SP_JSX.jsx(DFL.DialogButton, { style: iconButtonStyle, "aria-label": t("qam.testing.info"), onClick: () => DFL.Navigation.NavigateToExternalWeb(pr.link), children: SP_JSX.jsx(FaInfo, { "aria-hidden": "true", style: { display: "block" } }) })] })] }) }, `${pr.id}_${pr.head_sha}`))) })] }))] })] }));
 }
 
 function VersionsBody({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
@@ -39523,6 +41085,7 @@ const icons = {
     contextMenu: SP_JSX.jsx(FaBars, {}),
     logs: SP_JSX.jsx(FaFileAlt, {}),
     updates: SP_JSX.jsx(FaSyncAlt, {}),
+    testing: SP_JSX.jsx(FaFlask, {}),
     versions: SP_JSX.jsx(FaInfoCircle, {}),
 };
 /** Subscribe in the tab that shows the snapshot: a change re-renders that tab, not the whole page. */
@@ -39577,6 +41140,7 @@ function SettingsPage() {
     const logs = useLogsSettings();
     const versions = useVersions();
     const contextMenu = useContextMenuSettings();
+    const { testingTabEnabled } = usePluginUpdateController();
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
@@ -39601,9 +41165,13 @@ function SettingsPage() {
         { id: "contextMenu", label: t("qam.contextMenu.title"), icon: icons.contextMenu, content: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) },
         { id: "logs", label: t("qam.logs.title"), icon: icons.logs, separatorBefore: true, content: SP_JSX.jsx(LogsBody, { ...logs }) },
         { id: "updates", label: t("qam.update.title"), icon: icons.updates, content: SP_JSX.jsx(PluginUpdateBody, {}) },
+        ...(testingTabEnabled
+            ? [{ id: "testing", label: t("qam.testing.title"), icon: icons.testing, content: SP_JSX.jsx(TestingBody, {}) }]
+            : []),
         { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
-    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
+    const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
+    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: activePage, onPageRequested: setPage })] }));
 }
 
 const protonDbCoverSurface = (path) => {

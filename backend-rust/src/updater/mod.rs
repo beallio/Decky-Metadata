@@ -3,6 +3,7 @@ pub mod discovery;
 pub mod models;
 pub mod pending;
 pub mod rate_limit;
+pub mod testing;
 
 use crate::{
     http::Http,
@@ -50,11 +51,19 @@ impl Updater {
             .get("automatic_update_checks")
             .and_then(Value::as_bool)
             .unwrap_or(true);
+        let testing_tab_enabled = settings
+            .get("testing_tab_enabled")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let mut normalized_settings = Map::new();
         normalized_settings.insert("update_channel".to_owned(), json!(channel));
         normalized_settings.insert(
             "automatic_update_checks".to_owned(),
             json!(automatic_checks),
+        );
+        normalized_settings.insert(
+            "testing_tab_enabled".to_owned(),
+            json!(testing_tab_enabled),
         );
 
         let mut cache = cache
@@ -147,6 +156,18 @@ impl Updater {
         Ok(())
     }
 
+    pub fn set_testing_tab_enabled(&mut self, enabled: &Value) -> Result<(), String> {
+        let enabled = py_truthy(enabled);
+        self.settings["testing_tab_enabled"] = json!(enabled);
+        crate::logging::event(
+            "update",
+            "Testing tab visibility changed",
+            json!({"enabled": enabled}),
+            Level::Info,
+        );
+        Ok(())
+    }
+
     pub fn context(&mut self) -> Value {
         let now = self.now();
         let rate_limited_until = match self.rate_limited_until.clone() {
@@ -165,6 +186,7 @@ impl Updater {
         json!({
             "update_channel": self.channel(),
             "automatic_update_checks": self.settings["automatic_update_checks"],
+            "testing_tab_enabled": self.settings["testing_tab_enabled"],
             "installed_version": self.installed_version,
             "last_checked_at": self.cache.get("last_checked_at").cloned().unwrap_or(Value::Null),
             "last_checked_channel": self.cache.get("last_checked_channel").cloned().unwrap_or(Value::Null),
@@ -628,6 +650,255 @@ impl Updater {
             .remove("pending_update_install");
         self.clear_stale_cache();
         Ok(true)
+    }
+
+    fn rate_limit_failure(
+        &mut self,
+        response: &models::JsonResponse,
+        context: &str,
+    ) -> Option<Value> {
+        if !matches!(response.status, 403 | 429) {
+            return None;
+        }
+        let now = self.now();
+        let until = retry_after_until(&response.headers, now);
+        let retry_after = isoformat_utc(until);
+        self.rate_limited_until = Some(until);
+        let message = response
+            .body
+            .get("message")
+            .map(py_string)
+            .filter(|message| !message.is_empty())
+            .unwrap_or_else(|| "rate_limited".to_owned());
+        crate::logging::event(
+            "update",
+            context,
+            json!({"status": response.status, "message": message}),
+            Level::Warn,
+        );
+        Some(json!({
+            "status": "failed",
+            "checked_at": isoformat_utc(now),
+            "message": message,
+            "retry_after": retry_after
+        }))
+    }
+
+    pub async fn list_testing_versions(&mut self) -> Result<Value, String> {
+        let now = self.now();
+        if let Some(until) = self.rate_limited_until.clone() {
+            if now < until {
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": isoformat_utc(now),
+                    "message": "rate_limit_cooldown",
+                    "retry_after": isoformat_utc(until)
+                }));
+            }
+            self.rate_limited_until = None;
+        }
+        let response = self.client.list_open_pulls().await;
+        if let Some(failure) =
+            self.rate_limit_failure(&response, "GitHub PR discovery was rate limited")
+        {
+            return Ok(failure);
+        }
+        let checked_at = isoformat_utc(self.now());
+        if response.status != 200 || !response.body.is_array() {
+            crate::logging::event(
+                "update",
+                "GitHub PR discovery failed",
+                json!({"status": response.status}),
+                Level::Error,
+            );
+            return Ok(json!({
+                "status": "failed",
+                "checked_at": checked_at,
+                "message": "testing_pulls_fetch_failed"
+            }));
+        }
+        let items: Vec<Value> = testing::filter_testing_pulls(response.body.as_array().unwrap())
+            .into_iter()
+            .map(|pr| pr.to_value())
+            .collect();
+        Ok(json!({
+            "status": "ok",
+            "checked_at": checked_at,
+            "items": items
+        }))
+    }
+
+    pub async fn prepare_testing_version(
+        &mut self,
+        pr_id: &Value,
+        head_sha: &Value,
+        staging_dir: &std::path::Path,
+    ) -> Result<Value, String> {
+        let Some(pr_id) = pr_id.as_u64().filter(|id| *id > 0) else {
+            return Ok(json!({"status": "failed", "message": "testing_invalid_request"}));
+        };
+        let Some(head_sha) = head_sha
+            .as_str()
+            .filter(|sha| testing::is_valid_sha(sha))
+            .map(str::to_ascii_lowercase)
+        else {
+            return Ok(json!({"status": "failed", "message": "testing_invalid_request"}));
+        };
+
+        let now = self.now();
+        if let Some(until) = self.rate_limited_until.clone() {
+            if now < until {
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": isoformat_utc(now),
+                    "message": "rate_limit_cooldown",
+                    "retry_after": isoformat_utc(until)
+                }));
+            }
+            self.rate_limited_until = None;
+        }
+
+        // Re-verify the PR on GitHub so only open same-repo or `test-build`-labeled PRs
+        // at their current head SHA can be staged for installation.
+        let pull_response = self.client.get_pull(pr_id).await;
+        if let Some(failure) =
+            self.rate_limit_failure(&pull_response, "GitHub PR verification was rate limited")
+        {
+            return Ok(failure);
+        }
+        if pull_response.status != 200 || !pull_response.body.is_object() {
+            return Ok(json!({"status": "failed", "message": "testing_pulls_fetch_failed"}));
+        }
+        let Some(pull) = testing::parse_testing_pull(&pull_response.body) else {
+            return Ok(json!({"status": "failed", "message": "testing_pr_not_eligible"}));
+        };
+        if pull.head_sha != head_sha {
+            return Ok(json!({"status": "failed", "message": "testing_pr_outdated"}));
+        }
+
+        let runs_response = self.client.list_workflow_runs(&head_sha).await;
+        if let Some(failure) =
+            self.rate_limit_failure(&runs_response, "GitHub Actions lookup was rate limited")
+        {
+            return Ok(failure);
+        }
+        if runs_response.status != 200 {
+            return Ok(json!({"status": "failed", "message": "testing_build_not_found"}));
+        }
+        let Some(workflows) = runs_response
+            .body
+            .get("workflow_runs")
+            .and_then(Value::as_array)
+        else {
+            return Ok(json!({"status": "failed", "message": "testing_build_not_found"}));
+        };
+        let run_ids = match testing::select_candidate_run_ids(workflows) {
+            Ok(ids) => ids,
+            Err(code) => return Ok(json!({"status": "failed", "message": code})),
+        };
+
+        let mut artifact_id = None;
+        let mut saw_expired = false;
+        for run_id in run_ids {
+            let artifacts_response = self.client.list_run_artifacts(run_id).await;
+            if let Some(failure) = self.rate_limit_failure(
+                &artifacts_response,
+                "GitHub artifact lookup was rate limited",
+            ) {
+                return Ok(failure);
+            }
+            if artifacts_response.status != 200 {
+                continue;
+            }
+            let Some(artifacts) = artifacts_response
+                .body
+                .get("artifacts")
+                .and_then(Value::as_array)
+            else {
+                continue;
+            };
+            match testing::select_testing_artifact(artifacts) {
+                Ok(Some(id)) => {
+                    artifact_id = Some(id);
+                    break;
+                }
+                Ok(None) => continue,
+                Err("testing_artifact_expired") => {
+                    saw_expired = true;
+                }
+                Err(code) => return Ok(json!({"status": "failed", "message": code})),
+            }
+        }
+        let Some(artifact_id) = artifact_id else {
+            let code = if saw_expired {
+                "testing_artifact_expired"
+            } else {
+                "testing_artifact_not_found"
+            };
+            return Ok(json!({"status": "failed", "message": code}));
+        };
+
+        let download_url = testing::testing_artifact_download_url(artifact_id);
+        let download_response = match self
+            .client
+            .download_bytes(&download_url, testing::MAX_TESTING_ARTIFACT_BYTES)
+            .await
+        {
+            Ok(response) => response,
+            Err(error) => {
+                crate::logging::event(
+                    "update",
+                    "Testing PR artifact download failed",
+                    json!({"pr_id": pr_id, "artifact_id": artifact_id, "error": error}),
+                    Level::Error,
+                );
+                return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+            }
+        };
+        if download_response.status != 200 {
+            crate::logging::event(
+                "update",
+                "Testing PR artifact download returned non-200 status",
+                json!({"pr_id": pr_id, "artifact_id": artifact_id, "status": download_response.status}),
+                Level::Error,
+            );
+            return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+        }
+
+        let staging_dir = staging_dir.to_path_buf();
+        let archive_bytes = download_response.body;
+        let head_sha_owned = head_sha.clone();
+        let extracted = tokio::task::spawn_blocking(move || {
+            testing::extract_and_verify_testing_artifact(
+                &archive_bytes,
+                pr_id,
+                &head_sha_owned,
+                &staging_dir,
+            )
+        })
+        .await
+        .map_err(|error| error.to_string())?;
+
+        match extracted {
+            Ok(prepared) => {
+                crate::logging::event(
+                    "update",
+                    "Prepared testing PR build",
+                    json!({"pr_id": prepared.pr_id, "version": prepared.version}),
+                    Level::Info,
+                );
+                Ok(prepared.to_value())
+            }
+            Err(code) => {
+                crate::logging::event(
+                    "update",
+                    "Testing PR artifact verification failed",
+                    json!({"pr_id": pr_id, "code": code}),
+                    Level::Error,
+                );
+                Ok(json!({"status": "failed", "message": code}))
+            }
+        }
     }
 }
 
@@ -1124,15 +1395,190 @@ mod tests {
         );
         assert_eq!(
             updater.settings_payload(),
-            json!({"update_channel": "development", "automatic_update_checks": false})
+            json!({
+                "update_channel": "development",
+                "automatic_update_checks": false,
+                "testing_tab_enabled": false
+            })
         );
         assert_eq!(updater.cache_payload(), json!({"custom_cache_entry": 7}));
         updater.set_channel(&json!("nightly")).unwrap();
         updater.set_automatic_checks(&json!([])).unwrap();
+        updater.set_testing_tab_enabled(&json!(true)).unwrap();
         assert_eq!(updater.settings_payload()["update_channel"], "stable");
         assert_eq!(updater.settings_payload()["automatic_update_checks"], false);
+        assert_eq!(updater.settings_payload()["testing_tab_enabled"], true);
         updater.set_automatic_checks(&json!("enabled")).unwrap();
+        updater.set_testing_tab_enabled(&json!(false)).unwrap();
         assert_eq!(updater.settings_payload()["automatic_update_checks"], true);
+        assert_eq!(updater.settings_payload()["testing_tab_enabled"], false);
+    }
+
+    #[tokio::test]
+    async fn testing_versions_list_and_prepare_enforce_eligibility_and_verify_artifact() {
+        use std::io::Write;
+        use sha2::{Digest, Sha256};
+        use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
+
+        let sha = "abcdef0123456789abcdef0123456789abcdef01";
+        let pulls_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls?state=open&per_page=100";
+        let pull_42_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/42";
+        let pull_43_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/43";
+        let runs_url = format!("https://api.github.com/repos/beallio/Decky-Metadata/actions/runs?head_sha={sha}&per_page=30");
+        let run_10_artifacts = "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs/10/artifacts";
+        let run_11_artifacts = "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs/11/artifacts";
+        let download_url = "https://nightly.link/beallio/Decky-Metadata/actions/artifacts/777.zip";
+
+        let same_repo_pr = json!({
+            "number": 42,
+            "state": "open",
+            "title": "Add testing tab",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/42",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "beallio"},
+            "head": {"sha": sha, "repo": {"full_name": "beallio/Decky-Metadata"}},
+            "labels": []
+        });
+        let unlabeled_fork_pr = json!({
+            "number": 43,
+            "state": "open",
+            "title": "Unapproved fork",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/43",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "outsider"},
+            "head": {"sha": sha, "repo": {"full_name": "outsider/Decky-Metadata"}},
+            "labels": []
+        });
+        let labeled_fork_pr = json!({
+            "number": 44,
+            "state": "open",
+            "title": "Opt-in fork",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/44",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "contributor"},
+            "head": {"sha": sha, "repo": {"full_name": "contributor/Decky-Metadata"}},
+            "labels": [{"name": "test-build"}]
+        });
+
+        let payload = b"verified-plugin-zip";
+        let digest = format!("{:x}", Sha256::digest(payload));
+        let manifest_json = json!({
+            "schemaVersion": 1,
+            "pluginName": "Decky Metadata",
+            "packageName": "decky-metadata",
+            "version": "0.6.8-dev.pr42.gabcdef0",
+            "sourceVersion": "0.6.8-dev.pr42.gabcdef0",
+            "tag": "v0.6.8-dev.pr42.gabcdef0",
+            "channel": "dev",
+            "assetName": "Decky-Metadata.zip",
+            "sha256": digest,
+            "generatedAt": "2026-11-25T00:00:00Z"
+        });
+        let mut cursor = std::io::Cursor::new(Vec::new());
+        {
+            let mut writer = ZipWriter::new(&mut cursor);
+            let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
+            writer.start_file("Decky-Metadata.zip", opts).unwrap();
+            writer.write_all(payload).unwrap();
+            writer.start_file("Decky-Metadata.zip.sha256", opts).unwrap();
+            writer
+                .write_all(format!("{digest}  Decky-Metadata.zip\n").as_bytes())
+                .unwrap();
+            writer.start_file("Decky-Metadata.manifest.json", opts).unwrap();
+            writer
+                .write_all(serde_json::to_vec(&manifest_json).unwrap().as_slice())
+                .unwrap();
+            writer.finish().unwrap();
+        }
+        let outer_zip = cursor.into_inner();
+
+        let http = Http::fixtures(vec![
+            fixture(
+                pulls_url,
+                200,
+                json!([same_repo_pr.clone(), unlabeled_fork_pr.clone(), labeled_fork_pr]),
+                &[],
+            ),
+            fixture(pull_43_url, 200, unlabeled_fork_pr, &[]),
+            fixture(pull_42_url, 200, same_repo_pr, &[]),
+            fixture(
+                &runs_url,
+                200,
+                json!({
+                    "workflow_runs": [
+                        {"id": 10, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"},
+                        {"id": 11, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"}
+                    ]
+                }),
+                &[],
+            ),
+            // First run has no artifact; second run has it.
+            fixture(run_10_artifacts, 200, json!({"total_count": 0, "artifacts": []}), &[]),
+            fixture(
+                run_11_artifacts,
+                200,
+                json!({"total_count": 1, "artifacts": [{"id": 777, "name": "decky-metadata-pr", "expired": false}]}),
+                &[],
+            ),
+            Fixture {
+                method: Method::GET,
+                url: download_url.to_owned(),
+                result: Ok(Response {
+                    status: 200,
+                    headers: HeaderMap::new(),
+                    body: outer_zip,
+                    url: download_url.to_owned(),
+                }),
+            },
+        ]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.6.8", &json!({}));
+
+        let list = updater.list_testing_versions().await.unwrap();
+        assert_eq!(list["status"], "ok");
+        let ids: Vec<u64> = list["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["id"].as_u64().unwrap())
+            .collect();
+        assert_eq!(ids, vec![42, 44]);
+
+        let base = std::env::var_os("TMPDIR")
+            .map(std::path::PathBuf::from)
+            .unwrap_or_else(|| std::path::PathBuf::from("/var/tmp/omp-1000"));
+        let stage = base.join(format!("decky-updater-testing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&stage);
+
+        let rejected = updater
+            .prepare_testing_version(&json!(43), &json!(sha), &stage)
+            .await
+            .unwrap();
+        assert_eq!(rejected["status"], "failed");
+        assert_eq!(rejected["message"], "testing_pr_not_eligible");
+
+        let ready = updater
+            .prepare_testing_version(&json!(42), &json!(sha), &stage)
+            .await
+            .unwrap();
+        assert_eq!(ready["status"], "ready");
+        assert_eq!(ready["version"], "0.6.8-dev.pr42.gabcdef0");
+        assert_eq!(ready["sha256"], digest);
+        let staged_path = ready["artifact_url"]
+            .as_str()
+            .unwrap()
+            .strip_prefix("file://")
+            .unwrap();
+        assert_eq!(std::fs::read(staged_path).unwrap(), payload);
+
+        let _ = std::fs::remove_dir_all(&stage);
+        fixture_http.assert_drained();
     }
 
     #[tokio::test]

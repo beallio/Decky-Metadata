@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Ayarları aç", "action": { "refresh": "Yenile", "clear": "Temizle", "view": "Görüntüle", "check": "Kontrol et" } },
+  "settings": {
+    "open": "Ayarları aç",
+    "action": {
+      "refresh": "Yenile",
+      "clear": "Temizle",
+      "view": "Görüntüle",
+      "check": "Kontrol et"
+    }
+  },
   "common": {
     "hours_one": "{{value}} saat",
     "hours_other": "{{value}} saat",
@@ -52,7 +60,20 @@
     "shortcut_name_changed": "Kısayol adı, yeniden adlandırmadan önce değişti.",
     "shortcut_name_api_unavailable": "Steam kısayol adı API'si kullanılamıyor",
     "shortcut_name_api_failed": "Steam kısayol adı API'si başarısız oldu",
-    "shortcut_name_timeout": "Steam yeni kısayol adını zamanında onaylamadı."
+    "shortcut_name_timeout": "Steam yeni kısayol adını zamanında onaylamadı.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -294,7 +315,10 @@
       "checkNow": "Şimdi denetle",
       "enableDevelopmentTitle": "Geliştirme Sürümleri Etkinleştirilsin mi?",
       "confirmRevertTitle": "Kararlı Sürüme Dönülsün mü?",
-      "confirmRevertBody": "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir."
+      "confirmRevertBody": "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
     },
     "versions": {
       "title": "Sürümler",
@@ -312,6 +336,38 @@
       "modalTitle": "Eklenti Günlükleri",
       "modalEmpty": "Yakın tarihli günlük yok",
       "ok": "Tamam"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -419,7 +475,8 @@
       "cacheClearFailed": "Önbellek temizleme başarısız oldu",
       "delisted": "Satıştan kaldırılmış Steam oyunları",
       "logs": "Günlükler"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Meta Verileri Düzenle..."

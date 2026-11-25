@@ -48,6 +48,7 @@ export type PendingUpdateInstall = {
 export type UpdateCheckContext = {
   update_channel: UpdateChannel;
   automatic_update_checks: boolean;
+  testing_tab_enabled?: boolean;
   installed_version: string;
   last_checked_at: string | null;
   last_checked_channel: UpdateChannel | null;
@@ -64,7 +65,51 @@ export type RevalidateResult = PluginUpdateCandidate;
 export type UpdateSettings = {
   update_channel: UpdateChannel;
   automatic_update_checks: boolean;
+  testing_tab_enabled: boolean;
 };
+
+export type TestingPullRequest = {
+  id: number;
+  name: string;
+  link: string;
+  head_sha: string;
+  created_at: string;
+  updated_at: string;
+  author: string;
+  is_fork: boolean;
+  draft: boolean;
+};
+
+export type TestingVersionsResult =
+  | {
+      status: "ok";
+      checked_at: string;
+      items: TestingPullRequest[];
+    }
+  | {
+      status: "failed";
+      checked_at?: string;
+      message?: string;
+      retry_after?: string;
+    };
+
+export type PreparedTestingVersion =
+  | {
+      status: "ready";
+      pr_id: number;
+      version: string;
+      tag: string;
+      channel: UpdateChannel;
+      artifact_url: string;
+      sha256: string;
+      published_at: string;
+    }
+  | {
+      status: "failed";
+      checked_at?: string;
+      message?: string;
+      retry_after?: string;
+    };
 
 export type TrailerQuality = "auto" | 720 | 1080 | 1440 | 2160;
 export type IgnTrailerResult = {

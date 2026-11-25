@@ -89,6 +89,7 @@ impl AppState {
         if loaded {
             self.reconcile_update_state().await?;
         }
+        crate::updater::testing::prune_staging_dir(&self.testing_staging_dir());
         let capabilities = tokio::task::spawn_blocking(platform_capabilities)
             .await
             .map_err(|error| error.to_string())?;
@@ -365,6 +366,15 @@ impl AppState {
     }
 
 
+    pub fn testing_staging_dir(&self) -> std::path::PathBuf {
+        let root = if !self.env.plugin_runtime_dir.as_os_str().is_empty() {
+            &self.env.plugin_runtime_dir
+        } else {
+            &self.env.plugin_settings_dir
+        };
+        root.join("testing-prs")
+    }
+
     pub async fn updater_call(&self, method: &str, args: &[Value]) -> Result<Value, String> {
         if method == "get_update_settings" {
             return Ok(self.updater_snapshot().await?.backend.settings_payload());
@@ -375,6 +385,21 @@ impl AppState {
             self.adopt_rate_limit(snapshot.rate_limit, snapshot.backend.rate_limited_until)
                 .await;
             return Ok(result);
+        }
+        if method == "get_testing_versions" || method == "prepare_testing_version" {
+            let mut snapshot = self.updater_snapshot().await?;
+            let result = if method == "get_testing_versions" {
+                snapshot.backend.list_testing_versions().await
+            } else {
+                let staging_dir = self.testing_staging_dir();
+                snapshot
+                    .backend
+                    .prepare_testing_version(&args[0], &args[1], &staging_dir)
+                    .await
+            };
+            self.adopt_rate_limit(snapshot.rate_limit, snapshot.backend.rate_limited_until)
+                .await;
+            return result;
         }
         if method == "check_for_plugin_update" || method == "revalidate_plugin_update" {
             let mut snapshot = self.updater_snapshot().await?;
@@ -452,6 +477,10 @@ impl AppState {
                     backend.set_automatic_checks(&args[0])?;
                     backend.settings_payload()
                 }
+                "set_testing_tab_enabled" => {
+                    backend.set_testing_tab_enabled(&args[0])?;
+                    backend.settings_payload()
+                }
                 "record_update_install_requested" => backend.record_install_requested(&args[0])?,
                 "confirm_update_install_handoff" => backend.confirm_install_handoff(&args[0])?,
                 "clear_pending_update_install" => backend.clear_pending_install(args.first())?,
@@ -462,6 +491,7 @@ impl AppState {
                 method,
                 "set_update_channel"
                     | "set_automatic_update_checks"
+                    | "set_testing_tab_enabled"
                     | "record_update_install_requested"
             ) || cache != previous_cache
             {

@@ -2,6 +2,7 @@ name: CI
 
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches:
       - dev
@@ -9,6 +10,7 @@ on:
 
 jobs:
   quality-gates:
+    if: github.event_name != 'pull_request' || github.event.action != 'labeled' || github.event.label.name == 'test-build'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -77,3 +79,47 @@ jobs:
 
       - name: Check release version drift
         run: ./run.sh python3 scripts/version_guard.py check-drift "$(node -p "require('./package.json').version")"
+
+      # Package an installable ZIP + sidecars for the in-plugin Testing tab on
+      # same-repo PRs or fork PRs opted in with the `test-build` label.
+      - name: Package PR testing artifact
+        if: >-
+          github.event_name == 'pull_request' &&
+          (
+            github.event.pull_request.head.repo.full_name == github.repository ||
+            contains(github.event.pull_request.labels.*.name, 'test-build')
+          )
+        shell: bash
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          DECKY_PACKAGE_DIR: ${{ runner.temp }}/pr-package
+        run: |
+          set -euo pipefail
+          base="$(node -p "require('./package.json').version")"
+          short_sha="${PR_HEAD_SHA::7}"
+          pr_version="${base}-dev.pr${PR_NUMBER}.g${short_sha}"
+          ./run.sh node scripts/package.mjs --release \
+            --release-version "$pr_version" \
+            --release-tag "v$pr_version" \
+            --channel dev \
+            --emit-release-metadata
+          cp "$DECKY_PACKAGE_DIR/Decky-Metadata-v${pr_version}.zip.sha256" "$DECKY_PACKAGE_DIR/Decky-Metadata.zip.sha256"
+          cp "$DECKY_PACKAGE_DIR/Decky-Metadata-v${pr_version}.manifest.json" "$DECKY_PACKAGE_DIR/Decky-Metadata.manifest.json"
+          (cd "$DECKY_PACKAGE_DIR" && sha256sum -c Decky-Metadata.zip.sha256)
+
+      - name: Upload PR testing artifact
+        if: >-
+          github.event_name == 'pull_request' &&
+          (
+            github.event.pull_request.head.repo.full_name == github.repository ||
+            contains(github.event.pull_request.labels.*.name, 'test-build')
+          )
+        uses: actions/upload-artifact@v7
+        with:
+          name: decky-metadata-pr
+          path: |
+            ${{ runner.temp }}/pr-package/Decky-Metadata.zip
+            ${{ runner.temp }}/pr-package/Decky-Metadata.zip.sha256
+            ${{ runner.temp }}/pr-package/Decky-Metadata.manifest.json
+          if-no-files-found: error

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "設定を開く", "action": { "refresh": "更新", "clear": "クリア", "view": "表示", "check": "確認" } },
+  "settings": {
+    "open": "設定を開く",
+    "action": {
+      "refresh": "更新",
+      "clear": "クリア",
+      "view": "表示",
+      "check": "確認"
+    }
+  },
   "common": {
     "hours_other": "{{value}}時間",
     "hoursShort": "{{value}}時間",
@@ -51,7 +59,20 @@
     "shortcut_name_changed": "名前を変更する前にショートカット名が変更されました。",
     "shortcut_name_api_unavailable": "Steam のショートカット名 API を利用できません",
     "shortcut_name_api_failed": "Steam のショートカット名 API が失敗しました",
-    "shortcut_name_timeout": "Steam が新しいショートカット名を時間内に確認できませんでした。"
+    "shortcut_name_timeout": "Steam が新しいショートカット名を時間内に確認できませんでした。",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -293,7 +314,10 @@
       "checkNow": "今すぐ確認",
       "enableDevelopmentTitle": "開発リリースを有効にしますか？",
       "confirmRevertTitle": "安定版に戻しますか？",
-      "confirmRevertBody": "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。"
+      "confirmRevertBody": "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
     },
     "versions": {
       "title": "バージョン",
@@ -311,6 +335,38 @@
       "modalTitle": "プラグインのログ",
       "modalEmpty": "最近のログはありません",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -418,7 +474,8 @@
       "cacheClearFailed": "キャッシュの消去に失敗しました",
       "delisted": "配信終了した Steam ゲーム",
       "logs": "ログ"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "メタデータを編集..."
