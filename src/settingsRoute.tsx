@@ -4,6 +4,8 @@ import { useT } from "./i18n";
 
 // Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
 export const SETTINGS_ROUTE = "/decky-metadata-settings";
+// The QAM panel gives this button the first focus when it opens.
+export const SETTINGS_BUTTON_CLASS = "decky-metadata-settings-button";
 
 type WindowStore = { GamepadUIMainWindowInstance?: { m_history?: { location?: { pathname?: string } } } };
 
@@ -41,6 +43,7 @@ export function SettingsTitleView() {
     >
       <div>{"Decky Metadata"}</div>
       <DialogButton
+        className={SETTINGS_BUTTON_CLASS}
         aria-label={t("settings.open")}
         style={{
           display: "flex",

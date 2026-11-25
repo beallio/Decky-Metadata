@@ -29821,6 +29821,45 @@ function useScanGames() {
     return { games, loaded, scan };
 }
 
+// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
+const SETTINGS_ROUTE = "/decky-metadata-settings";
+// The QAM panel gives this button the first focus when it opens.
+const SETTINGS_BUTTON_CLASS = "decky-metadata-settings-button";
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    // Current Steam has SteamUIStore and no Router global; older builds have Router.
+    const host = globalThis;
+    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
+    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
+    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
+        DFL.Navigation.Navigate(SETTINGS_ROUTE);
+};
+// QAM header: the Decky display name plus a gear that opens Settings.
+function SettingsTitleView() {
+    const t = useT();
+    return (SP_JSX.jsxs(DFL.Focusable, { className: DFL.staticClasses.Title, style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            width: "100%",
+            padding: 0,
+            boxShadow: "none",
+            ...(DFL.staticClasses.Title
+                ? {}
+                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
+        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { className: SETTINGS_BUTTON_CLASS, "aria-label": t("settings.open"), style: {
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    height: "28px",
+                    width: "40px",
+                    minWidth: 0,
+                    padding: 0,
+                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
+}
+
 const takeNativeFocus = (element) => {
     if (!element)
         return false;
@@ -29870,6 +29909,8 @@ const findScrollViewport = (element) => {
     }
     return null;
 };
+// About half a second at 60 fps before the panel takes the first focus instead.
+const SETTINGS_FOCUS_FRAMES = 30;
 const Content = () => {
     // Steam can change its UI language while QAM is closed.
     SP_REACT.useEffect(() => {
@@ -29883,23 +29924,34 @@ const Content = () => {
             window.cancelAnimationFrame(focusFrame.current);
             focusFrame.current = null;
         }
-        if (element && !initialPanelFocusComplete.current) {
-            focusFrame.current = window.requestAnimationFrame(() => {
-                focusFrame.current = null;
-                if (initialPanelFocusComplete.current)
+        if (!element || initialPanelFocusComplete.current)
+            return;
+        let framesLeft = SETTINGS_FOCUS_FRAMES;
+        const attempt = () => {
+            focusFrame.current = null;
+            if (initialPanelFocusComplete.current)
+                return;
+            // First focus goes to the Settings gear in the header. A fresh QAM window
+            // registers it in Steam's navigation tree a few frames late; the panel is the fallback.
+            const settingsButton = element.ownerDocument.querySelector?.(`.${SETTINGS_BUTTON_CLASS}`) ?? null;
+            if (!takeNativeFocus(settingsButton)) {
+                if (--framesLeft > 0) {
+                    focusFrame.current = window.requestAnimationFrame(attempt);
                     return;
-                initialPanelFocusComplete.current = true;
-                takeNativeFocus(element);
-                // Native focus can scroll QAM past its title. Keep the panel header
-                // visible when the initial focus settles.
-                const viewport = findScrollViewport(element);
-                if (viewport) {
-                    window.requestAnimationFrame(() => {
-                        viewport.scrollTop = 0;
-                    });
                 }
-            });
-        }
+                takeNativeFocus(element);
+            }
+            initialPanelFocusComplete.current = true;
+            // Native focus can scroll QAM past its title. Keep the panel header
+            // visible when the initial focus settles.
+            const viewport = findScrollViewport(element);
+            if (viewport) {
+                window.requestAnimationFrame(() => {
+                    viewport.scrollTop = 0;
+                });
+            }
+        };
+        focusFrame.current = window.requestAnimationFrame(attempt);
     }, []);
     return (SP_JSX.jsx(DFL.Focusable, { ref: focusPanel, preferredFocus: true, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, style: qamPanelStyle, children: SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(MetadataScanBody, { ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(QamInstallRow, {})] }) }));
 };
@@ -39552,43 +39604,6 @@ function SettingsPage() {
         { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
     return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
-}
-
-// Not "/decky-metadata/settings": that matches the editor route "/decky-metadata/:appid".
-const SETTINGS_ROUTE = "/decky-metadata-settings";
-const openSettings = () => {
-    DFL.Navigation.CloseSideMenus();
-    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
-    // Current Steam has SteamUIStore and no Router global; older builds have Router.
-    const host = globalThis;
-    const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
-    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
-    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
-        DFL.Navigation.Navigate(SETTINGS_ROUTE);
-};
-// QAM header: the Decky display name plus a gear that opens Settings.
-function SettingsTitleView() {
-    const t = useT();
-    return (SP_JSX.jsxs(DFL.Focusable, { className: DFL.staticClasses.Title, style: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            width: "100%",
-            padding: 0,
-            boxShadow: "none",
-            ...(DFL.staticClasses.Title
-                ? {}
-                : { fontSize: "22px", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em" }),
-        }, children: [SP_JSX.jsx("div", { children: "Decky Metadata" }), SP_JSX.jsx(DFL.DialogButton, { "aria-label": t("settings.open"), style: {
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "28px",
-                    width: "40px",
-                    minWidth: 0,
-                    padding: 0,
-                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
 }
 
 const protonDbCoverSurface = (path) => {
