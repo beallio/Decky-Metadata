@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-11-24
+
+Add a full-screen Settings page and support the November 2026 Steam Beta
+
 ### Changed
 
 - **Settings page replaces plugin settings in the Quick Access Menu.** Open
