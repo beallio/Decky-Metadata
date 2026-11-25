@@ -318,7 +318,20 @@
       "confirmRevertBody": "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "소프트웨어 업데이트",
+      "checkForUpdates": "업데이트 확인",
+      "upToDateButton": "최신 상태",
+      "apply": "적용",
+      "applying": "적용 중...",
+      "moveToStableShort": "안정 버전으로 이동",
+      "revertToStableShort": "안정 버전으로 되돌리기",
+      "upToDateLastChecked": "최신 상태: 마지막 확인 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "업데이트 채널",
+      "channelOptionStable": "안정",
+      "channelOptionDevelopment": "개발",
+      "channelStableDescription": "검증된 안정 릴리스를 받습니다."
     },
     "versions": {
       "title": "버전",

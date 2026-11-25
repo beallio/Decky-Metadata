@@ -319,7 +319,20 @@
       "confirmRevertBody": "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Софтуерни актуализации",
+      "checkForUpdates": "Проверка за актуализации",
+      "upToDateButton": "Актуално",
+      "apply": "Приложи",
+      "applying": "Прилагане...",
+      "moveToStableShort": "Към стабилна",
+      "revertToStableShort": "Връщане към стабилна",
+      "upToDateLastChecked": "Актуално: последна проверка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал за актуализации",
+      "channelOptionStable": "Стабилен",
+      "channelOptionDevelopment": "Разработчески",
+      "channelStableDescription": "Получава тествани стабилни издания."
     },
     "versions": {
       "title": "Версии",

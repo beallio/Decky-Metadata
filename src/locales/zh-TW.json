@@ -318,7 +318,20 @@
       "confirmRevertBody": "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "軟體更新",
+      "checkForUpdates": "檢查更新",
+      "upToDateButton": "已是最新",
+      "apply": "套用",
+      "applying": "正在套用...",
+      "moveToStableShort": "切換至穩定版",
+      "revertToStableShort": "回復至穩定版",
+      "upToDateLastChecked": "已是最新：上次檢查 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "更新通道",
+      "channelOptionStable": "穩定版",
+      "channelOptionDevelopment": "開發版",
+      "channelStableDescription": "接收經過測試的穩定版本。"
     },
     "versions": {
       "title": "版本",

@@ -21,6 +21,14 @@ All notable changes to this project are documented here in Keep a Changelog form
   and SHA-256 checksum before handing the GitHub Releases ZIP to Decky Loader
   to install.
 
+### Changed
+
+- **SteamOS-style Updates UI.** **Settings → Updates** now matches SteamOS's
+  **Software Updates** layout: a single **Software Updates** row shows the
+  installed version and last-checked status with one morphing button (**Check For
+  Updates** → **Checking...** → **Up-to-date** / **Apply** → **Applying...**),
+  paired with an **Update Channel** dropdown (**Stable** / **Development**).
+
 ### Fixed
 
 - **Keep Refresh metadata progress inside the Quick Access Menu.** The
@@ -32,6 +40,9 @@ All notable changes to this project are documented here in Keep a Changelog form
   inside the ProtonDB card is focusable (matching Steam's **Learn more** button),
   and first-visit Store page navigation now observes nested DOM mounts and polls
   faster until attached.
+- **Refresh Settings automatically when the plugin reloads.** Updating or
+  installing a PR build from **Settings** now refreshes the open Settings page in
+  place while keeping the active tab instead of leaving stale UI mounted.
 
 ## [0.6.7] - 2026-11-24
 

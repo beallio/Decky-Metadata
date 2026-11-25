@@ -320,7 +320,20 @@
       "confirmRevertBody": "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Atualizações de software",
+      "checkForUpdates": "Verificar atualizações",
+      "upToDateButton": "Atualizado",
+      "apply": "Aplicar",
+      "applying": "Aplicando...",
+      "moveToStableShort": "Mudar para estável",
+      "revertToStableShort": "Reverter para estável",
+      "upToDateLastChecked": "Atualizado: última verificação {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de atualizações",
+      "channelOptionStable": "Estável",
+      "channelOptionDevelopment": "Desenvolvimento",
+      "channelStableDescription": "Recebe versões estáveis testadas."
     },
     "versions": {
       "title": "Versões",

@@ -323,7 +323,20 @@
       "confirmRevertBody": "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "تحديثات البرنامج",
+      "checkForUpdates": "التحقق من وجود تحديثات",
+      "upToDateButton": "محدّث",
+      "apply": "تطبيق",
+      "applying": "جارٍ التطبيق...",
+      "moveToStableShort": "الانتقال إلى المستقر",
+      "revertToStableShort": "الرجوع إلى المستقر",
+      "upToDateLastChecked": "محدّث: آخر تحقق {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "قناة التحديث",
+      "channelOptionStable": "مستقر",
+      "channelOptionDevelopment": "تطوير",
+      "channelStableDescription": "يتلقى الإصدارات المستقرة المختبرة."
     },
     "versions": {
       "title": "الإصدارات",

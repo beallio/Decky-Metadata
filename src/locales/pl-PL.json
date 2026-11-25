@@ -321,7 +321,20 @@
       "confirmRevertBody": "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Aktualizacje oprogramowania",
+      "checkForUpdates": "Sprawdź aktualizacje",
+      "upToDateButton": "Aktualne",
+      "apply": "Zastosuj",
+      "applying": "Stosowanie...",
+      "moveToStableShort": "Przejdź na stabilną",
+      "revertToStableShort": "Wróć do stabilnej",
+      "upToDateLastChecked": "Aktualne: ostatnie sprawdzenie {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Kanał aktualizacji",
+      "channelOptionStable": "Stabilny",
+      "channelOptionDevelopment": "Rozwojowy",
+      "channelStableDescription": "Otrzymuje przetestowane wydania stabilne."
     },
     "versions": {
       "title": "Wersje",

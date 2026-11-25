@@ -319,7 +319,20 @@
       "confirmRevertBody": "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ενημερώσεις λογισμικού",
+      "checkForUpdates": "Έλεγχος για ενημερώσεις",
+      "upToDateButton": "Ενημερωμένο",
+      "apply": "Εφαρμογή",
+      "applying": "Εφαρμογή...",
+      "moveToStableShort": "Μετάβαση σε σταθερή",
+      "revertToStableShort": "Επαναφορά σε σταθερή",
+      "upToDateLastChecked": "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Κανάλι ενημερώσεων",
+      "channelOptionStable": "Σταθερό",
+      "channelOptionDevelopment": "Ανάπτυξης",
+      "channelStableDescription": "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
     },
     "versions": {
       "title": "Εκδόσεις",

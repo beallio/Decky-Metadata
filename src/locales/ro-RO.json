@@ -320,7 +320,20 @@
       "confirmRevertBody": "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Actualizări de software",
+      "checkForUpdates": "Verifică actualizările",
+      "upToDateButton": "La zi",
+      "apply": "Aplică",
+      "applying": "Se aplică...",
+      "moveToStableShort": "Treci la stabil",
+      "revertToStableShort": "Revino la stabil",
+      "upToDateLastChecked": "La zi: ultima verificare {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de actualizare",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Dezvoltare",
+      "channelStableDescription": "Primește versiuni stabile testate."
     },
     "versions": {
       "title": "Versiuni",

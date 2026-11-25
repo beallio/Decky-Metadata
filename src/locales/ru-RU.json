@@ -321,7 +321,20 @@
       "confirmRevertBody": "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Обновления ПО",
+      "checkForUpdates": "Проверить обновления",
+      "upToDateButton": "Актуально",
+      "apply": "Применить",
+      "applying": "Применение...",
+      "moveToStableShort": "Перейти на стабильную",
+      "revertToStableShort": "Вернуться к стабильной",
+      "upToDateLastChecked": "Актуально: последняя проверка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал обновлений",
+      "channelOptionStable": "Стабильный",
+      "channelOptionDevelopment": "Разработка",
+      "channelStableDescription": "Получает проверенные стабильные релизы."
     },
     "versions": {
       "title": "Версии",

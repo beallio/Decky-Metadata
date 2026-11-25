@@ -318,7 +318,20 @@
       "confirmRevertBody": "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "ソフトウェアアップデート",
+      "checkForUpdates": "アップデートを確認",
+      "upToDateButton": "最新",
+      "apply": "適用",
+      "applying": "適用中...",
+      "moveToStableShort": "安定版へ移行",
+      "revertToStableShort": "安定版に戻す",
+      "upToDateLastChecked": "最新: 最終確認 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "アップデートチャンネル",
+      "channelOptionStable": "安定版",
+      "channelOptionDevelopment": "開発版",
+      "channelStableDescription": "テスト済みの安定版リリースを受け取ります。"
     },
     "versions": {
       "title": "バージョン",

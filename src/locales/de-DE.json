@@ -319,7 +319,20 @@
       "confirmRevertBody": "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Software-Updates",
+      "checkForUpdates": "Nach Updates suchen",
+      "upToDateButton": "Aktuell",
+      "apply": "Anwenden",
+      "applying": "Wird angewendet...",
+      "moveToStableShort": "Zu Stabil wechseln",
+      "revertToStableShort": "Auf Stabil zurücksetzen",
+      "upToDateLastChecked": "Aktuell: zuletzt geprüft {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Update-Kanal",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Entwicklung",
+      "channelStableDescription": "Erhält getestete stabile Versionen."
     },
     "versions": {
       "title": "Versionen",

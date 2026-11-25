@@ -319,7 +319,20 @@
       "confirmRevertBody": "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ohjelmistopäivitykset",
+      "checkForUpdates": "Tarkista päivitykset",
+      "upToDateButton": "Ajan tasalla",
+      "apply": "Käytä",
+      "applying": "Otetaan käyttöön...",
+      "moveToStableShort": "Siirry vakaaseen",
+      "revertToStableShort": "Palaa vakaaseen",
+      "upToDateLastChecked": "Ajan tasalla: tarkistettu viimeksi {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Päivityskanava",
+      "channelOptionStable": "Vakaa",
+      "channelOptionDevelopment": "Kehitys",
+      "channelStableDescription": "Vastaanottaa testattuja vakaita julkaisuja."
     },
     "versions": {
       "title": "Versiot",

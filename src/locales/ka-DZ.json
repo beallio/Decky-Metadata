@@ -319,7 +319,20 @@
       "confirmRevertBody": "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "პროგრამული განახლებები",
+      "checkForUpdates": "განახლებების შემოწმება",
+      "upToDateButton": "განახლებულია",
+      "apply": "გამოყენება",
+      "applying": "გამოყენება...",
+      "moveToStableShort": "სტაბილურზე გადასვლა",
+      "revertToStableShort": "სტაბილურზე დაბრუნება",
+      "upToDateLastChecked": "განახლებულია: ბოლო შემოწმება {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "განახლების არხი",
+      "channelOptionStable": "სტაბილური",
+      "channelOptionDevelopment": "განვითარების",
+      "channelStableDescription": "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
     },
     "versions": {
       "title": "ვერსიები",

@@ -319,7 +319,20 @@
       "confirmRevertBody": "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Yazılım Güncellemeleri",
+      "checkForUpdates": "Güncellemeleri Denetle",
+      "upToDateButton": "Güncel",
+      "apply": "Uygula",
+      "applying": "Uygulanıyor...",
+      "moveToStableShort": "Kararlı sürüme geç",
+      "revertToStableShort": "Kararlı sürüme dön",
+      "upToDateLastChecked": "Güncel: son denetim {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Güncelleme Kanalı",
+      "channelOptionStable": "Kararlı",
+      "channelOptionDevelopment": "Geliştirme",
+      "channelStableDescription": "Test edilmiş kararlı sürümleri alır."
     },
     "versions": {
       "title": "Sürümler",

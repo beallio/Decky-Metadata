@@ -321,7 +321,20 @@
       "confirmRevertBody": "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Оновлення ПЗ",
+      "checkForUpdates": "Перевірити оновлення",
+      "upToDateButton": "Актуально",
+      "apply": "Застосувати",
+      "applying": "Застосування...",
+      "moveToStableShort": "Перейти на стабільну",
+      "revertToStableShort": "Повернутися до стабільної",
+      "upToDateLastChecked": "Актуально: остання перевірка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал оновлень",
+      "channelOptionStable": "Стабільний",
+      "channelOptionDevelopment": "Розробка",
+      "channelStableDescription": "Отримує перевірені стабільні релізи."
     },
     "versions": {
       "title": "Версії",

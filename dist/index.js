@@ -142,13 +142,6 @@ const inlineStatusStyle = (kind) => ({
     ...inlineStatusBaseStyle,
     color: statusColor(kind),
 });
-/** A status shown as a Field value: color only, so Steam's own value font applies. */
-const statusValueStyle = (kind) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: statusColor(kind),
-});
 const busySpinnerStyle = {
     width: "18px",
     height: "18px",
@@ -3195,7 +3188,20 @@ var qam$o = {
 		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "تحديثات البرنامج",
+		checkForUpdates: "التحقق من وجود تحديثات",
+		upToDateButton: "محدّث",
+		apply: "تطبيق",
+		applying: "جارٍ التطبيق...",
+		moveToStableShort: "الانتقال إلى المستقر",
+		revertToStableShort: "الرجوع إلى المستقر",
+		upToDateLastChecked: "محدّث: آخر تحقق {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "قناة التحديث",
+		channelOptionStable: "مستقر",
+		channelOptionDevelopment: "تطوير",
+		channelStableDescription: "يتلقى الإصدارات المستقرة المختبرة."
 	},
 	versions: {
 		title: "الإصدارات",
@@ -3892,7 +3898,20 @@ var qam$n = {
 		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Софтуерни актуализации",
+		checkForUpdates: "Проверка за актуализации",
+		upToDateButton: "Актуално",
+		apply: "Приложи",
+		applying: "Прилагане...",
+		moveToStableShort: "Към стабилна",
+		revertToStableShort: "Връщане към стабилна",
+		upToDateLastChecked: "Актуално: последна проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал за актуализации",
+		channelOptionStable: "Стабилен",
+		channelOptionDevelopment: "Разработчески",
+		channelStableDescription: "Получава тествани стабилни издания."
 	},
 	versions: {
 		title: "Версии",
@@ -4591,7 +4610,20 @@ var qam$m = {
 		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizace softwaru",
+		checkForUpdates: "Zkontrolovat aktualizace",
+		upToDateButton: "Aktuální",
+		apply: "Použít",
+		applying: "Používání...",
+		moveToStableShort: "Přejít na stabilní",
+		revertToStableShort: "Vrátit na stabilní",
+		upToDateLastChecked: "Aktuální: naposledy zkontrolováno {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanál aktualizací",
+		channelOptionStable: "Stabilní",
+		channelOptionDevelopment: "Vývojový",
+		channelStableDescription: "Dostává otestovaná stabilní vydání."
 	},
 	versions: {
 		title: "Verze",
@@ -5288,7 +5320,20 @@ var qam$l = {
 		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-Updates",
+		checkForUpdates: "Nach Updates suchen",
+		upToDateButton: "Aktuell",
+		apply: "Anwenden",
+		applying: "Wird angewendet...",
+		moveToStableShort: "Zu Stabil wechseln",
+		revertToStableShort: "Auf Stabil zurücksetzen",
+		upToDateLastChecked: "Aktuell: zuletzt geprüft {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update-Kanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Entwicklung",
+		channelStableDescription: "Erhält getestete stabile Versionen."
 	},
 	versions: {
 		title: "Versionen",
@@ -5985,7 +6030,20 @@ var qam$k = {
 		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ενημερώσεις λογισμικού",
+		checkForUpdates: "Έλεγχος για ενημερώσεις",
+		upToDateButton: "Ενημερωμένο",
+		apply: "Εφαρμογή",
+		applying: "Εφαρμογή...",
+		moveToStableShort: "Μετάβαση σε σταθερή",
+		revertToStableShort: "Επαναφορά σε σταθερή",
+		upToDateLastChecked: "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Κανάλι ενημερώσεων",
+		channelOptionStable: "Σταθερό",
+		channelOptionDevelopment: "Ανάπτυξης",
+		channelStableDescription: "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
 	},
 	versions: {
 		title: "Εκδόσεις",
@@ -6682,7 +6740,20 @@ var qam$j = {
 		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software Updates",
+		checkForUpdates: "Check For Updates",
+		upToDateButton: "Up-to-date",
+		apply: "Apply",
+		applying: "Applying...",
+		moveToStableShort: "Move to Stable",
+		revertToStableShort: "Revert to Stable",
+		upToDateLastChecked: "Up to date: last checked {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update Channel",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Development",
+		channelStableDescription: "Receives tested stable releases."
 	},
 	versions: {
 		title: "Versions",
@@ -7380,7 +7451,20 @@ var qam$i = {
 		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizaciones de software",
+		checkForUpdates: "Buscar actualizaciones",
+		upToDateButton: "Actualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Pasar a estable",
+		revertToStableShort: "Volver a estable",
+		upToDateLastChecked: "Actualizado: última comprobación {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizaciones",
+		channelOptionStable: "Estable",
+		channelOptionDevelopment: "Desarrollo",
+		channelStableDescription: "Recibe versiones estables probadas."
 	},
 	versions: {
 		title: "Versiones",
@@ -8077,7 +8161,20 @@ var qam$h = {
 		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ohjelmistopäivitykset",
+		checkForUpdates: "Tarkista päivitykset",
+		upToDateButton: "Ajan tasalla",
+		apply: "Käytä",
+		applying: "Otetaan käyttöön...",
+		moveToStableShort: "Siirry vakaaseen",
+		revertToStableShort: "Palaa vakaaseen",
+		upToDateLastChecked: "Ajan tasalla: tarkistettu viimeksi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Päivityskanava",
+		channelOptionStable: "Vakaa",
+		channelOptionDevelopment: "Kehitys",
+		channelStableDescription: "Vastaanottaa testattuja vakaita julkaisuja."
 	},
 	versions: {
 		title: "Versiot",
@@ -8775,7 +8872,20 @@ var qam$g = {
 		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Mises à jour logicielles",
+		checkForUpdates: "Vérifier les mises à jour",
+		upToDateButton: "À jour",
+		apply: "Appliquer",
+		applying: "Application...",
+		moveToStableShort: "Passer en stable",
+		revertToStableShort: "Revenir en stable",
+		upToDateLastChecked: "À jour : dernière vérification {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de mise à jour",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Développement",
+		channelStableDescription: "Reçoit les versions stables testées."
 	},
 	versions: {
 		title: "Versions",
@@ -9473,7 +9583,20 @@ var qam$f = {
 		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aggiornamenti software",
+		checkForUpdates: "Cerca aggiornamenti",
+		upToDateButton: "Aggiornato",
+		apply: "Applica",
+		applying: "Applicazione...",
+		moveToStableShort: "Passa a stabile",
+		revertToStableShort: "Torna a stabile",
+		upToDateLastChecked: "Aggiornato: ultimo controllo {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canale di aggiornamento",
+		channelOptionStable: "Stabile",
+		channelOptionDevelopment: "Sviluppo",
+		channelStableDescription: "Riceve rilasci stabili testati."
 	},
 	versions: {
 		title: "Versioni",
@@ -10169,7 +10292,20 @@ var qam$e = {
 		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "ソフトウェアアップデート",
+		checkForUpdates: "アップデートを確認",
+		upToDateButton: "最新",
+		apply: "適用",
+		applying: "適用中...",
+		moveToStableShort: "安定版へ移行",
+		revertToStableShort: "安定版に戻す",
+		upToDateLastChecked: "最新: 最終確認 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "アップデートチャンネル",
+		channelOptionStable: "安定版",
+		channelOptionDevelopment: "開発版",
+		channelStableDescription: "テスト済みの安定版リリースを受け取ります。"
 	},
 	versions: {
 		title: "バージョン",
@@ -10866,7 +11002,20 @@ var qam$d = {
 		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "პროგრამული განახლებები",
+		checkForUpdates: "განახლებების შემოწმება",
+		upToDateButton: "განახლებულია",
+		apply: "გამოყენება",
+		applying: "გამოყენება...",
+		moveToStableShort: "სტაბილურზე გადასვლა",
+		revertToStableShort: "სტაბილურზე დაბრუნება",
+		upToDateLastChecked: "განახლებულია: ბოლო შემოწმება {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "განახლების არხი",
+		channelOptionStable: "სტაბილური",
+		channelOptionDevelopment: "განვითარების",
+		channelStableDescription: "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
 	},
 	versions: {
 		title: "ვერსიები",
@@ -11562,7 +11711,20 @@ var qam$c = {
 		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "소프트웨어 업데이트",
+		checkForUpdates: "업데이트 확인",
+		upToDateButton: "최신 상태",
+		apply: "적용",
+		applying: "적용 중...",
+		moveToStableShort: "안정 버전으로 이동",
+		revertToStableShort: "안정 버전으로 되돌리기",
+		upToDateLastChecked: "최신 상태: 마지막 확인 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "업데이트 채널",
+		channelOptionStable: "안정",
+		channelOptionDevelopment: "개발",
+		channelStableDescription: "검증된 안정 릴리스를 받습니다."
 	},
 	versions: {
 		title: "버전",
@@ -12259,7 +12421,20 @@ var qam$b = {
 		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-updates",
+		checkForUpdates: "Controleren op updates",
+		upToDateButton: "Up-to-date",
+		apply: "Toepassen",
+		applying: "Toepassen...",
+		moveToStableShort: "Naar stabiel",
+		revertToStableShort: "Terug naar stabiel",
+		upToDateLastChecked: "Up-to-date: laatst gecontroleerd {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Updatekanaal",
+		channelOptionStable: "Stabiel",
+		channelOptionDevelopment: "Ontwikkeling",
+		channelStableDescription: "Ontvangt geteste stabiele uitgaven."
 	},
 	versions: {
 		title: "Versies",
@@ -12958,7 +13133,20 @@ var qam$a = {
 		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizacje oprogramowania",
+		checkForUpdates: "Sprawdź aktualizacje",
+		upToDateButton: "Aktualne",
+		apply: "Zastosuj",
+		applying: "Stosowanie...",
+		moveToStableShort: "Przejdź na stabilną",
+		revertToStableShort: "Wróć do stabilnej",
+		upToDateLastChecked: "Aktualne: ostatnie sprawdzenie {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanał aktualizacji",
+		channelOptionStable: "Stabilny",
+		channelOptionDevelopment: "Rozwojowy",
+		channelStableDescription: "Otrzymuje przetestowane wydania stabilne."
 	},
 	versions: {
 		title: "Wersje",
@@ -13656,7 +13844,20 @@ var qam$9 = {
 		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Verificar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -14354,7 +14555,20 @@ var qam$8 = {
 		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Procurar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "A aplicar...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -15052,7 +15266,20 @@ var qam$7 = {
 		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizări de software",
+		checkForUpdates: "Verifică actualizările",
+		upToDateButton: "La zi",
+		apply: "Aplică",
+		applying: "Se aplică...",
+		moveToStableShort: "Treci la stabil",
+		revertToStableShort: "Revino la stabil",
+		upToDateLastChecked: "La zi: ultima verificare {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizare",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Dezvoltare",
+		channelStableDescription: "Primește versiuni stabile testate."
 	},
 	versions: {
 		title: "Versiuni",
@@ -15751,7 +15978,20 @@ var qam$6 = {
 		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Обновления ПО",
+		checkForUpdates: "Проверить обновления",
+		upToDateButton: "Актуально",
+		apply: "Применить",
+		applying: "Применение...",
+		moveToStableShort: "Перейти на стабильную",
+		revertToStableShort: "Вернуться к стабильной",
+		upToDateLastChecked: "Актуально: последняя проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал обновлений",
+		channelOptionStable: "Стабильный",
+		channelOptionDevelopment: "Разработка",
+		channelStableDescription: "Получает проверенные стабильные релизы."
 	},
 	versions: {
 		title: "Версии",
@@ -16448,7 +16688,20 @@ var qam$5 = {
 		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Përditësimet e softuerit",
+		checkForUpdates: "Kontrollo për përditësime",
+		upToDateButton: "I përditësuar",
+		apply: "Zbato",
+		applying: "Duke zbatuar...",
+		moveToStableShort: "Kalo në të qëndrueshme",
+		revertToStableShort: "Kthehu në të qëndrueshme",
+		upToDateLastChecked: "I përditësuar: kontrolluar së fundmi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanali i përditësimeve",
+		channelOptionStable: "I qëndrueshëm",
+		channelOptionDevelopment: "Zhvillim",
+		channelStableDescription: "Merr versione të qëndrueshme të testuara."
 	},
 	versions: {
 		title: "Versionet",
@@ -17145,7 +17398,20 @@ var qam$4 = {
 		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Programvaruuppdateringar",
+		checkForUpdates: "Sök efter uppdateringar",
+		upToDateButton: "Uppdaterad",
+		apply: "Verkställ",
+		applying: "Verkställer...",
+		moveToStableShort: "Byt till stabil",
+		revertToStableShort: "Återgå till stabil",
+		upToDateLastChecked: "Uppdaterad: senast kontrollerad {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Uppdateringskanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Utveckling",
+		channelStableDescription: "Tar emot testade stabila versioner."
 	},
 	versions: {
 		title: "Versioner",
@@ -17842,7 +18108,20 @@ var qam$3 = {
 		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Yazılım Güncellemeleri",
+		checkForUpdates: "Güncellemeleri Denetle",
+		upToDateButton: "Güncel",
+		apply: "Uygula",
+		applying: "Uygulanıyor...",
+		moveToStableShort: "Kararlı sürüme geç",
+		revertToStableShort: "Kararlı sürüme dön",
+		upToDateLastChecked: "Güncel: son denetim {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Güncelleme Kanalı",
+		channelOptionStable: "Kararlı",
+		channelOptionDevelopment: "Geliştirme",
+		channelStableDescription: "Test edilmiş kararlı sürümleri alır."
 	},
 	versions: {
 		title: "Sürümler",
@@ -18541,7 +18820,20 @@ var qam$2 = {
 		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Оновлення ПЗ",
+		checkForUpdates: "Перевірити оновлення",
+		upToDateButton: "Актуально",
+		apply: "Застосувати",
+		applying: "Застосування...",
+		moveToStableShort: "Перейти на стабільну",
+		revertToStableShort: "Повернутися до стабільної",
+		upToDateLastChecked: "Актуально: остання перевірка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал оновлень",
+		channelOptionStable: "Стабільний",
+		channelOptionDevelopment: "Розробка",
+		channelStableDescription: "Отримує перевірені стабільні релізи."
 	},
 	versions: {
 		title: "Версії",
@@ -19237,7 +19529,20 @@ var qam$1 = {
 		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "软件更新",
+		checkForUpdates: "检查更新",
+		upToDateButton: "已是最新",
+		apply: "应用",
+		applying: "正在应用...",
+		moveToStableShort: "切换到稳定版",
+		revertToStableShort: "回退到稳定版",
+		upToDateLastChecked: "已是最新：上次检查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "稳定版",
+		channelOptionDevelopment: "开发版",
+		channelStableDescription: "接收经过测试的稳定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -19933,7 +20238,20 @@ var qam = {
 		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "軟體更新",
+		checkForUpdates: "檢查更新",
+		upToDateButton: "已是最新",
+		apply: "套用",
+		applying: "正在套用...",
+		moveToStableShort: "切換至穩定版",
+		revertToStableShort: "回復至穩定版",
+		upToDateLastChecked: "已是最新：上次檢查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "穩定版",
+		channelOptionDevelopment: "開發版",
+		channelStableDescription: "接收經過測試的穩定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -35268,7 +35586,7 @@ const MetadataPage = () => {
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
 const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
-const dropdownValueStyle$1 = { whiteSpace: "normal" };
+const dropdownValueStyle$2 = { whiteSpace: "normal" };
 function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, }) {
     const t = useT();
     const categoryLabel = (category) => {
@@ -35318,10 +35636,10 @@ function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, c
         label: scopeLabel(data),
     }));
     const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                     compatibilityDefaultBusy ||
                     compatibilityDefaultScopeBusy ||
-                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
+                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
 }
 
 /** Options for the Edit Metadata page that the game context menu opens. */
@@ -35393,46 +35711,126 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
     return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange }), (conflictNotice || state.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] })) : null] }));
 }
 
+// Matches SteamOS Settings -> System -> Software Updates: briefly show "Up-to-date"
+// disabled right after a clean check before returning the button to "Check For Updates".
+const UP_TO_DATE_COOLDOWN_MS = 4000;
+const dropdownValueStyle$1 = { whiteSpace: "normal" };
 function PluginUpdateBody() {
     const t = useT();
-    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
+    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
+    const [upToDateCooldown, setUpToDateCooldown] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (isChecking || errorMessage || checkResult?.status !== "current" || !checkResult.checked_at) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        const checkedMs = Date.parse(checkResult.checked_at);
+        const remaining = Number.isFinite(checkedMs) ? UP_TO_DATE_COOLDOWN_MS - (Date.now() - checkedMs) : 0;
+        if (remaining <= 0) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        setUpToDateCooldown(true);
+        const timer = globalThis.setTimeout(() => setUpToDateCooldown(false), remaining);
+        return () => globalThis.clearTimeout(timer);
+    }, [isChecking, errorMessage, checkResult?.status, checkResult?.checked_at]);
     const isLocalBuild = pluginVersion.includes("+");
-    const handleToggleChannel = (checked) => {
-        if (checked) {
+    const canInstall = candidate !== null && canInstallCandidate(candidate, pluginVersion);
+    const installedLabel = pluginVersion
+        ? `v${pluginVersion}${isLocalBuild ? ` ${t("qam.update.localBuild")}` : ""}`
+        : "";
+    const handleChannelChange = (next) => {
+        if (next === updateChannel)
+            return;
+        if (next === "development") {
             DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => void setUpdateChannel(true) }));
         }
         else {
             void setUpdateChannel(false);
         }
     };
-    const getStatusContent = () => {
-        if (isChecking) {
-            return SP_JSX.jsxs("span", { style: statusValueStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
+    const handleApplyClick = () => {
+        if (!candidate)
+            return;
+        if (candidate.action === "downgrade_to_stable") {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: candidate.version }), onOK: () => install(candidate) }));
         }
-        if (errorMessage) {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("error"), children: checkResult?.status === "failed"
-                    ? checkTimedOut
-                        ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-                        : t("qam.update.checkFailed")
-                    : t("updater.installation.failedTitle") }));
+        else {
+            void install(candidate);
         }
-        if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: statusValueStyle("success"), children: t("qam.update.upToDate") });
-        }
-        if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
-                    ? t("qam.update.latestDevelopment")
-                    : t("qam.update.updateAvailable") }));
-        }
-        return SP_JSX.jsx("span", { style: statusValueStyle("idle"), children: t("qam.update.neverChecked") });
     };
-    const lastCheckedText = checkResult?.checked_at
-        ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
-        : undefined;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
-                            version: candidate.version,
-                            channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                        }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
+    const primaryBusy = isChecking || isInstalling || isHandoffPending;
+    const primaryDisabled = primaryBusy || upToDateCooldown;
+    const getPrimaryButtonText = () => {
+        if (isHandoffPending)
+            return t("qam.update.waitingForDecky");
+        if (isInstalling)
+            return t("qam.update.applying");
+        if (isChecking)
+            return t("qam.update.checking");
+        if (candidate && canInstall) {
+            switch (candidate.action) {
+                case "move_to_stable":
+                    return t("qam.update.moveToStableShort");
+                case "downgrade_to_stable":
+                    return t("qam.update.revertToStableShort");
+                default:
+                    return t("qam.update.apply");
+            }
+        }
+        if (upToDateCooldown)
+            return t("qam.update.upToDateButton");
+        return t("qam.update.checkForUpdates");
+    };
+    const onPrimaryAction = () => {
+        if (candidate && canInstall) {
+            handleApplyClick();
+        }
+        else {
+            void checkNow();
+        }
+    };
+    const unavailableText = candidate && !canInstall
+        ? (isLocalBuild && candidate.channel !== "stable"
+            ? t("qam.update.localBuildOnlyStable")
+            : t("qam.update.manualInstallUnavailable"))
+        : null;
+    const getSoftwareUpdatesDescription = () => {
+        if (candidate) {
+            const channelName = candidate.channel === "development"
+                ? t("qam.update.channelDevelopment")
+                : t("qam.update.channelStable");
+            const versionLine = pluginVersion
+                ? t("qam.update.versionArrow", { current: pluginVersion, next: candidate.version, channel: channelName })
+                : t("qam.update.newVersion", { version: candidate.version, channel: channelName });
+            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { children: versionLine }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })), unavailableText && (SP_JSX.jsx("div", { style: { color: statusColor("error") }, children: unavailableText }))] }));
+        }
+        if (checkResult?.status === "current" && checkResult.checked_at) {
+            const upToDateLine = t("qam.update.upToDateLastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${upToDateLine}` : upToDateLine;
+        }
+        if (checkResult?.checked_at) {
+            const checkedLine = t("qam.update.lastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${checkedLine}` : checkedLine;
+        }
+        return installedLabel || t("qam.update.neverChecked");
+    };
+    const errorHeading = checkResult?.status === "failed"
+        ? (checkTimedOut
+            ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+            : t("qam.update.checkFailed"))
+        : t("updater.installation.failedTitle");
+    const channelOptions = [
+        { data: "stable", label: t("qam.update.channelOptionStable") },
+        { data: "development", label: t("qam.update.channelOptionDevelopment") },
+    ];
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.update.softwareUpdates"), description: getSoftwareUpdatesDescription(), icon: candidate ? SP_JSX.jsx(FaExclamationTriangle, { style: { color: statusColor("warning") } }) : undefined, childrenContainerWidth: "fixed", children: SP_JSX.jsx(DFL.DialogButton, { onClick: onPrimaryAction, disabled: primaryDisabled, children: SP_JSX.jsx(ButtonLabel, { busy: primaryBusy, children: getPrimaryButtonText() }) }) }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorHeading }), SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.update.channelLabel"), description: updateChannel === "development"
+                            ? t("qam.update.receiveDevelopmentDescription")
+                            : t("qam.update.channelStableDescription"), rgOptions: channelOptions, selectedOption: updateChannel, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (option) => handleChannelChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: channelOptions.find((option) => option.data === updateChannel)?.label })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
 }
 
 const dropdownValueStyle = { whiteSpace: "normal" };
