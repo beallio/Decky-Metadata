@@ -57,11 +57,6 @@ impl GitHubReleaseClient {
         .await
     }
 
-    pub async fn list_run_artifacts(&self, run_id: u64) -> JsonResponse {
-        self.fetch_json(&format!("{WORKFLOW_RUNS_URL}/{run_id}/artifacts"))
-            .await
-    }
-
     pub async fn download_bytes(&self, url: &str, max_bytes: usize) -> Result<Response, String> {
         let headers = [("User-Agent", self.user_agent.as_str())];
         self.http

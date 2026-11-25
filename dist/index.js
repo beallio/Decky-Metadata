@@ -3239,6 +3239,7 @@ var qam$o = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "إعادة المحاولة",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -3935,6 +3936,7 @@ var qam$n = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Опитай отново",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -4633,6 +4635,7 @@ var qam$m = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Zkusit znovu",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -5329,6 +5332,7 @@ var qam$l = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Erneut versuchen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -6025,6 +6029,7 @@ var qam$k = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Δοκιμή ξανά",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -6721,11 +6726,12 @@ var qam$j = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Retry",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
-		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
-		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		installModalDescription: "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
 	}
 };
@@ -7418,6 +7424,7 @@ var qam$i = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Reintentar",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -8114,6 +8121,7 @@ var qam$h = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Yritä uudelleen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -8811,6 +8819,7 @@ var qam$g = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Réessayer",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -9508,6 +9517,7 @@ var qam$f = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Riprova",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -10203,6 +10213,7 @@ var qam$e = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "再試行",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -10899,6 +10910,7 @@ var qam$d = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "თავიდან ცდა",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -11594,6 +11606,7 @@ var qam$c = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "다시 시도",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -12290,6 +12303,7 @@ var qam$b = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Opnieuw proberen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -12988,6 +13002,7 @@ var qam$a = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Spróbuj ponownie",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -13685,6 +13700,7 @@ var qam$9 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tentar novamente",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -14382,6 +14398,7 @@ var qam$8 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tentar novamente",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -15079,6 +15096,7 @@ var qam$7 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Încearcă din nou",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -15777,6 +15795,7 @@ var qam$6 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Повторить",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -16473,6 +16492,7 @@ var qam$5 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Provo përsëri",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -17169,6 +17189,7 @@ var qam$4 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Försök igen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -17865,6 +17886,7 @@ var qam$3 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tekrar dene",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -18563,6 +18585,7 @@ var qam$2 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Повторити",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -19258,6 +19281,7 @@ var qam$1 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "重试",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -19953,6 +19977,7 @@ var qam = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "重試",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -35443,14 +35468,24 @@ function TestingInstallModal({ pr, closeModal }) {
                 action: "update",
                 updateTraceId: traceId,
             }).catch(() => undefined);
-            await invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId);
-            await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
-            toaster.toast({
-                title: t("updater.installation.startedTitle"),
-                body: t("updater.installation.startedBody", { version: prepared.version }),
-                duration: 3000,
-            });
+            // Close our verification dialog before invoking Decky Loader's own install
+            // confirmation modal so the two dialogs never stack or block each other.
             closeModal?.();
+            void invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId).then(async () => {
+                await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.startedTitle"),
+                    body: t("updater.installation.startedBody", { version: prepared.version }),
+                    duration: 3000,
+                });
+            }, async (caught) => {
+                await clearPendingUpdateInstall(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.failedTitle"),
+                    body: translateBackendError(caught),
+                    duration: 5000,
+                });
+            });
         }
         catch (caught) {
             if (recordedVersion) {
@@ -35460,7 +35495,11 @@ function TestingInstallModal({ pr, closeModal }) {
             setBusy(false);
         }
     };
-    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy ? t("qam.testing.installing") : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, onOK: () => void handleConfirm(), onCancel: () => {
+    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy
+            ? t("qam.testing.installing")
+            : error
+                ? t("qam.testing.retry")
+                : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, bHideCloseIcon: busy, onOK: () => handleConfirm(), onCancel: () => {
             if (!busy)
                 closeModal?.();
         }, onEscKeypress: () => {

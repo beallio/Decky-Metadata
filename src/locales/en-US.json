@@ -363,11 +363,12 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Retry",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
-      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
-      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "installModalDescription": "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Verifying build for PR #{{id}}...",
       "prepareFailed": "Failed to prepare pull request build."
     }
   },

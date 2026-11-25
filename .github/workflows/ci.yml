@@ -105,7 +105,15 @@ jobs:
             --channel dev \
             --emit-release-metadata
           cp "$DECKY_PACKAGE_DIR/Decky-Metadata-v${pr_version}.zip.sha256" "$DECKY_PACKAGE_DIR/Decky-Metadata.zip.sha256"
-          cp "$DECKY_PACKAGE_DIR/Decky-Metadata-v${pr_version}.manifest.json" "$DECKY_PACKAGE_DIR/Decky-Metadata.manifest.json"
+          python3 - "$DECKY_PACKAGE_DIR/Decky-Metadata-v${pr_version}.manifest.json" "$DECKY_PACKAGE_DIR/Decky-Metadata.manifest.json" "$PR_NUMBER" "$PR_HEAD_SHA" <<'PY'
+          import json, sys
+          from pathlib import Path
+          src, dst, pr_number, head_sha = sys.argv[1:5]
+          manifest = json.loads(Path(src).read_text(encoding="utf-8"))
+          manifest["prNumber"] = int(pr_number)
+          manifest["headSha"] = head_sha.lower()
+          Path(dst).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
           (cd "$DECKY_PACKAGE_DIR" && sha256sum -c Decky-Metadata.zip.sha256)
 
       - name: Upload PR testing artifact
@@ -123,3 +131,79 @@ jobs:
             ${{ runner.temp }}/pr-package/Decky-Metadata.zip.sha256
             ${{ runner.temp }}/pr-package/Decky-Metadata.manifest.json
           if-no-files-found: error
+
+  # Publish same-repo PR builds to the rolling `pr-builds` GitHub prerelease so
+  # the in-plugin Testing tab can download directly from GitHub Releases without
+  # relying on third-party artifact proxies. Fork PRs opted in with `test-build`
+  # are published by publish-pr-build.yml via workflow_run (read-only CI stays safe).
+  publish-pr-build:
+    needs: quality-gates
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    concurrency:
+      group: pr-builds-release
+      cancel-in-progress: false
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - name: Download PR testing artifact
+        uses: actions/download-artifact@v7
+        with:
+          name: decky-metadata-pr
+          path: ${{ runner.temp }}/pr-artifact
+
+      - name: Publish PR assets to rolling pr-builds prerelease
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ARTIFACT_DIR: ${{ runner.temp }}/pr-artifact
+        run: |
+          set -euo pipefail
+          cd "$ARTIFACT_DIR"
+          sha256sum -c Decky-Metadata.zip.sha256
+
+          zip_name="Decky-Metadata-pr-${PR_NUMBER}.zip"
+          sha_name="Decky-Metadata-pr-${PR_NUMBER}.zip.sha256"
+          manifest_name="Decky-Metadata-pr-${PR_NUMBER}.manifest.json"
+
+          cp Decky-Metadata.zip "$zip_name"
+          sha="$(sha256sum "$zip_name" | awk '{print $1}')"
+          printf '%s  %s\n' "$sha" "$zip_name" > "$sha_name"
+          python3 - Decky-Metadata.manifest.json "$manifest_name" "$PR_NUMBER" "$PR_HEAD_SHA" "$zip_name" "$sha" <<'PY'
+          import json, sys
+          from pathlib import Path
+          src, dst, pr_number, head_sha, asset_name, sha = sys.argv[1:7]
+          manifest = json.loads(Path(src).read_text(encoding="utf-8"))
+          if manifest.get("sha256", "").lower() != sha.lower():
+              raise SystemExit("Manifest SHA-256 does not match ZIP digest")
+          manifest["prNumber"] = int(pr_number)
+          manifest["headSha"] = head_sha.lower()
+          manifest["assetName"] = asset_name
+          Path(dst).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+          sha256sum -c "$sha_name"
+
+          notes="Automated pull request test builds for the Decky Metadata Settings -> Testing tab. Non-semver tag; ignored by stable and development update channels."
+          if ! gh release view pr-builds >/dev/null 2>&1; then
+            gh release create pr-builds "$zip_name" "$sha_name" "$manifest_name" \
+              --prerelease \
+              --target dev \
+              --title "PR test builds" \
+              --notes "$notes"
+          else
+            gh release upload pr-builds "$zip_name" "$sha_name" "$manifest_name" --clobber
+          fi
+
+          # Prune assets belonging to closed PRs so pr-builds stays tidy.
+          open_prs="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '[.[].number | tostring] | join(" ")')"
+          for asset in $(gh release view pr-builds --json assets --jq '.assets[].name'); do
+            if [[ "$asset" =~ ^Decky-Metadata-pr-([0-9]+)\.(zip|zip\.sha256|manifest\.json)$ ]]; then
+              num="${BASH_REMATCH[1]}"
+              if [[ ! " $open_prs " =~ " $num " ]]; then
+                gh release delete-asset pr-builds "$asset" --yes || true
+              fi
+            fi
+          done

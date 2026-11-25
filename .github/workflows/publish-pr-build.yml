@@ -1,0 +1,129 @@
+# Mirrors opt-in `test-build` fork PR artifacts (and manually dispatched CI runs)
+# into the rolling `pr-builds` GitHub prerelease without exposing write permissions
+# to untrusted pull_request workflows.
+name: Publish PR Build
+
+on:
+  workflow_run:
+    workflows: ["CI"]
+    types: [completed]
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: "Passing CI workflow run ID to publish into pr-builds"
+        required: true
+        type: string
+
+concurrency:
+  group: pr-builds-release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  actions: read
+  pull-requests: read
+
+jobs:
+  publish:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download and publish verified PR build asset
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_id || github.event.workflow_run.id }}
+          ARTIFACT_DIR: ${{ runner.temp }}/pr-artifact
+        run: |
+          set -euo pipefail
+          if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "Invalid run_id: $RUN_ID" >&2
+            exit 1
+          fi
+
+          mkdir -p "$ARTIFACT_DIR"
+          if ! gh run download "$RUN_ID" --name decky-metadata-pr --dir "$ARTIFACT_DIR"; then
+            echo "Run $RUN_ID has no decky-metadata-pr artifact; nothing to publish."
+            exit 0
+          fi
+
+          cd "$ARTIFACT_DIR"
+          sha256sum -c Decky-Metadata.zip.sha256
+
+          run_head_sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" --jq '.head_sha')"
+          pr_number="$(python3 - Decky-Metadata.manifest.json <<'PY'
+          import json, re, sys
+          from pathlib import Path
+          manifest = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          if isinstance(manifest.get("prNumber"), int) and manifest["prNumber"] > 0:
+              print(manifest["prNumber"])
+          else:
+              m = re.search(r"-dev\.pr(\d+)\.", manifest.get("version", ""))
+              if not m:
+                  raise SystemExit("Manifest does not contain a PR number")
+              print(m.group(1))
+          PY
+          )"
+
+          pr_json="$RUNNER_TEMP/pr.json"
+          gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" > "$pr_json"
+          python3 - "$pr_json" "$GITHUB_REPOSITORY" "$run_head_sha" <<'PY'
+          import json, sys
+          from pathlib import Path
+          pr = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          repo = sys.argv[2].lower()
+          run_sha = sys.argv[3].lower()
+          if pr.get("state") != "open":
+              raise SystemExit("PR is no longer open; skipping publish")
+          head_sha = (pr.get("head") or {}).get("sha", "").lower()
+          if head_sha != run_sha:
+              raise SystemExit(f"PR head SHA {head_sha} does not match run SHA {run_sha}")
+          head_repo = ((pr.get("head") or {}).get("repo") or {}).get("full_name", "").lower()
+          labels = {str(item.get("name", "")).lower() for item in pr.get("labels") or []}
+          if head_repo != repo and "test-build" not in labels:
+              raise SystemExit("PR is neither same-repo nor labeled test-build")
+          PY
+
+          zip_name="Decky-Metadata-pr-${pr_number}.zip"
+          sha_name="Decky-Metadata-pr-${pr_number}.zip.sha256"
+          manifest_name="Decky-Metadata-pr-${pr_number}.manifest.json"
+
+          cp Decky-Metadata.zip "$zip_name"
+          sha="$(sha256sum "$zip_name" | awk '{print $1}')"
+          printf '%s  %s\n' "$sha" "$zip_name" > "$sha_name"
+          python3 - Decky-Metadata.manifest.json "$manifest_name" "$pr_number" "$run_head_sha" "$zip_name" "$sha" <<'PY'
+          import json, sys
+          from pathlib import Path
+          src, dst, pr_number, head_sha, asset_name, sha = sys.argv[1:7]
+          manifest = json.loads(Path(src).read_text(encoding="utf-8"))
+          if manifest.get("sha256", "").lower() != sha.lower():
+              raise SystemExit("Manifest SHA-256 does not match ZIP digest")
+          manifest["prNumber"] = int(pr_number)
+          manifest["headSha"] = head_sha.lower()
+          manifest["assetName"] = asset_name
+          Path(dst).write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+          PY
+          sha256sum -c "$sha_name"
+
+          notes="Automated pull request test builds for the Decky Metadata Settings -> Testing tab. Non-semver tag; ignored by stable and development update channels."
+          if ! gh release view pr-builds >/dev/null 2>&1; then
+            gh release create pr-builds "$zip_name" "$sha_name" "$manifest_name" \
+              --prerelease \
+              --target dev \
+              --title "PR test builds" \
+              --notes "$notes"
+          else
+            gh release upload pr-builds "$zip_name" "$sha_name" "$manifest_name" --clobber
+          fi
+
+          open_prs="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '[.[].number | tostring] | join(" ")')"
+          for asset in $(gh release view pr-builds --json assets --jq '.assets[].name'); do
+            if [[ "$asset" =~ ^Decky-Metadata-pr-([0-9]+)\.(zip|zip\.sha256|manifest\.json)$ ]]; then
+              num="${BASH_REMATCH[1]}"
+              if [[ ! " $open_prs " =~ " $num " ]]; then
+                gh release delete-asset pr-builds "$asset" --yes || true
+              fi
+            fi
+          done
