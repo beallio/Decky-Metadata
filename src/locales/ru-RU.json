@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Открыть настройки", "action": { "refresh": "Обновить", "clear": "Очистить", "view": "Просмотр", "check": "Проверить" } },
+  "settings": {
+    "open": "Открыть настройки",
+    "action": {
+      "refresh": "Обновить",
+      "clear": "Очистить",
+      "view": "Просмотр",
+      "check": "Проверить"
+    }
+  },
   "common": {
     "hours_one": "{{value}} час",
     "hours_few": "{{value}} часа",
@@ -54,7 +62,8 @@
     "shortcut_name_changed": "Название ярлыка изменилось до переименования.",
     "shortcut_name_api_unavailable": "API названий ярлыков Steam недоступен",
     "shortcut_name_api_failed": "Сбой API названий ярлыков Steam",
-    "shortcut_name_timeout": "Steam не подтвердил новое название ярлыка вовремя."
+    "shortcut_name_timeout": "Steam не подтвердил новое название ярлыка вовремя.",
+    "invalid_steam_app_id": "Эта игра не является корректной игрой Steam."
   },
   "updater": {
     "check": {
@@ -115,7 +124,7 @@
       "showTimesLabel": "Показывать время HowLongToBeat",
       "showTimesDescription": "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
       "storeLabel": "Магазин",
-      "storeDescription": "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam.",
+      "storeDescription": "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam. Всегда используется автоматический подбор; выбор HLTB для отдельной игры действует только на страницах игр в библиотеке.",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стили «Clean» предназначены для работы с темой CSS Loader «Clean Gameview»",
       "styleDefault": "По умолчанию",
@@ -584,7 +593,8 @@
     },
     "steamTextLanguage": "Язык текста Steam: {{language}}",
     "fetchSteamText": "Загрузить текст Steam на языке {{language}}",
-    "steamTextUnavailable": "Steam не вернул текст для этой игры."
+    "steamTextUnavailable": "Steam не вернул текст для этой игры.",
+    "hltbDisabledNotice": "Время HowLongToBeat сейчас отключено в настройках."
   },
   "matchPicker": {
     "help": "Найдите игру в Steam, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет. Оно не переименовывает ярлык и не заменяет ваш арт.",

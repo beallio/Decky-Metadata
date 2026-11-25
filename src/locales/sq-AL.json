@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Hap cilësimet", "action": { "refresh": "Rifresko", "clear": "Pastro", "view": "Shiko", "check": "Kontrollo" } },
+  "settings": {
+    "open": "Hap cilësimet",
+    "action": {
+      "refresh": "Rifresko",
+      "clear": "Pastro",
+      "view": "Shiko",
+      "check": "Kontrollo"
+    }
+  },
   "common": {
     "hours_one": "{{value}} orë",
     "hours_other": "{{value}} orë",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Emri i shkurtores ndryshoi përpara riemërtimit.",
     "shortcut_name_api_unavailable": "API i emrave të shkurtoreve të Steam nuk është i disponueshëm",
     "shortcut_name_api_failed": "API i emrave të shkurtoreve të Steam dështoi",
-    "shortcut_name_timeout": "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë."
+    "shortcut_name_timeout": "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë.",
+    "invalid_steam_app_id": "Kjo lojë nuk është një lojë e vlefshme e Steam."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Shfaq kohët e HowLongToBeat",
       "showTimesDescription": "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
       "storeLabel": "Dyqani",
-      "storeDescription": "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam.",
+      "storeDescription": "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam. Përdor gjithmonë përputhjen automatike; zgjedhjet e HLTB për secilën lojë zbatohen vetëm në faqet e lojërave në Bibliotekë.",
       "styleLabel": "Stili i HLTB",
       "styleDescription": "Stilet „Clean“ janë menduar për temën „Clean Gameview“ të CSS Loader",
       "styleDefault": "Parazgjedhur",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Gjuha e tekstit të Steam: {{language}}",
     "fetchSteamText": "Ngarko tekstin e Steam në {{language}}",
-    "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë."
+    "steamTextUnavailable": "Steam nuk ktheu tekst për këtë lojë.",
+    "hltbDisabledNotice": "Kohët e HowLongToBeat janë aktualisht të çaktivizuara në Cilësime."
   },
   "matchPicker": {
     "help": "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",

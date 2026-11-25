@@ -24,7 +24,9 @@ unless **Hide "Details"** is on.
 
 The **Store** switch in the **HLTB times** tab turns the
 **How Long To Beat** box on. It is on by default, and you can change it only
-while **Show HowLongToBeat times** is on. The row also holds a ProtonDB box,
+while **Show HowLongToBeat times** is on. Store pages always use automatic
+matching; per-game HLTB choices saved in **Edit Metadata...** apply only on
+Library game pages. The row also holds a ProtonDB box,
 which the ProtonDB **Store** switch controls. If only one box has data, it
 fills the row. If both switches are off, no row appears.
 
@@ -47,9 +49,11 @@ row](protondb-badges.md#enable-the-store-row).
 
 ## How a game is matched
 
-- **Steam games** are matched by their Steam App ID. HowLongToBeat lists the
-  Steam game on its own page, so a different edition is not used by mistake.
-  If HowLongToBeat does not list the Steam App ID, no times appear.
+- **Steam games** are matched by their Steam App ID by default. HowLongToBeat
+  lists the Steam game on its own page, so a different edition is not used by
+  mistake. If HowLongToBeat does not list the Steam App ID or matches the wrong
+  entry, you can choose the game manually from **Edit Metadata...** while
+  **Show HowLongToBeat times** is enabled.
 - **Non-Steam games** use the Steam match saved on **Game Match**. If there
   is no Steam match, HowLongToBeat searches for the game's name. If it finds
   only one game, Decky Metadata uses that game. HowLongToBeat also searches
@@ -59,9 +63,11 @@ row](protondb-badges.md#enable-the-store-row).
   when you save a Steam match or an IGN result, or select **Clear cache**.
   You can also choose a HowLongToBeat game after you remove the metadata.
 
-### Choose the HLTB game for a non-Steam game
+### Choose the HLTB game for a game
 
-1. Open the game's menu and select **Edit Metadata...**.
+1. Open the game's menu and select **Edit Metadata...**. For Steam games, this
+   menu entry appears when **Show HowLongToBeat times** is on and opens directly
+   to **HowLongToBeat**.
 2. On **HowLongToBeat**, the number field and **Current game** show the
    game whose times the game page shows, and whether you chose it or it was
    found automatically. To choose another game, either:
@@ -74,6 +80,9 @@ row](protondb-badges.md#enable-the-store-row).
 3. Select **Save** to store the chosen game. Nothing is saved until then.
 4. To go back to automatic matching, empty the number field, select
    **Apply HLTB game**, then select **Save**.
+
+Per-game HLTB choices apply on Library game pages. Steam Store pages always use
+automatic matching.
 
 ## How fresh the times are
 

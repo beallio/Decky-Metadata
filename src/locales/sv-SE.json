@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Öppna inställningar", "action": { "refresh": "Uppdatera", "clear": "Rensa", "view": "Visa", "check": "Kontrollera" } },
+  "settings": {
+    "open": "Öppna inställningar",
+    "action": {
+      "refresh": "Uppdatera",
+      "clear": "Rensa",
+      "view": "Visa",
+      "check": "Kontrollera"
+    }
+  },
   "common": {
     "hours_one": "{{value}} timme",
     "hours_other": "{{value}} timmar",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Genvägens namn ändrades före namnbytet.",
     "shortcut_name_api_unavailable": "Steams API för genvägsnamn är inte tillgängligt",
     "shortcut_name_api_failed": "Steams API för genvägsnamn misslyckades",
-    "shortcut_name_timeout": "Steam bekräftade inte det nya genvägsnamnet i tid."
+    "shortcut_name_timeout": "Steam bekräftade inte det nya genvägsnamnet i tid.",
+    "invalid_steam_app_id": "Det här spelet är inte ett giltigt Steam-spel."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Visa HowLongToBeat-tider",
       "showTimesDescription": "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
       "storeLabel": "Butik",
-      "storeDescription": "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken.",
+      "storeDescription": "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken. Använder alltid automatisk matchning; HLTB-val per spel gäller endast på spelsidor i biblioteket.",
       "styleLabel": "HLTB-stil",
       "styleDescription": "Stilarna ”Clean” är avsedda att fungera med CSS Loader-temat ”Clean Gameview”",
       "styleDefault": "Standard",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Språk för Steam-text: {{language}}",
     "fetchSteamText": "Läs in Steam-text på {{language}}",
-    "steamTextUnavailable": "Steam returnerade ingen text för det här spelet."
+    "steamTextUnavailable": "Steam returnerade ingen text för det här spelet.",
+    "hltbDisabledNotice": "HowLongToBeat-tider är för närvarande avstängda i Inställningar."
   },
   "matchPicker": {
     "help": "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "فتح الإعدادات", "action": { "refresh": "تحديث", "clear": "مسح", "view": "عرض", "check": "تحقق" } },
+  "settings": {
+    "open": "فتح الإعدادات",
+    "action": {
+      "refresh": "تحديث",
+      "clear": "مسح",
+      "view": "عرض",
+      "check": "تحقق"
+    }
+  },
   "common": {
     "hours_zero": "{{value}} ساعة",
     "hours_one": "{{value}} ساعة",
@@ -56,7 +64,8 @@
     "shortcut_name_changed": "تغيّر اسم الاختصار قبل إعادة التسمية.",
     "shortcut_name_api_unavailable": "واجهة أسماء اختصارات Steam غير متاحة",
     "shortcut_name_api_failed": "فشلت واجهة أسماء اختصارات Steam",
-    "shortcut_name_timeout": "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب."
+    "shortcut_name_timeout": "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+    "invalid_steam_app_id": "هذه اللعبة ليست لعبة Steam صالحة."
   },
   "updater": {
     "check": {
@@ -117,7 +126,7 @@
       "showTimesLabel": "إظهار أوقات HowLongToBeat",
       "showTimesDescription": "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
       "storeLabel": "المتجر",
-      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam.",
+      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
       "styleLabel": "نمط HLTB",
       "styleDescription": "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
       "styleDefault": "افتراضي",
@@ -586,7 +595,8 @@
     },
     "steamTextLanguage": "لغة نص Steam: {{language}}",
     "fetchSteamText": "تحميل نص Steam باللغة {{language}}",
-    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
+    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة.",
+    "hltbDisabledNotice": "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
   },
   "matchPicker": {
     "help": "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",

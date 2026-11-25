@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "პარამეტრების გახსნა", "action": { "refresh": "განახლება", "clear": "გასუფთავება", "view": "ნახვა", "check": "შემოწმება" } },
+  "settings": {
+    "open": "პარამეტრების გახსნა",
+    "action": {
+      "refresh": "განახლება",
+      "clear": "გასუფთავება",
+      "view": "ნახვა",
+      "check": "შემოწმება"
+    }
+  },
   "common": {
     "hours_one": "{{value}} საათი",
     "hours_other": "{{value}} საათი",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "მალსახმობის სახელი გადარქმევამდე შეიცვალა.",
     "shortcut_name_api_unavailable": "Steam-ის მალსახმობის სახელის API მიუწვდომელია",
     "shortcut_name_api_failed": "Steam-ის მალსახმობის სახელის API ვერ შესრულდა",
-    "shortcut_name_timeout": "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი."
+    "shortcut_name_timeout": "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი.",
+    "invalid_steam_app_id": "ეს თამაში არ არის სწორი Steam თამაში."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "HowLongToBeat-ის დროების ჩვენება",
       "showTimesDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
       "storeLabel": "მაღაზია",
-      "storeDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში.",
+      "storeDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
       "styleLabel": "HLTB-ის სტილი",
       "styleDescription": "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
       "styleDefault": "ნაგულისხმევი",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Steam-ის ტექსტის ენა: {{language}}",
     "fetchSteamText": "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
-    "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
+    "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა.",
+    "hltbDisabledNotice": "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში."
   },
   "matchPicker": {
     "help": "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",

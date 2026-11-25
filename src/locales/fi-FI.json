@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Avaa asetukset", "action": { "refresh": "Päivitä", "clear": "Tyhjennä", "view": "Näytä", "check": "Tarkista" } },
+  "settings": {
+    "open": "Avaa asetukset",
+    "action": {
+      "refresh": "Päivitä",
+      "clear": "Tyhjennä",
+      "view": "Näytä",
+      "check": "Tarkista"
+    }
+  },
   "common": {
     "hours_one": "{{value}} tunti",
     "hours_other": "{{value}} tuntia",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Pikakuvakkeen nimi muuttui ennen uudelleennimeämistä.",
     "shortcut_name_api_unavailable": "Steamin pikakuvakkeiden nimirajapinta ei ole käytettävissä",
     "shortcut_name_api_failed": "Steamin pikakuvakkeiden nimirajapinta epäonnistui",
-    "shortcut_name_timeout": "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa."
+    "shortcut_name_timeout": "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa.",
+    "invalid_steam_app_id": "Tämä peli ei ole kelvollinen Steam-peli."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Näytä HowLongToBeat-ajat",
       "showTimesDescription": "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
       "storeLabel": "Kauppa",
-      "storeDescription": "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla.",
+      "storeDescription": "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
       "styleLabel": "HLTB-tyyli",
       "styleDescription": "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
       "styleDefault": "Oletus",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Steamin tekstin kieli: {{language}}",
     "fetchSteamText": "Lataa Steamin teksti kielellä {{language}}",
-    "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille."
+    "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille.",
+    "hltbDisabledNotice": "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa."
   },
   "matchPicker": {
     "help": "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",

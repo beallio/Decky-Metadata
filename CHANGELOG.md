@@ -4,6 +4,16 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Choose a HowLongToBeat game for Steam games.** When **Show HowLongToBeat
+  times** is enabled, Steam games now show **Edit Metadata...** in their menu
+  and open directly to the **HowLongToBeat** tab, so you can search for or pin
+  the right HowLongToBeat entry when automatic matching misses (for example,
+  *Gothic 1 - classic*). Per-game HLTB choices are stored separately from
+  non-Steam metadata and apply only to Library game pages; Steam Store pages
+  continue to use automatic matching.
+
 ## [0.6.7] - 2026-11-24
 
 Add a full-screen Settings page and support the November 2026 Steam Beta

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Ouvrir les paramètres", "action": { "refresh": "Actualiser", "clear": "Effacer", "view": "Voir", "check": "Vérifier" } },
+  "settings": {
+    "open": "Ouvrir les paramètres",
+    "action": {
+      "refresh": "Actualiser",
+      "clear": "Effacer",
+      "view": "Voir",
+      "check": "Vérifier"
+    }
+  },
   "common": {
     "hours_one": "{{value}} heure",
     "hours_many": "{{value}} heures",
@@ -53,7 +61,8 @@
     "shortcut_name_changed": "Le nom du raccourci a changé avant le renommage.",
     "shortcut_name_api_unavailable": "L'API de nom de raccourci de Steam est indisponible",
     "shortcut_name_api_failed": "L'API de nom de raccourci de Steam a échoué",
-    "shortcut_name_timeout": "Steam n'a pas confirmé le nouveau nom du raccourci à temps."
+    "shortcut_name_timeout": "Steam n'a pas confirmé le nouveau nom du raccourci à temps.",
+    "invalid_steam_app_id": "Ce jeu n'est pas un jeu Steam valide."
   },
   "updater": {
     "check": {
@@ -114,7 +123,7 @@
       "showTimesLabel": "Afficher les temps HowLongToBeat",
       "showTimesDescription": "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
       "storeLabel": "Boutique",
-      "storeDescription": "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
+      "storeDescription": "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam. Utilise toujours la correspondance automatique ; les choix HLTB par jeu ne s'appliquent qu'aux pages de jeu de la Bibliothèque.",
       "styleLabel": "Style HLTB",
       "styleDescription": "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
       "styleDefault": "Par défaut",
@@ -583,7 +592,8 @@
     },
     "steamTextLanguage": "Langue du texte Steam : {{language}}",
     "fetchSteamText": "Charger le texte de Steam en {{language}}",
-    "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu."
+    "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu.",
+    "hltbDisabledNotice": "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres."
   },
   "matchPicker": {
     "help": "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",

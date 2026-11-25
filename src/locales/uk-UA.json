@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Відкрити налаштування", "action": { "refresh": "Оновити", "clear": "Очистити", "view": "Переглянути", "check": "Перевірити" } },
+  "settings": {
+    "open": "Відкрити налаштування",
+    "action": {
+      "refresh": "Оновити",
+      "clear": "Очистити",
+      "view": "Переглянути",
+      "check": "Перевірити"
+    }
+  },
   "common": {
     "hours_one": "{{value}} година",
     "hours_few": "{{value}} години",
@@ -54,7 +62,8 @@
     "shortcut_name_changed": "Назва ярлика змінилася до перейменування.",
     "shortcut_name_api_unavailable": "API назв ярликів Steam недоступний",
     "shortcut_name_api_failed": "Збій API назв ярликів Steam",
-    "shortcut_name_timeout": "Steam не підтвердив нову назву ярлика вчасно."
+    "shortcut_name_timeout": "Steam не підтвердив нову назву ярлика вчасно.",
+    "invalid_steam_app_id": "Ця гра не є дійсною грою Steam."
   },
   "updater": {
     "check": {
@@ -115,7 +124,7 @@
       "showTimesLabel": "Показувати час HowLongToBeat",
       "showTimesDescription": "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
       "storeLabel": "Крамниця",
-      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam.",
+      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
       "styleDefault": "За замовчуванням",
@@ -584,7 +593,8 @@
     },
     "steamTextLanguage": "Мова тексту Steam: {{language}}",
     "fetchSteamText": "Завантажити текст Steam мовою {{language}}",
-    "steamTextUnavailable": "Steam не повернув текст для цієї гри."
+    "steamTextUnavailable": "Steam не повернув текст для цієї гри.",
+    "hltbDisabledNotice": "Час HowLongToBeat зараз вимкнено в налаштуваннях."
   },
   "matchPicker": {
     "help": "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",

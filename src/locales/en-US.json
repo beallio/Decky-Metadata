@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Open settings", "action": { "refresh": "Refresh", "clear": "Clear", "view": "View", "check": "Check" } },
+  "settings": {
+    "open": "Open settings",
+    "action": {
+      "refresh": "Refresh",
+      "clear": "Clear",
+      "view": "View",
+      "check": "Check"
+    }
+  },
   "common": {
     "hours_one": "{{value}} hour",
     "hours_other": "{{value}} hours",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "The shortcut name changed before the rename.",
     "shortcut_name_api_unavailable": "Steam shortcut name API is unavailable",
     "shortcut_name_api_failed": "Steam shortcut name API failed",
-    "shortcut_name_timeout": "Steam did not confirm the new shortcut name in time."
+    "shortcut_name_timeout": "Steam did not confirm the new shortcut name in time.",
+    "invalid_steam_app_id": "This game is not a valid Steam game."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Show HowLongToBeat times",
       "showTimesDescription": "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
       "storeLabel": "Store",
-      "storeDescription": "Show HowLongToBeat times in an info row on Steam Store game pages.",
+      "storeDescription": "Show HowLongToBeat times in an info row on Steam Store game pages. Always uses automatic matching; per-game HLTB choices apply only on Library game pages.",
       "styleLabel": "HLTB Style",
       "styleDescription": "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
       "styleDefault": "Default",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Steam text language: {{language}}",
     "fetchSteamText": "Load Steam text in {{language}}",
-    "steamTextUnavailable": "Steam did not return text for this game."
+    "steamTextUnavailable": "Steam did not return text for this game.",
+    "hltbDisabledNotice": "HowLongToBeat times are currently turned off in Settings."
   },
   "matchPicker": {
     "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",

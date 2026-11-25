@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Отваряне на настройките", "action": { "refresh": "Обнови", "clear": "Изчисти", "view": "Преглед", "check": "Провери" } },
+  "settings": {
+    "open": "Отваряне на настройките",
+    "action": {
+      "refresh": "Обнови",
+      "clear": "Изчисти",
+      "view": "Преглед",
+      "check": "Провери"
+    }
+  },
   "common": {
     "hours_one": "{{value}} час",
     "hours_other": "{{value}} часа",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Името на прекия път се промени преди преименуването.",
     "shortcut_name_api_unavailable": "API на Steam за имена на преки пътища не е достъпен",
     "shortcut_name_api_failed": "API на Steam за имена на преки пътища върна грешка",
-    "shortcut_name_timeout": "Steam не потвърди новото име на прекия път навреме."
+    "shortcut_name_timeout": "Steam не потвърди новото име на прекия път навреме.",
+    "invalid_steam_app_id": "Тази игра не е валидна Steam игра."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Показване на времената от HowLongToBeat",
       "showTimesDescription": "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
       "storeLabel": "Магазин",
-      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam.",
+      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam. Винаги използва автоматично съвпадение; изборът на HLTB за отделна игра важи само за страниците на игрите в библиотеката.",
       "styleLabel": "Стил на HLTB",
       "styleDescription": "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
       "styleDefault": "По подразбиране",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Език на текста в Steam: {{language}}",
     "fetchSteamText": "Зареждане на текст от Steam на {{language}}",
-    "steamTextUnavailable": "Steam не върна текст за тази игра."
+    "steamTextUnavailable": "Steam не върна текст за тази игра.",
+    "hltbDisabledNotice": "Времената от HowLongToBeat в момента са изключени в Настройки."
   },
   "matchPicker": {
     "help": "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",

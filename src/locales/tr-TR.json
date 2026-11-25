@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Ayarları aç", "action": { "refresh": "Yenile", "clear": "Temizle", "view": "Görüntüle", "check": "Kontrol et" } },
+  "settings": {
+    "open": "Ayarları aç",
+    "action": {
+      "refresh": "Yenile",
+      "clear": "Temizle",
+      "view": "Görüntüle",
+      "check": "Kontrol et"
+    }
+  },
   "common": {
     "hours_one": "{{value}} saat",
     "hours_other": "{{value}} saat",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Kısayol adı, yeniden adlandırmadan önce değişti.",
     "shortcut_name_api_unavailable": "Steam kısayol adı API'si kullanılamıyor",
     "shortcut_name_api_failed": "Steam kısayol adı API'si başarısız oldu",
-    "shortcut_name_timeout": "Steam yeni kısayol adını zamanında onaylamadı."
+    "shortcut_name_timeout": "Steam yeni kısayol adını zamanında onaylamadı.",
+    "invalid_steam_app_id": "Bu oyun geçerli bir Steam oyunu değil."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "HowLongToBeat sürelerini göster",
       "showTimesDescription": "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
       "storeLabel": "Mağaza",
-      "storeDescription": "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir.",
+      "storeDescription": "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir. Her zaman otomatik eşleştirme kullanır; oyun bazlı HLTB seçimleri yalnızca Kütüphane oyun sayfalarında geçerlidir.",
       "styleLabel": "HLTB tarzı",
       "styleDescription": "\"Clean\" tarzları, CSS Loader teması \"Clean Gameview\" ile kullanılmak üzere tasarlanmıştır",
       "styleDefault": "Varsayılan",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Steam metin dili: {{language}}",
     "fetchSteamText": "Steam metnini {{language}} dilinde yükle",
-    "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
+    "steamTextUnavailable": "Steam bu oyun için metin döndürmedi.",
+    "hltbDisabledNotice": "HowLongToBeat süreleri şu anda Ayarlar'da kapalı."
   },
   "matchPicker": {
     "help": "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",

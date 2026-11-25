@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Abrir ajustes", "action": { "refresh": "Actualizar", "clear": "Borrar", "view": "Ver", "check": "Comprobar" } },
+  "settings": {
+    "open": "Abrir ajustes",
+    "action": {
+      "refresh": "Actualizar",
+      "clear": "Borrar",
+      "view": "Ver",
+      "check": "Comprobar"
+    }
+  },
   "common": {
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} horas",
@@ -53,7 +61,8 @@
     "shortcut_name_changed": "El nombre del acceso directo cambió antes de renombrarlo.",
     "shortcut_name_api_unavailable": "La API de nombres de accesos directos de Steam no está disponible",
     "shortcut_name_api_failed": "La API de nombres de accesos directos de Steam ha fallado",
-    "shortcut_name_timeout": "Steam no confirmó el nuevo nombre del acceso directo a tiempo."
+    "shortcut_name_timeout": "Steam no confirmó el nuevo nombre del acceso directo a tiempo.",
+    "invalid_steam_app_id": "Este juego no es un juego de Steam válido."
   },
   "updater": {
     "check": {
@@ -114,7 +123,7 @@
       "showTimesLabel": "Mostrar tiempos de HowLongToBeat",
       "showTimesDescription": "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
       "storeLabel": "Tienda",
-      "storeDescription": "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam.",
+      "storeDescription": "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam. Siempre usa coincidencia automática; las elecciones de HLTB por juego solo se aplican en las páginas de juego de la Biblioteca.",
       "styleLabel": "Estilo de HLTB",
       "styleDescription": "Los estilos «Clean» están pensados para funcionar con el tema «Clean Gameview» de CSS Loader",
       "styleDefault": "Predeterminado",
@@ -583,7 +592,8 @@
     },
     "steamTextLanguage": "Idioma del texto de Steam: {{language}}",
     "fetchSteamText": "Cargar el texto de Steam en {{language}}",
-    "steamTextUnavailable": "Steam no devolvió texto para este juego."
+    "steamTextUnavailable": "Steam no devolvió texto para este juego.",
+    "hltbDisabledNotice": "Los tiempos de HowLongToBeat están desactivados actualmente en Ajustes."
   },
   "matchPicker": {
     "help": "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Otwórz ustawienia", "action": { "refresh": "Odśwież", "clear": "Wyczyść", "view": "Wyświetl", "check": "Sprawdź" } },
+  "settings": {
+    "open": "Otwórz ustawienia",
+    "action": {
+      "refresh": "Odśwież",
+      "clear": "Wyczyść",
+      "view": "Wyświetl",
+      "check": "Sprawdź"
+    }
+  },
   "common": {
     "hours_one": "{{value}} godzina",
     "hours_few": "{{value}} godziny",
@@ -54,7 +62,8 @@
     "shortcut_name_changed": "Nazwa skrótu zmieniła się przed aktualizacją.",
     "shortcut_name_api_unavailable": "Interfejs API nazw skrótów Steam jest niedostępny",
     "shortcut_name_api_failed": "Błąd interfejsu API nazw skrótów Steam",
-    "shortcut_name_timeout": "Steam nie potwierdził na czas nowej nazwy skrótu."
+    "shortcut_name_timeout": "Steam nie potwierdził na czas nowej nazwy skrótu.",
+    "invalid_steam_app_id": "Ta gra nie jest prawidłową grą Steam."
   },
   "updater": {
     "check": {
@@ -115,7 +124,7 @@
       "showTimesLabel": "Pokazuj czasy HowLongToBeat",
       "showTimesDescription": "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
       "storeLabel": "Sklep",
-      "storeDescription": "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam.",
+      "storeDescription": "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam. Zawsze używa automatycznego dopasowania; wybory HLTB dla poszczególnych gier działają tylko na stronach gier w Bibliotece.",
       "styleLabel": "Styl HLTB",
       "styleDescription": "Style „Clean” są przeznaczone do współpracy z motywem CSS Loader „Clean Gameview”",
       "styleDefault": "Domyślny",
@@ -584,7 +593,8 @@
     },
     "steamTextLanguage": "Język tekstu Steam: {{language}}",
     "fetchSteamText": "Wczytaj tekst ze Steam w języku: {{language}}",
-    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
+    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry.",
+    "hltbDisabledNotice": "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach."
   },
   "matchPicker": {
     "help": "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",

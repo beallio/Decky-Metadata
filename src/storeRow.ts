@@ -677,7 +677,7 @@ export const installStoreInfoRow = (): (() => void) => {
     if (title === "") return null;
     const inputs: HltbInputs = { steam: target.steamAppId, title, pinned: null };
     const view = hltbStore.view(target.steamAppId, inputs);
-    if (view.needsFetch) hltbStore.request(target.steamAppId, false, inputs);
+    if (view.needsFetch) hltbStore.request(target.steamAppId, false, inputs, Date.now(), false);
     const entry = view.entry;
     if (!entry || entry.status !== "matched") return null;
     const rows = [

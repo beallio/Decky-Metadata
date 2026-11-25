@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Otevřít nastavení", "action": { "refresh": "Obnovit", "clear": "Vymazat", "view": "Zobrazit", "check": "Zkontrolovat" } },
+  "settings": {
+    "open": "Otevřít nastavení",
+    "action": {
+      "refresh": "Obnovit",
+      "clear": "Vymazat",
+      "view": "Zobrazit",
+      "check": "Zkontrolovat"
+    }
+  },
   "common": {
     "hours_one": "{{value}} hodina",
     "hours_few": "{{value}} hodiny",
@@ -54,7 +62,8 @@
     "shortcut_name_changed": "Název zástupce se před přejmenováním změnil.",
     "shortcut_name_api_unavailable": "API názvů zástupců Steam není dostupné",
     "shortcut_name_api_failed": "API názvů zástupců Steam selhalo",
-    "shortcut_name_timeout": "Steam včas nepotvrdil nový název zástupce."
+    "shortcut_name_timeout": "Steam včas nepotvrdil nový název zástupce.",
+    "invalid_steam_app_id": "Tato hra není platná hra ze služby Steam."
   },
   "updater": {
     "check": {
@@ -115,7 +124,7 @@
       "showTimesLabel": "Zobrazovat časy HowLongToBeat",
       "showTimesDescription": "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
       "storeLabel": "Obchod",
-      "storeDescription": "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam.",
+      "storeDescription": "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam. Vždy používá automatické párování; volby HLTB pro jednotlivé hry platí jen na stránkách her v knihovně.",
       "styleLabel": "Styl HLTB",
       "styleDescription": "Styly „Clean“ jsou určeny pro téma CSS Loaderu „Clean Gameview“",
       "styleDefault": "Výchozí",
@@ -584,7 +593,8 @@
     },
     "steamTextLanguage": "Jazyk textu ve Steamu: {{language}}",
     "fetchSteamText": "Načíst text ze Steamu v jazyce {{language}}",
-    "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
+    "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text.",
+    "hltbDisabledNotice": "Časy HowLongToBeat jsou v nastavení momentálně vypnuté."
   },
   "matchPicker": {
     "help": "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",

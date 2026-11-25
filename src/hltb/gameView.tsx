@@ -15,6 +15,7 @@ import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metada
 import { resolveSteamCssClass } from "../steam/nativeCssClasses";
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
+import { getSteamHltbOverride, subscribeSteamOverrides } from "./steamOverrides";
 import { hltbStore, type HltbInputs } from "./store";
 import type { HltbBlur, HltbSettings } from "./settings";
 import type { HltbEntry } from "../backend";
@@ -63,7 +64,9 @@ const positiveId = (value: unknown, maximum: number): number | null => {
 
 /** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
 export const hltbInputs = (appId: number, isShortcut: boolean, title: string): HltbInputs => {
-  if (!isShortcut) return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
+  if (!isShortcut) {
+    return { steam: positiveId(appId, 0x7fffffff), title, pinned: getSteamHltbOverride(appId) };
+  }
   const record = metadataCache[String(appId)];
   return {
     steam: positiveId(record?.steam_appid, 0x7fffffff),
@@ -125,7 +128,15 @@ export function useHltbMatch(appId: number, wanted: boolean): { active: boolean;
   const inputs = hltbInputs(appId, isShortcut, title);
   const active = wanted && title !== "";
   const view = hltbStore.view(appId, inputs);
-  useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
+  useEffect(() => {
+    const refresh = () => rerender((value) => value + 1);
+    const unsubscribeStore = hltbStore.subscribe(appId, refresh);
+    const unsubscribeOverrides = isShortcut ? undefined : subscribeSteamOverrides(refresh);
+    return () => {
+      unsubscribeStore();
+      unsubscribeOverrides?.();
+    };
+  }, [appId, isShortcut]);
   useEffect(() => {
     if (active && view.needsFetch) hltbStore.request(appId, isShortcut, inputs);
   });

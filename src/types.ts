@@ -134,6 +134,12 @@ export type CompatibilityDefaultScope = "steam" | "no-steam" | "metadata" | "all
 /** A per-shortcut policy: inherit, follow current Valve data, or use a fixed category. */
 export type DeckCompatibilityOverride = DeckCompatibilityCategory | "valve" | null;
 
+/** Per-game overrides for native Steam games, stored separately from non-Steam metadata. */
+export type SteamOverride = {
+  /** A HowLongToBeat game the user chose for this Steam game's Library page. */
+  hltb_game_id?: number | null;
+};
+
 export type MetadataData = {
   title: string;
   id: string | number;

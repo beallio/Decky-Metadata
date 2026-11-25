@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../backend", () => ({
+  getAllSteamOverrides: vi.fn(async () => ({})),
   getHltbSettings: vi.fn(), setHltbSettings: vi.fn(), clearHltbCache: vi.fn(), getHltbStats: vi.fn(),
   getProviderCache: vi.fn(),
 }));
@@ -8,6 +9,7 @@ vi.mock("../backend", () => ({
 import { PluginConflictMonitor } from "../pluginConflicts";
 import { HltbController } from "./controller";
 import { DEFAULT_HLTB_SETTINGS, type HltbSettings } from "./settings";
+import { getSteamHltbOverride } from "./steamOverrides";
 import { HltbStore } from "./store";
 
 const flush = async () => { for (let index = 0; index < 5; index += 1) await Promise.resolve(); };
@@ -157,5 +159,27 @@ describe("HltbController", () => {
     settings.clear.mockRejectedValueOnce(new Error("disk full"));
     expect(await controller.clearCache()).toBe(false);
     expect(controller.getSnapshot().cacheStatus).toBe("failed");
+  });
+
+  it("loads Steam HLTB overrides at mount and clears them on stop", async () => {
+    const { controller } = setup({ enabled: true });
+    const withOverrides = new HltbController(
+      { install: () => () => undefined },
+      new HltbStore(vi.fn()),
+      undefined,
+      async () => ({ version: 1 as const, protondb: { ratings: {}, name_ids: {} }, hltb: { entries: {} } }),
+      {
+        get: async () => ({ ...DEFAULT_HLTB_SETTINGS, enabled: true }),
+        set: async (next) => next,
+        clear: async () => ({ ok: true }),
+      },
+      async () => ({ "65540": { hltb_game_id: 4031 } }),
+    );
+    expect(controller).toBeDefined();
+    withOverrides.mount();
+    await flush();
+    expect(getSteamHltbOverride(65540)).toBe(4031);
+    withOverrides.stop();
+    expect(getSteamHltbOverride(65540)).toBeNull();
   });
 });

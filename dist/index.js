@@ -2927,7 +2927,8 @@ var backend$p = {
 	shortcut_name_changed: "تغيّر اسم الاختصار قبل إعادة التسمية.",
 	shortcut_name_api_unavailable: "واجهة أسماء اختصارات Steam غير متاحة",
 	shortcut_name_api_failed: "فشلت واجهة أسماء اختصارات Steam",
-	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب."
+	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+	invalid_steam_app_id: "هذه اللعبة ليست لعبة Steam صالحة."
 };
 var updater$o = {
 	check: {
@@ -2988,7 +2989,7 @@ var qam$o = {
 		showTimesLabel: "إظهار أوقات HowLongToBeat",
 		showTimesDescription: "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
 		storeLabel: "المتجر",
-		storeDescription: "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam.",
+		storeDescription: "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
 		styleLabel: "نمط HLTB",
 		styleDescription: "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
 		styleDefault: "افتراضي",
@@ -3457,7 +3458,8 @@ var editor$o = {
 	},
 	steamTextLanguage: "لغة نص Steam: {{language}}",
 	fetchSteamText: "تحميل نص Steam باللغة {{language}}",
-	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة."
+	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة.",
+	hltbDisabledNotice: "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
 };
 var matchPicker$o = {
 	help: "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
@@ -3571,7 +3573,8 @@ var backend$o = {
 	shortcut_name_changed: "Името на прекия път се промени преди преименуването.",
 	shortcut_name_api_unavailable: "API на Steam за имена на преки пътища не е достъпен",
 	shortcut_name_api_failed: "API на Steam за имена на преки пътища върна грешка",
-	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме."
+	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме.",
+	invalid_steam_app_id: "Тази игра не е валидна Steam игра."
 };
 var updater$n = {
 	check: {
@@ -3632,7 +3635,7 @@ var qam$n = {
 		showTimesLabel: "Показване на времената от HowLongToBeat",
 		showTimesDescription: "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
 		storeLabel: "Магазин",
-		storeDescription: "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam.",
+		storeDescription: "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam. Винаги използва автоматично съвпадение; изборът на HLTB за отделна игра важи само за страниците на игрите в библиотеката.",
 		styleLabel: "Стил на HLTB",
 		styleDescription: "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
 		styleDefault: "По подразбиране",
@@ -4101,7 +4104,8 @@ var editor$n = {
 	},
 	steamTextLanguage: "Език на текста в Steam: {{language}}",
 	fetchSteamText: "Зареждане на текст от Steam на {{language}}",
-	steamTextUnavailable: "Steam не върна текст за тази игра."
+	steamTextUnavailable: "Steam не върна текст за тази игра.",
+	hltbDisabledNotice: "Времената от HowLongToBeat в момента са изключени в Настройки."
 };
 var matchPicker$n = {
 	help: "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",
@@ -4217,7 +4221,8 @@ var backend$n = {
 	shortcut_name_changed: "Název zástupce se před přejmenováním změnil.",
 	shortcut_name_api_unavailable: "API názvů zástupců Steam není dostupné",
 	shortcut_name_api_failed: "API názvů zástupců Steam selhalo",
-	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce."
+	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce.",
+	invalid_steam_app_id: "Tato hra není platná hra ze služby Steam."
 };
 var updater$m = {
 	check: {
@@ -4278,7 +4283,7 @@ var qam$m = {
 		showTimesLabel: "Zobrazovat časy HowLongToBeat",
 		showTimesDescription: "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
 		storeLabel: "Obchod",
-		storeDescription: "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam.",
+		storeDescription: "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam. Vždy používá automatické párování; volby HLTB pro jednotlivé hry platí jen na stránkách her v knihovně.",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Styly „Clean“ jsou určeny pro téma CSS Loaderu „Clean Gameview“",
 		styleDefault: "Výchozí",
@@ -4747,7 +4752,8 @@ var editor$m = {
 	},
 	steamTextLanguage: "Jazyk textu ve Steamu: {{language}}",
 	fetchSteamText: "Načíst text ze Steamu v jazyce {{language}}",
-	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text."
+	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text.",
+	hltbDisabledNotice: "Časy HowLongToBeat jsou v nastavení momentálně vypnuté."
 };
 var matchPicker$m = {
 	help: "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
@@ -4861,7 +4867,8 @@ var backend$m = {
 	shortcut_name_changed: "Der Verknüpfungsname hat sich vor dem Umbenennen geändert.",
 	shortcut_name_api_unavailable: "API für Steam-Verknüpfungsnamen ist nicht verfügbar",
 	shortcut_name_api_failed: "API für Steam-Verknüpfungsnamen ist fehlgeschlagen",
-	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt."
+	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt.",
+	invalid_steam_app_id: "Dieses Spiel ist kein gültiges Steam-Spiel."
 };
 var updater$l = {
 	check: {
@@ -4922,7 +4929,7 @@ var qam$l = {
 		showTimesLabel: "HowLongToBeat-Zeiten anzeigen",
 		showTimesDescription: "Zeigt HowLongToBeat-Zeiten auf Spielseiten für Steam- und Nicht-Steam-Spiele.",
 		storeLabel: "Shop",
-		storeDescription: "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop.",
+		storeDescription: "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop. Verwendet immer die automatische Zuordnung; spielspezifische HLTB-Auswahlen gelten nur auf Spielseiten in der Bibliothek.",
 		styleLabel: "HLTB-Stil",
 		styleDescription: "Die „Clean“-Stile sind für das CSS-Loader-Theme „Clean Gameview“ gedacht",
 		styleDefault: "Standard",
@@ -5391,7 +5398,8 @@ var editor$l = {
 	},
 	steamTextLanguage: "Sprache des Steam-Texts: {{language}}",
 	fetchSteamText: "Steam-Text auf {{language}} laden",
-	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben."
+	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben.",
+	hltbDisabledNotice: "HowLongToBeat-Zeiten sind derzeit in den Einstellungen deaktiviert."
 };
 var matchPicker$l = {
 	help: "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
@@ -5505,7 +5513,8 @@ var backend$l = {
 	shortcut_name_changed: "Το όνομα της συντόμευσης άλλαξε πριν από τη μετονομασία.",
 	shortcut_name_api_unavailable: "Το API ονομάτων συντομεύσεων του Steam δεν είναι διαθέσιμο",
 	shortcut_name_api_failed: "Το API ονομάτων συντομεύσεων του Steam απέτυχε",
-	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως."
+	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως.",
+	invalid_steam_app_id: "Αυτό το παιχνίδι δεν είναι έγκυρο παιχνίδι Steam."
 };
 var updater$k = {
 	check: {
@@ -5566,7 +5575,7 @@ var qam$k = {
 		showTimesLabel: "Εμφάνιση χρόνων HowLongToBeat",
 		showTimesDescription: "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
 		storeLabel: "Κατάστημα",
-		storeDescription: "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam.",
+		storeDescription: "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
 		styleLabel: "Στυλ HLTB",
 		styleDescription: "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
 		styleDefault: "Προεπιλογή",
@@ -6035,7 +6044,8 @@ var editor$k = {
 	},
 	steamTextLanguage: "Γλώσσα κειμένου Steam: {{language}}",
 	fetchSteamText: "Φόρτωση κειμένου από το Steam στα {{language}}",
-	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
+	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι.",
+	hltbDisabledNotice: "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις."
 };
 var matchPicker$k = {
 	help: "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
@@ -6149,7 +6159,8 @@ var backend$k = {
 	shortcut_name_changed: "The shortcut name changed before the rename.",
 	shortcut_name_api_unavailable: "Steam shortcut name API is unavailable",
 	shortcut_name_api_failed: "Steam shortcut name API failed",
-	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time."
+	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time.",
+	invalid_steam_app_id: "This game is not a valid Steam game."
 };
 var updater$j = {
 	check: {
@@ -6210,7 +6221,7 @@ var qam$j = {
 		showTimesLabel: "Show HowLongToBeat times",
 		showTimesDescription: "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
 		storeLabel: "Store",
-		storeDescription: "Show HowLongToBeat times in an info row on Steam Store game pages.",
+		storeDescription: "Show HowLongToBeat times in an info row on Steam Store game pages. Always uses automatic matching; per-game HLTB choices apply only on Library game pages.",
 		styleLabel: "HLTB Style",
 		styleDescription: "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
 		styleDefault: "Default",
@@ -6679,7 +6690,8 @@ var editor$j = {
 	},
 	steamTextLanguage: "Steam text language: {{language}}",
 	fetchSteamText: "Load Steam text in {{language}}",
-	steamTextUnavailable: "Steam did not return text for this game."
+	steamTextUnavailable: "Steam did not return text for this game.",
+	hltbDisabledNotice: "HowLongToBeat times are currently turned off in Settings."
 };
 var matchPicker$j = {
 	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
@@ -6794,7 +6806,8 @@ var backend$j = {
 	shortcut_name_changed: "El nombre del acceso directo cambió antes de renombrarlo.",
 	shortcut_name_api_unavailable: "La API de nombres de accesos directos de Steam no está disponible",
 	shortcut_name_api_failed: "La API de nombres de accesos directos de Steam ha fallado",
-	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo."
+	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo.",
+	invalid_steam_app_id: "Este juego no es un juego de Steam válido."
 };
 var updater$i = {
 	check: {
@@ -6855,7 +6868,7 @@ var qam$i = {
 		showTimesLabel: "Mostrar tiempos de HowLongToBeat",
 		showTimesDescription: "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
 		storeLabel: "Tienda",
-		storeDescription: "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam.",
+		storeDescription: "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam. Siempre usa coincidencia automática; las elecciones de HLTB por juego solo se aplican en las páginas de juego de la Biblioteca.",
 		styleLabel: "Estilo de HLTB",
 		styleDescription: "Los estilos «Clean» están pensados para funcionar con el tema «Clean Gameview» de CSS Loader",
 		styleDefault: "Predeterminado",
@@ -7324,7 +7337,8 @@ var editor$i = {
 	},
 	steamTextLanguage: "Idioma del texto de Steam: {{language}}",
 	fetchSteamText: "Cargar el texto de Steam en {{language}}",
-	steamTextUnavailable: "Steam no devolvió texto para este juego."
+	steamTextUnavailable: "Steam no devolvió texto para este juego.",
+	hltbDisabledNotice: "Los tiempos de HowLongToBeat están desactivados actualmente en Ajustes."
 };
 var matchPicker$i = {
 	help: "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
@@ -7438,7 +7452,8 @@ var backend$i = {
 	shortcut_name_changed: "Pikakuvakkeen nimi muuttui ennen uudelleennimeämistä.",
 	shortcut_name_api_unavailable: "Steamin pikakuvakkeiden nimirajapinta ei ole käytettävissä",
 	shortcut_name_api_failed: "Steamin pikakuvakkeiden nimirajapinta epäonnistui",
-	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa."
+	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa.",
+	invalid_steam_app_id: "Tämä peli ei ole kelvollinen Steam-peli."
 };
 var updater$h = {
 	check: {
@@ -7499,7 +7514,7 @@ var qam$h = {
 		showTimesLabel: "Näytä HowLongToBeat-ajat",
 		showTimesDescription: "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
 		storeLabel: "Kauppa",
-		storeDescription: "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla.",
+		storeDescription: "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
 		styleLabel: "HLTB-tyyli",
 		styleDescription: "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
 		styleDefault: "Oletus",
@@ -7968,7 +7983,8 @@ var editor$h = {
 	},
 	steamTextLanguage: "Steamin tekstin kieli: {{language}}",
 	fetchSteamText: "Lataa Steamin teksti kielellä {{language}}",
-	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille."
+	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille.",
+	hltbDisabledNotice: "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa."
 };
 var matchPicker$h = {
 	help: "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
@@ -8083,7 +8099,8 @@ var backend$h = {
 	shortcut_name_changed: "Le nom du raccourci a changé avant le renommage.",
 	shortcut_name_api_unavailable: "L'API de nom de raccourci de Steam est indisponible",
 	shortcut_name_api_failed: "L'API de nom de raccourci de Steam a échoué",
-	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps."
+	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps.",
+	invalid_steam_app_id: "Ce jeu n'est pas un jeu Steam valide."
 };
 var updater$g = {
 	check: {
@@ -8144,7 +8161,7 @@ var qam$g = {
 		showTimesLabel: "Afficher les temps HowLongToBeat",
 		showTimesDescription: "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
 		storeLabel: "Boutique",
-		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
+		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam. Utilise toujours la correspondance automatique ; les choix HLTB par jeu ne s'appliquent qu'aux pages de jeu de la Bibliothèque.",
 		styleLabel: "Style HLTB",
 		styleDescription: "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
 		styleDefault: "Par défaut",
@@ -8613,7 +8630,8 @@ var editor$g = {
 	},
 	steamTextLanguage: "Langue du texte Steam : {{language}}",
 	fetchSteamText: "Charger le texte de Steam en {{language}}",
-	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu."
+	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu.",
+	hltbDisabledNotice: "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres."
 };
 var matchPicker$g = {
 	help: "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
@@ -8728,7 +8746,8 @@ var backend$g = {
 	shortcut_name_changed: "Il nome del collegamento è cambiato prima della rinomina.",
 	shortcut_name_api_unavailable: "L'API di Steam per il nome dei collegamenti non è disponibile",
 	shortcut_name_api_failed: "L'API di Steam per il nome dei collegamenti ha restituito un errore",
-	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento."
+	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento.",
+	invalid_steam_app_id: "Questo gioco non è un gioco Steam valido."
 };
 var updater$f = {
 	check: {
@@ -8789,7 +8808,7 @@ var qam$f = {
 		showTimesLabel: "Mostra i tempi di HowLongToBeat",
 		showTimesDescription: "Mostra i tempi di HowLongToBeat nelle pagine dei giochi, sia Steam che non Steam.",
 		storeLabel: "Negozio",
-		storeDescription: "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam.",
+		storeDescription: "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam. Usa sempre la corrispondenza automatica; le scelte HLTB per singolo gioco si applicano solo alle pagine dei giochi nella Libreria.",
 		styleLabel: "Stile HLTB",
 		styleDescription: "Gli stili “Clean” sono pensati per funzionare con il tema CSS Loader “Clean Gameview”",
 		styleDefault: "Predefinito",
@@ -9258,7 +9277,8 @@ var editor$f = {
 	},
 	steamTextLanguage: "Lingua del testo Steam: {{language}}",
 	fetchSteamText: "Carica il testo di Steam in {{language}}",
-	steamTextUnavailable: "Steam non ha restituito testo per questo gioco."
+	steamTextUnavailable: "Steam non ha restituito testo per questo gioco.",
+	hltbDisabledNotice: "I tempi di HowLongToBeat sono attualmente disattivati nelle Impostazioni."
 };
 var matchPicker$f = {
 	help: "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
@@ -9371,7 +9391,8 @@ var backend$f = {
 	shortcut_name_changed: "名前を変更する前にショートカット名が変更されました。",
 	shortcut_name_api_unavailable: "Steam のショートカット名 API を利用できません",
 	shortcut_name_api_failed: "Steam のショートカット名 API が失敗しました",
-	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。"
+	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。",
+	invalid_steam_app_id: "このゲームは有効な Steam ゲームではありません。"
 };
 var updater$e = {
 	check: {
@@ -9432,7 +9453,7 @@ var qam$e = {
 		showTimesLabel: "HowLongToBeat の時間を表示",
 		showTimesDescription: "Steam ゲームと Steam 以外のゲームのページに HowLongToBeat の時間を表示します。",
 		storeLabel: "ストア",
-		storeDescription: "Steam ストアのゲームページの情報行に HowLongToBeat の時間を表示します。",
+		storeDescription: "Steam ストアのゲームページの情報行に HowLongToBeat の時間を表示します。常に自動一致を使用します。ゲームごとの HLTB 選択はライブラリのゲームページにのみ適用されます。",
 		styleLabel: "HLTB スタイル",
 		styleDescription: "「Clean」スタイルは、CSS Loader テーマ「Clean Gameview」での使用を想定しています",
 		styleDefault: "既定",
@@ -9901,7 +9922,8 @@ var editor$e = {
 	},
 	steamTextLanguage: "Steam テキストの言語: {{language}}",
 	fetchSteamText: "{{language}} で Steam のテキストを読み込む",
-	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。"
+	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。",
+	hltbDisabledNotice: "HowLongToBeat の時間は現在設定でオフになっています。"
 };
 var matchPicker$e = {
 	help: "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
@@ -10015,7 +10037,8 @@ var backend$e = {
 	shortcut_name_changed: "მალსახმობის სახელი გადარქმევამდე შეიცვალა.",
 	shortcut_name_api_unavailable: "Steam-ის მალსახმობის სახელის API მიუწვდომელია",
 	shortcut_name_api_failed: "Steam-ის მალსახმობის სახელის API ვერ შესრულდა",
-	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი."
+	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი.",
+	invalid_steam_app_id: "ეს თამაში არ არის სწორი Steam თამაში."
 };
 var updater$d = {
 	check: {
@@ -10076,7 +10099,7 @@ var qam$d = {
 		showTimesLabel: "HowLongToBeat-ის დროების ჩვენება",
 		showTimesDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
 		storeLabel: "მაღაზია",
-		storeDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში.",
+		storeDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
 		styleLabel: "HLTB-ის სტილი",
 		styleDescription: "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
 		styleDefault: "ნაგულისხმევი",
@@ -10545,7 +10568,8 @@ var editor$d = {
 	},
 	steamTextLanguage: "Steam-ის ტექსტის ენა: {{language}}",
 	fetchSteamText: "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
-	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
+	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა.",
+	hltbDisabledNotice: "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში."
 };
 var matchPicker$d = {
 	help: "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
@@ -10658,7 +10682,8 @@ var backend$d = {
 	shortcut_name_changed: "이름을 바꾸기 전에 바로가기 이름이 변경되었습니다.",
 	shortcut_name_api_unavailable: "Steam 바로가기 이름 API를 사용할 수 없습니다",
 	shortcut_name_api_failed: "Steam 바로가기 이름 API가 실패했습니다",
-	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다."
+	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다.",
+	invalid_steam_app_id: "이 게임은 유효한 Steam 게임이 아닙니다."
 };
 var updater$c = {
 	check: {
@@ -10719,7 +10744,7 @@ var qam$c = {
 		showTimesLabel: "HowLongToBeat 시간 표시",
 		showTimesDescription: "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
 		storeLabel: "상점",
-		storeDescription: "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다.",
+		storeDescription: "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다. 항상 자동 일치를 사용합니다. 게임별 HLTB 선택은 라이브러리 게임 페이지에만 적용됩니다.",
 		styleLabel: "HLTB 스타일",
 		styleDescription: "\"Clean\" 스타일은 CSS Loader 테마 \"Clean Gameview\"와 함께 사용하도록 만들어졌습니다",
 		styleDefault: "기본",
@@ -11188,7 +11213,8 @@ var editor$c = {
 	},
 	steamTextLanguage: "Steam 텍스트 언어: {{language}}",
 	fetchSteamText: "Steam 텍스트 불러오기 ({{language}})",
-	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
+	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다.",
+	hltbDisabledNotice: "HowLongToBeat 시간은 현재 설정에서 꺼져 있습니다."
 };
 var matchPicker$c = {
 	help: "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
@@ -11302,7 +11328,8 @@ var backend$c = {
 	shortcut_name_changed: "De naam van de snelkoppeling is gewijzigd voordat deze werd hernoemd.",
 	shortcut_name_api_unavailable: "API voor Steam-snelkoppelingsnamen is niet beschikbaar",
 	shortcut_name_api_failed: "API voor Steam-snelkoppelingsnamen is mislukt",
-	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd."
+	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd.",
+	invalid_steam_app_id: "Dit spel is geen geldig Steam-spel."
 };
 var updater$b = {
 	check: {
@@ -11363,7 +11390,7 @@ var qam$b = {
 		showTimesLabel: "HowLongToBeat-tijden tonen",
 		showTimesDescription: "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
 		storeLabel: "Winkel",
-		storeDescription: "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel.",
+		storeDescription: "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel. Gebruikt altijd automatische herkenning; HLTB-keuzes per spel gelden alleen op spelpagina's in de bibliotheek.",
 		styleLabel: "HLTB-stijl",
 		styleDescription: "De \"Clean\"-stijlen zijn bedoeld voor het CSS Loader-thema \"Clean Gameview\"",
 		styleDefault: "Standaard",
@@ -11832,7 +11859,8 @@ var editor$b = {
 	},
 	steamTextLanguage: "Taal van Steam-tekst: {{language}}",
 	fetchSteamText: "Steam-tekst laden in {{language}}",
-	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd."
+	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd.",
+	hltbDisabledNotice: "HowLongToBeat-tijden staan momenteel uit in Instellingen."
 };
 var matchPicker$b = {
 	help: "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
@@ -11948,7 +11976,8 @@ var backend$b = {
 	shortcut_name_changed: "Nazwa skrótu zmieniła się przed aktualizacją.",
 	shortcut_name_api_unavailable: "Interfejs API nazw skrótów Steam jest niedostępny",
 	shortcut_name_api_failed: "Błąd interfejsu API nazw skrótów Steam",
-	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu."
+	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu.",
+	invalid_steam_app_id: "Ta gra nie jest prawidłową grą Steam."
 };
 var updater$a = {
 	check: {
@@ -12009,7 +12038,7 @@ var qam$a = {
 		showTimesLabel: "Pokazuj czasy HowLongToBeat",
 		showTimesDescription: "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
 		storeLabel: "Sklep",
-		storeDescription: "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam.",
+		storeDescription: "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam. Zawsze używa automatycznego dopasowania; wybory HLTB dla poszczególnych gier działają tylko na stronach gier w Bibliotece.",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Style „Clean” są przeznaczone do współpracy z motywem CSS Loader „Clean Gameview”",
 		styleDefault: "Domyślny",
@@ -12478,7 +12507,8 @@ var editor$a = {
 	},
 	steamTextLanguage: "Język tekstu Steam: {{language}}",
 	fetchSteamText: "Wczytaj tekst ze Steam w języku: {{language}}",
-	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry."
+	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry.",
+	hltbDisabledNotice: "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach."
 };
 var matchPicker$a = {
 	help: "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
@@ -12593,7 +12623,8 @@ var backend$a = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nome de atalho da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nome de atalho da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	invalid_steam_app_id: "Este jogo não é um jogo Steam válido."
 };
 var updater$9 = {
 	check: {
@@ -12654,7 +12685,7 @@ var qam$9 = {
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
-		storeDescription: "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam.",
+		storeDescription: "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam. Sempre usa correspondência automática; escolhas de HLTB por jogo se aplicam apenas às páginas de jogos da Biblioteca.",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram feitos para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Padrão",
@@ -13123,7 +13154,8 @@ var editor$9 = {
 	},
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
-	steamTextUnavailable: "A Steam não retornou texto para este jogo."
+	steamTextUnavailable: "A Steam não retornou texto para este jogo.",
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão desativados nas Configurações."
 };
 var matchPicker$9 = {
 	help: "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
@@ -13238,7 +13270,8 @@ var backend$9 = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nomes de atalhos da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nomes de atalhos da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	invalid_steam_app_id: "Este jogo não é um jogo Steam válido."
 };
 var updater$8 = {
 	check: {
@@ -13299,7 +13332,7 @@ var qam$8 = {
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
-		storeDescription: "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam.",
+		storeDescription: "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam. Utiliza sempre correspondência automática; as escolhas de HLTB por jogo aplicam-se apenas às páginas de jogos da Biblioteca.",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram pensados para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Predefinido",
@@ -13768,7 +13801,8 @@ var editor$8 = {
 	},
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
-	steamTextUnavailable: "A Steam não devolveu texto para este jogo."
+	steamTextUnavailable: "A Steam não devolveu texto para este jogo.",
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão atualmente desativados nas Definições."
 };
 var matchPicker$8 = {
 	help: "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
@@ -13883,7 +13917,8 @@ var backend$8 = {
 	shortcut_name_changed: "Numele scurtăturii s-a schimbat înainte de redenumire.",
 	shortcut_name_api_unavailable: "API-ul Steam pentru numele scurtăturilor nu este disponibil",
 	shortcut_name_api_failed: "API-ul Steam pentru numele scurtăturilor a eșuat",
-	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii."
+	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii.",
+	invalid_steam_app_id: "Acest joc nu este un joc Steam valid."
 };
 var updater$7 = {
 	check: {
@@ -13944,7 +13979,7 @@ var qam$7 = {
 		showTimesLabel: "Afișează timpii HowLongToBeat",
 		showTimesDescription: "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
 		storeLabel: "Magazin",
-		storeDescription: "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam.",
+		storeDescription: "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam. Folosește întotdeauna potrivirea automată; alegerile HLTB per joc se aplică doar paginilor de joc din Bibliotecă.",
 		styleLabel: "Stil HLTB",
 		styleDescription: "Stilurile „Clean” sunt concepute pentru a funcționa cu tema CSS Loader „Clean Gameview”",
 		styleDefault: "Implicit",
@@ -14413,7 +14448,8 @@ var editor$7 = {
 	},
 	steamTextLanguage: "Limba textului Steam: {{language}}",
 	fetchSteamText: "Încarcă textul Steam în {{language}}",
-	steamTextUnavailable: "Steam nu a returnat text pentru acest joc."
+	steamTextUnavailable: "Steam nu a returnat text pentru acest joc.",
+	hltbDisabledNotice: "Timpii HowLongToBeat sunt dezactivați în prezent în Setări."
 };
 var matchPicker$7 = {
 	help: "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
@@ -14529,7 +14565,8 @@ var backend$7 = {
 	shortcut_name_changed: "Название ярлыка изменилось до переименования.",
 	shortcut_name_api_unavailable: "API названий ярлыков Steam недоступен",
 	shortcut_name_api_failed: "Сбой API названий ярлыков Steam",
-	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя."
+	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя.",
+	invalid_steam_app_id: "Эта игра не является корректной игрой Steam."
 };
 var updater$6 = {
 	check: {
@@ -14590,7 +14627,7 @@ var qam$6 = {
 		showTimesLabel: "Показывать время HowLongToBeat",
 		showTimesDescription: "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
 		storeLabel: "Магазин",
-		storeDescription: "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam.",
+		storeDescription: "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam. Всегда используется автоматический подбор; выбор HLTB для отдельной игры действует только на страницах игр в библиотеке.",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стили «Clean» предназначены для работы с темой CSS Loader «Clean Gameview»",
 		styleDefault: "По умолчанию",
@@ -15059,7 +15096,8 @@ var editor$6 = {
 	},
 	steamTextLanguage: "Язык текста Steam: {{language}}",
 	fetchSteamText: "Загрузить текст Steam на языке {{language}}",
-	steamTextUnavailable: "Steam не вернул текст для этой игры."
+	steamTextUnavailable: "Steam не вернул текст для этой игры.",
+	hltbDisabledNotice: "Время HowLongToBeat сейчас отключено в настройках."
 };
 var matchPicker$6 = {
 	help: "Найдите игру в Steam, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет. Оно не переименовывает ярлык и не заменяет ваш арт.",
@@ -15173,7 +15211,8 @@ var backend$6 = {
 	shortcut_name_changed: "Emri i shkurtores ndryshoi përpara riemërtimit.",
 	shortcut_name_api_unavailable: "API i emrave të shkurtoreve të Steam nuk është i disponueshëm",
 	shortcut_name_api_failed: "API i emrave të shkurtoreve të Steam dështoi",
-	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë."
+	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë.",
+	invalid_steam_app_id: "Kjo lojë nuk është një lojë e vlefshme e Steam."
 };
 var updater$5 = {
 	check: {
@@ -15234,7 +15273,7 @@ var qam$5 = {
 		showTimesLabel: "Shfaq kohët e HowLongToBeat",
 		showTimesDescription: "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
 		storeLabel: "Dyqani",
-		storeDescription: "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam.",
+		storeDescription: "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam. Përdor gjithmonë përputhjen automatike; zgjedhjet e HLTB për secilën lojë zbatohen vetëm në faqet e lojërave në Bibliotekë.",
 		styleLabel: "Stili i HLTB",
 		styleDescription: "Stilet „Clean“ janë menduar për temën „Clean Gameview“ të CSS Loader",
 		styleDefault: "Parazgjedhur",
@@ -15703,7 +15742,8 @@ var editor$5 = {
 	},
 	steamTextLanguage: "Gjuha e tekstit të Steam: {{language}}",
 	fetchSteamText: "Ngarko tekstin e Steam në {{language}}",
-	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë."
+	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë.",
+	hltbDisabledNotice: "Kohët e HowLongToBeat janë aktualisht të çaktivizuara në Cilësime."
 };
 var matchPicker$5 = {
 	help: "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
@@ -15817,7 +15857,8 @@ var backend$5 = {
 	shortcut_name_changed: "Genvägens namn ändrades före namnbytet.",
 	shortcut_name_api_unavailable: "Steams API för genvägsnamn är inte tillgängligt",
 	shortcut_name_api_failed: "Steams API för genvägsnamn misslyckades",
-	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid."
+	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid.",
+	invalid_steam_app_id: "Det här spelet är inte ett giltigt Steam-spel."
 };
 var updater$4 = {
 	check: {
@@ -15878,7 +15919,7 @@ var qam$4 = {
 		showTimesLabel: "Visa HowLongToBeat-tider",
 		showTimesDescription: "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
 		storeLabel: "Butik",
-		storeDescription: "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken.",
+		storeDescription: "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken. Använder alltid automatisk matchning; HLTB-val per spel gäller endast på spelsidor i biblioteket.",
 		styleLabel: "HLTB-stil",
 		styleDescription: "Stilarna ”Clean” är avsedda att fungera med CSS Loader-temat ”Clean Gameview”",
 		styleDefault: "Standard",
@@ -16347,7 +16388,8 @@ var editor$4 = {
 	},
 	steamTextLanguage: "Språk för Steam-text: {{language}}",
 	fetchSteamText: "Läs in Steam-text på {{language}}",
-	steamTextUnavailable: "Steam returnerade ingen text för det här spelet."
+	steamTextUnavailable: "Steam returnerade ingen text för det här spelet.",
+	hltbDisabledNotice: "HowLongToBeat-tider är för närvarande avstängda i Inställningar."
 };
 var matchPicker$4 = {
 	help: "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
@@ -16461,7 +16503,8 @@ var backend$4 = {
 	shortcut_name_changed: "Kısayol adı, yeniden adlandırmadan önce değişti.",
 	shortcut_name_api_unavailable: "Steam kısayol adı API'si kullanılamıyor",
 	shortcut_name_api_failed: "Steam kısayol adı API'si başarısız oldu",
-	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı."
+	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı.",
+	invalid_steam_app_id: "Bu oyun geçerli bir Steam oyunu değil."
 };
 var updater$3 = {
 	check: {
@@ -16522,7 +16565,7 @@ var qam$3 = {
 		showTimesLabel: "HowLongToBeat sürelerini göster",
 		showTimesDescription: "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
 		storeLabel: "Mağaza",
-		storeDescription: "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir.",
+		storeDescription: "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir. Her zaman otomatik eşleştirme kullanır; oyun bazlı HLTB seçimleri yalnızca Kütüphane oyun sayfalarında geçerlidir.",
 		styleLabel: "HLTB tarzı",
 		styleDescription: "\"Clean\" tarzları, CSS Loader teması \"Clean Gameview\" ile kullanılmak üzere tasarlanmıştır",
 		styleDefault: "Varsayılan",
@@ -16991,7 +17034,8 @@ var editor$3 = {
 	},
 	steamTextLanguage: "Steam metin dili: {{language}}",
 	fetchSteamText: "Steam metnini {{language}} dilinde yükle",
-	steamTextUnavailable: "Steam bu oyun için metin döndürmedi."
+	steamTextUnavailable: "Steam bu oyun için metin döndürmedi.",
+	hltbDisabledNotice: "HowLongToBeat süreleri şu anda Ayarlar'da kapalı."
 };
 var matchPicker$3 = {
 	help: "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
@@ -17107,7 +17151,8 @@ var backend$3 = {
 	shortcut_name_changed: "Назва ярлика змінилася до перейменування.",
 	shortcut_name_api_unavailable: "API назв ярликів Steam недоступний",
 	shortcut_name_api_failed: "Збій API назв ярликів Steam",
-	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно."
+	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно.",
+	invalid_steam_app_id: "Ця гра не є дійсною грою Steam."
 };
 var updater$2 = {
 	check: {
@@ -17168,7 +17213,7 @@ var qam$2 = {
 		showTimesLabel: "Показувати час HowLongToBeat",
 		showTimesDescription: "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
 		storeLabel: "Крамниця",
-		storeDescription: "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam.",
+		storeDescription: "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
 		styleDefault: "За замовчуванням",
@@ -17637,7 +17682,8 @@ var editor$2 = {
 	},
 	steamTextLanguage: "Мова тексту Steam: {{language}}",
 	fetchSteamText: "Завантажити текст Steam мовою {{language}}",
-	steamTextUnavailable: "Steam не повернув текст для цієї гри."
+	steamTextUnavailable: "Steam не повернув текст для цієї гри.",
+	hltbDisabledNotice: "Час HowLongToBeat зараз вимкнено в налаштуваннях."
 };
 var matchPicker$2 = {
 	help: "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",
@@ -17750,7 +17796,8 @@ var backend$2 = {
 	shortcut_name_changed: "重命名前快捷方式名称已更改。",
 	shortcut_name_api_unavailable: "Steam 快捷方式名称 API 不可用",
 	shortcut_name_api_failed: "Steam 快捷方式名称 API 调用失败",
-	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。"
+	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。",
+	invalid_steam_app_id: "此游戏不是有效的 Steam 游戏。"
 };
 var updater$1 = {
 	check: {
@@ -17811,7 +17858,7 @@ var qam$1 = {
 		showTimesLabel: "显示 HowLongToBeat 时长",
 		showTimesDescription: "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
 		storeLabel: "商店",
-		storeDescription: "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。",
+		storeDescription: "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。始终使用自动匹配；按游戏指定的 HLTB 匹配仅适用于库中的游戏页面。",
 		styleLabel: "HLTB 样式",
 		styleDescription: "“Clean” 样式旨在与 CSS Loader 主题 “Clean Gameview” 搭配使用",
 		styleDefault: "默认",
@@ -18280,7 +18327,8 @@ var editor$1 = {
 	},
 	steamTextLanguage: "Steam 文本语言：{{language}}",
 	fetchSteamText: "加载 Steam 文本（{{language}}）",
-	steamTextUnavailable: "Steam 未返回此游戏的文本。"
+	steamTextUnavailable: "Steam 未返回此游戏的文本。",
+	hltbDisabledNotice: "HowLongToBeat 时长目前已在设置中关闭。"
 };
 var matchPicker$1 = {
 	help: "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
@@ -18393,7 +18441,8 @@ var backend$1 = {
 	shortcut_name_changed: "重新命名前捷徑名稱已變更。",
 	shortcut_name_api_unavailable: "Steam 捷徑名稱 API 無法使用",
 	shortcut_name_api_failed: "Steam 捷徑名稱 API 呼叫失敗",
-	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。"
+	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。",
+	invalid_steam_app_id: "此遊戲不是有效的 Steam 遊戲。"
 };
 var updater = {
 	check: {
@@ -18454,7 +18503,7 @@ var qam = {
 		showTimesLabel: "顯示 HowLongToBeat 時數",
 		showTimesDescription: "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
 		storeLabel: "商店",
-		storeDescription: "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。",
+		storeDescription: "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
 		styleLabel: "HLTB 樣式",
 		styleDescription: "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
 		styleDefault: "預設",
@@ -18923,7 +18972,8 @@ var editor = {
 	},
 	steamTextLanguage: "Steam 文字語言：{{language}}",
 	fetchSteamText: "載入 Steam 文字（{{language}}）",
-	steamTextUnavailable: "Steam 未傳回此遊戲的文字。"
+	steamTextUnavailable: "Steam 未傳回此遊戲的文字。",
+	hltbDisabledNotice: "HowLongToBeat 時數目前已在設定中關閉。"
 };
 var matchPicker = {
 	help: "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
@@ -19319,6 +19369,9 @@ const getEditorHeaderSettings = callable("get_editor_header_settings");
 const setEditorHeaderSettings = callable("set_editor_header_settings");
 const getProviderCache = callable("get_provider_cache");
 const putProtonDbCache = callable("put_protondb_cache");
+const getAllSteamOverrides = callable("get_all_steam_overrides");
+const getSteamOverride = callable("get_steam_override");
+const saveSteamOverride = callable("save_steam_override");
 const getHltbSettings = callable("get_hltb_settings");
 const setHltbSettings = callable("set_hltb_settings");
 const getHltbStats = callable("get_hltb_stats");
@@ -19346,6 +19399,7 @@ var backend = /*#__PURE__*/Object.freeze({
     frontendLog: frontendLog,
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
+    getAllSteamOverrides: getAllSteamOverrides,
     getCommunityFallbackPage: getCommunityFallbackPage,
     getCompatibilityDefault: getCompatibilityDefault,
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
@@ -19365,6 +19419,7 @@ var backend = /*#__PURE__*/Object.freeze({
     getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
+    getSteamOverride: getSteamOverride,
     getSystemVersions: getSystemVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
@@ -19381,6 +19436,7 @@ var backend = /*#__PURE__*/Object.freeze({
     saveMetadataIfUnchanged: saveMetadataIfUnchanged,
     savePreviewedMetadata: savePreviewedMetadata,
     saveShortcutNameState: saveShortcutNameState,
+    saveSteamOverride: saveSteamOverride,
     searchHltbGames: searchHltbGames,
     searchMetadata: searchMetadata,
     searchSteamMatches: searchSteamMatches,
@@ -19511,7 +19567,7 @@ const toastLogoStyle = {
     justifyContent: "center",
     height: "100%",
 };
-function notify(kind, heading, body) {
+function notify$1(kind, heading, body) {
     const logo = (SP_JSX.jsx("span", { style: toastLogoStyle, children: kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success, size: 28 })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error, size: 28 })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning, size: 28 })) }));
     try {
         toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
@@ -19520,9 +19576,9 @@ function notify(kind, heading, body) {
         // The Decky toaster may be unavailable outside the runtime.
     }
 }
-const toastSuccess = (heading, body) => notify("success", heading, body);
-const toastWarn = (heading, body) => notify("warning", heading, body);
-const toastError = (heading, body) => notify("error", heading, body);
+const toastSuccess = (heading, body) => notify$1("success", heading, body);
+const toastWarn = (heading, body) => notify$1("warning", heading, body);
+const toastError = (heading, body) => notify$1("error", heading, body);
 
 const initialUpdateState = {
     phase: "hydrating",
@@ -20736,6 +20792,8 @@ const steamPatchTargetsReady = () => {
 };
 const hasActivityStore = () => !!steamInternals().appActivityStore;
 const NON_STEAM_APP_TYPE = 1073741824;
+/** EAppType bitmask for playable Steam titles (Game, Demo, Beta); excludes Tools/Proton, Videos, Music, Apps. */
+const NATIVE_STEAM_GAME_APP_TYPE_MASK = 1 | 8 | 65536;
 const GAME_DETAIL_ROUTES = [
     "/library/app/:appid",
     "/library/details/:appid",
@@ -20989,6 +21047,19 @@ const isNativeNonSteamShortcut = (overview) => {
     catch (_error) {
         return false;
     }
+};
+/**
+ * True for native Steam games (Game, Demo, Beta) — never shortcuts, Tools/Proton,
+ * Soundtracks, Videos, or Applications.
+ */
+const isNativeSteamGame = (overview) => {
+    if (!overview || isNativeNonSteamShortcut(overview))
+        return false;
+    const appId = Number(overview?.appid);
+    if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000)
+        return false;
+    const appType = Number(overview?.app_type);
+    return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
 };
 const getOverview = (appId) => {
     try {
@@ -23233,7 +23304,7 @@ const nativeReleaseDate = (value) => {
 const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;
 const GLOBAL_MIRROR_KEY = "__DECKY_METADATA_NATIVE_CLASSES__";
 let translatedClasses = {};
-const listeners = new Set();
+const listeners$1 = new Set();
 function isValidCssIdentifier(value) {
     return typeof value === "string" && CSS_IDENTIFIER_RE.test(value);
 }
@@ -23265,7 +23336,7 @@ function setNativeCssClasses(raw) {
     }
     translatedClasses = next;
     mirrorToSteamWindow(next);
-    for (const listener of Array.from(listeners)) {
+    for (const listener of Array.from(listeners$1)) {
         try {
             listener();
         }
@@ -23284,9 +23355,9 @@ function resolveSteamCssClass(primary, key) {
     return getNativeCssClass(key);
 }
 function subscribeNativeCssClasses(listener) {
-    listeners.add(listener);
+    listeners$1.add(listener);
     return () => {
-        listeners.delete(listener);
+        listeners$1.delete(listener);
     };
 }
 
@@ -27587,6 +27658,1288 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        const notice = t("conflicts.pluginConflict", {
+            pluginName: conflict.pluginName,
+            feature,
+        });
+        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
+    }
+    return conflict.detectionAvailable ? ""
+        : t("conflicts.detectionUnavailable", { feature });
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
+}
+
+let pending;
+/** One saved-cache read shared by the features that seed from it at startup. */
+const loadProviderCache = () => {
+    pending ?? (pending = getProviderCache());
+    return pending;
+};
+/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
+const releaseProviderCache = () => {
+    pending = undefined;
+};
+
+const DEFAULT_HLTB_SETTINGS = {
+    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
+    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    nativeDetailsCorners: false,
+    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
+};
+const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
+const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
+function normalizeHltbSettings(value) {
+    const stored = object(value);
+    const appearance = object(stored.appearance);
+    const defaults = DEFAULT_HLTB_SETTINGS;
+    const defaultAppearance = defaults.appearance;
+    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
+        ? stored.style : defaults.style;
+    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+        ? appearance.blur : defaultAppearance.blur;
+    return {
+        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
+        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
+        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
+        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
+        showMain: bool(stored.showMain, defaults.showMain),
+        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
+        showComplete: bool(stored.showComplete, defaults.showComplete),
+        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
+        appearance: {
+            custom: bool(appearance.custom, defaultAppearance.custom),
+            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
+            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
+            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
+            border: bool(appearance.border, defaultAppearance.border),
+            blur,
+        },
+    };
+}
+
+const MAX_STEAM_APP_ID$1 = 0x7fffffff;
+const validPositiveId = (value) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= MAX_STEAM_APP_ID$1 ? id : null;
+};
+const overrides = new Map();
+const listeners = new Set();
+const notify = () => {
+    for (const listener of listeners) {
+        try {
+            listener();
+        }
+        catch {
+            // One unmounting view cannot block other listeners.
+        }
+    }
+};
+const getSteamOverrideCached = (appId) => {
+    const id = validPositiveId(appId);
+    return id === null ? undefined : overrides.get(id);
+};
+const getSteamHltbOverride = (appId) => validPositiveId(getSteamOverrideCached(appId)?.hltb_game_id);
+const setSteamOverrideCached = (appId, value) => {
+    const id = validPositiveId(appId);
+    if (id === null)
+        return;
+    const hltbId = validPositiveId(value?.hltb_game_id);
+    if (hltbId === null) {
+        if (!overrides.delete(id))
+            return;
+    }
+    else {
+        const previous = overrides.get(id);
+        if (previous?.hltb_game_id === hltbId)
+            return;
+        overrides.set(id, { hltb_game_id: hltbId });
+    }
+    notify();
+};
+const replaceSteamOverrides = (entries) => {
+    overrides.clear();
+    if (entries && typeof entries === "object") {
+        for (const [key, entry] of Object.entries(entries)) {
+            const appId = validPositiveId(key);
+            const hltbId = validPositiveId(entry?.hltb_game_id);
+            if (appId !== null && hltbId !== null) {
+                overrides.set(appId, { hltb_game_id: hltbId });
+            }
+        }
+    }
+    notify();
+};
+const clearSteamOverrideCache = () => {
+    if (overrides.size === 0)
+        return;
+    overrides.clear();
+    notify();
+};
+const subscribeSteamOverrides = (listener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+const DAY_MS = 86400000;
+const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
+const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
+const isEntry = (value) => value.status === "matched" || value.status === "no_match";
+const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Isolates pinned Library lookups from automatic Store lookups for the same Steam app. */
+const slotKey = (appId, pinned) => `${appId}:${pinned ?? ""}`;
+/** Saved HLTB results by app ID, available synchronously while a game page renders. */
+class HltbStore {
+    constructor(fetchStats = getHltbStats) {
+        Object.defineProperty(this, "fetchStats", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchStats
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "blocked", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "inFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "retryAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    /** Load saved entries; a result fetched during this session wins. */
+    seed(entries) {
+        for (const [id, entry] of Object.entries(entries)) {
+            const appId = Number(id);
+            if (Number.isSafeInteger(appId) && appId > 0) {
+                const key = slotKey(appId, entry.pinned_id_used ?? null);
+                if (!this.entries.has(key))
+                    this.entries.set(key, entry);
+            }
+        }
+    }
+    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
+    view(appId, inputs, now = Date.now()) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.blocked.get(key) === inputsKey(inputs))
+            return { entry: null, needsFetch: false };
+        const entry = this.entries.get(key);
+        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
+            entry.pinned_id_used !== inputs.pinned)
+            return { entry: null, needsFetch: true };
+        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
+        return { entry, needsFetch: now - entry.fetched_at >= ttl };
+    }
+    /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
+    request(appId, isShortcut, inputs, now = Date.now(), usePinned = true) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now)
+            return;
+        const request = {};
+        this.inFlight.set(key, request);
+        const ownsRequest = () => this.inFlight.get(key) === request;
+        const call = usePinned
+            ? this.fetchStats(appId, isShortcut, inputs.title)
+            : this.fetchStats(appId, isShortcut, inputs.title, false);
+        void call.then((result) => {
+            if (!ownsRequest())
+                return;
+            if (isEntry(result)) {
+                const resultKey = slotKey(appId, result.pinned_id_used ?? null);
+                this.entries.set(resultKey, result);
+                this.blocked.delete(resultKey);
+            }
+            else if (result.status === "error") {
+                this.retryAt.set(key, Date.now() + Math.max(1000, result.retry_after_ms));
+            }
+            else {
+                this.blocked.set(key, inputsKey(inputs));
+            }
+            this.notify(appId);
+        }, () => {
+            if (ownsRequest())
+                this.retryAt.set(key, Date.now() + 30000);
+        }).finally(() => {
+            if (ownsRequest())
+                this.inFlight.delete(key);
+        });
+    }
+    subscribe(appId, listener) {
+        let set = this.listeners.get(appId);
+        if (!set)
+            this.listeners.set(appId, set = new Set());
+        set.add(listener);
+        return () => {
+            set.delete(listener);
+            if (set.size === 0)
+                this.listeners.delete(appId);
+        };
+    }
+    /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
+    forget(appId) {
+        const prefix = `${appId}:`;
+        for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
+            for (const key of [...map.keys()]) {
+                if (key.startsWith(prefix))
+                    map.delete(key);
+            }
+        }
+        this.notify(appId);
+    }
+    /** Forget everything, e.g. after Clear cache or when the feature stops. */
+    reset() {
+        this.entries.clear();
+        this.blocked.clear();
+        this.inFlight.clear();
+        this.retryAt.clear();
+        for (const appId of [...this.listeners.keys()])
+            this.notify(appId);
+    }
+    notify(appId) {
+        for (const listener of this.listeners.get(appId) ?? []) {
+            try {
+                listener();
+            }
+            catch {
+                // One unmounting page must not block others.
+            }
+        }
+    }
+}
+const hltbStore = new HltbStore();
+
+/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
+class HltbController {
+    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }, loadSteamOverrides = () => typeof getAllSteamOverrides === "function" ? getAllSteamOverrides() : Promise.resolve({})) {
+        Object.defineProperty(this, "runtime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: runtime
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: store
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "loadSteamOverrides", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadSteamOverrides
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposeRuntime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = this.initialSnapshot();
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = { ...this.initialSnapshot(), busy: true };
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("hltb") });
+        });
+        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
+            this.store.seed(cache.hltb.entries); }, () => undefined);
+        const overridesReady = this.loadSteamOverrides().then((entries) => { if (this.isCurrent(generation))
+            replaceSteamOverrides(entries); }, () => undefined);
+        void Promise.all([this.settingsStore.get(), overridesReady]).then(([settings]) => {
+            if (!this.isCurrent(generation))
+                return;
+            const saved = normalizeHltbSettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false });
+        }, (error) => {
+            if (!this.isCurrent(generation))
+                return;
+            warn("bridge", "HLTB settings load failed", error);
+            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.publish({ settingsLoaded: false, busy: false });
+        this.store.reset();
+        clearSteamOverrideCache();
+        this.listeners.clear();
+    }
+    async setSettings(next) {
+        const current = this.snapshot;
+        if (!this.mounted || !current.settingsLoaded)
+            return false;
+        const requested = normalizeHltbSettings(next);
+        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
+            return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const generation = this.generation;
+        while (this.queued && this.isCurrent(generation)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(generation)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, busy: false });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(generation)) {
+                    warn("bridge", "HLTB settings save failed", error);
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: t("hltb.settingsError.saveFailed"),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(generation))
+            this.saving = false;
+    }
+    async clearCache() {
+        if (!this.mounted)
+            return false;
+        this.publish({ cacheStatus: "clearing" });
+        try {
+            await this.settingsStore.clear();
+            this.store.reset();
+            this.publish({ cacheStatus: "cleared" });
+            return true;
+        }
+        catch (error) {
+            warn("bridge", "HLTB cache clear failed", error);
+            this.publish({ cacheStatus: "failed" });
+            return false;
+        }
+    }
+    initialSnapshot() {
+        return Object.freeze({
+            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
+        });
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    publish(update) {
+        const next = { ...this.snapshot, ...update };
+        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
+        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
+        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
+        if (changed)
+            this.applyRuntime(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // A closing QAM panel cannot block the feature.
+            }
+        }
+    }
+    applyRuntime(enabled) {
+        try {
+            if (enabled) {
+                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
+            }
+            else {
+                const dispose = this.disposeRuntime;
+                this.disposeRuntime = undefined;
+                dispose?.();
+            }
+        }
+        catch (error$1) {
+            error("patch", "HLTB runtime transition failed", error$1);
+            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
+        }
+    }
+}
+
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache;
+let menuButtonClassesCache;
+const detailsClasses = () => {
+    if (!detailsClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+            if (found && typeof found === "object")
+                detailsClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return detailsClassesCache ?? {};
+};
+const menuButtonClasses = () => {
+    if (!menuButtonClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+            if (found && typeof found === "object")
+                menuButtonClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return menuButtonClassesCache ?? {};
+};
+const css$2 = `
+/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
+#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
+.decky-metadata-hltb-info {
+  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
+  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
+  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
+}
+/* Sit on the bottom of the header instead of pushing the Play section down. */
+.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
+/* "Push Play button down": take layout height below the header so Play moves down. */
+#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
+.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
+.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
+  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
+}
+.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
+/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
+.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
+.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
+.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
+.decky-metadata-hltb-info li { text-align: center; }
+.decky-metadata-hltb-info p { margin: 0; }
+.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
+.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
+.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
+`;
+function HltbStats({ stats, hltbId, settings, launching }) {
+    const t = useT();
+    if (!stats || launching || Object.values(stats).every(value => value <= 0))
+        return null;
+    const { appearance, style } = settings;
+    const vars = {};
+    if (appearance.custom) {
+        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
+        if (appearance.textShadow)
+            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
+        if (appearance.textScale !== 100)
+            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
+        if (!appearance.border)
+            vars["--hltb-border-width"] = "0";
+    }
+    const items = [
+        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
+        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
+        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
+        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
+    ];
+    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
+    const classes = [
+        style === "default" ? "decky-metadata-hltb-default" : "",
+        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
+        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
+        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+        flow ? "decky-metadata-hltb-flow" : "",
+    ].filter(Boolean).join(" ");
+    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+    const nativeDetailsClasses = detailsClasses();
+    const nativeMenuButtonClasses = menuButtonClasses();
+    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
+}
+
+const ROW_KEY = "decky-metadata-hltb-row";
+const JOINED_CLASS = "decky-metadata-hltb-joined";
+const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
+const px = (value) => String(Math.round(value * 100) / 100);
+/** One blur surface: the Play section's own, grown up over the HLTB bar. */
+const joinedRule = (height, paddingTop) => {
+    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+    if (inner && playSection)
+        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+    if (playSection)
+        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+    return `.${JOINED_CLASS} + * ${rule}`;
+};
+const findHeaderElement = (row) => {
+    const container = row.parentElement;
+    if (!container)
+        return undefined;
+    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
+    if (headerClass) {
+        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+        if (matched)
+            return matched;
+    }
+    return row.previousElementSibling ?? undefined;
+};
+const findPlaySectionElement = (row) => {
+    const next = row.nextElementSibling;
+    if (!next)
+        return null;
+    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    if (playSectionClass) {
+        return next.querySelector(`.${playSectionClass}`);
+    }
+    return next.firstElementChild ?? next;
+};
+const positiveId = (value, maximum) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
+};
+/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
+const hltbInputs = (appId, isShortcut, title) => {
+    if (!isShortcut) {
+        return { steam: positiveId(appId, 0x7fffffff), title, pinned: getSteamHltbOverride(appId) };
+    }
+    const record = metadataCache[String(appId)];
+    return {
+        steam: positiveId(record?.steam_appid, 0x7fffffff),
+        title,
+        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
+    };
+};
+function useHltbSnapshot() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+/** Hide the row while Steam's header animates into a game launch. */
+function useLaunching(ref, active) {
+    const [launching, setLaunching] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (!active || !ref.current)
+            return;
+        const header = findHeaderElement(ref.current);
+        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+        const capsule = topCapsuleClass
+            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+            : header?.firstElementChild ?? undefined;
+        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
+        if (!capsule || !View)
+            return;
+        const observer = new View(() => {
+            const name = capsule.className;
+            const entering = [
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
+            ].some((value) => value && name.includes(value));
+            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
+        });
+        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, [active]);
+    return launching;
+}
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+function useHltbMatch(appId, wanted) {
+    const [, rerender] = SP_REACT.useState(0);
+    const native = getNativeOverview(appId);
+    const isShortcut = isNativeNonSteamShortcut(native);
+    const title = String(native?.display_name ?? "").trim();
+    const inputs = hltbInputs(appId, isShortcut, title);
+    const active = wanted && title !== "";
+    const view = hltbStore.view(appId, inputs);
+    SP_REACT.useEffect(() => {
+        const refresh = () => rerender((value) => value + 1);
+        const unsubscribeStore = hltbStore.subscribe(appId, refresh);
+        const unsubscribeOverrides = isShortcut ? undefined : subscribeSteamOverrides(refresh);
+        return () => {
+            unsubscribeStore();
+            unsubscribeOverrides?.();
+        };
+    }, [appId, isShortcut]);
+    SP_REACT.useEffect(() => {
+        if (active && view.needsFetch)
+            hltbStore.request(appId, isShortcut, inputs);
+    });
+    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+/**
+ * Copy the native Play section's surface onto the row for the "Clean" styles, or
+ * with clean-default on a blurred Play bar, extend that one blur over both rows:
+ * the bar and underlay stay transparent and the Play rule supplies the surface.
+ */
+function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
+    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
+    const padding = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
+            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+            return;
+        }
+        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
+        const resize = { element: null, observer: null };
+        function update() {
+            const section = findPlaySectionElement(row);
+            const bar = row.querySelector(".decky-metadata-hltb-info");
+            if (!section) {
+                for (const name of names)
+                    row.style.removeProperty(name);
+                resize.observer?.disconnect();
+                resize.element = null;
+                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+                return;
+            }
+            const computed = view.getComputedStyle(section);
+            // Native padding is only readable while our own rule is not applied.
+            if (!row.classList.contains(JOINED_CLASS))
+                padding.current = parseFloat(computed.paddingTop) || 0;
+            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
+            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
+            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
+            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
+            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
+            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
+            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
+            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
+            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
+            if (bar !== resize.element) {
+                resize.observer?.disconnect();
+                resize.element = bar;
+                if (bar) {
+                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
+                    resize.observer.observe(bar);
+                }
+            }
+            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
+            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
+        }
+        update();
+        const observer = new view.MutationObserver(update);
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        observer.observe(row.parentElement, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+            resize.observer?.disconnect();
+            for (const name of names)
+                row.style.removeProperty(name);
+        };
+    }, [enabled, style, blur, pushPlayDown]);
+    return surface;
+}
+/**
+ * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
+ * the header art: pushing Play down would leave that bar without its backdrop.
+ */
+function useStatusBandOverlay(ref, wanted) {
+    const [overlay, setOverlay] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setOverlay(false);
+            return;
+        }
+        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
+        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
+        let frame = 0;
+        const touching = () => {
+            const header = findHeaderElement(row);
+            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+            const art = headerBgClass
+                ? header?.querySelector(`.${headerBgClass}`)
+                : header?.querySelector("img")?.parentElement ?? undefined;
+            if (!art)
+                return false;
+            const bounds = art.getBoundingClientRect();
+            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
+            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
+                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
+                .map((rect) => rect.bottom));
+            // Rect, not layout: Steam scales the page while it animates in.
+            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
+            const displacement = flow?.getBoundingClientRect().height ?? 0;
+            for (const bar of Array.from(container.querySelectorAll(selector))) {
+                const rect = bar.getBoundingClientRect();
+                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
+                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
+                    rect.top - bottom > displacement + 1)
+                    continue;
+                const own = view.getComputedStyle(bar);
+                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
+                    continue;
+                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
+                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
+                let visible = true;
+                for (let element = bar; element; element = element.parentElement) {
+                    const style = view.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                        (!suppressed && Number(style.opacity) <= 0)) {
+                        visible = false;
+                        break;
+                    }
+                    if (element === container)
+                        break;
+                }
+                if (visible)
+                    return true;
+            }
+            return false;
+        };
+        const update = () => {
+            frame = 0;
+            const next = touching();
+            setOverlay((previous) => previous === next ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, {
+            childList: true, subtree: true, attributes: true,
+            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
+        });
+        // CSS Loader themes restyle the page from the head and the root element alone.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        const resize = new view.ResizeObserver(schedule);
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        schedule();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            view.removeEventListener("resize", schedule);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted && overlay;
+}
+/** A border box's layout top: unaffected by transforms and scroll position. */
+function layoutTop(element) {
+    let top = 0;
+    for (let node = element; node; node = node.offsetParent)
+        top += node.offsetTop;
+    return top;
+}
+/**
+ * How far Play can move down before its button would go under Big Picture's footer.
+ * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
+ */
+function usePushRoom(ref, wanted) {
+    const [room, setRoom] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setRoom((previous) => previous === null ? previous : null);
+            return;
+        }
+        let frame = 0;
+        let footer = null;
+        const resize = new view.ResizeObserver(() => schedule());
+        const footerResize = new view.ResizeObserver(() => schedule());
+        const measure = () => {
+            // The whole surface that moves Play down in flow mode, margins included. Never
+            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
+            const surface = row.querySelector("#decky-metadata-hltb");
+            const surfaceStyle = surface && view.getComputedStyle(surface);
+            const rowHeight = surface
+                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
+                : 0;
+            const section = findPlaySectionElement(row);
+            if (!rowHeight || !section)
+                return null;
+            let scroller = container.parentElement;
+            while (scroller) {
+                const style = view.getComputedStyle(scroller);
+                if (/(auto|scroll)/.test(style.overflowY))
+                    break;
+                scroller = scroller.parentElement;
+            }
+            if (!scroller || scroller.clientHeight <= 0)
+                return null;
+            const nextFooter = document.querySelector("#Footer");
+            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+            if (nextFooter !== footer) {
+                footerResize.disconnect();
+                footer = nextFooter;
+                if (footer)
+                    footerResize.observe(footer);
+            }
+            const header = findHeaderElement(row);
+            if (!header)
+                return null;
+            // Layout, not rects: Steam scales and translates the page while it animates in,
+            // and a rect read mid-animation would stick until something else moved.
+            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+            const artBottom = layoutTop(header) + header.offsetHeight;
+            // The visible bar's border box; the labels may overhang it but Play clears the bar.
+            const footerTop = footer && footer.offsetHeight > 0
+                ? layoutTop(footer)
+                : layoutTop(scroller) + scroller.clientHeight;
+            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
+            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
+            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
+            // The button face; the wrapper's AppActionButton class is the fallback.
+            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
+                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
+            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+            const buttonBottom = button
+                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+                : section.offsetHeight - lift;
+            const free = footerTop - 4 - artBottom - buttonBottom;
+            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
+        };
+        const update = () => {
+            frame = 0;
+            const next = measure();
+            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+        // Themes restyle the page and the footer from the head and the root element.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        if (document.body)
+            observer.observe(document.body, { childList: true, subtree: true });
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        // Steam animates the page in without any resize or mutation: re-measure when it ends.
+        document.addEventListener("transitionend", schedule, true);
+        document.addEventListener("animationend", schedule, true);
+        update();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            footerResize.disconnect();
+            view.removeEventListener("resize", schedule);
+            document.removeEventListener("transitionend", schedule, true);
+            document.removeEventListener("animationend", schedule, true);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted ? room : null;
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useHltbSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
+    const launching = useLaunching(ref, active);
+    const { settings } = snapshot;
+    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+    const overlay = useStatusBandOverlay(ref, pushWanted);
+    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
+    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
+    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
+    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
+    if (!active)
+        return null;
+    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
+}
+/** True for the child that holds Steam's Play section (the row goes right above it). */
+const isPlaySection = (child) => {
+    const props = (child?.props ?? {});
+    const inner = props.children?.props ?? {};
+    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
+        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
+};
+function installHltbGameView() {
+    const unpatchers = [];
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+            if (!routeProps)
+                return tree;
+            let appId = 0;
+            const handler = DFL.createReactTreePatcher([
+                (inner) => {
+                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                    appId = Number(children?.props?.overview?.appid) || 0;
+                    return children ?? null;
+                },
+            ], (_args, ret) => {
+                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                    node.props.children.some(isPlaySection)))?.props?.children;
+                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                    return ret;
+                const index = children.findIndex(isPlaySection);
+                if (index >= 0)
+                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+                return ret;
+            });
+            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
+            unpatchers.push(() => renderPatch.unpatch());
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    }
+    return () => {
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+const hltbController = new HltbController({ install: installHltbGameView });
+
 // The edit key is inserted for shortcuts. Keep the legacy keys in the removal
 // set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
@@ -27712,7 +29065,10 @@ const visibleText = (children) => {
     return SP_REACT.isValidElement(children) ? visibleText(children.props.children) : "";
 };
 const insertOurEntry = (items, appId) => {
-    if (!isNativeNonSteamShortcut(getNativeOverview(appId)))
+    const nativeOverview = getNativeOverview(appId);
+    const eligible = isNativeNonSteamShortcut(nativeOverview) ||
+        (hltbController.getSnapshot().effectiveEnabled && isNativeSteamGame(nativeOverview));
+    if (!eligible)
         return null;
     const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: t("contextMenu.editMetadata") }, ENTRY_KEY));
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, hasAppPropertiesHandler));
@@ -27754,7 +29110,7 @@ const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
     if (finalAppId > 0) {
         anchor = insertOurEntry(items, finalAppId);
         if (!anchor) {
-            inserted = "skipped-not-non-steam";
+            inserted = "skipped-not-eligible";
         }
     }
     traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isAppContextMenu, removed, inserted, anchor, items);
@@ -30325,1191 +31681,6 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
 
-const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
-const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
-const KNOWN_CONFLICTS = {
-    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
-    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
-    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
-    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
-};
-const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
-const FALLBACK_POLL_MS = 1000;
-const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
-const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
-    typeof value.addEventListener === "function" && "removeEventListener" in value &&
-    typeof value.removeEventListener === "function";
-const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
-/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
-class PluginConflictMonitor {
-    constructor(getLoader = currentLoader) {
-        Object.defineProperty(this, "getLoader", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: getLoader
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "events", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                protondb: UNAVAILABLE,
-                trailers: UNAVAILABLE,
-                miniAchievements: UNAVAILABLE,
-                hltb: UNAVAILABLE,
-            }
-        });
-        Object.defineProperty(this, "handleUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.refresh()
-        });
-    }
-    getConflict(feature) {
-        return this.conflicts[feature];
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => { this.listeners.delete(listener); };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        this.refresh();
-    }
-    stop() {
-        this.mounted = false;
-        this.attachEvents(undefined);
-        this.setPolling(false);
-        this.publish(undefined, undefined);
-        this.listeners.clear();
-    }
-    attachEvents(events) {
-        if (events === this.events)
-            return;
-        try {
-            this.events?.removeEventListener("update", this.handleUpdate);
-        }
-        catch { /* Loader may be unloading. */ }
-        this.events = undefined;
-        try {
-            if (isStateEvents(events)) {
-                events.addEventListener("update", this.handleUpdate);
-                this.events = events;
-            }
-        }
-        catch { /* Poll when Loader state notifications are unavailable. */ }
-    }
-    setPolling(enabled) {
-        if (enabled && this.pollTimer === undefined) {
-            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
-        }
-        else if (!enabled && this.pollTimer !== undefined) {
-            window.clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
-    }
-    refresh() {
-        if (!this.mounted)
-            return;
-        let plugins;
-        let disabled;
-        try {
-            const loader = this.getLoader();
-            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
-                ? loader.deckyState : undefined;
-            if (state !== null && typeof state === "object") {
-                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
-                const inventory = "publicState" in state && typeof state.publicState === "function"
-                    ? state.publicState() : undefined;
-                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
-                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
-                    plugins = inventory.plugins;
-                    disabled = inventory.disabledPlugins;
-                }
-            }
-            else {
-                this.attachEvents(undefined);
-            }
-        }
-        catch {
-            this.attachEvents(undefined);
-        }
-        this.publish(plugins, disabled);
-        this.setPolling(!this.events || !plugins || !disabled);
-    }
-    publish(plugins, disabled) {
-        let changed = false;
-        for (const feature of FEATURES) {
-            const conflict = KNOWN_CONFLICTS[feature];
-            const next = !plugins || !disabled ? UNAVAILABLE
-                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
-                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
-            if (next === this.conflicts[feature])
-                continue;
-            this.conflicts[feature] = next;
-            changed = true;
-        }
-        if (!changed)
-            return;
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* One feature must not block another subscriber. */ }
-        }
-    }
-}
-function featureConflictNotice(conflict, feature, savedEnabled) {
-    if (conflict.pluginName) {
-        const notice = t("conflicts.pluginConflict", {
-            pluginName: conflict.pluginName,
-            feature,
-        });
-        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
-    }
-    return conflict.detectionAvailable ? ""
-        : t("conflicts.detectionUnavailable", { feature });
-}
-const pluginConflicts = new PluginConflictMonitor();
-function startPluginConflicts() {
-    pluginConflicts.mount();
-    return () => pluginConflicts.stop();
-}
-
-let pending;
-/** One saved-cache read shared by the features that seed from it at startup. */
-const loadProviderCache = () => {
-    pending ?? (pending = getProviderCache());
-    return pending;
-};
-/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
-const releaseProviderCache = () => {
-    pending = undefined;
-};
-
-const DEFAULT_HLTB_SETTINGS = {
-    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
-    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-    nativeDetailsCorners: false,
-    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
-};
-const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
-const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
-const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
-function normalizeHltbSettings(value) {
-    const stored = object(value);
-    const appearance = object(stored.appearance);
-    const defaults = DEFAULT_HLTB_SETTINGS;
-    const defaultAppearance = defaults.appearance;
-    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
-        ? stored.style : defaults.style;
-    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
-        ? appearance.blur : defaultAppearance.blur;
-    return {
-        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
-        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
-        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
-        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
-        showMain: bool(stored.showMain, defaults.showMain),
-        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
-        showComplete: bool(stored.showComplete, defaults.showComplete),
-        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
-        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
-        appearance: {
-            custom: bool(appearance.custom, defaultAppearance.custom),
-            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
-            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
-            border: bool(appearance.border, defaultAppearance.border),
-            blur,
-        },
-    };
-}
-
-const DAY_MS = 86400000;
-const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
-const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
-const isEntry = (value) => value.status === "matched" || value.status === "no_match";
-const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
-/** Saved HLTB results by app ID, available synchronously while a game page renders. */
-class HltbStore {
-    constructor(fetchStats = getHltbStats) {
-        Object.defineProperty(this, "fetchStats", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: fetchStats
-        });
-        Object.defineProperty(this, "entries", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "blocked", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "inFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "retryAt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-    }
-    /** Load saved entries; a result fetched during this session wins. */
-    seed(entries) {
-        for (const [id, entry] of Object.entries(entries)) {
-            const appId = Number(id);
-            if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId))
-                this.entries.set(appId, entry);
-        }
-    }
-    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
-    view(appId, inputs, now = Date.now()) {
-        if (this.blocked.get(appId) === inputsKey(inputs))
-            return { entry: null, needsFetch: false };
-        const entry = this.entries.get(appId);
-        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
-            entry.pinned_id_used !== inputs.pinned)
-            return { entry: null, needsFetch: true };
-        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
-        return { entry, needsFetch: now - entry.fetched_at >= ttl };
-    }
-    /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
-    request(appId, isShortcut, inputs, now = Date.now()) {
-        if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
-            return;
-        const request = {};
-        this.inFlight.set(appId, request);
-        const ownsRequest = () => this.inFlight.get(appId) === request;
-        void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
-            if (!ownsRequest())
-                return;
-            if (isEntry(result)) {
-                this.entries.set(appId, result);
-                this.blocked.delete(appId);
-            }
-            else if (result.status === "error") {
-                this.retryAt.set(appId, Date.now() + Math.max(1000, result.retry_after_ms));
-            }
-            else {
-                this.blocked.set(appId, inputsKey(inputs));
-            }
-            this.notify(appId);
-        }, () => {
-            if (ownsRequest())
-                this.retryAt.set(appId, Date.now() + 30000);
-        }).finally(() => {
-            if (ownsRequest())
-                this.inFlight.delete(appId);
-        });
-    }
-    subscribe(appId, listener) {
-        let set = this.listeners.get(appId);
-        if (!set)
-            this.listeners.set(appId, set = new Set());
-        set.add(listener);
-        return () => {
-            set.delete(listener);
-            if (set.size === 0)
-                this.listeners.delete(appId);
-        };
-    }
-    /** Forget one game after Remove metadata; its next view asks the backend again. */
-    forget(appId) {
-        this.entries.delete(appId);
-        this.blocked.delete(appId);
-        this.retryAt.delete(appId);
-        this.inFlight.delete(appId);
-        this.notify(appId);
-    }
-    /** Forget everything, e.g. after Clear cache or when the feature stops. */
-    reset() {
-        this.entries.clear();
-        this.blocked.clear();
-        this.inFlight.clear();
-        this.retryAt.clear();
-        for (const appId of [...this.listeners.keys()])
-            this.notify(appId);
-    }
-    notify(appId) {
-        for (const listener of this.listeners.get(appId) ?? []) {
-            try {
-                listener();
-            }
-            catch {
-                // One unmounting page must not block others.
-            }
-        }
-    }
-}
-const hltbStore = new HltbStore();
-
-/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
-class HltbController {
-    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }) {
-        Object.defineProperty(this, "runtime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: runtime
-        });
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: store
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "loadCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadCache
-        });
-        Object.defineProperty(this, "settingsStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: settingsStore
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "disposeRuntime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        /** Last settings the backend confirmed; a failed save shows these again. */
-        Object.defineProperty(this, "confirmed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Latest requested settings waiting for the in-flight save, plus their callers. */
-        Object.defineProperty(this, "queued", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "saving", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        this.snapshot = this.initialSnapshot();
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const generation = ++this.generation;
-        this.snapshot = { ...this.initialSnapshot(), busy: true };
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.publish({ conflict: this.conflicts.getConflict("hltb") });
-        });
-        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
-            this.store.seed(cache.hltb.entries); }, () => undefined);
-        void this.settingsStore.get().then((settings) => {
-            if (!this.isCurrent(generation))
-                return;
-            const saved = normalizeHltbSettings(settings);
-            this.confirmed = saved;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false });
-        }, (error) => {
-            if (!this.isCurrent(generation))
-                return;
-            warn("bridge", "HLTB settings load failed", error);
-            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
-        });
-    }
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.generation += 1;
-        this.queued?.settles.forEach((settle) => settle(false));
-        this.queued = undefined;
-        this.saving = false;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.publish({ settingsLoaded: false, busy: false });
-        this.store.reset();
-        this.listeners.clear();
-    }
-    async setSettings(next) {
-        const current = this.snapshot;
-        if (!this.mounted || !current.settingsLoaded)
-            return false;
-        const requested = normalizeHltbSettings(next);
-        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
-            return false;
-        // Publish optimistically: the section builds its next change from the snapshot,
-        // and controls must not dim while a save is in flight.
-        this.publish({ settings: requested, busy: true, settingsError: "" });
-        return new Promise((resolve) => {
-            if (this.queued) {
-                // Latest wins; earlier callers settle with this newer value's save.
-                this.queued.settings = requested;
-                this.queued.settles.push(resolve);
-            }
-            else {
-                this.queued = { settings: requested, settles: [resolve] };
-            }
-            if (this.saving)
-                return;
-            this.saving = true;
-            void this.drainSaves();
-        });
-    }
-    /** Saves one request at a time so a toggle pressed during a save is not lost. */
-    async drainSaves() {
-        const generation = this.generation;
-        while (this.queued && this.isCurrent(generation)) {
-            const { settings, settles } = this.queued;
-            this.queued = undefined;
-            let saved = false;
-            try {
-                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
-                if (this.isCurrent(generation)) {
-                    this.confirmed = confirmed;
-                    saved = true;
-                    // A newer request is queued; showing this value first would flash it.
-                    if (!this.queued)
-                        this.publish({ settings: confirmed, busy: false });
-                }
-            }
-            catch (error) {
-                if (this.isCurrent(generation)) {
-                    warn("bridge", "HLTB settings save failed", error);
-                    this.queued?.settles.forEach((settle) => settle(false));
-                    this.queued = undefined;
-                    this.publish({
-                        settings: this.confirmed ?? this.snapshot.settings,
-                        busy: false,
-                        settingsError: t("hltb.settingsError.saveFailed"),
-                    });
-                }
-            }
-            for (const settle of settles)
-                settle(saved);
-        }
-        // A remount may already own the save state; only the current generation clears it.
-        if (this.isCurrent(generation))
-            this.saving = false;
-    }
-    async clearCache() {
-        if (!this.mounted)
-            return false;
-        this.publish({ cacheStatus: "clearing" });
-        try {
-            await this.settingsStore.clear();
-            this.store.reset();
-            this.publish({ cacheStatus: "cleared" });
-            return true;
-        }
-        catch (error) {
-            warn("bridge", "HLTB cache clear failed", error);
-            this.publish({ cacheStatus: "failed" });
-            return false;
-        }
-    }
-    initialSnapshot() {
-        return Object.freeze({
-            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
-        });
-    }
-    isCurrent(generation) {
-        return this.mounted && generation === this.generation;
-    }
-    publish(update) {
-        const next = { ...this.snapshot, ...update };
-        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
-        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
-        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
-        if (changed)
-            this.applyRuntime(effectiveEnabled);
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // A closing QAM panel cannot block the feature.
-            }
-        }
-    }
-    applyRuntime(enabled) {
-        try {
-            if (enabled) {
-                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
-            }
-            else {
-                const dispose = this.disposeRuntime;
-                this.disposeRuntime = undefined;
-                dispose?.();
-            }
-        }
-        catch (error$1) {
-            error("patch", "HLTB runtime transition failed", error$1);
-            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
-        }
-    }
-}
-
-// Steam may register these CSS modules after the plugin loads.
-let detailsClassesCache;
-let menuButtonClassesCache;
-const detailsClasses = () => {
-    if (!detailsClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
-            if (found && typeof found === "object")
-                detailsClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return detailsClassesCache ?? {};
-};
-const menuButtonClasses = () => {
-    if (!menuButtonClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
-            if (found && typeof found === "object")
-                menuButtonClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return menuButtonClassesCache ?? {};
-};
-const css$2 = `
-/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
-#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
-.decky-metadata-hltb-info {
-  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
-  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
-  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
-}
-/* Sit on the bottom of the header instead of pushing the Play section down. */
-.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-/* "Push Play button down": take layout height below the header so Play moves down. */
-#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
-.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
-.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
-  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
-}
-.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
-/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
-.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
-.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
-.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
-.decky-metadata-hltb-info li { text-align: center; }
-.decky-metadata-hltb-info p { margin: 0; }
-.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
-.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
-:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
-:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
-:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
-.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
-`;
-function HltbStats({ stats, hltbId, settings, launching }) {
-    const t = useT();
-    if (!stats || launching || Object.values(stats).every(value => value <= 0))
-        return null;
-    const { appearance, style } = settings;
-    const vars = {};
-    if (appearance.custom) {
-        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
-        if (appearance.textShadow)
-            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
-        if (appearance.textScale !== 100)
-            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
-        if (!appearance.border)
-            vars["--hltb-border-width"] = "0";
-    }
-    const items = [
-        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
-        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
-        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
-        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
-    ];
-    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
-    const classes = [
-        style === "default" ? "decky-metadata-hltb-default" : "",
-        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
-        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
-        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
-        flow ? "decky-metadata-hltb-flow" : "",
-    ].filter(Boolean).join(" ");
-    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    const nativeDetailsClasses = detailsClasses();
-    const nativeMenuButtonClasses = menuButtonClasses();
-    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
-    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
-    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
-                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
-}
-
-const ROW_KEY = "decky-metadata-hltb-row";
-const JOINED_CLASS = "decky-metadata-hltb-joined";
-const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
-const px = (value) => String(Math.round(value * 100) / 100);
-/** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height, paddingTop) => {
-    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
-    if (inner && playSection)
-        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
-    if (playSection)
-        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
-    return `.${JOINED_CLASS} + * ${rule}`;
-};
-const findHeaderElement = (row) => {
-    const container = row.parentElement;
-    if (!container)
-        return undefined;
-    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
-    if (headerClass) {
-        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
-        if (matched)
-            return matched;
-    }
-    return row.previousElementSibling ?? undefined;
-};
-const findPlaySectionElement = (row) => {
-    const next = row.nextElementSibling;
-    if (!next)
-        return null;
-    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    if (playSectionClass) {
-        return next.querySelector(`.${playSectionClass}`);
-    }
-    return next.firstElementChild ?? next;
-};
-const positiveId = (value, maximum) => {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
-};
-/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
-const hltbInputs = (appId, isShortcut, title) => {
-    if (!isShortcut)
-        return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
-    const record = metadataCache[String(appId)];
-    return {
-        steam: positiveId(record?.steam_appid, 0x7fffffff),
-        title,
-        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
-    };
-};
-function useHltbSnapshot() {
-    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setSnapshot(hltbController.getSnapshot());
-        const unsubscribe = hltbController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    return snapshot;
-}
-/** Hide the row while Steam's header animates into a game launch. */
-function useLaunching(ref, active) {
-    const [launching, setLaunching] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        if (!active || !ref.current)
-            return;
-        const header = findHeaderElement(ref.current);
-        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
-        const capsule = topCapsuleClass
-            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
-            : header?.firstElementChild ?? undefined;
-        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
-        if (!capsule || !View)
-            return;
-        const observer = new View(() => {
-            const name = capsule.className;
-            const entering = [
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
-            ].some((value) => value && name.includes(value));
-            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
-            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
-        });
-        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
-        return () => observer.disconnect();
-    }, [active]);
-    return launching;
-}
-/**
- * The HLTB game a page shows for this app, looked up when missing or stale.
- * Nothing is looked up or returned unless `wanted` and the game has a title.
- */
-function useHltbMatch(appId, wanted) {
-    const [, rerender] = SP_REACT.useState(0);
-    const native = getNativeOverview(appId);
-    const isShortcut = isNativeNonSteamShortcut(native);
-    const title = String(native?.display_name ?? "").trim();
-    const inputs = hltbInputs(appId, isShortcut, title);
-    const active = wanted && title !== "";
-    const view = hltbStore.view(appId, inputs);
-    SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
-    SP_REACT.useEffect(() => {
-        if (active && view.needsFetch)
-            hltbStore.request(appId, isShortcut, inputs);
-    });
-    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
-}
-/**
- * Copy the native Play section's surface onto the row for the "Clean" styles, or
- * with clean-default on a blurred Play bar, extend that one blur over both rows:
- * the bar and underlay stay transparent and the Play rule supplies the surface.
- */
-function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
-    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
-    const padding = SP_REACT.useRef(0);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
-            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-            return;
-        }
-        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
-        const resize = { element: null, observer: null };
-        function update() {
-            const section = findPlaySectionElement(row);
-            const bar = row.querySelector(".decky-metadata-hltb-info");
-            if (!section) {
-                for (const name of names)
-                    row.style.removeProperty(name);
-                resize.observer?.disconnect();
-                resize.element = null;
-                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-                return;
-            }
-            const computed = view.getComputedStyle(section);
-            // Native padding is only readable while our own rule is not applied.
-            if (!row.classList.contains(JOINED_CLASS))
-                padding.current = parseFloat(computed.paddingTop) || 0;
-            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
-            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
-            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
-            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
-            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
-            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
-            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
-            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
-            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
-            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
-            if (bar !== resize.element) {
-                resize.observer?.disconnect();
-                resize.element = bar;
-                if (bar) {
-                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
-                    resize.observer.observe(bar);
-                }
-            }
-            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
-            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
-        }
-        update();
-        const observer = new view.MutationObserver(update);
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        observer.observe(row.parentElement, { childList: true, subtree: true });
-        return () => {
-            observer.disconnect();
-            resize.observer?.disconnect();
-            for (const name of names)
-                row.style.removeProperty(name);
-        };
-    }, [enabled, style, blur, pushPlayDown]);
-    return surface;
-}
-/**
- * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
- * the header art: pushing Play down would leave that bar without its backdrop.
- */
-function useStatusBandOverlay(ref, wanted) {
-    const [overlay, setOverlay] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setOverlay(false);
-            return;
-        }
-        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
-        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
-        let frame = 0;
-        const touching = () => {
-            const header = findHeaderElement(row);
-            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
-            const art = headerBgClass
-                ? header?.querySelector(`.${headerBgClass}`)
-                : header?.querySelector("img")?.parentElement ?? undefined;
-            if (!art)
-                return false;
-            const bounds = art.getBoundingClientRect();
-            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
-            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
-                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
-                .map((rect) => rect.bottom));
-            // Rect, not layout: Steam scales the page while it animates in.
-            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
-            const displacement = flow?.getBoundingClientRect().height ?? 0;
-            for (const bar of Array.from(container.querySelectorAll(selector))) {
-                const rect = bar.getBoundingClientRect();
-                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
-                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
-                    rect.top - bottom > displacement + 1)
-                    continue;
-                const own = view.getComputedStyle(bar);
-                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
-                    continue;
-                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
-                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
-                let visible = true;
-                for (let element = bar; element; element = element.parentElement) {
-                    const style = view.getComputedStyle(element);
-                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                        (!suppressed && Number(style.opacity) <= 0)) {
-                        visible = false;
-                        break;
-                    }
-                    if (element === container)
-                        break;
-                }
-                if (visible)
-                    return true;
-            }
-            return false;
-        };
-        const update = () => {
-            frame = 0;
-            const next = touching();
-            setOverlay((previous) => previous === next ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, {
-            childList: true, subtree: true, attributes: true,
-            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
-        });
-        // CSS Loader themes restyle the page from the head and the root element alone.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        const resize = new view.ResizeObserver(schedule);
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        schedule();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            view.removeEventListener("resize", schedule);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted && overlay;
-}
-/** A border box's layout top: unaffected by transforms and scroll position. */
-function layoutTop(element) {
-    let top = 0;
-    for (let node = element; node; node = node.offsetParent)
-        top += node.offsetTop;
-    return top;
-}
-/**
- * How far Play can move down before its button would go under Big Picture's footer.
- * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
- */
-function usePushRoom(ref, wanted) {
-    const [room, setRoom] = SP_REACT.useState(null);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setRoom((previous) => previous === null ? previous : null);
-            return;
-        }
-        let frame = 0;
-        let footer = null;
-        const resize = new view.ResizeObserver(() => schedule());
-        const footerResize = new view.ResizeObserver(() => schedule());
-        const measure = () => {
-            // The whole surface that moves Play down in flow mode, margins included. Never
-            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
-            const surface = row.querySelector("#decky-metadata-hltb");
-            const surfaceStyle = surface && view.getComputedStyle(surface);
-            const rowHeight = surface
-                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
-                : 0;
-            const section = findPlaySectionElement(row);
-            if (!rowHeight || !section)
-                return null;
-            let scroller = container.parentElement;
-            while (scroller) {
-                const style = view.getComputedStyle(scroller);
-                if (/(auto|scroll)/.test(style.overflowY))
-                    break;
-                scroller = scroller.parentElement;
-            }
-            if (!scroller || scroller.clientHeight <= 0)
-                return null;
-            const nextFooter = document.querySelector("#Footer");
-            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
-            if (nextFooter !== footer) {
-                footerResize.disconnect();
-                footer = nextFooter;
-                if (footer)
-                    footerResize.observe(footer);
-            }
-            const header = findHeaderElement(row);
-            if (!header)
-                return null;
-            // Layout, not rects: Steam scales and translates the page while it animates in,
-            // and a rect read mid-animation would stick until something else moved.
-            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
-            const artBottom = layoutTop(header) + header.offsetHeight;
-            // The visible bar's border box; the labels may overhang it but Play clears the bar.
-            const footerTop = footer && footer.offsetHeight > 0
-                ? layoutTop(footer)
-                : layoutTop(scroller) + scroller.clientHeight;
-            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
-            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
-            // The button face; the wrapper's AppActionButton class is the fallback.
-            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
-                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
-            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
-            const buttonBottom = button
-                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
-                : section.offsetHeight - lift;
-            const free = footerTop - 4 - artBottom - buttonBottom;
-            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
-        };
-        const update = () => {
-            frame = 0;
-            const next = measure();
-            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
-        // Themes restyle the page and the footer from the head and the root element.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        if (document.body)
-            observer.observe(document.body, { childList: true, subtree: true });
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        // Steam animates the page in without any resize or mutation: re-measure when it ends.
-        document.addEventListener("transitionend", schedule, true);
-        document.addEventListener("animationend", schedule, true);
-        update();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            footerResize.disconnect();
-            view.removeEventListener("resize", schedule);
-            document.removeEventListener("transitionend", schedule, true);
-            document.removeEventListener("animationend", schedule, true);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted ? room : null;
-}
-function HltbGameRow({ appId }) {
-    const snapshot = useHltbSnapshot();
-    const ref = SP_REACT.useRef(null);
-    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
-    const launching = useLaunching(ref, active);
-    const { settings } = snapshot;
-    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
-    const overlay = useStatusBandOverlay(ref, pushWanted);
-    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
-    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
-    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
-    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
-    if (!active)
-        return null;
-    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
-}
-/** True for the child that holds Steam's Play section (the row goes right above it). */
-const isPlaySection = (child) => {
-    const props = (child?.props ?? {});
-    const inner = props.children?.props ?? {};
-    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
-        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
-};
-function installHltbGameView() {
-    const unpatchers = [];
-    for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-            if (!routeProps)
-                return tree;
-            let appId = 0;
-            const handler = DFL.createReactTreePatcher([
-                (inner) => {
-                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                    appId = Number(children?.props?.overview?.appid) || 0;
-                    return children ?? null;
-                },
-            ], (_args, ret) => {
-                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                    node.props.children.some(isPlaySection)))?.props?.children;
-                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                    return ret;
-                const index = children.findIndex(isPlaySection);
-                if (index >= 0)
-                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
-                return ret;
-            });
-            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-            unpatchers.push(() => renderPatch.unpatch());
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
-    }
-    return () => {
-        for (const unpatch of unpatchers.splice(0)) {
-            try {
-                unpatch();
-            }
-            catch {
-                // Steam may already have released the route.
-            }
-        }
-    };
-}
-const hltbController = new HltbController({ install: installHltbGameView });
-
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
     if (!s)
@@ -32465,6 +32636,52 @@ const MetadataPage = () => {
         const baselineReleaseText = releaseTextRef.current;
         const baselineRatingText = ratingTextRef.current;
         const baselineSteamAppIdText = steamAppIdTextRef.current;
+        if (!nonSteam) {
+            recordShortcutSettled(requestedEntry, true);
+            let override;
+            try {
+                override = await getSteamOverride(appId);
+            }
+            catch {
+                recordEditorLoadTiming(requestedEntry, (timing) => {
+                    if (timing.metadataSettledAt === null) {
+                        timing.metadataSettledAt = performance.now();
+                        timing.metadataOk = false;
+                    }
+                });
+                emitEditorLoadTiming(requestedEntry);
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return;
+                setMetadataHydratedEntry(null);
+                return;
+            }
+            recordEditorLoadTiming(requestedEntry, (timing) => {
+                if (timing.metadataSettledAt === null) {
+                    timing.metadataSettledAt = performance.now();
+                    timing.metadataOk = true;
+                }
+            });
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            const saved = {
+                ...metadataTemplate(appName(appId)),
+                hltb_game_id: override?.hltb_game_id ?? null,
+            };
+            savedRecordRef.current = saved;
+            previewedSteamAppIdRef.current = null;
+            steamPreviewedFieldsRef.current.clear();
+            if (formRevisionRef.current === requestedRevision) {
+                setFormMetadata(saved);
+                setSteamAppIdInput("");
+            }
+            else {
+                const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
+                metadataRef.current = hydrated;
+                setMetadata(hydrated);
+            }
+            setMetadataHydratedEntry(requestedEntry);
+            return;
+        }
         void loadShortcutManagement();
         let metadata;
         try {
@@ -32536,6 +32753,7 @@ const MetadataPage = () => {
         appId,
         editorEntryToken,
         isCurrentEditorEntry,
+        nonSteam,
         setFormMetadata,
         loadShortcutManagement,
         setSteamAppIdInput,
@@ -32560,14 +32778,15 @@ const MetadataPage = () => {
         setResults(null);
         // An unsaved HLTB draft belongs to the game it was typed on.
         setHltbIdDraft(null);
-        setPage("details");
-    }, [appId]);
+        setPage(nonSteam ? "details" : "hltb");
+    }, [appId, nonSteam]);
     SP_REACT.useEffect(() => {
         const steamAppId = normalizedSteamAppId(metadata.steam_appid);
         const storedRecord = savedRecordRef.current;
         // This backfill writes to the store, so it may only run for the stored
         // match: never while the form holds an unsaved preview of another one.
-        if (metadataHydratedEntry !== editorEntryToken ||
+        if (!nonSteam ||
+            metadataHydratedEntry !== editorEntryToken ||
             steamNameBackfillEntryRef.current === editorEntryToken ||
             steamAppId === null ||
             Boolean(metadata.steam_store_name) ||
@@ -32640,12 +32859,13 @@ const MetadataPage = () => {
         const root = editorRootRef.current;
         if (!root)
             return;
-        // Wait for Details to mount again when a new entry resets the selected page.
+        // Wait for the initial page to mount again when a new entry resets the selected page.
+        const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
         const frame = requestAnimationFrame(() => {
-            root.querySelector("[data-editor-title] input")?.focus();
+            root.querySelector(selector)?.focus();
         });
         return () => cancelAnimationFrame(frame);
-    }, [editorEntryToken]);
+    }, [editorEntryToken, nonSteam]);
     SP_REACT.useEffect(() => {
         void ensureCompatibilityDefault()
             .then((value) => {
@@ -32682,7 +32902,8 @@ const MetadataPage = () => {
     // The Steam client language for Steam-sourced text; null until the mount probe resolves.
     const [steamLanguage, setSteamLanguage] = SP_REACT.useState(null);
     // The HLTB game the game page shows, chosen or found automatically.
-    const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+    const hltbSnapshot = useHltbSnapshot();
+    const hltbMatch = useHltbMatch(appId, hltbSnapshot.effectiveEnabled).entry;
     // Declared after the other hooks so their slots stay unchanged.
     const mountedRef = SP_REACT.useRef(true);
     // The form revision this entry began with: an edit typed before the record
@@ -32699,7 +32920,7 @@ const MetadataPage = () => {
             mountedRef.current = false;
         };
     }, []);
-    const [page, setPage] = SP_REACT.useState("details");
+    const [page, setPage] = SP_REACT.useState(nonSteam ? "details" : "hltb");
     // Steam search results outlive the Game Match page, as IGN results do.
     const steamSearchRef = SP_REACT.useRef(null);
     // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -32831,7 +33052,7 @@ const MetadataPage = () => {
     });
     const dirty = dirtyPages(changed);
     const saveLabel = saveButtonLabel(t, changed.length);
-    const saveDisabled = !nonSteam || changed.length === 0 || steamNameLoading;
+    const saveDisabled = changed.length === 0 || (nonSteam && steamNameLoading);
     const fieldMarker = (key) => {
         const edited = changed.includes(key);
         const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
@@ -32946,14 +33167,10 @@ const MetadataPage = () => {
         }
     };
     const saveCurrent = async () => {
-        if (!nonSteam) {
-            toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return false;
-        }
         const requestedEntry = editorEntryToken;
         // Until this entry's record loads, the form holds defaults that would overwrite it.
         // The Steam-name backfill is still writing the stored record, so a save now would race it.
-        if (metadataHydratedEntry !== requestedEntry || steamNameLoading) {
+        if (metadataHydratedEntry !== requestedEntry || (nonSteam && steamNameLoading)) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
             return false;
         }
@@ -32968,6 +33185,28 @@ const MetadataPage = () => {
             // A field edited while the check was pending makes this record stale.
             if (formRevisionRef.current !== requestedRevision)
                 return false;
+            if (!nonSteam) {
+                const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
+                const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return false;
+                setSteamOverrideCached(appId, savedOverride);
+                hltbStore.forget(appId);
+                const saved = {
+                    ...metadataTemplate(appName(appId)),
+                    hltb_game_id: savedOverride?.hltb_game_id ?? null,
+                };
+                savedRecordRef.current = saved;
+                previewedSteamAppIdRef.current = null;
+                if (formRevisionRef.current !== requestedRevision)
+                    return false;
+                steamPreviewedFieldsRef.current.clear();
+                setFormMetadata(saved);
+                if (hltb)
+                    setHltbIdDraft(null);
+                toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
+                return true;
+            }
             const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
             const steamAppId = normalizedSteamAppId(record.steam_appid);
             // Only a trusted save may store the provider fields a preview fetched.
@@ -33136,10 +33375,6 @@ const MetadataPage = () => {
     };
     /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
     const applyHltbGameId = async (picked) => {
-        if (!nonSteam) {
-            toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return;
-        }
         const requestedEntry = editorEntryToken;
         if (metadataHydratedEntry !== requestedEntry) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
@@ -33503,13 +33738,13 @@ const MetadataPage = () => {
                                 SP_JSX.jsx("div", { children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", "data-editor-hltb-search": "", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), !nonSteam && !hltbSnapshot.effectiveEnabled ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.hltbDisabledNotice"), bottomSeparator: "none" })) : null, hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
                                 ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }), bottomSeparator: "none" })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy || !nonSteam, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { label: markedLabel("hltb", "editor.hltbGame"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbGame"), value: hltbIdText, disabled: !nonSteam, onChange: (e) => {
+                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }), bottomSeparator: "none" })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { label: markedLabel("hltb", "editor.hltbGame"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbGame"), value: hltbIdText, onChange: (e) => {
                                             markFormEdited();
                                             clearPreviewMarker("hltb");
                                             setHltbIdDraft(e.target.value);
-                                        }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applyHltbGameId(), style: editorSearchButtonStyle, children: t("editor.hltbApply") })] }) }) })] }));
+                                        }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorSearchButtonStyle, children: t("editor.hltbApply") })] }) }) })] }));
     }
     function renderCompatibilityPage() {
         return (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.DropdownItem, { label: markedLabel("compatibility", "editor.compat.statusLabel"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [t("editor.compatibilityHelp"), SP_JSX.jsx("br", {}), t("editor.compatibilityChoices")] }), bottomSeparator: "standard", rgOptions: compatibilityStatusOptions.map((data) => ({
@@ -33556,21 +33791,22 @@ const MetadataPage = () => {
         advanced: renderAdvancedPage,
     };
     const pages = EDITOR_PAGE_ORDER.map((id) => {
-        const visible = nonSteam || (id !== "hltb" && id !== "compatibility" && id !== "shortcut-name");
+        const visible = nonSteam ? true : id === "hltb";
         return {
             id,
             label: t(PAGE_LABEL_KEYS[id]),
             icon: PAGE_ICONS[id],
             dirty: dirty.has(id),
             visible,
-            separatorBefore: id === "advanced",
+            separatorBefore: nonSteam && id === "advanced",
             content: visible ? renderPageContent[id]() : null,
         };
     });
+    const activePage = nonSteam ? page : "hltb";
     return (SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, onSecondaryButton: () => {
             if (!saveDisabled)
                 void saveCurrent();
-        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
+        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
@@ -40838,7 +41074,7 @@ const installStoreInfoRow = () => {
         const inputs = { steam: target.steamAppId, title, pinned: null };
         const view = hltbStore.view(target.steamAppId, inputs);
         if (view.needsFetch)
-            hltbStore.request(target.steamAppId, false, inputs);
+            hltbStore.request(target.steamAppId, false, inputs, Date.now(), false);
         const entry = view.entry;
         if (!entry || entry.status !== "matched")
             return null;

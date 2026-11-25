@@ -20,11 +20,13 @@ import {
   clearShortcutNameState,
   getShortcutNameManagement,
   getMetadata,
+  getSteamOverride,
   removeMetadata,
   previewFetchedMetadata,
   previewSteamMetadata,
   saveMetadata,
   savePreviewedMetadata,
+  saveSteamOverride,
   checkHltbGameId,
   saveShortcutNameState,
   searchMetadata,
@@ -69,6 +71,7 @@ import { SteamMatchPicker, type SteamSearchSnapshot } from "./SteamMatchPicker";
 import { parseHltbGameId } from "./hltb/gameId";
 import { HltbGameSearch } from "./hltb/HltbGameSearch";
 import { useHltbMatch, useHltbSnapshot } from "./hltb/gameView";
+import { setSteamOverrideCached } from "./hltb/steamOverrides";
 import { hltbStore } from "./hltb/store";
 import {
   normalizeReleaseDate,
@@ -574,6 +577,48 @@ export const MetadataPage = () => {
     const baselineReleaseText = releaseTextRef.current;
     const baselineRatingText = ratingTextRef.current;
     const baselineSteamAppIdText = steamAppIdTextRef.current;
+    if (!nonSteam) {
+      recordShortcutSettled(requestedEntry, true);
+      let override: { hltb_game_id?: number | null } | null;
+      try {
+        override = await getSteamOverride(appId);
+      } catch {
+        recordEditorLoadTiming(requestedEntry, (timing) => {
+          if (timing.metadataSettledAt === null) {
+            timing.metadataSettledAt = performance.now();
+            timing.metadataOk = false;
+          }
+        });
+        emitEditorLoadTiming(requestedEntry);
+        if (!isCurrentEditorEntry(requestedEntry)) return;
+        setMetadataHydratedEntry(null);
+        return;
+      }
+      recordEditorLoadTiming(requestedEntry, (timing) => {
+        if (timing.metadataSettledAt === null) {
+          timing.metadataSettledAt = performance.now();
+          timing.metadataOk = true;
+        }
+      });
+      if (!isCurrentEditorEntry(requestedEntry)) return;
+      const saved: MetadataData = {
+        ...metadataTemplate(appName(appId)),
+        hltb_game_id: override?.hltb_game_id ?? null,
+      };
+      savedRecordRef.current = saved;
+      previewedSteamAppIdRef.current = null;
+      steamPreviewedFieldsRef.current.clear();
+      if (formRevisionRef.current === requestedRevision) {
+        setFormMetadata(saved);
+        setSteamAppIdInput("");
+      } else {
+        const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
+        metadataRef.current = hydrated;
+        setMetadata(hydrated);
+      }
+      setMetadataHydratedEntry(requestedEntry);
+      return;
+    }
     void loadShortcutManagement();
     let metadata: MetadataData | null;
     try {
@@ -641,6 +686,7 @@ export const MetadataPage = () => {
     appId,
     editorEntryToken,
     isCurrentEditorEntry,
+    nonSteam,
     setFormMetadata,
     loadShortcutManagement,
     setSteamAppIdInput,
@@ -667,8 +713,8 @@ export const MetadataPage = () => {
     setResults(null);
     // An unsaved HLTB draft belongs to the game it was typed on.
     setHltbIdDraft(null);
-    setPage("details");
-  }, [appId]);
+    setPage(nonSteam ? "details" : "hltb");
+  }, [appId, nonSteam]);
 
   useEffect(() => {
     const steamAppId = normalizedSteamAppId(metadata.steam_appid);
@@ -676,6 +722,7 @@ export const MetadataPage = () => {
     // This backfill writes to the store, so it may only run for the stored
     // match: never while the form holds an unsaved preview of another one.
     if (
+      !nonSteam ||
       metadataHydratedEntry !== editorEntryToken ||
       steamNameBackfillEntryRef.current === editorEntryToken ||
       steamAppId === null ||
@@ -752,12 +799,13 @@ export const MetadataPage = () => {
   useEffect(() => {
     const root = editorRootRef.current;
     if (!root) return;
-    // Wait for Details to mount again when a new entry resets the selected page.
+    // Wait for the initial page to mount again when a new entry resets the selected page.
+    const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
     const frame = requestAnimationFrame(() => {
-      root.querySelector<HTMLInputElement>("[data-editor-title] input")?.focus();
+      root.querySelector<HTMLInputElement>(selector)?.focus();
     });
     return () => cancelAnimationFrame(frame);
-  }, [editorEntryToken]);
+  }, [editorEntryToken, nonSteam]);
 
   useEffect(() => {
     let cancelled = false;
@@ -801,7 +849,8 @@ export const MetadataPage = () => {
   // The Steam client language for Steam-sourced text; null until the mount probe resolves.
   const [steamLanguage, setSteamLanguage] = useState<string | null>(null);
   // The HLTB game the game page shows, chosen or found automatically.
-  const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+  const hltbSnapshot = useHltbSnapshot();
+  const hltbMatch = useHltbMatch(appId, hltbSnapshot.effectiveEnabled).entry;
   // Declared after the other hooks so their slots stay unchanged.
   const mountedRef = useRef(true);
   // The form revision this entry began with: an edit typed before the record
@@ -821,7 +870,7 @@ export const MetadataPage = () => {
     },
     [],
   );
-  const [page, setPage] = useState<EditorPageId>("details");
+  const [page, setPage] = useState<EditorPageId>(nonSteam ? "details" : "hltb");
   // Steam search results outlive the Game Match page, as IGN results do.
   const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
   // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -976,7 +1025,7 @@ export const MetadataPage = () => {
   });
   const dirty = dirtyPages(changed);
   const saveLabel = saveButtonLabel(t, changed.length);
-  const saveDisabled = !nonSteam || changed.length === 0 || steamNameLoading;
+  const saveDisabled = changed.length === 0 || (nonSteam && steamNameLoading);
   const fieldMarker = (key: DraftFieldKey) => {
     const edited = changed.includes(key);
     const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
@@ -1130,14 +1179,10 @@ export const MetadataPage = () => {
   };
 
   const saveCurrent = async (): Promise<boolean> => {
-    if (!nonSteam) {
-      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-      return false;
-    }
     const requestedEntry = editorEntryToken;
     // Until this entry's record loads, the form holds defaults that would overwrite it.
     // The Steam-name backfill is still writing the stored record, so a save now would race it.
-    if (metadataHydratedEntry !== requestedEntry || steamNameLoading) {
+    if (metadataHydratedEntry !== requestedEntry || (nonSteam && steamNameLoading)) {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
       return false;
     }
@@ -1149,6 +1194,25 @@ export const MetadataPage = () => {
       if (hltb === undefined) return false;
       // A field edited while the check was pending makes this record stale.
       if (formRevisionRef.current !== requestedRevision) return false;
+      if (!nonSteam) {
+        const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
+        const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
+        if (!isCurrentEditorEntry(requestedEntry)) return false;
+        setSteamOverrideCached(appId, savedOverride);
+        hltbStore.forget(appId);
+        const saved: MetadataData = {
+          ...metadataTemplate(appName(appId)),
+          hltb_game_id: savedOverride?.hltb_game_id ?? null,
+        };
+        savedRecordRef.current = saved;
+        previewedSteamAppIdRef.current = null;
+        if (formRevisionRef.current !== requestedRevision) return false;
+        steamPreviewedFieldsRef.current.clear();
+        setFormMetadata(saved);
+        if (hltb) setHltbIdDraft(null);
+        toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
+        return true;
+      }
       const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
       const steamAppId = normalizedSteamAppId(record.steam_appid);
       // Only a trusted save may store the provider fields a preview fetched.
@@ -1309,10 +1373,6 @@ export const MetadataPage = () => {
 
   /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
   const applyHltbGameId = async (picked?: { id: number; name: string }) => {
-    if (!nonSteam) {
-      toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-      return;
-    }
     const requestedEntry = editorEntryToken;
     if (metadataHydratedEntry !== requestedEntry) {
       toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
@@ -1917,8 +1977,15 @@ export const MetadataPage = () => {
   function renderHltbPage() {
     return (
       <>
-        <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection">
+        <div className="DialogControlsSection DialogLabelledControlsSection DialogSettingsSection" data-editor-hltb-search="">
           <div className="SettingsDialogSubHeader">{t("editor.hltbSearchTitle")}</div>
+          {!nonSteam && !hltbSnapshot.effectiveEnabled ? (
+            <Field
+              focusable={false}
+              description={t("editor.hltbDisabledNotice")}
+              bottomSeparator="none"
+            />
+          ) : null}
           {hltbMatch?.game_name ? (
             <Field
               focusable={false}
@@ -1933,7 +2000,7 @@ export const MetadataPage = () => {
           <HltbGameSearch
             key={editorEntryToken}
             initialQuery={appName(appId)}
-            disabled={entryBusy || !nonSteam}
+            disabled={entryBusy}
             onApply={(picked) => applyHltbGameId(picked)}
           />
         </div>
@@ -1951,7 +2018,6 @@ export const MetadataPage = () => {
                   className={editorFocusTargetClassName}
                   aria-label={t("editor.hltbGame")}
                   value={hltbIdText}
-                  disabled={!nonSteam}
                   onChange={(e) => {
                     markFormEdited();
                     clearPreviewMarker("hltb");
@@ -1962,7 +2028,7 @@ export const MetadataPage = () => {
               </div>
               <FocusableButton
                 className={editorFocusTargetClassName}
-                disabled={entryBusy || !nonSteam}
+                disabled={entryBusy}
                 onClick={() => applyHltbGameId()}
                 style={editorSearchButtonStyle}
               >
@@ -2176,17 +2242,18 @@ export const MetadataPage = () => {
     advanced: renderAdvancedPage,
   };
   const pages = EDITOR_PAGE_ORDER.map((id) => {
-    const visible = nonSteam || (id !== "hltb" && id !== "compatibility" && id !== "shortcut-name");
+    const visible = nonSteam ? true : id === "hltb";
     return {
       id,
       label: t(PAGE_LABEL_KEYS[id]),
       icon: PAGE_ICONS[id],
       dirty: dirty.has(id),
       visible,
-      separatorBefore: id === "advanced",
+      separatorBefore: nonSteam && id === "advanced",
       content: visible ? renderPageContent[id]() : null,
     };
   });
+  const activePage: EditorPageId = nonSteam ? page : "hltb";
 
   return (
     <Focusable
@@ -2202,9 +2269,9 @@ export const MetadataPage = () => {
       <EditorLayout
         title={appName(appId)}
         appId={appId}
-        steamAppId={normalizedSteamAppId(metadata.steam_appid)}
+        steamAppId={nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId)}
         pages={pages}
-        page={page}
+        page={activePage}
         onPageRequested={setPage}
         saveLabel={saveLabel}
         saveDisabled={saveDisabled}

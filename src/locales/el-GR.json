@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Άνοιγμα ρυθμίσεων", "action": { "refresh": "Ανανέωση", "clear": "Εκκαθάριση", "view": "Προβολή", "check": "Έλεγχος" } },
+  "settings": {
+    "open": "Άνοιγμα ρυθμίσεων",
+    "action": {
+      "refresh": "Ανανέωση",
+      "clear": "Εκκαθάριση",
+      "view": "Προβολή",
+      "check": "Έλεγχος"
+    }
+  },
   "common": {
     "hours_one": "{{value}} ώρα",
     "hours_other": "{{value}} ώρες",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "Το όνομα της συντόμευσης άλλαξε πριν από τη μετονομασία.",
     "shortcut_name_api_unavailable": "Το API ονομάτων συντομεύσεων του Steam δεν είναι διαθέσιμο",
     "shortcut_name_api_failed": "Το API ονομάτων συντομεύσεων του Steam απέτυχε",
-    "shortcut_name_timeout": "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως."
+    "shortcut_name_timeout": "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως.",
+    "invalid_steam_app_id": "Αυτό το παιχνίδι δεν είναι έγκυρο παιχνίδι Steam."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "Εμφάνιση χρόνων HowLongToBeat",
       "showTimesDescription": "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
       "storeLabel": "Κατάστημα",
-      "storeDescription": "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam.",
+      "storeDescription": "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
       "styleLabel": "Στυλ HLTB",
       "styleDescription": "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
       "styleDefault": "Προεπιλογή",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Γλώσσα κειμένου Steam: {{language}}",
     "fetchSteamText": "Φόρτωση κειμένου από το Steam στα {{language}}",
-    "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
+    "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι.",
+    "hltbDisabledNotice": "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις."
   },
   "matchPicker": {
     "help": "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",

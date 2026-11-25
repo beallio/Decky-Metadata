@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "開啟設定", "action": { "refresh": "重新整理", "clear": "清除", "view": "查看", "check": "檢查" } },
+  "settings": {
+    "open": "開啟設定",
+    "action": {
+      "refresh": "重新整理",
+      "clear": "清除",
+      "view": "查看",
+      "check": "檢查"
+    }
+  },
   "common": {
     "hours_other": "{{value}} 小時",
     "hoursShort": "{{value}} 小時",
@@ -51,7 +59,8 @@
     "shortcut_name_changed": "重新命名前捷徑名稱已變更。",
     "shortcut_name_api_unavailable": "Steam 捷徑名稱 API 無法使用",
     "shortcut_name_api_failed": "Steam 捷徑名稱 API 呼叫失敗",
-    "shortcut_name_timeout": "Steam 未及時確認新的捷徑名稱。"
+    "shortcut_name_timeout": "Steam 未及時確認新的捷徑名稱。",
+    "invalid_steam_app_id": "此遊戲不是有效的 Steam 遊戲。"
   },
   "updater": {
     "check": {
@@ -112,7 +121,7 @@
       "showTimesLabel": "顯示 HowLongToBeat 時數",
       "showTimesDescription": "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
       "storeLabel": "商店",
-      "storeDescription": "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。",
+      "storeDescription": "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
       "styleLabel": "HLTB 樣式",
       "styleDescription": "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
       "styleDefault": "預設",
@@ -581,7 +590,8 @@
     },
     "steamTextLanguage": "Steam 文字語言：{{language}}",
     "fetchSteamText": "載入 Steam 文字（{{language}}）",
-    "steamTextUnavailable": "Steam 未傳回此遊戲的文字。"
+    "steamTextUnavailable": "Steam 未傳回此遊戲的文字。",
+    "hltbDisabledNotice": "HowLongToBeat 時數目前已在設定中關閉。"
   },
   "matchPicker": {
     "help": "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",

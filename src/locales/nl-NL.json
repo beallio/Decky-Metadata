@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Instellingen openen", "action": { "refresh": "Vernieuwen", "clear": "Wissen", "view": "Bekijken", "check": "Controleren" } },
+  "settings": {
+    "open": "Instellingen openen",
+    "action": {
+      "refresh": "Vernieuwen",
+      "clear": "Wissen",
+      "view": "Bekijken",
+      "check": "Controleren"
+    }
+  },
   "common": {
     "hours_one": "{{value}} uur",
     "hours_other": "{{value}} uur",
@@ -52,7 +60,8 @@
     "shortcut_name_changed": "De naam van de snelkoppeling is gewijzigd voordat deze werd hernoemd.",
     "shortcut_name_api_unavailable": "API voor Steam-snelkoppelingsnamen is niet beschikbaar",
     "shortcut_name_api_failed": "API voor Steam-snelkoppelingsnamen is mislukt",
-    "shortcut_name_timeout": "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd."
+    "shortcut_name_timeout": "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd.",
+    "invalid_steam_app_id": "Dit spel is geen geldig Steam-spel."
   },
   "updater": {
     "check": {
@@ -113,7 +122,7 @@
       "showTimesLabel": "HowLongToBeat-tijden tonen",
       "showTimesDescription": "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
       "storeLabel": "Winkel",
-      "storeDescription": "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel.",
+      "storeDescription": "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel. Gebruikt altijd automatische herkenning; HLTB-keuzes per spel gelden alleen op spelpagina's in de bibliotheek.",
       "styleLabel": "HLTB-stijl",
       "styleDescription": "De \"Clean\"-stijlen zijn bedoeld voor het CSS Loader-thema \"Clean Gameview\"",
       "styleDefault": "Standaard",
@@ -582,7 +591,8 @@
     },
     "steamTextLanguage": "Taal van Steam-tekst: {{language}}",
     "fetchSteamText": "Steam-tekst laden in {{language}}",
-    "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd."
+    "steamTextUnavailable": "Steam heeft geen tekst voor dit spel geretourneerd.",
+    "hltbDisabledNotice": "HowLongToBeat-tijden staan momenteel uit in Instellingen."
   },
   "matchPicker": {
     "help": "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",

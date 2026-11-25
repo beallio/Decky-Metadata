@@ -37,6 +37,8 @@ export const steamPatchTargetsReady = () => {
 export const hasActivityStore = () => !!steamInternals().appActivityStore;
 
 export const NON_STEAM_APP_TYPE = 1073741824;
+/** EAppType bitmask for playable Steam titles (Game, Demo, Beta); excludes Tools/Proton, Videos, Music, Apps. */
+const NATIVE_STEAM_GAME_APP_TYPE_MASK = 1 | 8 | 65536;
 export const GAME_DETAIL_ROUTES = [
   "/library/app/:appid",
   "/library/details/:appid",
@@ -371,6 +373,18 @@ export const isNativeNonSteamShortcut = (overview: any): boolean => {
   } catch (_error) {
     return false;
   }
+};
+
+/**
+ * True for native Steam games (Game, Demo, Beta) — never shortcuts, Tools/Proton,
+ * Soundtracks, Videos, or Applications.
+ */
+export const isNativeSteamGame = (overview: any): boolean => {
+  if (!overview || isNativeNonSteamShortcut(overview)) return false;
+  const appId = Number(overview?.appid);
+  if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000) return false;
+  const appType = Number(overview?.app_type);
+  return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
 };
 
 export const getOverview = (appId: number): SteamOverview | null => {

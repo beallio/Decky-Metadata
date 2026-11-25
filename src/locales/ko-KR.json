@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "설정 열기", "action": { "refresh": "새로고침", "clear": "지우기", "view": "보기", "check": "확인" } },
+  "settings": {
+    "open": "설정 열기",
+    "action": {
+      "refresh": "새로고침",
+      "clear": "지우기",
+      "view": "보기",
+      "check": "확인"
+    }
+  },
   "common": {
     "hours_other": "{{value}}시간",
     "hoursShort": "{{value}}시간",
@@ -51,7 +59,8 @@
     "shortcut_name_changed": "이름을 바꾸기 전에 바로가기 이름이 변경되었습니다.",
     "shortcut_name_api_unavailable": "Steam 바로가기 이름 API를 사용할 수 없습니다",
     "shortcut_name_api_failed": "Steam 바로가기 이름 API가 실패했습니다",
-    "shortcut_name_timeout": "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다."
+    "shortcut_name_timeout": "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다.",
+    "invalid_steam_app_id": "이 게임은 유효한 Steam 게임이 아닙니다."
   },
   "updater": {
     "check": {
@@ -112,7 +121,7 @@
       "showTimesLabel": "HowLongToBeat 시간 표시",
       "showTimesDescription": "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
       "storeLabel": "상점",
-      "storeDescription": "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다.",
+      "storeDescription": "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다. 항상 자동 일치를 사용합니다. 게임별 HLTB 선택은 라이브러리 게임 페이지에만 적용됩니다.",
       "styleLabel": "HLTB 스타일",
       "styleDescription": "\"Clean\" 스타일은 CSS Loader 테마 \"Clean Gameview\"와 함께 사용하도록 만들어졌습니다",
       "styleDefault": "기본",
@@ -581,7 +590,8 @@
     },
     "steamTextLanguage": "Steam 텍스트 언어: {{language}}",
     "fetchSteamText": "Steam 텍스트 불러오기 ({{language}})",
-    "steamTextUnavailable": "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
+    "steamTextUnavailable": "Steam이 이 게임의 텍스트를 반환하지 않았습니다.",
+    "hltbDisabledNotice": "HowLongToBeat 시간은 현재 설정에서 꺼져 있습니다."
   },
   "matchPicker": {
     "help": "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",

@@ -30,12 +30,14 @@ describe("HLTB controls", () => {
     expect(toggle().props.disabled).toBe(true);
     expect(toggle({ ...base.settings, enabled: true }).props.disabled).toBe(false);
   });
-  it("wires the Store info row toggle to the setting", () => {
+  it("wires the Store info row toggle to the setting and notes automatic matching", () => {
     const change = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false };
     const tree = nodes(HltbBody({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
     const toggle = tree.find(node => node.props.label === "Store")!;
     expect(toggle.props.checked).toBe(false);
+    expect(toggle.props.description).toContain("automatic matching");
+    expect(toggle.props.description).toContain("Library game pages");
     toggle.props.onChange(true);
     expect(applied(change, settings)).toEqual({ ...settings, store: true });
   });
