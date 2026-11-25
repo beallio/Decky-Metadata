@@ -25,6 +25,12 @@ All notable changes to this project are documented here in Keep a Changelog form
 - **Keep Refresh metadata progress inside the Quick Access Menu.** The
   refresh progress bar now lays out below inside a `PanelSectionRow` with
   clamped wrapping so long game titles stay within the right edge of the panel.
+- **Match Steam Store styling and fix first-pass loading for the Store info row.**
+  HowLongToBeat numbers now use Steam Store blue, the ProtonDB tier label matches
+  Steam Deck Compatibility's font and color, only the new **View details** button
+  inside the ProtonDB card is focusable (matching Steam's **Learn more** button),
+  and first-visit Store page navigation now observes nested DOM mounts and polls
+  faster until attached.
 
 ## [0.6.7] - 2026-11-24
 

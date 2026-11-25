@@ -377,7 +377,8 @@
     "statMain": "Κύρια ιστορία",
     "statMainPlus": "Κύρια + επιπλέον",
     "statComplete": "Πλήρης ολοκλήρωση",
-    "statAllStyles": "Όλα τα στυλ"
+    "statAllStyles": "Όλα τα στυλ",
+    "viewDetails": "Προβολή λεπτομερειών"
   },
   "trailers": {
     "audio": "Ήχος τρέιλερ",

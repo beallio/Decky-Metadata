@@ -377,7 +377,8 @@
     "statMain": "Huvudhistoria",
     "statMainPlus": "Huvudhistoria + extra",
     "statComplete": "Completionist",
-    "statAllStyles": "Alla spelstilar"
+    "statAllStyles": "Alla spelstilar",
+    "viewDetails": "Visa detaljer"
   },
   "trailers": {
     "audio": "Trailerljud",

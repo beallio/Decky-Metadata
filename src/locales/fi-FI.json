@@ -377,7 +377,8 @@
     "statMain": "Pääjuoni",
     "statMainPlus": "Pääjuoni + lisät",
     "statComplete": "Kaikki suoritettuna",
-    "statAllStyles": "Kaikki tyylit"
+    "statAllStyles": "Kaikki tyylit",
+    "viewDetails": "Näytä tiedot"
   },
   "trailers": {
     "audio": "Trailerin ääni",

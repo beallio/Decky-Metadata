@@ -377,7 +377,8 @@
     "statMain": "Ana Hikâye",
     "statMainPlus": "Ana + Ekstralar",
     "statComplete": "Tamamlayıcı",
-    "statAllStyles": "Tüm Tarzlar"
+    "statAllStyles": "Tüm Tarzlar",
+    "viewDetails": "Ayrıntıları görüntüle"
   },
   "trailers": {
     "audio": "Fragman sesi",

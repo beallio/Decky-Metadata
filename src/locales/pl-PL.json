@@ -379,7 +379,8 @@
     "statMain": "Główny wątek",
     "statMainPlus": "Główny wątek + dodatki",
     "statComplete": "Pełne ukończenie",
-    "statAllStyles": "Wszystkie style"
+    "statAllStyles": "Wszystkie style",
+    "viewDetails": "Zobacz szczegóły"
   },
   "trailers": {
     "audio": "Dźwięk zwiastuna",

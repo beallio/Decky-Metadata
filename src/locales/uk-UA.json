@@ -379,7 +379,8 @@
     "statMain": "Основний сюжет",
     "statMainPlus": "Основний сюжет + додатково",
     "statComplete": "Повне проходження",
-    "statAllStyles": "Усі стилі"
+    "statAllStyles": "Усі стилі",
+    "viewDetails": "Переглянути деталі"
   },
   "trailers": {
     "audio": "Звук трейлера",

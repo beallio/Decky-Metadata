@@ -379,7 +379,8 @@
     "statMain": "Hlavní příběh",
     "statMainPlus": "Hlavní příběh + vedlejší",
     "statComplete": "Kompletace",
-    "statAllStyles": "Všechny styly"
+    "statAllStyles": "Všechny styly",
+    "viewDetails": "Zobrazit podrobnosti"
   },
   "trailers": {
     "audio": "Zvuk traileru",

@@ -377,7 +377,8 @@
     "statMain": "Основна история",
     "statMainPlus": "Основна + екстри",
     "statComplete": "Пълно завършване",
-    "statAllStyles": "Всички стилове"
+    "statAllStyles": "Всички стилове",
+    "viewDetails": "Преглед на подробности"
   },
   "trailers": {
     "audio": "Звук на трейлъра",

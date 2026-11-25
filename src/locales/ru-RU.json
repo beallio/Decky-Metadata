@@ -379,7 +379,8 @@
     "statMain": "Основной сюжет",
     "statMainPlus": "Основной сюжет + доп.",
     "statComplete": "Полное прохождение",
-    "statAllStyles": "Все стили"
+    "statAllStyles": "Все стили",
+    "viewDetails": "Подробнее"
   },
   "trailers": {
     "audio": "Звук трейлера",

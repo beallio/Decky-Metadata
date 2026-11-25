@@ -438,17 +438,31 @@ describe("Store info row DOM", () => {
       "Main Story", "Main + Extras",
     ]);
 
-    expect(protondb.nodeName).toBe("A");
-    expect(protondb.href).toBe("https://www.protondb.com/app/12345");
+    expect(protondb.nodeName).toBe("DIV");
+    expect(protondb.href).toBe("");
     expect(protondb.getAttribute("aria-label")).toBe("ProtonDB rating: Gold");
     expect(protondb.children[0]?.textContent).toBe("ProtonDB");
-    expect(protondb.children[1]?.children[0]?.style.properties.get("color")).toBe("#cfb53b");
+    const tierBody = protondb.children[1]!;
+    const tierInfo = tierBody.children[0]!;
+    const detailsButton = tierBody.children[1]!;
+    expect(tierInfo.children[0]?.style.properties.get("color")).toBe("#cfb53b");
+    expect(tierInfo.children[1]?.textContent).toBe("Gold");
+    expect(detailsButton.nodeName).toBe("A");
+    expect(detailsButton.getAttribute("role")).toBe("button");
+    expect(detailsButton.href).toBe("https://www.protondb.com/app/12345");
+    expect(detailsButton.target).toBe("_blank");
+    expect(detailsButton.rel).toBe("noopener noreferrer");
+    expect(detailsButton.textContent).toBe("View details");
     expect(harness.window.ForceUpdateFocusElements).toHaveBeenCalledWith(row);
     expect(row?.getAttribute("data-registered-attached")).toBe("true");
     // Without row flow, Steam's Store navigation stacks the cards and Left/Right cannot move between them.
     expect(JSON.parse(row?.getAttribute("data-panel") ?? "{}")).toEqual({ "flow-children": "row" });
     expect(harness.document.getElementById(LEGACY_BADGE_ID)).toBeNull();
-    expect(styleIn(harness.document)).not.toBeNull();
+    const style = styleIn(harness.document);
+    expect(style).not.toBeNull();
+    expect(style?.textContent).toContain(".decky-metadata-store-row-value{color:var(--color-blue-8,#1a9fff);font-weight:700}");
+    expect(style?.textContent).toContain(".decky-metadata-store-row-tier-label{font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif");
+    expect(style?.textContent).toContain(".decky-metadata-store-row-button{");
   });
 
   it("renders a single card full width for a one-sided payload", () => {
@@ -470,19 +484,23 @@ describe("Store info row DOM", () => {
 
   it("waits for summaryBarTop instead of floating, and keeps one row across renders", () => {
     const harness = createHarness();
-    installScript(harness, rowPayload());
+    expect(installScript(harness, rowPayload())).toBe(false);
     expect(rowIn(harness.document)).toBeNull();
 
-    const anchor = addAnchor(harness);
+    const wrapper = new FakeElement("DIV");
+    harness.document.body.appendChild(wrapper);
+    const anchor = new FakeElement("DIV");
+    anchor.id = "summaryBarTop";
+    wrapper.appendChild(anchor);
     FakeMutationObserver.instances
       .find((observer) => observer.target === harness.document.body)
       ?.notify({ addedNodes: [anchor] });
     const row = rowIn(harness.document);
     expect(row).not.toBeNull();
-    expect(row?.parentNode).toBe(harness.document.body);
+    expect(row?.parentNode).toBe(wrapper);
 
-    installScript(harness, rowPayload());
-    expect(harness.document.body.children.filter((child) => child.id === ROW_ID)).toHaveLength(1);
+    expect(installScript(harness, rowPayload())).toBe(true);
+    expect(wrapper.children.filter((child) => child.id === ROW_ID)).toHaveLength(1);
     expect(rowIn(harness.document)).toBe(row);
     expect(harness.window.ForceUpdateFocusElements).toHaveBeenCalledTimes(1);
   });

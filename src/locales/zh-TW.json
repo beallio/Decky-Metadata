@@ -376,7 +376,8 @@
     "statMain": "主線故事",
     "statMainPlus": "主線 + 額外內容",
     "statComplete": "完美通關",
-    "statAllStyles": "所有遊玩風格"
+    "statAllStyles": "所有遊玩風格",
+    "viewDetails": "檢視詳細資料"
   },
   "trailers": {
     "audio": "預告片音訊",

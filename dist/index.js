@@ -3253,7 +3253,8 @@ var storeRow$o = {
 	statMain: "القصة الرئيسية",
 	statMainPlus: "الرئيسية + الإضافات",
 	statComplete: "الإكمال الكامل",
-	statAllStyles: "كل الأنماط"
+	statAllStyles: "كل الأنماط",
+	viewDetails: "عرض التفاصيل"
 };
 var trailers$o = {
 	audio: "صوت المقطع الدعائي",
@@ -3948,7 +3949,8 @@ var storeRow$n = {
 	statMain: "Основна история",
 	statMainPlus: "Основна + екстри",
 	statComplete: "Пълно завършване",
-	statAllStyles: "Всички стилове"
+	statAllStyles: "Всички стилове",
+	viewDetails: "Преглед на подробности"
 };
 var trailers$n = {
 	audio: "Звук на трейлъра",
@@ -4645,7 +4647,8 @@ var storeRow$m = {
 	statMain: "Hlavní příběh",
 	statMainPlus: "Hlavní příběh + vedlejší",
 	statComplete: "Kompletace",
-	statAllStyles: "Všechny styly"
+	statAllStyles: "Všechny styly",
+	viewDetails: "Zobrazit podrobnosti"
 };
 var trailers$m = {
 	audio: "Zvuk traileru",
@@ -5340,7 +5343,8 @@ var storeRow$l = {
 	statMain: "Hauptstory",
 	statMainPlus: "Haupt + Extras",
 	statComplete: "Komplettist",
-	statAllStyles: "Alle Spielweisen"
+	statAllStyles: "Alle Spielweisen",
+	viewDetails: "Details anzeigen"
 };
 var trailers$l = {
 	audio: "Trailer-Ton",
@@ -6035,7 +6039,8 @@ var storeRow$k = {
 	statMain: "Κύρια ιστορία",
 	statMainPlus: "Κύρια + επιπλέον",
 	statComplete: "Πλήρης ολοκλήρωση",
-	statAllStyles: "Όλα τα στυλ"
+	statAllStyles: "Όλα τα στυλ",
+	viewDetails: "Προβολή λεπτομερειών"
 };
 var trailers$k = {
 	audio: "Ήχος τρέιλερ",
@@ -6730,7 +6735,8 @@ var storeRow$j = {
 	statMain: "Main Story",
 	statMainPlus: "Main + Extras",
 	statComplete: "Completionist",
-	statAllStyles: "All Styles"
+	statAllStyles: "All Styles",
+	viewDetails: "View details"
 };
 var trailers$j = {
 	audio: "Trailer audio",
@@ -7426,7 +7432,8 @@ var storeRow$i = {
 	statMain: "Historia principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos los estilos"
+	statAllStyles: "Todos los estilos",
+	viewDetails: "Ver detalles"
 };
 var trailers$i = {
 	audio: "Audio del tráiler",
@@ -8121,7 +8128,8 @@ var storeRow$h = {
 	statMain: "Pääjuoni",
 	statMainPlus: "Pääjuoni + lisät",
 	statComplete: "Kaikki suoritettuna",
-	statAllStyles: "Kaikki tyylit"
+	statAllStyles: "Kaikki tyylit",
+	viewDetails: "Näytä tiedot"
 };
 var trailers$h = {
 	audio: "Trailerin ääni",
@@ -8817,7 +8825,8 @@ var storeRow$g = {
 	statMain: "Histoire principale",
 	statMainPlus: "Histoire + extras",
 	statComplete: "Complétiste",
-	statAllStyles: "Tous les styles"
+	statAllStyles: "Tous les styles",
+	viewDetails: "Voir les détails"
 };
 var trailers$g = {
 	audio: "Audio de la bande-annonce",
@@ -9513,7 +9522,8 @@ var storeRow$f = {
 	statMain: "Storia principale",
 	statMainPlus: "Principale + extra",
 	statComplete: "Completista",
-	statAllStyles: "Tutti gli stili"
+	statAllStyles: "Tutti gli stili",
+	viewDetails: "Visualizza dettagli"
 };
 var trailers$f = {
 	audio: "Audio del trailer",
@@ -10207,7 +10217,8 @@ var storeRow$e = {
 	statMain: "メインストーリー",
 	statMainPlus: "メイン + サブ",
 	statComplete: "コンプリート",
-	statAllStyles: "すべてのスタイル"
+	statAllStyles: "すべてのスタイル",
+	viewDetails: "詳細を表示"
 };
 var trailers$e = {
 	audio: "トレーラー音声",
@@ -10902,7 +10913,8 @@ var storeRow$d = {
 	statMain: "მთავარი სიუჟეტი",
 	statMainPlus: "მთავარი + დამატებითი",
 	statComplete: "სრულად გავლა",
-	statAllStyles: "ყველა სტილი"
+	statAllStyles: "ყველა სტილი",
+	viewDetails: "დეტალების ნახვა"
 };
 var trailers$d = {
 	audio: "ტრეილერის ხმა",
@@ -11596,7 +11608,8 @@ var storeRow$c = {
 	statMain: "메인 스토리",
 	statMainPlus: "메인 + 추가",
 	statComplete: "완벽 클리어",
-	statAllStyles: "모든 플레이 방식"
+	statAllStyles: "모든 플레이 방식",
+	viewDetails: "세부 정보 보기"
 };
 var trailers$c = {
 	audio: "트레일러 오디오",
@@ -12291,7 +12304,8 @@ var storeRow$b = {
 	statMain: "Hoofdverhaal",
 	statMainPlus: "Hoofdverhaal + extra's",
 	statComplete: "Completionist",
-	statAllStyles: "Alle speelstijlen"
+	statAllStyles: "Alle speelstijlen",
+	viewDetails: "Details bekijken"
 };
 var trailers$b = {
 	audio: "Trailergeluid",
@@ -12988,7 +13002,8 @@ var storeRow$a = {
 	statMain: "Główny wątek",
 	statMainPlus: "Główny wątek + dodatki",
 	statComplete: "Pełne ukończenie",
-	statAllStyles: "Wszystkie style"
+	statAllStyles: "Wszystkie style",
+	viewDetails: "Zobacz szczegóły"
 };
 var trailers$a = {
 	audio: "Dźwięk zwiastuna",
@@ -13684,7 +13699,8 @@ var storeRow$9 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$9 = {
 	audio: "Áudio do trailer",
@@ -14380,7 +14396,8 @@ var storeRow$8 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$8 = {
 	audio: "Áudio do trailer",
@@ -15076,7 +15093,8 @@ var storeRow$7 = {
 	statMain: "Povestea principală",
 	statMainPlus: "Principal + extra",
 	statComplete: "Completist",
-	statAllStyles: "Toate stilurile"
+	statAllStyles: "Toate stilurile",
+	viewDetails: "Vezi detalii"
 };
 var trailers$7 = {
 	audio: "Sunetul trailerului",
@@ -15773,7 +15791,8 @@ var storeRow$6 = {
 	statMain: "Основной сюжет",
 	statMainPlus: "Основной сюжет + доп.",
 	statComplete: "Полное прохождение",
-	statAllStyles: "Все стили"
+	statAllStyles: "Все стили",
+	viewDetails: "Подробнее"
 };
 var trailers$6 = {
 	audio: "Звук трейлера",
@@ -16468,7 +16487,8 @@ var storeRow$5 = {
 	statMain: "Historia kryesore",
 	statMainPlus: "Kryesorja + shtesat",
 	statComplete: "Përfundim i plotë",
-	statAllStyles: "Të gjitha stilet"
+	statAllStyles: "Të gjitha stilet",
+	viewDetails: "Shiko detajet"
 };
 var trailers$5 = {
 	audio: "Audio e trailerit",
@@ -17163,7 +17183,8 @@ var storeRow$4 = {
 	statMain: "Huvudhistoria",
 	statMainPlus: "Huvudhistoria + extra",
 	statComplete: "Completionist",
-	statAllStyles: "Alla spelstilar"
+	statAllStyles: "Alla spelstilar",
+	viewDetails: "Visa detaljer"
 };
 var trailers$4 = {
 	audio: "Trailerljud",
@@ -17858,7 +17879,8 @@ var storeRow$3 = {
 	statMain: "Ana Hikâye",
 	statMainPlus: "Ana + Ekstralar",
 	statComplete: "Tamamlayıcı",
-	statAllStyles: "Tüm Tarzlar"
+	statAllStyles: "Tüm Tarzlar",
+	viewDetails: "Ayrıntıları görüntüle"
 };
 var trailers$3 = {
 	audio: "Fragman sesi",
@@ -18555,7 +18577,8 @@ var storeRow$2 = {
 	statMain: "Основний сюжет",
 	statMainPlus: "Основний сюжет + додатково",
 	statComplete: "Повне проходження",
-	statAllStyles: "Усі стилі"
+	statAllStyles: "Усі стилі",
+	viewDetails: "Переглянути деталі"
 };
 var trailers$2 = {
 	audio: "Звук трейлера",
@@ -19249,7 +19272,8 @@ var storeRow$1 = {
 	statMain: "主线故事",
 	statMainPlus: "主线 + 额外内容",
 	statComplete: "完美通关",
-	statAllStyles: "所有游玩方式"
+	statAllStyles: "所有游玩方式",
+	viewDetails: "查看详情"
 };
 var trailers$1 = {
 	audio: "预告片音频",
@@ -19943,7 +19967,8 @@ var storeRow = {
 	statMain: "主線故事",
 	statMainPlus: "主線 + 額外內容",
 	statComplete: "完美通關",
-	statAllStyles: "所有遊玩風格"
+	statAllStyles: "所有遊玩風格",
+	viewDetails: "檢視詳細資料"
 };
 var trailers = {
 	audio: "預告片音訊",
@@ -42039,6 +42064,7 @@ function installProtonDbGameView() {
 
 const LOCAL_CDP_TARGETS_URL = "http://localhost:8080/json";
 const STEAM_STORE_ROUTE = "/steamweb";
+const TARGET_DISCOVERY_FAST_INTERVAL_MS = 250;
 const TARGET_DISCOVERY_INTERVAL_MS = 1500;
 const MAX_STEAM_APP_ID = 0x80000000;
 const MAX_STORE_TITLE_LENGTH = 512;
@@ -42119,6 +42145,7 @@ const storeRowScript = (payload, revision) => {
     // Injected scripts cannot import i18n, so their labels are resolved here and embedded as data.
     const serializedHltbAriaLabel = JSON.stringify(t("storeRow.hltbAriaLabel"));
     const serializedProtonDbRatingAriaLabel = JSON.stringify(t("storeRow.protondbRating", { tier: "__TIER__" }));
+    const serializedViewDetailsLabel = JSON.stringify(t("storeRow.viewDetails"));
     return `(function () {
   "use strict";
   const requestedPayload = ${serializedPayload};
@@ -42126,6 +42153,7 @@ const storeRowScript = (payload, revision) => {
   const requestedRevision = ${serializedRevision};
   const hltbAriaLabel = ${serializedHltbAriaLabel};
   const protonDbRatingAriaLabelTemplate = ${serializedProtonDbRatingAriaLabel};
+  const viewDetailsLabel = ${serializedViewDetailsLabel};
   const ownerKey = "__deckyMetadataStoreInfoRowV1";
   const revisionKey = "__deckyMetadataStoreInfoRowRevisionV1";
   const rowId = "${ROW_ID}";
@@ -42138,8 +42166,10 @@ const storeRowScript = (payload, revision) => {
   const valueClass = "decky-metadata-store-row-value";
   const labelClass = "decky-metadata-store-row-label";
   const tierClass = "decky-metadata-store-row-tier";
+  const tierInfoClass = "decky-metadata-store-row-tier-info";
   const tierLabelClass = "decky-metadata-store-row-tier-label";
   const atomClass = "decky-metadata-store-row-atom";
+  const buttonClass = "decky-metadata-store-row-button";
   const validTiers = Object.freeze({ platinum: true, gold: true, silver: true, bronze: true, borked: true });
   const css = "#" + rowId + "{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}" +
     "#" + rowId + ">:only-child{grid-column:1 / -1}" +
@@ -42147,11 +42177,15 @@ const storeRowScript = (payload, revision) => {
     "." + headingClass + "{font:700 13px/17px 'Motiva Sans',Arial,sans-serif;color:var(--color-text-body-title,#f1f2f3);border-bottom:.67px solid rgb(49,69,96);padding-bottom:3px;margin-bottom:4px;text-transform:uppercase}" +
     "." + statsClass + "{display:flex;justify-content:space-between;list-style:none;margin:0;padding:0}" +
     "." + statsClass + " li{display:flex;flex-direction:column}" +
-    "." + valueClass + "{color:#fff;font-weight:700}" +
+    "." + valueClass + "{color:var(--color-blue-8,#1a9fff);font-weight:700}" +
     "." + labelClass + "{font-size:12px;opacity:.8}" +
-    "." + tierClass + "{display:flex;align-items:center;gap:8px}" +
-    "." + atomClass + "{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:currentColor;stroke-width:1.7}" +
-    "." + tierLabelClass + "{color:#fff;font-weight:700}";
+    "." + tierClass + "{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:5px 0}" +
+    "." + tierInfoClass + "{display:inline-flex;align-items:center;gap:8px}" +
+    "." + atomClass + "{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:1.7}" +
+    "." + tierLabelClass + "{font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;color:#ccd8e3;vertical-align:middle}" +
+    "." + buttonClass + "{display:inline-flex;align-items:center;color:#fff;background-color:var(--color-blue-8,#1a9fff);border-radius:2px;padding:6px 12px;font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;text-decoration:none;white-space:nowrap;box-shadow:rgba(0,0,0,.32) 0 3px 6px;transition:color .1s ease,background-color .1s ease,border-radius .1s ease}" +
+    "." + buttonClass + ":hover{color:#fff;cursor:pointer;background-color:#00bbff}" +
+    "." + buttonClass + ".gpfocus,." + buttonClass + ":focus-visible{color:#000;background-color:#fff;border-radius:0;outline:none}";
   const isAppId = function (value) {
     return Number.isSafeInteger(value) && value > 0 && value < 2147483648;
   };
@@ -42217,8 +42251,7 @@ const storeRowScript = (payload, revision) => {
     return requestedPayload === null;
   }
   if (existing && typeof existing.update === "function") {
-    existing.update(requestedPayload, requestedSignature, revision);
-    return true;
+    return existing.update(requestedPayload, requestedSignature, revision);
   }
 
   let disposed = false;
@@ -42283,13 +42316,16 @@ const storeRowScript = (payload, revision) => {
         bodyObserver = new MutationObserver(function (records) {
           if (disposed) return;
           const externalChange = records.some(function (record) {
+            if (row && (record.target === row || (typeof row.contains === "function" && row.contains(record.target)))) {
+              return false;
+            }
             const added = Array.from(record.addedNodes || []);
             const removed = Array.from(record.removedNodes || []);
             return added.some(function (node) { return node !== row; }) || removed.length > 0;
           });
           if (externalChange) render();
         });
-        bodyObserver.observe(body, { childList: true });
+        bodyObserver.observe(body, { childList: true, subtree: true });
       }
     }
   }
@@ -42369,55 +42405,64 @@ const storeRowScript = (payload, revision) => {
   function protonDbCard(payload) {
     const data = payload.protondb;
     if (!data) return null;
-    const card = document.createElement("a");
+    const card = document.createElement("div");
     card.className = cardClass;
     card.setAttribute("data-card", "protondb");
     card.setAttribute("aria-label", protonDbRatingAriaLabelTemplate.split("__TIER__").join(data.label));
-    card.href = "https://www.protondb.com/app/" + payload.steamAppId;
-    card.target = "_blank";
-    card.rel = "noopener noreferrer";
     card.appendChild(createHeading("ProtonDB"));
     const body = document.createElement("div");
     body.className = tierClass;
+    const info = document.createElement("div");
+    info.className = tierInfoClass;
     const atom = createAtom();
     atom.style.setProperty("color", data.color);
-    body.appendChild(atom);
+    info.appendChild(atom);
     const label = document.createElement("span");
     label.className = tierLabelClass;
     label.textContent = data.label;
-    body.appendChild(label);
+    info.appendChild(label);
+    body.appendChild(info);
+    const detailsButton = document.createElement("a");
+    detailsButton.className = buttonClass;
+    detailsButton.setAttribute("role", "button");
+    detailsButton.setAttribute("data-role", "details");
+    detailsButton.href = "https://www.protondb.com/app/" + payload.steamAppId;
+    detailsButton.target = "_blank";
+    detailsButton.rel = "noopener noreferrer";
+    detailsButton.textContent = viewDetailsLabel;
+    body.appendChild(detailsButton);
     card.appendChild(body);
     return card;
   }
 
   function render() {
-    if (disposed) return;
+    if (disposed) return false;
     if (!pageStillMatches()) {
       dispose();
-      return;
+      return false;
     }
     observeDocument();
     const body = document.body;
     const styleHost = document.head || document.documentElement;
-    if (!body || !styleHost) return;
+    if (!body || !styleHost) return false;
 
     const existingRow = ownedNode(rowId, "row");
-    if (existingRow === false) return;
+    if (existingRow === false) return false;
     const existingStyle = ownedNode(styleId, "style");
-    if (existingStyle === false) return;
+    if (existingStyle === false) return false;
     const anchor = document.getElementById(anchorId);
     const parent = anchor && anchor.parentNode;
     if (!anchor || !parent) {
       if (existingRow && typeof existingRow.remove === "function") existingRow.remove();
-      return;
+      return false;
     }
 
     style = existingStyle || document.createElement("style");
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = css;
     }
+    if (style.textContent !== css) style.textContent = css;
     if (style.parentNode !== styleHost) styleHost.appendChild(style);
 
     const appIdText = String(statePayload.steamAppId);
@@ -42431,7 +42476,7 @@ const storeRowScript = (payload, revision) => {
         existingRow.parentNode === parent && anchor.previousElementSibling === existingRow) {
       row = existingRow;
       if (marginTop) row.style.marginTop = marginTop;
-      return;
+      return true;
     }
     // Rebuild instead of patching in place: one fresh, attached registration per change keeps the nav tree simple.
     row = document.createElement("div");
@@ -42452,19 +42497,20 @@ const storeRowScript = (payload, revision) => {
     try {
       if (typeof window.ForceUpdateFocusElements === "function") window.ForceUpdateFocusElements(row);
     } catch {}
+    return true;
   }
 
   function update(nextPayload, nextSignature, nextRevision) {
-    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return;
+    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return false;
     stateRevision = nextRevision;
     if (!isPayload(nextPayload) || !isText(nextSignature, 2048) ||
         appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
       dispose();
-      return;
+      return false;
     }
     statePayload = nextPayload;
     stateSignature = nextSignature;
-    render();
+    return render();
   }
 
   function dispose() {
@@ -42492,8 +42538,7 @@ const storeRowScript = (payload, revision) => {
   document.addEventListener("pageleave", dispose);
   addHistoryObserver("pushState");
   addHistoryObserver("replaceState");
-  render();
-  return true;
+  return render();
 })();`;
 };
 const isSafeTargetId = (value) => validTargetText(value, 256);
@@ -42548,7 +42593,7 @@ const findSteamHistory = () => {
 };
 const routePath = (history) => {
     const pathname = history.location?.pathname;
-    return typeof pathname === "string" ? pathname : "";
+    return typeof pathname === "string" ? pathname.replace(/^\/routes(?=\/)/, "") : "";
 };
 const isDisposer = (value) => typeof value === "function";
 const listStoreCefTargets = async () => {
@@ -42778,10 +42823,11 @@ const installStoreInfoRow = () => {
     const scheduleDiscovery = () => {
         if (!isEligible() || discoveryTimer !== undefined || discoveryRunning)
             return;
+        const delay = currentSignature === undefined ? TARGET_DISCOVERY_FAST_INTERVAL_MS : TARGET_DISCOVERY_INTERVAL_MS;
         discoveryTimer = globalThis.setTimeout(() => {
             discoveryTimer = undefined;
             void discoverTarget();
-        }, TARGET_DISCOVERY_INTERVAL_MS);
+        }, delay);
     };
     const discoverTarget = async () => {
         if (!isEligible() || discoveryRunning)

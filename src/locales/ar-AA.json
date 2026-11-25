@@ -381,7 +381,8 @@
     "statMain": "القصة الرئيسية",
     "statMainPlus": "الرئيسية + الإضافات",
     "statComplete": "الإكمال الكامل",
-    "statAllStyles": "كل الأنماط"
+    "statAllStyles": "كل الأنماط",
+    "viewDetails": "عرض التفاصيل"
   },
   "trailers": {
     "audio": "صوت المقطع الدعائي",

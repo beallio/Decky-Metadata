@@ -376,7 +376,8 @@
     "statMain": "메인 스토리",
     "statMainPlus": "메인 + 추가",
     "statComplete": "완벽 클리어",
-    "statAllStyles": "모든 플레이 방식"
+    "statAllStyles": "모든 플레이 방식",
+    "viewDetails": "세부 정보 보기"
   },
   "trailers": {
     "audio": "트레일러 오디오",

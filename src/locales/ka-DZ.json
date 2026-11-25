@@ -377,7 +377,8 @@
     "statMain": "მთავარი სიუჟეტი",
     "statMainPlus": "მთავარი + დამატებითი",
     "statComplete": "სრულად გავლა",
-    "statAllStyles": "ყველა სტილი"
+    "statAllStyles": "ყველა სტილი",
+    "viewDetails": "დეტალების ნახვა"
   },
   "trailers": {
     "audio": "ტრეილერის ხმა",

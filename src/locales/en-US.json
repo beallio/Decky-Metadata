@@ -377,7 +377,8 @@
     "statMain": "Main Story",
     "statMainPlus": "Main + Extras",
     "statComplete": "Completionist",
-    "statAllStyles": "All Styles"
+    "statAllStyles": "All Styles",
+    "viewDetails": "View details"
   },
   "trailers": {
     "audio": "Trailer audio",

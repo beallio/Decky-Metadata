@@ -376,7 +376,8 @@
     "statMain": "メインストーリー",
     "statMainPlus": "メイン + サブ",
     "statComplete": "コンプリート",
-    "statAllStyles": "すべてのスタイル"
+    "statAllStyles": "すべてのスタイル",
+    "viewDetails": "詳細を表示"
   },
   "trailers": {
     "audio": "トレーラー音声",

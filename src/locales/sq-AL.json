@@ -377,7 +377,8 @@
     "statMain": "Historia kryesore",
     "statMainPlus": "Kryesorja + shtesat",
     "statComplete": "Përfundim i plotë",
-    "statAllStyles": "Të gjitha stilet"
+    "statAllStyles": "Të gjitha stilet",
+    "viewDetails": "Shiko detajet"
   },
   "trailers": {
     "audio": "Audio e trailerit",

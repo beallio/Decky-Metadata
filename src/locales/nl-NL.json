@@ -377,7 +377,8 @@
     "statMain": "Hoofdverhaal",
     "statMainPlus": "Hoofdverhaal + extra's",
     "statComplete": "Completionist",
-    "statAllStyles": "Alle speelstijlen"
+    "statAllStyles": "Alle speelstijlen",
+    "viewDetails": "Details bekijken"
   },
   "trailers": {
     "audio": "Trailergeluid",

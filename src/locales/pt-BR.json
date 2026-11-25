@@ -378,7 +378,8 @@
     "statMain": "História principal",
     "statMainPlus": "Principal + extras",
     "statComplete": "Completista",
-    "statAllStyles": "Todos os estilos"
+    "statAllStyles": "Todos os estilos",
+    "viewDetails": "Ver detalhes"
   },
   "trailers": {
     "audio": "Áudio do trailer",

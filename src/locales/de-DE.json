@@ -377,7 +377,8 @@
     "statMain": "Hauptstory",
     "statMainPlus": "Haupt + Extras",
     "statComplete": "Komplettist",
-    "statAllStyles": "Alle Spielweisen"
+    "statAllStyles": "Alle Spielweisen",
+    "viewDetails": "Details anzeigen"
   },
   "trailers": {
     "audio": "Trailer-Ton",

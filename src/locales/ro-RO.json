@@ -378,7 +378,8 @@
     "statMain": "Povestea principală",
     "statMainPlus": "Principal + extra",
     "statComplete": "Completist",
-    "statAllStyles": "Toate stilurile"
+    "statAllStyles": "Toate stilurile",
+    "viewDetails": "Vezi detalii"
   },
   "trailers": {
     "audio": "Sunetul trailerului",
