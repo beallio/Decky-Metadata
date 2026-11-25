@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "打开设置", "action": { "refresh": "刷新", "clear": "清除", "view": "查看", "check": "检查" } },
   "common": {
     "hours_other": "{{value}} 小时",
     "hoursShort": "{{value}} 小时",
@@ -18,6 +19,7 @@
       "no_activity": "未找到 {{title}} 的 Steam 动态"
     },
     "hltb_busy": "HowLongToBeat 正忙，请在一分钟后重试。",
+    "metadata_scan_busy": "元数据正在刷新。完成后请重试。",
     "invalid_title": "标题无效",
     "invalid_search": "搜索无效",
     "steam_search_unavailable": "Steam 搜索不可用，请重试。",
@@ -242,9 +244,9 @@
     },
     "metadata": {
       "title": "元数据",
-      "detectedGames": "检测到的非 Steam 游戏：",
-      "saved": "已保存的元数据：",
-      "missing": "缺少元数据：",
+      "detectedGames": "检测到的非 Steam 游戏",
+      "saved": "已保存的元数据",
+      "missing": "缺少元数据",
       "refresh": "刷新元数据",
       "refreshing": "正在刷新...",
       "refreshingStatus": "正在刷新元数据...",

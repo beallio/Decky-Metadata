@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Instellingen openen", "action": { "refresh": "Vernieuwen", "clear": "Wissen", "view": "Bekijken", "check": "Controleren" } },
   "common": {
     "hours_one": "{{value}} uur",
     "hours_other": "{{value}} uur",
@@ -19,6 +20,7 @@
       "no_activity": "Geen Steam-activiteit gevonden voor {{title}}"
     },
     "hltb_busy": "HowLongToBeat is druk bezet. Probeer het over een minuut opnieuw.",
+    "metadata_scan_busy": "Metadata wordt vernieuwd. Probeer het opnieuw zodra dit is afgerond.",
     "invalid_title": "ongeldige titel",
     "invalid_search": "ongeldige zoekopdracht",
     "steam_search_unavailable": "De Steam-zoekfunctie is niet beschikbaar. Probeer het opnieuw.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Gedetecteerde niet-Steam-games:",
-      "saved": "Opgeslagen metadata:",
-      "missing": "Ontbrekende metadata:",
+      "detectedGames": "Gedetecteerde niet-Steam-games",
+      "saved": "Opgeslagen metadata",
+      "missing": "Ontbrekende metadata",
       "refresh": "Metadata vernieuwen",
       "refreshing": "Vernieuwen...",
       "refreshingStatus": "Metadata vernieuwen...",

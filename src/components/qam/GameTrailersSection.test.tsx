@@ -2,14 +2,14 @@ import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
-  PanelSectionRow: "PanelSectionRow",
   SliderField: "SliderField",
   ToggleField: "ToggleField",
 }));
-vi.mock("./CollapsibleSection", () => ({ CollapsibleSection: "CollapsibleSection" }));
-vi.mock("../../styles", () => ({ inlineStatusStyle: () => ({}), sectionHeadingStyle: {} }));
+vi.mock("../../styles", () => ({ inlineStatusStyle: () => ({}) }));
 vi.mock("../../pluginConflicts", () => ({ featureConflictNotice: () => null }));
 vi.mock("../../i18n", async (importOriginal) => {
   const actual = await importOriginal<Record<string, unknown> & { t: (key: string) => string }>();
@@ -17,7 +17,7 @@ vi.mock("../../i18n", async (importOriginal) => {
 });
 
 import type { TrailerControllerSnapshot } from "../../trailers/controller";
-import { GameTrailersSection } from "./GameTrailersSection";
+import { GameTrailersBody } from "./GameTrailersSection";
 
 type ControlProps = { children?: ReactNode; disabled?: boolean };
 
@@ -54,7 +54,7 @@ const snapshot = (
   effectiveEnabled: enabled,
 });
 
-const render = (state: TrailerControllerSnapshot) => GameTrailersSection({
+const render = (state: TrailerControllerSnapshot) => GameTrailersBody({
   state,
   onEnabledChange: vi.fn(),
   onDetailEnabledChange: vi.fn(),
@@ -64,8 +64,6 @@ const render = (state: TrailerControllerSnapshot) => GameTrailersSection({
   onDetailFadeInDelayChange: vi.fn(),
   onHomeFadeInDelayChange: vi.fn(),
   onQualityChange: vi.fn(),
-  onQualityMenuWillOpen: vi.fn(),
-  onQualityControlRef: vi.fn(),
 });
 
 const dependentControls = (tree: ReactNode) => {
@@ -77,7 +75,7 @@ const dependentControls = (tree: ReactNode) => {
   ];
 };
 
-describe("GameTrailersSection dependent controls", () => {
+describe("GameTrailersBody dependent controls", () => {
   it("disables every dependent control while trailers are off", () => {
     const tree = nodes(render(snapshot(false)));
     const toggles = tree.filter((node) => node.type === "ToggleField");

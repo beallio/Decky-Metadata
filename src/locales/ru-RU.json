@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Открыть настройки", "action": { "refresh": "Обновить", "clear": "Очистить", "view": "Просмотр", "check": "Проверить" } },
   "common": {
     "hours_one": "{{value}} час",
     "hours_few": "{{value}} часа",
@@ -21,6 +22,7 @@
       "no_activity": "Активность Steam не найдена для {{title}}"
     },
     "hltb_busy": "HowLongToBeat перегружен. Повторите попытку через минуту.",
+    "metadata_scan_busy": "Выполняется обновление метаданных. Повторите попытку после его завершения.",
     "invalid_title": "недопустимое название",
     "invalid_search": "недопустимый запрос",
     "steam_search_unavailable": "Поиск в Steam недоступен. Повторите попытку.",
@@ -245,9 +247,9 @@
     },
     "metadata": {
       "title": "Метаданные",
-      "detectedGames": "Найдено игр вне Steam:",
-      "saved": "Метаданные сохранены:",
-      "missing": "Нет метаданных:",
+      "detectedGames": "Найдено игр вне Steam",
+      "saved": "Метаданные сохранены",
+      "missing": "Нет метаданных",
       "refresh": "Обновить метаданные",
       "refreshing": "Обновление...",
       "refreshingStatus": "Обновление метаданных...",

@@ -2,17 +2,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
-  ProgressBarItem: "ProgressBarItem",
+  ProgressBarWithInfo: "ProgressBarWithInfo",
 }));
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
   compactTextStyle: {},
-  inlineStatusStyle: () => ({}),
   rowStackStyle: {},
-  sectionHeadingStyle: {},
 }));
 vi.mock("../../tokens", () => ({ space: { md: 8 } }));
 // Components are invoked as plain functions here, so the i18n hook is replaced by non-React `t`.
@@ -21,27 +21,32 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { MetadataSection } from "./MetadataSection";
+import { MetadataMaintenanceBody, MetadataScanBody } from "./MetadataSection";
 
 const refreshDelisted = vi.fn();
-const render = (overrides: Partial<Parameters<typeof MetadataSection>[0]> = {}) => MetadataSection({
-  detectedCount: 3,
-  savedCount: 2,
-  missingCount: 1,
-  scanBusy: false,
-  scanMessage: "",
-  scanCompleted: 0,
-  scanTotal: 0,
-  scanStatusKind: "idle",
-  cacheBusy: false,
-  delistedCountText: "Delisted games: 24",
-  delistedDateText: "Last updated: 9/29/2026",
-  delistedBusy: false,
-  onRefreshMetadata: vi.fn(),
-  onClearCache: vi.fn(),
-  onRefreshDelisted: refreshDelisted,
-  ...overrides,
-});
+const render = (overrides: Record<string, unknown> = {}) => {
+  const props = {
+    detectedCount: 3,
+    savedCount: 2,
+    missingCount: 1,
+    scanBusy: false,
+    scanMessage: "",
+    scanCompleted: 0,
+    scanTotal: 0,
+    cacheBusy: false,
+    delistedCountText: "Delisted games: 24",
+    delistedDateText: "Last updated: 9/29/2026",
+    delistedBusy: false,
+    onRefreshMetadata: vi.fn(),
+    onClearCache: vi.fn(),
+    onRefreshDelisted: refreshDelisted,
+    ...overrides,
+  };
+  return [
+    MetadataScanBody(props as Parameters<typeof MetadataScanBody>[0]),
+    MetadataMaintenanceBody(props as Parameters<typeof MetadataMaintenanceBody>[0]),
+  ];
+};
 
 const nodes = (node: any): any[] => {
   if (node == null || typeof node === "boolean") return [];
@@ -60,7 +65,7 @@ const refreshButton = (tree: any) => nodes(tree).find(node =>
   node.type === "ButtonItem" && node.props?.onClick === refreshDelisted
 );
 
-describe("Metadata delisted-games subsection", () => {
+describe("MetadataMaintenanceBody delisted-games controls", () => {
   beforeEach(() => refreshDelisted.mockClear());
 
   it("shows the saved index count and date and refreshes that index", () => {
@@ -96,15 +101,43 @@ describe("Metadata delisted-games subsection", () => {
     expect(refreshButton(tree).props.disabled).toBe(true);
     expect(text(refreshButton(tree))).toContain("Refreshing...");
   });
+  it("passes a count of 0 as text, because Steam's Field hides a falsy value", () => {
+    const counts = nodes(render({ detectedCount: 0, savedCount: 0, missingCount: 0 }))
+      .filter(node => node.type === "Field")
+      .map(node => node.props.children);
+
+    expect(counts).toEqual(["0", "0", "0"]);
+  });
   it("shows scan progress from the completed and total counts", () => {
     const progress = nodes(render({
       scanBusy: true,
       scanMessage: "Scanning metadata",
       scanCompleted: 2,
       scanTotal: 4,
-    })).find(node => node.type === "ProgressBarItem");
+    })).find(node => node.type === "ProgressBarWithInfo");
 
     expect(progress.props.nProgress).toBe(50);
-    expect(progress.props.description).toBe("Scanning metadata");
+    expect(progress.props.sOperationText).toBe("Scanning metadata");
+  });
+  it("disables Clear cache while a metadata scan is busy", () => {
+    const onClearCache = vi.fn();
+    const clearButton = nodes(render({ scanBusy: true, onClearCache })).find(node =>
+      node.type === "ButtonItem" && node.props?.onClick === onClearCache
+    );
+
+    expect(clearButton.props.disabled).toBe(true);
+  });
+
+  it.each([false, true])("keeps Refresh metadata and Clear cache off until the fresh game list loads (inline %s)", (inline) => {
+    const onRefreshMetadata = vi.fn();
+    const onClearCache = vi.fn();
+    const actions = (listReady: boolean) => {
+      const tree = render({ inline, listReady, onRefreshMetadata, onClearCache });
+      const disabled = (onClick: unknown) => nodes(tree).find(node => node.props?.onClick === onClick)?.props.disabled;
+      return [disabled(onRefreshMetadata), disabled(onClearCache)];
+    };
+
+    expect(actions(false)).toEqual([true, true]);
+    expect(actions(true)).toEqual([false, false]);
   });
 });

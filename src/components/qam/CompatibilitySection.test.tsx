@@ -1,9 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@decky/ui", () => ({
+  DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DropdownItem: "DropdownItem",
   Field: "Field",
-  PanelSectionRow: "PanelSectionRow",
 }));
 vi.mock("../../styles", () => ({
   compactTextStyle: {},
@@ -15,7 +16,7 @@ vi.mock("../../i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { CompatibilitySection } from "./CompatibilitySection";
+import { CompatibilityBody } from "./CompatibilitySection";
 import type { CompatibilityDefaultScope, DeckCompatibilityCategory } from "../../types";
 
 type Node = { type?: unknown; props?: { children?: unknown; [key: string]: unknown } };
@@ -30,7 +31,6 @@ const nodes = (node: unknown): Node[] => {
 
 
 const onCompatibilityDefaultScopeChange = vi.fn();
-const onCompatibilityDefaultMenuWillOpen = vi.fn();
 
 const render = (overrides: {
   compatibilityDefault?: DeckCompatibilityCategory | null;
@@ -38,7 +38,7 @@ const render = (overrides: {
   compatibilityDefaultBusy?: boolean;
   compatibilityDefaultScope?: CompatibilityDefaultScope;
   compatibilityDefaultScopeBusy?: boolean;
-} = {}) => CompatibilitySection({
+} = {}) => CompatibilityBody({
   compatibilityDefault: 3,
   compatibilityDefaultLoaded: true,
   compatibilityDefaultBusy: false,
@@ -47,9 +47,6 @@ const render = (overrides: {
   compatibilityDefaultScopeBusy: false,
   onCompatibilityDefaultChange: vi.fn(),
   onCompatibilityDefaultScopeChange,
-  onCompatibilityDefaultMenuWillOpen,
-  onCompatibilityDefaultControlRef: vi.fn(),
-  onCompatibilityDefaultScopeControlRef: vi.fn(),
   ...overrides,
 });
 
@@ -61,8 +58,7 @@ const scopeDropdown = (overrides: Parameters<typeof render>[0] = {}) => {
   return found.props;
 };
 
-describe("CompatibilitySection default scope", () => {
-
+describe("CompatibilityBody default scope", () => {
   it("disables the scope while it cannot be applied or saved", () => {
     expect(scopeDropdown().disabled).toBe(false);
     // Automatic has no default to scope.
@@ -84,8 +80,7 @@ describe("CompatibilitySection default scope", () => {
 
   it("uses the native readable four-option scope dropdown", () => {
     const dropdown = scopeDropdown({ compatibilityDefaultScope: "no-steam" });
-    expect(dropdown.layout).toBe("below");
-    expect(dropdown.childrenContainerWidth).toBe("max");
+    expect(dropdown.layout).toBeUndefined();
     expect(dropdown.rgOptions).toEqual([
       { data: "steam", label: "Steam-matched games" },
       { data: "no-steam", label: "Saved games without a Steam ID" },
@@ -93,22 +88,11 @@ describe("CompatibilitySection default scope", () => {
       { data: "all", label: "All non-Steam games" },
     ]);
     expect((dropdown.renderButtonValue as any)().props.children).toBe("Saved games without a Steam ID");
-    (dropdown.onMenuWillOpen as any)();
-    expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("scope");
-  });
-
-  it("keeps the selected compatibility label complete and prepares native focus return", () => {
-    const categoryDropdown = (category: DeckCompatibilityCategory | null) =>
-      nodes(render({ compatibilityDefault: category })).find((node) =>
-        node.type === "DropdownItem" && node.props?.label === "Default compatibility status"
-      )?.props;
-    const automatic = categoryDropdown(null);
-    expect(automatic?.renderButtonValue).toBeTypeOf("function");
-    expect((automatic?.renderButtonValue as any)().props.children).toBe("Automatic");
-    expect((categoryDropdown(3)?.renderButtonValue as any)().props.children).toBe("Verified");
-    onCompatibilityDefaultMenuWillOpen.mockClear();
-    (automatic?.onMenuWillOpen as any)();
-    expect(onCompatibilityDefaultMenuWillOpen).toHaveBeenCalledWith("category");
+    const defaultDropdown = nodes(render()).find(node =>
+      node.type === "DropdownItem" && node.props?.label === "Default compatibility status"
+    );
+    expect(defaultDropdown?.props?.layout).toBeUndefined();
+    expect(defaultDropdown?.props?.childrenContainerWidth).toBeUndefined();
   });
 
 });

@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Öppna inställningar", "action": { "refresh": "Uppdatera", "clear": "Rensa", "view": "Visa", "check": "Kontrollera" } },
   "common": {
     "hours_one": "{{value}} timme",
     "hours_other": "{{value}} timmar",
@@ -19,6 +20,7 @@
       "no_activity": "Ingen Steam-aktivitet hittades för {{title}}"
     },
     "hltb_busy": "HowLongToBeat är upptagen. Försök igen om en minut.",
+    "metadata_scan_busy": "Metadata uppdateras. Försök igen när uppdateringen är klar.",
     "invalid_title": "ogiltig titel",
     "invalid_search": "ogiltig sökning",
     "steam_search_unavailable": "Steamsökningen är inte tillgänglig. Försök igen.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Hittade icke-Steam-spel:",
-      "saved": "Sparad metadata:",
-      "missing": "Saknad metadata:",
+      "detectedGames": "Hittade icke-Steam-spel",
+      "saved": "Sparad metadata",
+      "missing": "Saknad metadata",
       "refresh": "Uppdatera metadata",
       "refreshing": "Uppdaterar...",
       "refreshingStatus": "Uppdaterar metadata...",

@@ -6,12 +6,12 @@ These ratings are separate from Valve's Steam Deck compatibility labels. Neither
 
 ## Turn on badges
 
-1. Open the Quick Access Menu, select **Decky**, then open **Decky Metadata**.
-2. Select **ProtonDB badges**, or press **A** on its heading.
+1. Open Decky Metadata from the Quick Access Menu, then select the gear.
+2. Open the **ProtonDB badges** tab in Settings.
 3. Turn on **Enable ProtonDB badges**. The feature is off by default.
 4. Choose the views where you want badges to appear.
 
-Closing the section or Quick Access Menu does not turn badges off. Turning the main switch off keeps your choices for each view.
+Turning the main switch off keeps your choices for each view.
 
 ![Community rating icons on Library covers](../../assets/decky-metadata-protondb-badges.png?cacheBuster=20261003)
 
@@ -63,29 +63,32 @@ The Store row needs Steam's remote browser debugging to be enabled:
 
 CEF is Steam's built-in browser. This debugging setting allows unauthenticated browser access from other devices on your network, so use it only on a trusted network. Follow any reload prompt from Decky; finish a running game before restarting Steam.
 
-The same setting also lets Metadata show the **How Long To Beat** box, when **Show HowLongToBeat times** is on and the **HLTB times** section's **Store** switch is on.
+The same setting also lets Metadata show the **How Long To Beat** box, when **Show HowLongToBeat times** is on and the **HLTB times** tab's **Store** switch is on.
 
 ## Use one badge plugin
 
-When **ProtonDB Badges** is enabled in Decky Loader, Metadata pauses its own badges. The **ProtonDB badges** section names the conflict. Detection checks whether that plugin is active, not its individual feature settings.
+When **ProtonDB Badges** is enabled in Decky Loader, Metadata pauses its own badges. The **ProtonDB badges** tab names the conflict. Detection checks whether that plugin is active, not its individual feature settings.
 
 Disable or remove ProtonDB Badges in Decky Loader to use Metadata's badges. Hiding it or freezing its updates does not disable it.
 
 If Metadata's switch was on, your saved choice stays on while the badges are paused. They resume when the other plugin is disabled or removed. You can turn Metadata's switch off while paused to prevent that automatic resume. Once it is off, you cannot turn it back on until the conflict clears.
 
-Only badges are paused. Metadata's other features remain available. If plugin detection is unavailable, the section shows a warning instead of assuming there is a conflict; check manually that only one badge plugin is enabled.
+Only badges are paused. Metadata's other features remain available. If plugin detection is unavailable, the tab shows a warning instead of assuming there is a conflict; check manually that only one badge plugin is enabled.
 
 ## If a badge is missing or wrong
 
 - Check **Enable ProtonDB badges** and the switch for the view you are using.
 - With **Covers only on focus or hover** on, select or hover the cover.
-- Read any conflict or settings error in the **ProtonDB badges** section.
+- Read any conflict or settings error in the **ProtonDB badges** tab.
 - For a non-Steam game, check the saved Steam match and edition. To correct
   it, use **Apply Steam App ID** on **Game Match** and select **Save**.
 - For the Store row, check **Allow Remote CEF Debugging** and that **Store** is on in **ProtonDB badges**.
 - Allow time for the first name or rating lookup, and check that the Deck is online.
 - A game can have no tier even when the match is correct. Open ProtonDB to check its reports.
 
-Do not clear the Metadata cache just to refresh a rating: **Clear cache** removes saved matches and metadata. See [updates and troubleshooting](updates-and-troubleshooting.md) for logs and useful information to include in a report.
+Do not clear the Metadata cache just to refresh a rating. **Clear cache** in
+**Settings > Metadata** removes saved matches and metadata. See [updates and
+troubleshooting](updates-and-troubleshooting.md) for logs and useful information
+to include in a report.
 
 [Help home](README.md)

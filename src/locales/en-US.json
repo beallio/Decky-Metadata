@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Open settings", "action": { "refresh": "Refresh", "clear": "Clear", "view": "View", "check": "Check" } },
   "common": {
     "hours_one": "{{value}} hour",
     "hours_other": "{{value}} hours",
@@ -19,6 +20,7 @@
       "no_activity": "No Steam Activity found for {{title}}"
     },
     "hltb_busy": "HowLongToBeat is busy. Try again in a minute.",
+    "metadata_scan_busy": "A metadata refresh is running. Try again when it finishes.",
     "invalid_title": "invalid title",
     "invalid_search": "invalid search",
     "steam_search_unavailable": "Steam search is unavailable. Try again.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Detected non-Steam games:",
-      "saved": "Metadata saved:",
-      "missing": "Missing metadata:",
+      "detectedGames": "Detected non-Steam games",
+      "saved": "Metadata saved",
+      "missing": "Missing metadata",
       "refresh": "Refresh metadata",
       "refreshing": "Refreshing...",
       "refreshingStatus": "Refreshing metadata...",

@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Ayarları aç", "action": { "refresh": "Yenile", "clear": "Temizle", "view": "Görüntüle", "check": "Kontrol et" } },
   "common": {
     "hours_one": "{{value}} saat",
     "hours_other": "{{value}} saat",
@@ -19,6 +20,7 @@
       "no_activity": "{{title}} için Steam Etkinliği bulunamadı"
     },
     "hltb_busy": "HowLongToBeat yoğun. Bir dakika sonra tekrar deneyin.",
+    "metadata_scan_busy": "Meta veriler yenileniyor. İşlem tamamlandığında tekrar deneyin.",
     "invalid_title": "geçersiz başlık",
     "invalid_search": "geçersiz arama",
     "steam_search_unavailable": "Steam araması kullanılamıyor. Tekrar deneyin.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Meta veriler",
-      "detectedGames": "Algılanan Steam dışı oyunlar:",
-      "saved": "Kaydedilmiş meta veriler:",
-      "missing": "Eksik meta veriler:",
+      "detectedGames": "Algılanan Steam dışı oyunlar",
+      "saved": "Kaydedilmiş meta veriler",
+      "missing": "Eksik meta veriler",
       "refresh": "Meta verileri yenile",
       "refreshing": "Yenileniyor...",
       "refreshingStatus": "Meta veriler yenileniyor...",

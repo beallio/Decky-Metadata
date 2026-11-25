@@ -81,6 +81,8 @@ describe("isCurrentMatchedRenderRoute", () => {
     "/library/home",
     "/decky-metadata/55150 /library/app/55150",
     "/decky-metadata/55150 /decky-metadata/55151",
+    "/decky-metadata-settings",
+    "/routes/decky-metadata-settings https://steamloopback.host/routes/decky-metadata-settings",
   ])("does not treat another or ambiguous route as this app's render detail: %s", (routeContext) => {
     const classifier = isCurrentMatchedRenderRoute(routeContext, 55150);
     expect(typeof classifier).toBe("function");

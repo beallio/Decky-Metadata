@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Einstellungen öffnen", "action": { "refresh": "Aktualisieren", "clear": "Leeren", "view": "Ansehen", "check": "Prüfen" } },
   "common": {
     "hours_one": "{{value}} Stunde",
     "hours_other": "{{value}} Stunden",
@@ -19,6 +20,7 @@
       "no_activity": "Keine Steam-Aktivität für {{title}} gefunden"
     },
     "hltb_busy": "HowLongToBeat ist ausgelastet. Versuche es in einer Minute erneut.",
+    "metadata_scan_busy": "Metadaten werden gerade aktualisiert. Versuche es erneut, wenn der Vorgang abgeschlossen ist.",
     "invalid_title": "ungültiger Titel",
     "invalid_search": "ungültige Suche",
     "steam_search_unavailable": "Steam-Suche ist nicht verfügbar. Versuche es erneut.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadaten",
-      "detectedGames": "Erkannte Nicht-Steam-Spiele:",
-      "saved": "Gespeicherte Metadaten:",
-      "missing": "Fehlende Metadaten:",
+      "detectedGames": "Erkannte Nicht-Steam-Spiele",
+      "saved": "Gespeicherte Metadaten",
+      "missing": "Fehlende Metadaten",
       "refresh": "Metadaten aktualisieren",
       "refreshing": "Aktualisierung...",
       "refreshingStatus": "Metadaten werden aktualisiert...",

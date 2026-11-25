@@ -41,6 +41,7 @@ import {
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
+import { findSteamVar } from "./steam/steamUiModules";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 import { t } from "./i18n";
@@ -140,9 +141,9 @@ export const resolveLibraryContextMenu = (): any => {
               typeof member?.toString === "function" &&
               member.toString().includes("navigator:")
           )
-        : typeof findModuleExport === "function"
-          ? findModuleExport((member: Export) => isViteContextMenuWrapper(member))
-          : undefined
+        : (typeof findModuleExport === "function"
+            ? findModuleExport((member: Export) => isViteContextMenuWrapper(member))
+            : undefined) ?? findSteamVar(isViteContextMenuWrapper)
     ) as FC | undefined;
 
     if (typeof menuComponent !== "function") return undefined;

@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Otwórz ustawienia", "action": { "refresh": "Odśwież", "clear": "Wyczyść", "view": "Wyświetl", "check": "Sprawdź" } },
   "common": {
     "hours_one": "{{value}} godzina",
     "hours_few": "{{value}} godziny",
@@ -21,6 +22,7 @@
       "no_activity": "Nie znaleziono aktywności Steam dla {{title}}"
     },
     "hltb_busy": "HowLongToBeat jest zajęty. Spróbuj ponownie za minutę.",
+    "metadata_scan_busy": "Trwa odświeżanie metadanych. Spróbuj ponownie po jego zakończeniu.",
     "invalid_title": "nieprawidłowy tytuł",
     "invalid_search": "nieprawidłowe wyszukiwanie",
     "steam_search_unavailable": "Wyszukiwanie w Steam jest niedostępne. Spróbuj ponownie.",
@@ -245,9 +247,9 @@
     },
     "metadata": {
       "title": "Metadane",
-      "detectedGames": "Wykryte gry spoza Steam:",
-      "saved": "Zapisane metadane:",
-      "missing": "Brakujące metadane:",
+      "detectedGames": "Wykryte gry spoza Steam",
+      "saved": "Zapisane metadane",
+      "missing": "Brakujące metadane",
       "refresh": "Odśwież metadane",
       "refreshing": "Odświeżanie...",
       "refreshingStatus": "Odświeżanie metadanych...",

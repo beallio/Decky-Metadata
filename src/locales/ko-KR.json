@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "설정 열기", "action": { "refresh": "새로고침", "clear": "지우기", "view": "보기", "check": "확인" } },
   "common": {
     "hours_other": "{{value}}시간",
     "hoursShort": "{{value}}시간",
@@ -18,6 +19,7 @@
       "no_activity": "{{title}}의 Steam 활동을 찾을 수 없습니다"
     },
     "hltb_busy": "HowLongToBeat가 혼잡합니다. 1분 후에 다시 시도하세요.",
+    "metadata_scan_busy": "메타데이터를 새로 고치는 중입니다. 완료되면 다시 시도하세요.",
     "invalid_title": "잘못된 제목",
     "invalid_search": "잘못된 검색",
     "steam_search_unavailable": "Steam 검색을 사용할 수 없습니다. 다시 시도하세요.",
@@ -242,9 +244,9 @@
     },
     "metadata": {
       "title": "메타데이터",
-      "detectedGames": "감지된 비Steam 게임:",
-      "saved": "저장된 메타데이터:",
-      "missing": "메타데이터 없음:",
+      "detectedGames": "감지된 비Steam 게임",
+      "saved": "저장된 메타데이터",
+      "missing": "메타데이터 없음",
       "refresh": "메타데이터 새로 고침",
       "refreshing": "새로 고치는 중...",
       "refreshingStatus": "메타데이터를 새로 고치는 중...",

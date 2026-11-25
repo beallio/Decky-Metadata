@@ -95,6 +95,12 @@ export type TrailerControllerSnapshot = TrailerStatus & {
   effectiveEnabled: boolean;
 };
 
+// `settings` is rebuilt each time; every other field is a primitive or a kept reference.
+const sameSnapshot = (a: TrailerControllerSnapshot, b: TrailerControllerSnapshot) =>
+  (Object.keys(b) as (keyof TrailerControllerSnapshot)[]).every((key) => key === "settings"
+    ? (Object.keys(b.settings) as (keyof TrailerSettings)[]).every((field) => a.settings[field] === b.settings[field])
+    : a[key] === b[key]);
+
 type OwnerRecord = {
   ownerId: string;
   active: boolean;
@@ -268,7 +274,7 @@ export class TrailerController {
 
   getSnapshot = () => this.snapshot;
 
-  /** QAM stays mounted while hidden, so only its own document reports visibility. */
+  /** True while Settings > Game trailers is shown: its live status keeps the remote check at 2 s. */
   setPanelVisible(visible: boolean) {
     if (visible && !this.panelVisible) this.resetRemoteBackoff();
     this.panelVisible = visible;
@@ -488,7 +494,10 @@ export class TrailerController {
   }
 
   private emit() {
-    this.snapshot = this.buildSnapshot();
+    const next = this.buildSnapshot();
+    // The poll rebuilds the snapshot every 2 s; subscribers (the Settings page) re-render only on a real change.
+    if (sameSnapshot(this.snapshot, next)) return;
+    this.snapshot = next;
     for (const listener of this.listeners) {
       try { listener(); } catch { /* A panel update cannot block the controller. */ }
     }

@@ -49,7 +49,6 @@ export type UpdateCheckContext = {
   update_channel: UpdateChannel;
   automatic_update_checks: boolean;
   installed_version: string;
-  effective_installed_version: string;
   last_checked_at: string | null;
   last_checked_channel: UpdateChannel | null;
   last_available_tag: string | null;

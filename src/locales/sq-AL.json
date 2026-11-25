@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Hap cilësimet", "action": { "refresh": "Rifresko", "clear": "Pastro", "view": "Shiko", "check": "Kontrollo" } },
   "common": {
     "hours_one": "{{value}} orë",
     "hours_other": "{{value}} orë",
@@ -19,6 +20,7 @@
       "no_activity": "Nuk u gjet aktivitet në Steam për {{title}}"
     },
     "hltb_busy": "HowLongToBeat është i zënë. Provo përsëri pas një minute.",
+    "metadata_scan_busy": "Përditësimi i metadatave po vazhdon. Provo përsëri pasi të përfundojë.",
     "invalid_title": "titull i pavlefshëm",
     "invalid_search": "kërkim i pavlefshëm",
     "steam_search_unavailable": "Kërkimi në Steam nuk është i disponueshëm. Provo përsëri.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metadata",
-      "detectedGames": "Lojëra jo-Steam të zbuluara:",
-      "saved": "Metadata të ruajtura:",
-      "missing": "Metadata që mungojnë:",
+      "detectedGames": "Lojëra jo-Steam të zbuluara",
+      "saved": "Metadata të ruajtura",
+      "missing": "Metadata që mungojnë",
       "refresh": "Rifresko metadata",
       "refreshing": "Po rifreskohet...",
       "refreshingStatus": "Po rifreskohen metadata...",

@@ -15,7 +15,17 @@ After installation, Decky Metadata appears in the Decky menu.
 
 ## Open Decky Metadata
 
-Open the **Quick Access Menu**, select **Decky**, then choose **Decky Metadata**. Select a section heading to show its settings and tools. **Versions** starts open; the other sections start closed.
+Open the **Quick Access Menu**, select **Decky**, then choose **Decky Metadata**.
+The panel shows counts for detected non-Steam games, saved metadata, and missing
+metadata, plus **Refresh metadata** and its progress bar. It shows **Install**
+only when an update is available. Open Settings with the gear or **Open
+settings** button; the panel closes when Settings opens.
+
+Settings is a full-screen page with Steam-style side tabs: Metadata,
+Compatibility status, ProtonDB badges, HLTB times, Game trailers, Mini
+achievements, Context menu, then (after a separator) Logs, Updates, and Versions.
+Changes apply at once; there is no Save button. Press **B** to return from a
+settings page to the tab list, then press **B** again to close Settings.
 
 To edit a non-Steam game, select **Edit Metadata...** from the Library card's
 **Options** menu or from the game page's gear menu. See

@@ -1,291 +1,162 @@
 import {
   ButtonItem,
   ConfirmModal,
+  DialogControlsSection,
   Field,
   Navigation,
-  PanelSectionRow,
   showModal,
   ToggleField,
 } from "@decky/ui";
-import { CollapsibleSection } from "./CollapsibleSection";
-import { FaExclamationTriangle, FaSyncAlt } from "react-icons/fa";
-import { IoMdRefresh } from "react-icons/io";
+import { FaExclamationTriangle } from "react-icons/fa";
 import {
   UPDATE_CHECK_UI_TIMEOUT_MS,
   usePluginUpdateController,
 } from "../../updater/pluginUpdateController";
-
+import { PluginInstallAction } from "../../updater/installAction";
 import { formatDateTime, translateBackendError, useT } from "../../i18n";
-import { BusySpinner, ButtonLabel, inlineStatusStyle } from "../../styles";
-import { PluginUpdateCandidate, UpdateChannel } from "../../types";
-import {
-  isDeckyInstallerAvailable,
-} from "../../updater/deckyInstaller";
-
-
-
-export interface PluginUpdateSectionProps {
-  currentVersion: string;
-  updateChannel: UpdateChannel;
-  automaticUpdateChecks: boolean;
-  settingsLoaded: boolean;
-  onToggleUpdateChannel: (enabled: boolean) => void;
-  onToggleAutomaticUpdateChecks: (enabled: boolean) => void;
-  onInstallVersionConfirmed?: (version: string) => void;
-}
-
-export function PluginUpdateSection({
-  currentVersion,
-  updateChannel,
-  automaticUpdateChecks,
-  settingsLoaded,
-  onToggleUpdateChannel,
-  onToggleAutomaticUpdateChecks,
-  onInstallVersionConfirmed
-}: PluginUpdateSectionProps) {
+import { BusySpinner, inlineStatusStyle, statusValueStyle } from "../../styles";
+import { statusColor } from "../../tokens";
+export function PluginUpdateBody() {
   const t = useT();
   const {
-    effectiveCurrentVersion,
+    pluginVersion,
+    updateChannel,
+    automaticUpdateChecks,
+    settingsLoaded,
     candidate,
     checkResult,
-    errorMessage: errorMsg,
+    errorMessage,
     checkTimedOut,
     isChecking,
     isInstalling,
     isHandoffPending,
     installedReleasePublishedAt,
     checkNow,
-    install: handleInstall,
-  } = usePluginUpdateController({
-    currentVersion,
-    updateChannel,
-    automaticUpdateChecks,
-    settingsLoaded,
-    onInstallVersionConfirmed,
-  });
-
+    install,
+    setUpdateChannel,
+    setAutomaticUpdateChecks,
+  } = usePluginUpdateController();
+  const isLocalBuild = pluginVersion.includes("+");
   const handleToggleChannel = (checked: boolean) => {
     if (checked) {
       showModal(
         <ConfirmModal
           strTitle={t("qam.update.enableDevelopmentTitle")}
           strDescription={t("qam.update.receiveDevelopmentDescription")}
-          onOK={() => onToggleUpdateChannel(true)}
+          onOK={() => void setUpdateChannel(true)}
         />
       );
     } else {
-      onToggleUpdateChannel(false);
+      void setUpdateChannel(false);
     }
   };
-
-  const handleInstallClick = (targetCandidate: PluginUpdateCandidate) => {
-    if (targetCandidate.action === "downgrade_to_stable") {
-      showModal(
-        <ConfirmModal
-          strTitle={t("qam.update.confirmRevertTitle")}
-          strDescription={t("qam.update.confirmRevertBody", { version: targetCandidate.version })}
-          onOK={() => handleInstall(targetCandidate)}
-        />
-      );
-    } else {
-      void handleInstall(targetCandidate);
-    }
-  };
-
-  const isLocalBuild = effectiveCurrentVersion.includes("+");
-  const isDeckyAvailable = isDeckyInstallerAvailable();
-  const canInstallCandidate =
-    isDeckyAvailable && (!isLocalBuild || candidate?.channel === "stable");
-
-  const getActionText = (c: PluginUpdateCandidate) => {
-    switch (c.action) {
-      case "move_to_stable":
-        return t("qam.update.actionMoveToStable", { version: c.version });
-      case "downgrade_to_stable":
-        return t("qam.update.actionRevertToStable", { version: c.version });
-      default:
-        if (c.channel === "development") {
-          return t("qam.update.actionInstallDevelopment", { version: c.version });
-        }
-        return t("qam.update.actionUpdate", { version: c.version });
-    }
-  };
-
   const getStatusContent = () => {
     if (isChecking) {
-      return <span style={inlineStatusStyle("active")}><BusySpinner />{t("qam.update.checking")}</span>;
+      return <span style={statusValueStyle("active")}><BusySpinner />{t("qam.update.checking")}</span>;
     }
-    if (errorMsg) {
+    if (errorMessage) {
       return (
-        <span style={inlineStatusStyle("error")}>
-          {checkTimedOut
-            ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-            : t("qam.update.checkFailed")}
+        <span style={statusValueStyle("error")}>
+          {checkResult?.status === "failed"
+            ? checkTimedOut
+              ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+              : t("qam.update.checkFailed")
+            : t("updater.installation.failedTitle")}
         </span>
       );
     }
     if (checkResult?.status === "current") {
-      return <span style={inlineStatusStyle("success")}>{t("qam.update.upToDate")}</span>;
+      return <span style={statusValueStyle("success")}>{t("qam.update.upToDate")}</span>;
     }
     if (checkResult?.status === "available") {
       return (
-        <span style={inlineStatusStyle("active")}>
-          {candidate?.channel === "development" && effectiveCurrentVersion.includes("dev") && !installedReleasePublishedAt
+        <span style={statusValueStyle("active")}>
+          {candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
             ? t("qam.update.latestDevelopment")
             : t("qam.update.updateAvailable")}
         </span>
       );
     }
-    return <span style={inlineStatusStyle("idle")}>{t("qam.update.neverChecked")}</span>;
+    return <span style={statusValueStyle("idle")}>{t("qam.update.neverChecked")}</span>;
   };
-
   const lastCheckedText = checkResult?.checked_at
     ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
     : undefined;
 
   return (
-    <CollapsibleSection title={t("qam.update.title")} icon={<FaSyncAlt size={16} />}>
-      <PanelSectionRow>
-        <Field
-          label={t("qam.update.installedVersion")}
-          padding="standard"
-          focusable={true}
-          highlightOnFocus={true}
-        >
-          {effectiveCurrentVersion} {isLocalBuild ? t("qam.update.localBuild") : ""}
-        </Field>
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.update.receiveDevelopment")}
-          description={t("qam.update.receiveDevelopmentDescription")}
-          checked={updateChannel === "development"}
-          disabled={!settingsLoaded}
-          onChange={handleToggleChannel}
-        />
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.update.autoCheck")}
-          description={t("qam.update.autoCheckDescription")}
-          checked={automaticUpdateChecks}
-          disabled={!settingsLoaded}
-          onChange={onToggleAutomaticUpdateChecks}
-        />
-      </PanelSectionRow>
-
-      <PanelSectionRow>
-        <Field
-          label={t("qam.update.status")}
-          description={lastCheckedText}
-          padding="standard"
-          focusable={true}
-          highlightOnFocus={true}
-        >
-          {getStatusContent()}
-        </Field>
-      </PanelSectionRow>
-
-      {errorMsg && (
-        <PanelSectionRow>
-          <Field focusable={false} padding="standard" bottomSeparator="none">
-            <div style={inlineStatusStyle("error")}>
-              <span style={{ flexShrink: 0, marginTop: "2px", display: "inline-flex" }}>
-                <FaExclamationTriangle />
-              </span>
-              <div>
-                <div>{translateBackendError(errorMsg)}</div>
-                {checkResult?.status === "failed" && checkResult.retry_after && (
-                  <div>
-                    {t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) })}
-                  </div>
-                )}
-              </div>
-            </div>
-          </Field>
-        </PanelSectionRow>
-      )}
-
-      {candidate && (
-        <PanelSectionRow>
-          <Field
-            label={t("qam.update.candidate")}
-            padding="standard"
-            focusable={true}
-            highlightOnFocus={true}
-          >
-            <div style={{ fontSize: "14px" }}>
-              <div>{t("qam.update.newVersion", {
-                version: candidate.version,
-                channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-              })}</div>
-              {candidate.action === "downgrade_to_stable" && (
-                <div style={inlineStatusStyle("warning")}>{t("qam.update.downgradeWarning")}</div>
+    <DialogControlsSection>
+      <Field label={t("qam.update.installedVersion")}>
+        {pluginVersion} {isLocalBuild ? t("qam.update.localBuild") : ""}
+      </Field>
+      <ToggleField
+        label={t("qam.update.receiveDevelopment")}
+        description={t("qam.update.receiveDevelopmentDescription")}
+        checked={updateChannel === "development"}
+        disabled={!settingsLoaded || isInstalling || isHandoffPending}
+        onChange={handleToggleChannel}
+      />
+      <ToggleField
+        label={t("qam.update.autoCheck")}
+        description={t("qam.update.autoCheckDescription")}
+        checked={automaticUpdateChecks}
+        disabled={!settingsLoaded || isInstalling || isHandoffPending}
+        onChange={(enabled: boolean) => void setAutomaticUpdateChecks(enabled)}
+      />
+      <Field label={t("qam.update.status")} description={lastCheckedText}>
+        {getStatusContent()}
+      </Field>
+      {errorMessage && (
+        <Field focusable={false} childrenLayout="below">
+          <div style={inlineStatusStyle("error")}>
+            <span style={{ flexShrink: 0, marginTop: "2px", display: "inline-flex" }}>
+              <FaExclamationTriangle />
+            </span>
+            <div>
+              <div>{translateBackendError(errorMessage)}</div>
+              {checkResult?.status === "failed" && checkResult.retry_after && (
+                <div>
+                  {t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) })}
+                </div>
               )}
             </div>
-          </Field>
-        </PanelSectionRow>
+          </div>
+        </Field>
       )}
-
-      {/* A local +build may hand off only to a canonical stable release. */}
-      {candidate && canInstallCandidate && (
-        <PanelSectionRow>
-          <ButtonItem
-            layout="below"
-            onClick={() => handleInstallClick(candidate)}
-            disabled={isChecking || isInstalling}
-          >
-            <ButtonLabel busy={isInstalling}>
-              {isInstalling
-                ? isHandoffPending ? t("qam.update.waitingForDecky") : t("qam.update.preparing")
-                : getActionText(candidate)}
-            </ButtonLabel>
-          </ButtonItem>
-          </PanelSectionRow>
-      )}
-
-      {candidate && !canInstallCandidate && (
-        <PanelSectionRow>
-          <Field focusable={true} highlightOnFocus={true} padding="standard">
-            <div style={inlineStatusStyle("error")}>
-              {isLocalBuild && candidate.channel !== "stable"
-                ? t("qam.update.localBuildOnlyStable")
-                : t("qam.update.manualInstallUnavailable")}
-            </div>
-          </Field>
-        </PanelSectionRow>
-      )}
-
       {candidate && (
-        <PanelSectionRow>
-            <ButtonItem
-              layout="below"
-              onClick={() => Navigation.NavigateToExternalWeb(candidate.release_url)}
-            >
-              {t("qam.update.viewReleaseNotes")}
-            </ButtonItem>
-        </PanelSectionRow>
+        <PluginInstallAction
+          candidate={candidate}
+          currentVersion={pluginVersion}
+          isChecking={isChecking}
+          isInstalling={isInstalling}
+          isHandoffPending={isHandoffPending}
+          onInstall={install}
+          inline
+          label={t("qam.update.newVersion", {
+            version: candidate.version,
+            channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
+          })}
+          description={candidate.action === "downgrade_to_stable" ? (
+            <span style={{ color: statusColor("warning") }}>{t("qam.update.downgradeWarning")}</span>
+          ) : undefined}
+        />
       )}
-
-      <PanelSectionRow>
-          <ButtonItem
-            layout="below"
-            bottomSeparator="none"
-            onClick={() => checkNow()}
-            disabled={isChecking || isInstalling}
-          >
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}>
-              {isChecking ? (
-                <BusySpinner />
-              ) : (
-                <IoMdRefresh />
-              )}
-              <span>{t("qam.update.checkNow")}</span>
-            </div>
-          </ButtonItem>
-      </PanelSectionRow>
-    </CollapsibleSection>
+      {candidate && (
+        <ButtonItem
+          layout="inline"
+          label={t("qam.update.viewReleaseNotes")}
+          onClick={() => Navigation.NavigateToExternalWeb(candidate.release_url)}
+        >
+          {t("settings.action.view")}
+        </ButtonItem>
+      )}
+      <ButtonItem
+        layout="inline"
+        label={t("qam.update.checkNow")}
+        onClick={() => void checkNow()}
+        disabled={isChecking || isInstalling || isHandoffPending}
+      >
+        {t("settings.action.check")}
+      </ButtonItem>
+    </DialogControlsSection>
   );
 }

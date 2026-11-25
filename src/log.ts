@@ -4,6 +4,8 @@ export const setVerboseLogging = (enabled: boolean) => {
   verbose = !!enabled;
 };
 
+export const isVerboseLogging = () => verbose;
+
 const prefix = (area: string) => `[Decky Metadata][${area}]`;
 
 export const debug = (area: string, message: string, ...args: unknown[]) => {

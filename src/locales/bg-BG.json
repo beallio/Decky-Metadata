@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Отваряне на настройките", "action": { "refresh": "Обнови", "clear": "Изчисти", "view": "Преглед", "check": "Провери" } },
   "common": {
     "hours_one": "{{value}} час",
     "hours_other": "{{value}} часа",
@@ -19,6 +20,7 @@
       "no_activity": "Не е намерена активност в Steam за {{title}}"
     },
     "hltb_busy": "HowLongToBeat е зает. Опитайте отново след минута.",
+    "metadata_scan_busy": "Метаданните се обновяват. Опитайте отново, когато обновяването приключи.",
     "invalid_title": "невалидно заглавие",
     "invalid_search": "невалидно търсене",
     "steam_search_unavailable": "Търсенето в Steam не е достъпно. Опитайте отново.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Метаданни",
-      "detectedGames": "Открити не-Steam игри:",
-      "saved": "Запазени метаданни:",
-      "missing": "Липсващи метаданни:",
+      "detectedGames": "Открити не-Steam игри",
+      "saved": "Запазени метаданни",
+      "missing": "Липсващи метаданни",
       "refresh": "Обновяване на метаданните",
       "refreshing": "Обновяване...",
       "refreshingStatus": "Обновяване на метаданните...",

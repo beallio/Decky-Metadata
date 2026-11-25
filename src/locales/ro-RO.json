@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Deschide setările", "action": { "refresh": "Reîmprospătează", "clear": "Șterge", "view": "Vezi", "check": "Verifică" } },
   "common": {
     "hours_one": "{{value}} oră",
     "hours_few": "{{value}} ore",
@@ -20,6 +21,7 @@
       "no_activity": "Nu s-a găsit nicio Activitate Steam pentru {{title}}"
     },
     "hltb_busy": "HowLongToBeat este ocupat. Încearcă din nou într-un minut.",
+    "metadata_scan_busy": "Metadatele se actualizează. Încearcă din nou după ce se termină.",
     "invalid_title": "titlu nevalid",
     "invalid_search": "căutare nevalidă",
     "steam_search_unavailable": "Căutarea Steam nu este disponibilă. Încearcă din nou.",
@@ -244,9 +246,9 @@
     },
     "metadata": {
       "title": "Metadate",
-      "detectedGames": "Jocuri non-Steam detectate:",
-      "saved": "Metadate salvate:",
-      "missing": "Metadate lipsă:",
+      "detectedGames": "Jocuri non-Steam detectate",
+      "saved": "Metadate salvate",
+      "missing": "Metadate lipsă",
       "refresh": "Reîmprospătează metadatele",
       "refreshing": "Se reîmprospătează...",
       "refreshingStatus": "Se reîmprospătează metadatele...",

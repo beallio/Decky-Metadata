@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Abrir definições", "action": { "refresh": "Atualizar", "clear": "Limpar", "view": "Ver", "check": "Verificar" } },
   "common": {
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} de horas",
@@ -20,6 +21,7 @@
       "no_activity": "Nenhuma Atividade Steam encontrada para {{title}}"
     },
     "hltb_busy": "O HowLongToBeat está ocupado. Tente novamente dentro de um minuto.",
+    "metadata_scan_busy": "A atualização dos metadados está em curso. Tente novamente quando terminar.",
     "invalid_title": "título inválido",
     "invalid_search": "pesquisa inválida",
     "steam_search_unavailable": "A pesquisa na Steam está indisponível. Tente novamente.",
@@ -244,9 +246,9 @@
     },
     "metadata": {
       "title": "Metadados",
-      "detectedGames": "Jogos não Steam detetados:",
-      "saved": "Metadados guardados:",
-      "missing": "Metadados em falta:",
+      "detectedGames": "Jogos não Steam detetados",
+      "saved": "Metadados guardados",
+      "missing": "Metadados em falta",
       "refresh": "Atualizar metadados",
       "refreshing": "A atualizar...",
       "refreshingStatus": "A atualizar metadados...",

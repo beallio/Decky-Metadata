@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "設定を開く", "action": { "refresh": "更新", "clear": "クリア", "view": "表示", "check": "確認" } },
   "common": {
     "hours_other": "{{value}}時間",
     "hoursShort": "{{value}}時間",
@@ -18,6 +19,7 @@
       "no_activity": "{{title}} の Steam アクティビティが見つかりません"
     },
     "hltb_busy": "HowLongToBeat が混雑しています。1分ほど待ってから再試行してください。",
+    "metadata_scan_busy": "メタデータを更新中です。完了してからもう一度お試しください。",
     "invalid_title": "無効なタイトル",
     "invalid_search": "無効な検索",
     "steam_search_unavailable": "Steam 検索を利用できません。再試行してください。",
@@ -242,9 +244,9 @@
     },
     "metadata": {
       "title": "メタデータ",
-      "detectedGames": "検出された Steam 以外のゲーム:",
-      "saved": "保存済みメタデータ:",
-      "missing": "メタデータなし:",
+      "detectedGames": "検出された Steam 以外のゲーム",
+      "saved": "保存済みメタデータ",
+      "missing": "メタデータなし",
       "refresh": "メタデータを更新",
       "refreshing": "更新中...",
       "refreshingStatus": "メタデータを更新中...",

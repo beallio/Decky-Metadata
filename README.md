@@ -11,7 +11,7 @@ watch game trailers.
 For Steam games, you can restore the small achievement progress bar beside
 Play Time.
 
-![Metadata controls in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=20261003)
+![Decky Metadata in the Quick Access Menu](assets/decky-metadata-qam.png?cacheBuster=202611241830)
 
 ## Install
 
@@ -33,13 +33,21 @@ if you need more help.
 
 ## Get started
 
-Open Decky Metadata from the Quick Access Menu to find games that need details.
-Select a section heading to show its controls. **Versions** starts open;
-**Metadata**, **Compatibility status**, **ProtonDB badges**, **HLTB times**, **Game trailers**,
-**Mini achievements**, **Context menu**, **Logs**, and **Updates** start closed. Press A on a
-heading or select it to open or close that section. **Metadata** includes the
-cache and **Delisted Steam games** tools. **Compatibility status** is immediately
-below it.
+Open Decky Metadata from the Quick Access Menu. The panel shows counts for
+detected non-Steam games, saved metadata, and missing metadata, plus **Refresh
+metadata** and its progress bar. It shows **Install** only when an update is
+available. Open Settings with the gear in the panel header; the panel
+closes when Settings opens.
+
+Settings is a full-screen page with Steam-style side tabs. The tabs are
+Metadata, Compatibility status, ProtonDB badges, HLTB times, Game trailers,
+Mini achievements, and Context menu. After a separator are Logs, Updates, and
+Versions. Changes apply at once; there is no Save button. Press **B** to return
+from a settings page to the tab list, then press **B** again to close Settings.
+Opening Settings from a game's page leaves that page. The **Metadata** tab
+includes **Clear cache** and **Delisted Steam games**.
+
+![Decky Metadata Settings page on the Metadata tab](assets/decky-metadata-settings.png?cacheBuster=202611240820)
 
 To edit a non-Steam game, select **Edit Metadata...** from the Library card's
 **Options** menu or from the gear menu on the game page. The editor has a
@@ -92,7 +100,7 @@ to refresh cached Library indicators.
 
 ### ProtonDB ratings
 
-Open **ProtonDB badges** and turn on **Enable ProtonDB badges**. It is off by
+In Settings, open the **ProtonDB badges** tab and turn on **Enable ProtonDB badges**. It is off by
 default. Choose ratings on Home covers, Library covers, game pages, or Steam
 Store pages. Each view has its own switch. You can choose a cover corner and
 show cover badges only when a game is focused or hovered.
@@ -113,7 +121,7 @@ Store row requirements, and troubleshooting.
 
 ### HowLongToBeat times
 
-Open **HLTB times** and turn on **Show HowLongToBeat times**. It is off by
+In Settings, open the **HLTB times** tab and turn on **Show HowLongToBeat times**. It is off by
 default. A game's page then shows how long players take to finish it: Main
 Story, Main + Extras, Completionist, and All Styles. The same times appear in a
 **How Long To Beat** box on Steam Store game pages. Steam games are matched by
@@ -146,13 +154,12 @@ See the [HLTB guide](docs/help/hltb.md) for settings, matching, and troubleshoot
 
 ### Game trailers
 
-Open **Game trailers** and turn on **Enable trailers**, the main switch.
-Settings are grouped under plain **Detail view** and **Home view** subheadings.
-Detail includes its switch, delay, audio, and logo settings. Home includes its
-switch and delay; Home previews stay muted behind the carousel.
-Both groups are open whenever **Game trailers** is open.
+In Settings, open the **Game trailers** tab and turn on **Enable trailers**, the
+main switch. Settings are grouped under plain **Detail view** and **Home view**
+subheadings. Detail includes its switch, delay, audio, and logo settings. Home
+includes its switch and delay; Home previews stay muted behind the carousel.
 The main switch is off by default; Detail is selected by default and Home is not.
-**Video quality** stays outside both groups because it applies to both views.
+**Video quality** applies to both views.
 
 Steam trailers play first when available, with IGN as a fallback. Your saved
 artwork is not changed. See [watching game trailers](docs/help/game-trailers.md)
@@ -166,12 +173,12 @@ The trailer follows the height of a visible, full-width Steam Cloud or Ludusavi 
 
 ### Mini achievements
 
-Open **Mini achievements** and turn on **Enable mini achievements** to show
-Steam's own ACHIEVEMENTS row beside Play Time on a game's page. The row shows
-the earned/total count (for example 80/179) and a small progress bar. It uses
-Steam's own data, look, and behavior. Touch or select it with a mouse to open
-the game's My Achievements page. Like Steam's own row, the D-pad does not stop
-on it.
+In Settings, open **Mini achievements** and turn on **Enable mini achievements**
+to show Steam's own ACHIEVEMENTS row beside Play Time on a game's page. The row
+shows the earned/total count (for example 80/179) and a small progress bar. It
+uses Steam's own data, look, and behavior. Touch or select it with a mouse to
+open the game's My Achievements page. Like Steam's own row, the D-pad does not
+stop on it.
 
 The setting is off by default. Non-Steam games get a row only when another
 plugin, such as Emuchievements, gives Steam their achievements. Steam still
@@ -184,9 +191,9 @@ for setup, when the row appears, and troubleshooting.
 
 ### Context menu
 
-Open **Context menu** to change how the **Edit Metadata...** page looks. Turn on
-**Game icon in editor header** to show the game's icon beside its name at the
-top of the editor, like Steam's own menu. Long names scroll.
+In Settings, open **Context menu** to change how the **Edit Metadata...** page
+looks. Turn on **Game icon in editor header** to show the game's icon beside its
+name at the top of the editor, like Steam's own menu. Long names scroll.
 
 **Use Steam icon if missing** is on by default. When a non-Steam game has no
 icon of its own, the editor shows the icon of the Steam game it is matched to.
@@ -239,10 +246,9 @@ Steam gives English text if the store page has no text in your language.
 
 ## Updates and help
 
-Check for updates in the Decky Metadata panel. If something does not work,
-start with the [help pages](docs/help/README.md). You can also view recent logs
-in the panel; include those logs and the versions shown under **Versions** when
-you report a problem. See [updates and troubleshooting](docs/help/updates-and-troubleshooting.md).
+Open **Updates** in Settings to check for updates. Open **Logs** to view recent
+logs; include those logs and the versions shown under **Versions** when you
+report a problem. See [updates and troubleshooting](docs/help/updates-and-troubleshooting.md).
 
 See the [changelog](CHANGELOG.md) for release changes. The images show examples
 from Steam Gaming Mode; artwork and layout can vary with your games and themes.

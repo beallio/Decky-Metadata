@@ -4,6 +4,86 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.7] - 2026-11-24
+
+Add a full-screen Settings page and support the November 2026 Steam Beta
+
+### Changed
+
+- **Settings page replaces plugin settings in the Quick Access Menu.** Open
+  Settings from the gear in the panel header. The full-screen page
+  puts settings in side tabs, and changes apply at once. The Quick Access Menu
+  now shows metadata counts, **Refresh metadata**, its progress bar, and
+  **Install** only when an update is available. Each Settings
+  tab follows Steam's own Settings layout: grouped sections with headings, and
+  each action as a short button on the right of its label.
+
+### Fixed
+
+- **Works on the November 2026 Steam Beta.** On the new Steam Beta client,
+  **Edit Metadata...** was missing from the game menu, matched non-Steam games
+  showed the wrong quick links, and the Community tab did not show the matched
+  game's content. All three work again on the Beta, and the Steam Stable client
+  keeps working as before. The Beta needs a Decky Loader build that supports it.
+- **Installed Version shows the version that runs, and Install stays
+  available.** After you selected **Install**, the plugin showed the new version
+  as installed and said **Up to date**, even when Decky Loader did not install
+  it, for example after its confirmation window closed. This lasted until the
+  plugin reloaded and for up to 15 minutes after that, and **Install** was
+  hidden meanwhile. The plugin now always shows the running version and keeps
+  offering the update until Decky Loader installs it. After a plugin reload
+  with automatic checks off, select **Check now** to see the offer again.
+- **Debug Logging switch works again.** In **Settings > Logs**, turning
+  **Debug Logging** on or off had no effect. It now saves the setting and
+  turns detailed logging on or off at once.
+- **Metadata refresh stays visible.** A running **Refresh metadata** now keeps
+  its progress bar in the Quick Access Menu, and **Clear cache** in Settings
+  stays off until the refresh finishes. Before, the panel could forget the
+  refresh, and clearing the cache during it let the refresh save old matches
+  again. The scan that starts after **Clear cache** now shows its progress too.
+- **Metadata counts show 0.** **Missing metadata** (and the other counts) showed
+  nothing instead of **0**.
+- **Quick Access Menu refresh looks and behaves like Steam.** The
+  **Refresh metadata** progress bar now uses the full width of the panel, with
+  the current game above it, in place of a narrow bar at the right. The result
+  (games saved and not matched) now shows in the completion notification and
+  no longer stays in the panel or on the Settings page. The three count rows
+  can no longer be selected, and the controller now starts on the Settings
+  button in the panel header, also on the first open after Steam starts.
+- **Counts show sooner on the first Quick Access Menu open.** The plugin now
+  loads the game list and counts when it starts, and asks for the two counts
+  at the same time, so the first open after a restart does not wait for them.
+- **Edit Metadata... fills its boxes sooner.** The editor no longer waits for
+  the shortcut-name check before it shows a game's saved details. The **Shortcut
+  Name** actions stay off until that game's own shortcut details have loaded,
+  so switching games never offers the previous game's name.
+- **Load timing in the debug log.** With **Debug Logging** on, each
+  **Edit Metadata...** open writes one line with how long the saved details took
+  to load and show. This helps find the cause when the editor is slow to fill.
+- **Update status no longer sticks on "Checking".** Changing **Receive
+  development releases** while a check was running, or pressing **Check now**
+  while the new channel was still saving, could leave the status on "Checking"
+  until the plugin reloaded. Checks now use the saved channel, and a stopped
+  check always ends.
+- **A failed install keeps the update offered.** When the installer failed,
+  the update could disappear until the next check, or the error could be
+  replaced by a check result. The status now says the installation failed, and
+  **Install** stays available so you can try again. While an install runs,
+  **Check now** and the update switches are off.
+- **Quick setting changes no longer undo each other.** Turning two update
+  switches, or both **Context menu** switches, in quick succession could put
+  a switch back to a value that was never saved.
+- **Debug Logging switch returns to its saved value when the save fails.** Before,
+  it showed the unsaved value. **View logs** no longer opens the log window after
+  you have left Settings.
+- **Quick Access Menu looks and loads like other plugins.** Its rows have the
+  standard Decky side padding again, and **Detected non-Steam games** no longer
+  shows **0** for a few seconds each time you open the page.
+- **Quick Access Menu opens fast with Debug Logging on.** A debug trace sent
+  one log line for every Steam game in the library each time the menu opened,
+  and the menu could take several seconds to show its counts. It now logs only
+  the decisions that matter for matched shortcuts.
+
 ## [0.6.6] - 2026-11-22
 
 Match Steam's own layout, colours and controls, and fix more Steam beta lookups

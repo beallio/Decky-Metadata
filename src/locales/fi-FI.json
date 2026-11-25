@@ -1,4 +1,5 @@
 {
+  "settings": { "open": "Avaa asetukset", "action": { "refresh": "Päivitä", "clear": "Tyhjennä", "view": "Näytä", "check": "Tarkista" } },
   "common": {
     "hours_one": "{{value}} tunti",
     "hours_other": "{{value}} tuntia",
@@ -19,6 +20,7 @@
       "no_activity": "Steam-aktiviteettia ei löytynyt kohteelle {{title}}"
     },
     "hltb_busy": "HowLongToBeat on varattu. Yritä uudelleen minuutin kuluttua.",
+    "metadata_scan_busy": "Metatietoja päivitetään. Yritä uudelleen, kun päivitys on valmis.",
     "invalid_title": "virheellinen nimi",
     "invalid_search": "virheellinen haku",
     "steam_search_unavailable": "Steam-haku ei ole käytettävissä. Yritä uudelleen.",
@@ -243,9 +245,9 @@
     },
     "metadata": {
       "title": "Metatiedot",
-      "detectedGames": "Havaitut Steamin ulkopuoliset pelit:",
-      "saved": "Tallennetut metatiedot:",
-      "missing": "Puuttuvat metatiedot:",
+      "detectedGames": "Havaitut Steamin ulkopuoliset pelit",
+      "saved": "Tallennetut metatiedot",
+      "missing": "Puuttuvat metatiedot",
       "refresh": "Päivitä metatiedot",
       "refreshing": "Päivitetään...",
       "refreshingStatus": "Päivitetään metatietoja...",

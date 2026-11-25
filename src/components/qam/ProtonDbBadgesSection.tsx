@@ -1,29 +1,23 @@
-import { DropdownItem, Field, PanelSectionRow, ToggleField } from "@decky/ui";
-import { ProtonDbIcon } from "../../protondb/Icon";
+import { DialogControlsSection, DropdownItem, Field, ToggleField } from "@decky/ui";
 
 import { useT } from "../../i18n";
 import { inlineStatusStyle } from "../../styles";
 import type { ProtonDbBadgeSnapshot } from "../../protondb/controller";
 import type { ProtonDbBadgeSettings } from "../../types";
 import { featureConflictNotice } from "../../pluginConflicts";
-import { CollapsibleSection } from "./CollapsibleSection";
 
-type ProtonDbBadgesSectionProps = {
-  initiallyExpanded?: boolean;
+type ProtonDbBadgesBodyProps = {
   snapshot: ProtonDbBadgeSnapshot;
   /** Applies to the latest published settings, so same-task changes do not overwrite each other. */
   onSettingsChange: (update: (current: ProtonDbBadgeSettings) => ProtonDbBadgeSettings) => void | Promise<unknown>;
   onCoverPositionChange: (position: ProtonDbBadgeSettings["coverPosition"]) => Promise<boolean>;
-  onCoverPositionMenuWillOpen: () => void;
-  onCoverPositionControlRef: (element: HTMLDivElement | null) => void;
 };
 
 const dropdownValueStyle = { whiteSpace: "normal" } as const;
 
-export function ProtonDbBadgesSection({
-  initiallyExpanded = false, snapshot, onSettingsChange,
-  onCoverPositionChange, onCoverPositionMenuWillOpen, onCoverPositionControlRef,
-}: ProtonDbBadgesSectionProps) {
+export function ProtonDbBadgesBody({
+  snapshot, onSettingsChange, onCoverPositionChange,
+}: ProtonDbBadgesBodyProps) {
   const t = useT();
   const coverPositionOptions: Array<{
     data: ProtonDbBadgeSettings["coverPosition"];
@@ -43,96 +37,75 @@ export function ProtonDbBadgesSection({
   };
 
   return (
-    <CollapsibleSection title={t("qam.protondb.title")} icon={<ProtonDbIcon size={16} />} defaultExpanded={initiallyExpanded}>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.enableLabel")}
-          description={`${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`}
-          checked={settings.enabled}
-          disabled={enableDisabled}
-          onChange={(enabled) => updateSetting("enabled", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.homeLabel")}
-          description={t("qam.protondb.homeDescription")}
-          checked={settings.home}
-          disabled={dependentControlsDisabled}
-          onChange={(enabled) => updateSetting("home", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.libraryLabel")}
-          description={t("qam.protondb.libraryDescription")}
-          checked={settings.library}
-          disabled={dependentControlsDisabled}
-          onChange={(enabled) => updateSetting("library", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.gameViewLabel")}
-          description={t("qam.protondb.gameViewDescription")}
-          checked={settings.gameView}
-          disabled={dependentControlsDisabled}
-          onChange={(enabled) => updateSetting("gameView", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.storeLabel")}
-          description={t("qam.protondb.storeDescription")}
-          checked={settings.store}
-          disabled={dependentControlsDisabled}
-          onChange={(enabled) => updateSetting("store", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <ToggleField
-          label={t("qam.protondb.focusOnlyLabel")}
-          description={t("qam.protondb.focusOnlyDescription")}
-          checked={settings.focusOnly}
-          disabled={dependentControlsDisabled}
-          onChange={(enabled) => updateSetting("focusOnly", enabled)}
-        />
-      </PanelSectionRow>
-      <PanelSectionRow>
-        <div ref={onCoverPositionControlRef}>
-        <DropdownItem
-          label={t("qam.protondb.positionLabel")}
-          layout="below"
-          childrenContainerWidth="max"
-          bottomSeparator="none"
-          rgOptions={coverPositionOptions}
-          selectedOption={settings.coverPosition}
-          disabled={dependentControlsDisabled}
-          onMenuWillOpen={onCoverPositionMenuWillOpen}
-          onChange={(option) => { void onCoverPositionChange(option.data); }}
-          renderButtonValue={() => (
-            <span style={dropdownValueStyle}>
-              {coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label}
-            </span>
-          )}
-        />
-        </div>
-      </PanelSectionRow>
+    <DialogControlsSection>
+      <ToggleField
+        label={t("qam.protondb.enableLabel")}
+        description={`${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`}
+        checked={settings.enabled}
+        disabled={enableDisabled}
+        onChange={(enabled) => updateSetting("enabled", enabled)}
+      />
+      <ToggleField
+        label={t("qam.protondb.homeLabel")}
+        description={t("qam.protondb.homeDescription")}
+        checked={settings.home}
+        disabled={dependentControlsDisabled}
+        onChange={(enabled) => updateSetting("home", enabled)}
+      />
+      <ToggleField
+        label={t("qam.protondb.libraryLabel")}
+        description={t("qam.protondb.libraryDescription")}
+        checked={settings.library}
+        disabled={dependentControlsDisabled}
+        onChange={(enabled) => updateSetting("library", enabled)}
+      />
+      <ToggleField
+        label={t("qam.protondb.gameViewLabel")}
+        description={t("qam.protondb.gameViewDescription")}
+        checked={settings.gameView}
+        disabled={dependentControlsDisabled}
+        onChange={(enabled) => updateSetting("gameView", enabled)}
+      />
+      <ToggleField
+        label={t("qam.protondb.storeLabel")}
+        description={t("qam.protondb.storeDescription")}
+        checked={settings.store}
+        disabled={dependentControlsDisabled}
+        onChange={(enabled) => updateSetting("store", enabled)}
+      />
+      <ToggleField
+        label={t("qam.protondb.focusOnlyLabel")}
+        description={t("qam.protondb.focusOnlyDescription")}
+        checked={settings.focusOnly}
+        disabled={dependentControlsDisabled}
+        onChange={(enabled) => updateSetting("focusOnly", enabled)}
+      />
+      <DropdownItem
+        label={t("qam.protondb.positionLabel")}
+        rgOptions={coverPositionOptions}
+        selectedOption={settings.coverPosition}
+        disabled={dependentControlsDisabled}
+        onChange={(option) => { void onCoverPositionChange(option.data); }}
+        renderButtonValue={() => (
+          <span style={dropdownValueStyle}>
+            {coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label}
+          </span>
+        )}
+      />
       {(!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (
-        <PanelSectionRow>
-          <Field focusable={false} childrenLayout="below" padding="none" bottomSeparator="none">
-            {!snapshot.settingsLoaded ? (
-              <div style={inlineStatusStyle("active")}>{t("qam.protondb.loadingPreferences")}</div>
-            ) : null}
-            {conflictNotice ? (
-              <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
-            ) : null}
-            {snapshot.settingsError ? (
-              <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
-            ) : null}
-          </Field>
-        </PanelSectionRow>
+        <Field focusable={false} childrenLayout="below" padding="none">
+          {!snapshot.settingsLoaded ? (
+            <div style={inlineStatusStyle("active")}>{t("qam.protondb.loadingPreferences")}</div>
+          ) : null}
+          {conflictNotice ? (
+            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+          ) : null}
+          {snapshot.settingsError ? (
+            <div style={inlineStatusStyle("error")}>{snapshot.settingsError}</div>
+          ) : null}
+        </Field>
       ) : null}
-    </CollapsibleSection>
+    </DialogControlsSection>
   );
 }
+
