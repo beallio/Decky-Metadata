@@ -109,15 +109,22 @@ describe("MetadataMaintenanceBody delisted-games controls", () => {
     expect(counts).toEqual(["0", "0", "0"]);
   });
   it("shows scan progress from the completed and total counts", () => {
-    const progress = nodes(render({
+    const tree = render({
       scanBusy: true,
       scanMessage: "Scanning metadata",
       scanCompleted: 2,
       scanTotal: 4,
-    })).find(node => node.type === "ProgressBarWithInfo");
+    });
+    const progress = nodes(tree).find(node => node.type === "ProgressBarWithInfo");
 
     expect(progress.props.nProgress).toBe(50);
     expect(progress.props.sOperationText).toBe("Scanning metadata");
+    expect(progress.props.childrenLayout).toBe("below");
+    expect(progress.props.childrenContainerWidth).toBe("max");
+    expect(progress.props.className).toBe("decky-metadata-scan-progress");
+
+    const qamRows = nodes(tree[0]).filter(node => node.type === "PanelSectionRow");
+    expect(qamRows.some(row => row.props?.children?.type === "ProgressBarWithInfo")).toBe(true);
   });
   it("disables Clear cache while a metadata scan is busy", () => {
     const onClearCache = vi.fn();

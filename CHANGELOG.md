@@ -20,6 +20,12 @@ All notable changes to this project are documented here in Keep a Changelog form
   and SHA-256 verifies the CI build artifact before handing it to Decky Loader
   to install.
 
+### Fixed
+
+- **Keep Refresh metadata progress inside the Quick Access Menu.** The
+  refresh progress bar now lays out below inside a `PanelSectionRow` with
+  clamped wrapping so long game titles stay within the right edge of the panel.
+
 ## [0.6.7] - 2026-11-24
 
 Add a full-screen Settings page and support the November 2026 Steam Beta

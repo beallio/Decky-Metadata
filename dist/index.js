@@ -20528,14 +20528,31 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
+const ProgressBarField = DFL.ProgressBarWithInfo;
+const SCAN_PROGRESS_CLASS = "decky-metadata-scan-progress";
+const scanProgressCss = `
+.${SCAN_PROGRESS_CLASS} {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.${SCAN_PROGRESS_CLASS} div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+`;
 function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, onRefreshMetadata, inline = false, listReady = true, }) {
     const t = useT();
-    // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
-    const progress = scanBusy ? (SP_JSX.jsx(DFL.ProgressBarWithInfo, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
+    // Steam's ProgressBarWithInfo forwards Field props at runtime. Without childrenLayout="below",
+    // Field places the bar in FieldRightColumn (flex-shrink: 0, no min-width: 0), so long titles
+    // stretch the progress bar past the right edge of the QAM. Putting it in FieldLeftColumn via
+    // childrenLayout="below" and wrapping the QAM row in PanelSectionRow keeps it within the panel.
+    const progressStyle = scanBusy ? SP_JSX.jsx("style", { children: scanProgressCss }) : null;
+    const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [progressStyle, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress ? SP_JSX.jsx(DFL.PanelSectionRow, { children: progress }) : null] }));
 }
 function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, listReady = true, }) {
     const t = useT();

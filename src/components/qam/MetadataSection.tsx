@@ -1,7 +1,28 @@
+import type { ComponentProps, ComponentType } from "react";
 import { ButtonItem, DialogControlsSection, DialogControlsSectionHeader, Field, PanelSectionRow, ProgressBarWithInfo } from "@decky/ui";
 
 import { ButtonLabel } from "../../styles";
 import { useT } from "../../i18n";
+
+type ProgressBarWithInfoFieldProps = ComponentProps<typeof ProgressBarWithInfo> & {
+  childrenLayout?: "inline" | "below";
+  className?: string;
+};
+
+const ProgressBarField = ProgressBarWithInfo as ComponentType<ProgressBarWithInfoFieldProps>;
+
+const SCAN_PROGRESS_CLASS = "decky-metadata-scan-progress";
+const scanProgressCss = `
+.${SCAN_PROGRESS_CLASS} {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.${SCAN_PROGRESS_CLASS} div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+`;
 
 type MetadataSectionProps = {
   inline?: boolean;
@@ -36,12 +57,18 @@ export function MetadataScanBody({
   listReady = true,
 }: Pick<MetadataSectionProps, "detectedCount" | "savedCount" | "missingCount" | "scanBusy" | "scanMessage" | "scanCompleted" | "scanTotal" | "onRefreshMetadata" | "listReady"> & { inline?: boolean }) {
   const t = useT();
-  // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
+  // Steam's ProgressBarWithInfo forwards Field props at runtime. Without childrenLayout="below",
+  // Field places the bar in FieldRightColumn (flex-shrink: 0, no min-width: 0), so long titles
+  // stretch the progress bar past the right edge of the QAM. Putting it in FieldLeftColumn via
+  // childrenLayout="below" and wrapping the QAM row in PanelSectionRow keeps it within the panel.
+  const progressStyle = scanBusy ? <style>{scanProgressCss}</style> : null;
   const progress = scanBusy ? (
-    <ProgressBarWithInfo
+    <ProgressBarField
       nProgress={scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0}
       sOperationText={scanMessage || t("qam.metadata.refreshingStatus")}
       childrenContainerWidth="max"
+      childrenLayout="below"
+      className={SCAN_PROGRESS_CLASS}
       focusable={false}
       bottomSeparator={inline ? undefined : "none"}
     />
@@ -50,6 +77,7 @@ export function MetadataScanBody({
   if (inline) {
     return (
       <DialogControlsSection>
+        {progressStyle}
         <Field label={t("qam.metadata.detectedGames")}>{String(detectedCount)}</Field>
         <Field label={t("qam.metadata.saved")}>{String(savedCount)}</Field>
         <Field label={t("qam.metadata.missing")}>{String(missingCount)}</Field>
@@ -69,6 +97,7 @@ export function MetadataScanBody({
 
   return (
     <>
+      {progressStyle}
       <PanelSectionRow>
         <Field label={t("qam.metadata.detectedGames")} bottomSeparator="none">
           {/* Steam's Field hides a falsy child, so 0 must be text. */}
@@ -96,7 +125,7 @@ export function MetadataScanBody({
           {scanBusy ? <ButtonLabel busy={true}>{t("qam.metadata.refreshing")}</ButtonLabel> : t("qam.metadata.refresh")}
         </ButtonItem>
       </PanelSectionRow>
-      {progress}
+      {progress ? <PanelSectionRow>{progress}</PanelSectionRow> : null}
     </>
   );
 }
