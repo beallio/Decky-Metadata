@@ -65,6 +65,7 @@ vi.mock("./settings/useScanGames", () => ({
   useScanGames: () => ({ games: games.detected, scan: metadataScan.snapshot }),
 }));
 
+vi.mock("./settingsRoute", () => ({ SETTINGS_BUTTON_CLASS: "settings-button" }));
 import { Content, takeNativeFocus } from "./ContentPanel";
 
 const render = (): ReactElement<Record<string, unknown>> => {
@@ -94,6 +95,7 @@ type FakePanelDocument = {
   defaultView: { closed: boolean; document: FakePanelDocument } | null;
   addEventListener: (name: string, listener: () => void) => void;
   removeEventListener: (name: string, listener: () => void) => void;
+  querySelector?: (selector: string) => unknown;
 };
 
 const makePanelElement = () => {
@@ -143,7 +145,7 @@ afterEach(() => {
 });
 
 describe("QAM content", () => {
-  it("keeps initial focus on the panel and takes Steam focus through BTakeFocus", () => {
+  it("falls back to the panel without a Settings button and takes Steam focus through BTakeFocus", () => {
     const { element } = makePanelElement();
     const focus = vi.fn(() => true);
     ui.getFocusNavController.mockReturnValue({ m_ActiveContext: {} });
@@ -163,7 +165,36 @@ describe("QAM content", () => {
     expect(requestAnimationFrame).toHaveBeenCalledOnce();
 
     frames[0]?.(0);
+    expect(focus).not.toHaveBeenCalled();
+    // Without a Settings button, the panel takes focus once the retry frames run out.
+    for (let index = 1; index < frames.length; index += 1) frames[index]?.(0);
     expect(focus).toHaveBeenCalledOnce();
+  });
+
+  it("gives the first focus to the header Settings button when Steam registers it a few frames late", () => {
+    const { element, panelDocument } = makePanelElement();
+    const settingsButton = { ownerDocument: panelDocument };
+    panelDocument.querySelector = (selector) => (selector === ".settings-button" ? settingsButton : null);
+    const settingsFocus = vi.fn(() => true);
+    const panelFocus = vi.fn(() => true);
+    let treeReads = 0;
+    ui.getFocusNavController.mockReturnValue({ m_ActiveContext: {} });
+    ui.getGamepadNavigationTrees.mockImplementation(() => {
+      treeReads += 1;
+      const settingsNode = treeReads > 2 ? [{ Element: settingsButton, BTakeFocus: settingsFocus }] : [];
+      return [{ Root: { Element: element, BTakeFocus: panelFocus, m_rgChildren: settingsNode } }];
+    });
+    const frames: FrameRequestCallback[] = [];
+    vi.stubGlobal("window", {
+      requestAnimationFrame: (callback: FrameRequestCallback) => frames.push(callback),
+      cancelAnimationFrame: vi.fn(),
+    });
+
+    (render().props.ref as (element: HTMLDivElement | null) => void)(element);
+    for (let index = 0; index < frames.length; index += 1) frames[index]?.(0);
+
+    expect(settingsFocus).toHaveBeenCalledOnce();
+    expect(panelFocus).not.toHaveBeenCalled();
   });
 
   it("does not take native focus from a hidden panel document", () => {

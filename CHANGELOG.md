@@ -44,8 +44,8 @@ All notable changes to this project are documented here in Keep a Changelog form
   the current game above it, in place of a narrow bar at the right. The result
   (games saved and not matched) now shows in the completion notification and
   no longer stays in the panel or on the Settings page. The three count rows
-  can no longer be selected, so the controller goes straight to
-  **Refresh metadata**.
+  can no longer be selected, and the controller now starts on the Settings
+  button in the panel header, also on the first open after Steam starts.
 - **Counts show sooner on the first Quick Access Menu open.** The plugin now
   loads the game list and counts when it starts, and asks for the two counts
   at the same time, so the first open after a restart does not wait for them.

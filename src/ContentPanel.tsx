@@ -14,6 +14,7 @@ import * as log from "./log";
 import { metadataScanStore } from "./metadataScan";
 import { scanView } from "./settings/scanView";
 import { useScanGames } from "./settings/useScanGames";
+import { SETTINGS_BUTTON_CLASS } from "./settingsRoute";
 import { qamPanelStyle } from "./styles";
 
 type NativeFocusNode = {
@@ -75,6 +76,9 @@ const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
   return null;
 };
 
+// About half a second at 60 fps before the panel takes the first focus instead.
+const SETTINGS_FOCUS_FRAMES = 30;
+
 export const Content = () => {
   // Steam can change its UI language while QAM is closed.
   useEffect(() => {
@@ -90,22 +94,32 @@ export const Content = () => {
       window.cancelAnimationFrame(focusFrame.current);
       focusFrame.current = null;
     }
-    if (element && !initialPanelFocusComplete.current) {
-      focusFrame.current = window.requestAnimationFrame(() => {
-        focusFrame.current = null;
-        if (initialPanelFocusComplete.current) return;
-        initialPanelFocusComplete.current = true;
-        takeNativeFocus(element);
-        // Native focus can scroll QAM past its title. Keep the panel header
-        // visible when the initial focus settles.
-        const viewport = findScrollViewport(element);
-        if (viewport) {
-          window.requestAnimationFrame(() => {
-            viewport.scrollTop = 0;
-          });
+    if (!element || initialPanelFocusComplete.current) return;
+    let framesLeft = SETTINGS_FOCUS_FRAMES;
+    const attempt = () => {
+      focusFrame.current = null;
+      if (initialPanelFocusComplete.current) return;
+      // First focus goes to the Settings gear in the header. A fresh QAM window
+      // registers it in Steam's navigation tree a few frames late; the panel is the fallback.
+      const settingsButton = element.ownerDocument.querySelector?.(`.${SETTINGS_BUTTON_CLASS}`) ?? null;
+      if (!takeNativeFocus(settingsButton)) {
+        if (--framesLeft > 0) {
+          focusFrame.current = window.requestAnimationFrame(attempt);
+          return;
         }
-      });
-    }
+        takeNativeFocus(element);
+      }
+      initialPanelFocusComplete.current = true;
+      // Native focus can scroll QAM past its title. Keep the panel header
+      // visible when the initial focus settles.
+      const viewport = findScrollViewport(element);
+      if (viewport) {
+        window.requestAnimationFrame(() => {
+          viewport.scrollTop = 0;
+        });
+      }
+    };
+    focusFrame.current = window.requestAnimationFrame(attempt);
   }, []);
 
   return (
