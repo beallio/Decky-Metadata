@@ -11,6 +11,7 @@ vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
   DialogControlsSection: "DialogControlsSection",
+  DialogControlsSectionHeader: "DialogControlsSectionHeader",
   Field: "Field",
   PanelSectionRow: "PanelSectionRow",
   Spinner: "Spinner",
@@ -78,6 +79,7 @@ describe("PluginUpdateBody", () => {
       pluginVersion: "0.3.1",
       updateChannel: "stable",
       automaticUpdateChecks: true,
+      testingTabEnabled: false,
       settingsLoaded: true,
       candidate: candidate(),
       checkResult: {
@@ -96,13 +98,14 @@ describe("PluginUpdateBody", () => {
       install: vi.fn(async () => undefined),
       setUpdateChannel: vi.fn(async () => undefined),
       setAutomaticUpdateChecks: vi.fn(async () => undefined),
+      setTestingTabEnabled: vi.fn(async () => undefined),
     };
   });
 
-  it("disables both update-setting toggles until settings load", () => {
+  it("disables all update-setting toggles until settings load", () => {
     controller.settingsLoaded = false;
     const unloaded = children(render()).filter((node) => node.type === "ToggleField");
-    expect(unloaded).toHaveLength(2);
+    expect(unloaded).toHaveLength(3);
     expect(unloaded.every((toggle) => toggle.props?.disabled)).toBe(true);
 
     controller.settingsLoaded = true;
@@ -159,5 +162,17 @@ describe("PluginUpdateBody", () => {
     expect(onOK).toBeTypeOf("function");
     (onOK as () => void)();
     expect(controller.setUpdateChannel).toHaveBeenCalledWith(true);
+  });
+
+  it("renders the Developer subsection and toggles the Testing tab", () => {
+    const rendered = render();
+    const headers = children(rendered).filter((node) => node.type === "DialogControlsSectionHeader");
+    expect(headers.map((header) => text(header))).toContain("Developer");
+    const toggle = children(rendered).find(
+      (node) => node.type === "ToggleField" && node.props?.label === "Enable Testing tab"
+    );
+    expect(toggle?.props?.checked).toBe(false);
+    (toggle?.props?.onChange as (enabled: boolean) => void)(true);
+    expect(controller.setTestingTabEnabled).toHaveBeenCalledWith(true);
   });
 });

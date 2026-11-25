@@ -8,10 +8,12 @@ import {
   MetadataSearchResult,
   SteamMatchSearchResponse,
   PluginUpdateCandidate,
+  PreparedTestingVersion,
   RevalidateResult,
   ScanProgress,
   ShortcutNameManagement,
   ShortcutNameState,
+  TestingVersionsResult,
   UpdateChannel,
   UpdateCheckContext,
   UpdateCheckResult,
@@ -204,6 +206,17 @@ export const setAutomaticUpdateChecks = callable<
   [enabled: boolean],
   UpdateRpcResult<UpdateSettings>
 >("set_automatic_update_checks");
+export const setTestingTabEnabled = callable<
+  [enabled: boolean],
+  UpdateRpcResult<UpdateSettings>
+>("set_testing_tab_enabled");
+export const getTestingVersions = callable<[], TestingVersionsResult>(
+  "get_testing_versions"
+);
+export const prepareTestingVersion = callable<
+  [prId: number, headSha: string],
+  PreparedTestingVersion
+>("prepare_testing_version");
 export const getTrailerSettings = callable<[], TrailerSettings>("get_trailer_settings");
 export const setTrailerSettings = callable<
   [settings: TrailerSettings],

@@ -21,6 +21,7 @@ import {
   recordUpdateInstallRequested,
   revalidatePluginUpdate,
   setAutomaticUpdateChecks,
+  setTestingTabEnabled,
   setUpdateChannel,
 } from "../backend";
 import {
@@ -56,6 +57,7 @@ export type PluginUpdateControllerSnapshot = {
   pluginVersion: string;
   updateChannel: UpdateChannel;
   automaticUpdateChecks: boolean;
+  testingTabEnabled: boolean;
   settingsLoaded: boolean;
   candidate: PluginUpdateCandidate | null;
   checkResult: UpdateCheckResult | null;
@@ -72,6 +74,7 @@ export type PluginUpdateController = PluginUpdateControllerSnapshot & {
   install(candidate: PluginUpdateCandidate): Promise<void>;
   setUpdateChannel(enabled: boolean): Promise<void>;
   setAutomaticUpdateChecks(enabled: boolean): Promise<void>;
+  setTestingTabEnabled(enabled: boolean): Promise<void>;
 };
 
 export type PluginUpdateControllerDeps = {
@@ -81,6 +84,7 @@ export type PluginUpdateControllerDeps = {
   checkForPluginUpdate: (currentVersion: string, force: boolean) => Promise<UpdateCheckResult>;
   setUpdateChannel: (channel: UpdateChannel) => Promise<UpdateRpcResult<UpdateSettings>>;
   setAutomaticUpdateChecks: (enabled: boolean) => Promise<UpdateRpcResult<UpdateSettings>>;
+  setTestingTabEnabled: (enabled: boolean) => Promise<UpdateRpcResult<UpdateSettings>>;
   clearPendingUpdateInstall: (version: string | null) => Promise<UpdateRpcResult<UpdateCheckContext>>;
   confirmUpdateInstallHandoff: (version: string) => Promise<UpdateRpcResult<UpdateCheckContext>>;
   recordUpdateInstallRequested: (
@@ -115,6 +119,7 @@ export class PluginUpdateControllerStore {
   private confirmed: UpdateSettings = { ...DEFAULT_UPDATE_SETTINGS };
   private pendingChannel: { value: UpdateChannel } | null = null;
   private pendingAutomatic: { value: boolean } | null = null;
+  private pendingTestingTab: { value: boolean } | null = null;
   // True from the Install click until Decky answers or the install fails: no check or second install meanwhile.
   private installOwned = false;
   private settingsLoaded = false;
@@ -123,6 +128,7 @@ export class PluginUpdateControllerStore {
     pluginVersion: "",
     updateChannel: "stable",
     automaticUpdateChecks: true,
+    testingTabEnabled: false,
     settingsLoaded: false,
     candidate: null,
     checkResult: null,
@@ -219,6 +225,34 @@ export class PluginUpdateControllerStore {
       });
     }
     if (this.pendingAutomatic === pending) this.pendingAutomatic = null;
+    if (saved) this.applySettings(saved);
+    else this.publish();
+  };
+
+  setTestingTabEnabled = async (enabled: boolean): Promise<void> => {
+    const pending = { value: enabled };
+    const generation = this.generation;
+    this.pendingTestingTab = pending;
+    this.publish();
+    let saved: UpdateSettings | null = null;
+    try {
+      const result = await this.deps.setTestingTabEnabled(enabled);
+      if (generation !== this.generation) return;
+      if ("status" in result) {
+        this.deps.toastError(
+          t("panel.toast.updates"),
+          result.message ? translateBackendError(result.message) : t("panel.testingTabSaveError")
+        );
+      } else {
+        saved = resolveLoadedUpdateSettings(result);
+      }
+    } catch (error) {
+      if (generation !== this.generation) return;
+      logUpdate(null, "testing_tab_setting_save_failed", {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }
+    if (this.pendingTestingTab === pending) this.pendingTestingTab = null;
     if (saved) this.applySettings(saved);
     else this.publish();
   };
@@ -368,6 +402,10 @@ export class PluginUpdateControllerStore {
 
   private get automaticUpdateChecks(): boolean {
     return this.pendingAutomatic?.value ?? this.confirmed.automatic_update_checks;
+  }
+
+  private get testingTabEnabled(): boolean {
+    return this.pendingTestingTab?.value ?? this.confirmed.testing_tab_enabled;
   }
 
   private dropActiveCheck(): void {
@@ -623,6 +661,7 @@ export class PluginUpdateControllerStore {
       pluginVersion: this.pluginVersion,
       updateChannel: this.updateChannel,
       automaticUpdateChecks: this.automaticUpdateChecks,
+      testingTabEnabled: this.testingTabEnabled,
       settingsLoaded: this.settingsLoaded,
       candidate: this.state.candidate,
       checkResult: this.state.checkResult,
@@ -661,6 +700,7 @@ export const pluginUpdateController = new PluginUpdateControllerStore({
   checkForPluginUpdate,
   setUpdateChannel,
   setAutomaticUpdateChecks,
+  setTestingTabEnabled,
   clearPendingUpdateInstall,
   confirmUpdateInstallHandoff,
   recordUpdateInstallRequested,
@@ -686,5 +726,6 @@ export function usePluginUpdateController(): PluginUpdateController {
     install: pluginUpdateController.install,
     setUpdateChannel: pluginUpdateController.setUpdateChannel,
     setAutomaticUpdateChecks: pluginUpdateController.setAutomaticUpdateChecks,
+    setTestingTabEnabled: pluginUpdateController.setTestingTabEnabled,
   };
 }

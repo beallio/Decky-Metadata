@@ -79,6 +79,9 @@ pub const METHODS: &[&str] = &[
     "get_update_settings",
     "set_update_channel",
     "set_automatic_update_checks",
+    "set_testing_tab_enabled",
+    "get_testing_versions",
+    "prepare_testing_version",
 ];
 
 fn arity(args: &[Value], minimum: usize, maximum: usize) -> Result<(), String> {
@@ -626,8 +629,15 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
                 .await
                 .unwrap_or_else(|error| update_failure(error, true)))
         }
-        "get_update_check_context" | "get_update_settings" => {
+        "get_update_check_context" | "get_update_settings" | "get_testing_versions" => {
             arity(&args, 0, 0)?;
+            Ok(state
+                .updater_call(method, &args)
+                .await
+                .unwrap_or_else(|error| update_failure(error, false)))
+        }
+        "prepare_testing_version" => {
+            arity(&args, 2, 2)?;
             Ok(state
                 .updater_call(method, &args)
                 .await
@@ -644,7 +654,8 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         | "record_update_install_requested"
         | "confirm_update_install_handoff"
         | "set_update_channel"
-        | "set_automatic_update_checks" => {
+        | "set_automatic_update_checks"
+        | "set_testing_tab_enabled" => {
             arity(&args, 1, 1)?;
             Ok(state
                 .updater_call(method, &args)

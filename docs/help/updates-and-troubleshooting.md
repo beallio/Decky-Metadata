@@ -18,6 +18,10 @@ Version 0.6.0 changed how the plugin saves your game details. When you go back t
 
 The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/releases/tag/dev-build) provides a development ZIP for manual sideload testing. That fixed tag is not an in-plugin updater source. **Receive development releases** instead includes versioned development prereleases (`vX.Y.Z-dev.g<sha>`). Both are testing builds and may be less stable than a stable release. The updater may not automatically install a development release over a local `+` build.
 
+### Testing tab (pull request builds)
+
+Under **Updates → Developer**, turn on **Enable Testing tab** to add a **Testing** tab to Settings (off by default). The **Testing** tab lists open pull requests from `beallio/Decky-Metadata` and fork pull requests that carry the `test-build` label. Selecting **Install** downloads the CI build artifact, verifies its manifest and SHA-256 checksum, and hands the verified ZIP to Decky Loader to install. Because pull request builds are stamped as development versions (`X.Y.Z-dev.pr<number>.g<sha>`), you can return to a stable release afterward from **Updates**.
+
 ## Mini achievements
 
 1. Open Decky Metadata from the Quick Access Menu, then select the gear.

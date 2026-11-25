@@ -246,7 +246,7 @@ Steam gives English text if the store page has no text in your language.
 
 ## Updates and help
 
-Open **Updates** in Settings to check for updates. Open **Logs** to view recent
+Open **Updates** in Settings to check for updates, or turn on **Enable Testing tab** under **Updates → Developer** to test open pull request builds. Open **Logs** to view recent
 logs; include those logs and the versions shown under **Versions** when you
 report a problem. See [updates and troubleshooting](docs/help/updates-and-troubleshooting.md).
 
