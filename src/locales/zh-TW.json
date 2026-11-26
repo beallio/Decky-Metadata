@@ -135,6 +135,10 @@
       "showTimesDescription": "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
       "storeLabel": "商店",
       "storeDescription": "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
+      "statsHeading": "統計",
+      "styleHeading": "樣式",
+      "customizeHeading": "自訂",
+      "cacheHeading": "快取",
       "styleLabel": "HLTB 樣式",
       "styleDescription": "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
       "styleDefault": "預設",
@@ -227,7 +231,8 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "正在載入 ProtonDB 徽章偏好設定...",
-      "footnote": "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。"
+      "footnote": "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。",
+      "gameCoversHeading": "遊戲封面"
     },
     "miniAchievements": {
       "title": "迷你成就",
@@ -318,7 +323,20 @@
       "confirmRevertBody": "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "軟體更新",
+      "checkForUpdates": "檢查更新",
+      "upToDateButton": "已是最新",
+      "apply": "套用",
+      "applying": "正在套用...",
+      "moveToStableShort": "切換至穩定版",
+      "revertToStableShort": "回復至穩定版",
+      "upToDateLastChecked": "已是最新：上次檢查 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "更新通道",
+      "channelOptionStable": "穩定版",
+      "channelOptionDevelopment": "開發版",
+      "channelStableDescription": "接收經過測試的穩定版本。"
     },
     "versions": {
       "title": "版本",
@@ -362,6 +380,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "重試",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -376,7 +395,8 @@
     "statMain": "主線故事",
     "statMainPlus": "主線 + 額外內容",
     "statComplete": "完美通關",
-    "statAllStyles": "所有遊玩風格"
+    "statAllStyles": "所有遊玩風格",
+    "viewDetails": "檢視詳細資料"
   },
   "trailers": {
     "audio": "預告片音訊",

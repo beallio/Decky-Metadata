@@ -4,7 +4,12 @@ import { FaTags } from "react-icons/fa6";
 import { Content } from "./ContentPanel";
 import { MetadataPage } from "./MetadataPage";
 import { SettingsPage } from "./SettingsPage";
-import { SETTINGS_ROUTE, SettingsTitleView } from "./settingsRoute";
+import {
+  refreshOpenSettingsRoute,
+  rememberSettingsTabForReload,
+  SETTINGS_ROUTE,
+  SettingsTitleView,
+} from "./settingsRoute";
 import contextMenuPatch, { LibraryContextMenu } from "./contextMenuPatch";
 import { frontendLog, getDebugLogging, getNativeCssClasses } from "./backend";
 import * as log from "./log";
@@ -118,6 +123,7 @@ export default definePlugin(() => {
 
   routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
   routerHook.addRoute(SETTINGS_ROUTE, () => <SettingsPage />, { exact: true });
+  const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
 
   return {
     // Plugin identity used by Decky Loader (must match plugin.json "name" so
@@ -129,6 +135,8 @@ export default definePlugin(() => {
     content: <Content />,
     icon: <FaTags />,
     onDismount() {
+      cancelSettingsRefresh();
+      rememberSettingsTabForReload();
       stopTrailerController();
       stopMiniAchievementsController();
       stopProtonDbCovers();

@@ -89,7 +89,6 @@ impl AppState {
         if loaded {
             self.reconcile_update_state().await?;
         }
-        crate::updater::testing::prune_staging_dir(&self.testing_staging_dir());
         let capabilities = tokio::task::spawn_blocking(platform_capabilities)
             .await
             .map_err(|error| error.to_string())?;
@@ -366,15 +365,6 @@ impl AppState {
     }
 
 
-    pub fn testing_staging_dir(&self) -> std::path::PathBuf {
-        let root = if !self.env.plugin_runtime_dir.as_os_str().is_empty() {
-            &self.env.plugin_runtime_dir
-        } else {
-            &self.env.plugin_settings_dir
-        };
-        root.join("testing-prs")
-    }
-
     pub async fn updater_call(&self, method: &str, args: &[Value]) -> Result<Value, String> {
         if method == "get_update_settings" {
             return Ok(self.updater_snapshot().await?.backend.settings_payload());
@@ -391,10 +381,9 @@ impl AppState {
             let result = if method == "get_testing_versions" {
                 snapshot.backend.list_testing_versions().await
             } else {
-                let staging_dir = self.testing_staging_dir();
                 snapshot
                     .backend
-                    .prepare_testing_version(&args[0], &args[1], &staging_dir)
+                    .prepare_testing_version(&args[0], &args[1])
                     .await
             };
             self.adopt_rate_limit(snapshot.rate_limit, snapshot.backend.rate_limited_until)

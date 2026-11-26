@@ -136,6 +136,10 @@
       "showTimesDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
       "storeLabel": "მაღაზია",
       "storeDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
+      "statsHeading": "Isiḍanen",
+      "styleHeading": "Aɣanib",
+      "customizeHeading": "Sagen",
+      "cacheHeading": "Tuffirt",
       "styleLabel": "HLTB-ის სტილი",
       "styleDescription": "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
       "styleDefault": "ნაგულისხმევი",
@@ -228,7 +232,8 @@
       "positionTopLeft": "ზედა მარცხენა",
       "positionTopRight": "ზედა მარჯვენა",
       "loadingPreferences": "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
-      "footnote": "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
+      "footnote": "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება.",
+      "gameCoversHeading": "თამაშის ყდები"
     },
     "miniAchievements": {
       "title": "მინი მიღწევები",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "პროგრამული განახლებები",
+      "checkForUpdates": "განახლებების შემოწმება",
+      "upToDateButton": "განახლებულია",
+      "apply": "გამოყენება",
+      "applying": "გამოყენება...",
+      "moveToStableShort": "სტაბილურზე გადასვლა",
+      "revertToStableShort": "სტაბილურზე დაბრუნება",
+      "upToDateLastChecked": "განახლებულია: ბოლო შემოწმება {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "განახლების არხი",
+      "channelOptionStable": "სტაბილური",
+      "channelOptionDevelopment": "განვითარების",
+      "channelStableDescription": "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
     },
     "versions": {
       "title": "ვერსიები",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "თავიდან ცდა",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "მთავარი სიუჟეტი",
     "statMainPlus": "მთავარი + დამატებითი",
     "statComplete": "სრულად გავლა",
-    "statAllStyles": "ყველა სტილი"
+    "statAllStyles": "ყველა სტილი",
+    "viewDetails": "დეტალების ნახვა"
   },
   "trailers": {
     "audio": "ტრეილერის ხმა",

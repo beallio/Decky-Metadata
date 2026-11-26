@@ -136,6 +136,10 @@
       "showTimesDescription": "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
       "storeLabel": "Κατάστημα",
       "storeDescription": "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
+      "statsHeading": "Στατιστικά",
+      "styleHeading": "Στυλ",
+      "customizeHeading": "Προσαρμογή",
+      "cacheHeading": "Προσωρινή μνήμη",
       "styleLabel": "Στυλ HLTB",
       "styleDescription": "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
       "styleDefault": "Προεπιλογή",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Πάνω αριστερά",
       "positionTopRight": "Πάνω δεξιά",
       "loadingPreferences": "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
-      "footnote": "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
+      "footnote": "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται.",
+      "gameCoversHeading": "Εξώφυλλα παιχνιδιών"
     },
     "miniAchievements": {
       "title": "Μίνι επιτεύγματα",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ενημερώσεις λογισμικού",
+      "checkForUpdates": "Έλεγχος για ενημερώσεις",
+      "upToDateButton": "Ενημερωμένο",
+      "apply": "Εφαρμογή",
+      "applying": "Εφαρμογή...",
+      "moveToStableShort": "Μετάβαση σε σταθερή",
+      "revertToStableShort": "Επαναφορά σε σταθερή",
+      "upToDateLastChecked": "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Κανάλι ενημερώσεων",
+      "channelOptionStable": "Σταθερό",
+      "channelOptionDevelopment": "Ανάπτυξης",
+      "channelStableDescription": "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
     },
     "versions": {
       "title": "Εκδόσεις",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Δοκιμή ξανά",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Κύρια ιστορία",
     "statMainPlus": "Κύρια + επιπλέον",
     "statComplete": "Πλήρης ολοκλήρωση",
-    "statAllStyles": "Όλα τα στυλ"
+    "statAllStyles": "Όλα τα στυλ",
+    "viewDetails": "Προβολή λεπτομερειών"
   },
   "trailers": {
     "audio": "Ήχος τρέιλερ",

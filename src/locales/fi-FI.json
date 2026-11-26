@@ -136,6 +136,10 @@
       "showTimesDescription": "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
       "storeLabel": "Kauppa",
       "storeDescription": "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
+      "statsHeading": "Tilastot",
+      "styleHeading": "Tyyli",
+      "customizeHeading": "Mukauta",
+      "cacheHeading": "Välimuisti",
       "styleLabel": "HLTB-tyyli",
       "styleDescription": "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
       "styleDefault": "Oletus",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Vasemmassa yläkulmassa",
       "positionTopRight": "Oikeassa yläkulmassa",
       "loadingPreferences": "Ladataan ProtonDB-tunnusten asetuksia...",
-      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+      "gameCoversHeading": "Pelien kannet"
     },
     "miniAchievements": {
       "title": "Minisaavutukset",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ohjelmistopäivitykset",
+      "checkForUpdates": "Tarkista päivitykset",
+      "upToDateButton": "Ajan tasalla",
+      "apply": "Käytä",
+      "applying": "Otetaan käyttöön...",
+      "moveToStableShort": "Siirry vakaaseen",
+      "revertToStableShort": "Palaa vakaaseen",
+      "upToDateLastChecked": "Ajan tasalla: tarkistettu viimeksi {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Päivityskanava",
+      "channelOptionStable": "Vakaa",
+      "channelOptionDevelopment": "Kehitys",
+      "channelStableDescription": "Vastaanottaa testattuja vakaita julkaisuja."
     },
     "versions": {
       "title": "Versiot",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Yritä uudelleen",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Pääjuoni",
     "statMainPlus": "Pääjuoni + lisät",
     "statComplete": "Kaikki suoritettuna",
-    "statAllStyles": "Kaikki tyylit"
+    "statAllStyles": "Kaikki tyylit",
+    "viewDetails": "Näytä tiedot"
   },
   "trailers": {
     "audio": "Trailerin ääni",

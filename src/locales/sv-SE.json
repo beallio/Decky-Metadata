@@ -136,6 +136,10 @@
       "showTimesDescription": "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
       "storeLabel": "Butik",
       "storeDescription": "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken. Använder alltid automatisk matchning; HLTB-val per spel gäller endast på spelsidor i biblioteket.",
+      "statsHeading": "Statistik",
+      "styleHeading": "Stil",
+      "customizeHeading": "Anpassa",
+      "cacheHeading": "Cache",
       "styleLabel": "HLTB-stil",
       "styleDescription": "Stilarna ”Clean” är avsedda att fungera med CSS Loader-temat ”Clean Gameview”",
       "styleDefault": "Standard",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Övre vänster",
       "positionTopRight": "Övre höger",
       "loadingPreferences": "Läser in ProtonDB-märkesinställningar...",
-      "footnote": "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
+      "footnote": "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs.",
+      "gameCoversHeading": "Spelomslag"
     },
     "miniAchievements": {
       "title": "Miniprestationer",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Programvaruuppdateringar",
+      "checkForUpdates": "Sök efter uppdateringar",
+      "upToDateButton": "Uppdaterad",
+      "apply": "Verkställ",
+      "applying": "Verkställer...",
+      "moveToStableShort": "Byt till stabil",
+      "revertToStableShort": "Återgå till stabil",
+      "upToDateLastChecked": "Uppdaterad: senast kontrollerad {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Uppdateringskanal",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Utveckling",
+      "channelStableDescription": "Tar emot testade stabila versioner."
     },
     "versions": {
       "title": "Versioner",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Försök igen",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Huvudhistoria",
     "statMainPlus": "Huvudhistoria + extra",
     "statComplete": "Completionist",
-    "statAllStyles": "Alla spelstilar"
+    "statAllStyles": "Alla spelstilar",
+    "viewDetails": "Visa detaljer"
   },
   "trailers": {
     "audio": "Trailerljud",

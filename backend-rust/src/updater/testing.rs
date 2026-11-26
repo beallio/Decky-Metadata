@@ -1,25 +1,20 @@
 use crate::updater::models::{parse_plugin_version, parse_release_manifest};
 use serde_json::{Value, json};
-use sha2::{Digest, Sha256};
-use std::{
-    fs,
-    io::{Cursor, Read},
-    os::unix::fs::PermissionsExt,
-    path::{Path, PathBuf},
-};
-use zip::ZipArchive;
 
 pub const REPOSITORY: &str = "beallio/Decky-Metadata";
 pub const TESTING_PR_LABEL: &str = "test-build";
 pub const TESTING_WORKFLOW_NAME: &str = "CI";
-pub const TESTING_ARTIFACT_NAME: &str = "decky-metadata-pr";
-pub const TESTING_DOWNLOAD_ORIGIN: &str = "https://nightly.link";
-pub const INNER_ZIP_NAME: &str = "Decky-Metadata.zip";
-pub const INNER_SHA_NAME: &str = "Decky-Metadata.zip.sha256";
-pub const INNER_MANIFEST_NAME: &str = "Decky-Metadata.manifest.json";
-pub const MAX_TESTING_ARTIFACT_BYTES: usize = 64 * 1024 * 1024;
-const MAX_SIDECAR_BYTES: usize = 16 * 1024;
-const MAX_CANDIDATE_RUNS: usize = 5;
+pub const PR_BUILDS_RELEASE_TAG: &str = "pr-builds";
+pub const MAX_SIDECAR_BYTES: usize = 16 * 1024;
+const PR_RELEASE_DOWNLOAD_PREFIX: &str =
+    "https://github.com/beallio/Decky-Metadata/releases/download/";
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PrReleaseAssetUrls {
+    pub zip_url: String,
+    pub sha_url: String,
+    pub manifest_url: String,
+}
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TestingPullRequest {
@@ -115,7 +110,10 @@ pub fn parse_testing_pull(pull: &Value) -> Option<TestingPullRequest> {
     if !is_eligible_pull(pull) {
         return None;
     }
-    let id = pull.get("number").and_then(Value::as_u64).filter(|n| *n > 0)?;
+    let id = pull
+        .get("number")
+        .and_then(Value::as_u64)
+        .filter(|n| *n > 0)?;
     let name = pull
         .get("title")
         .and_then(Value::as_str)
@@ -167,263 +165,147 @@ pub fn filter_testing_pulls(pulls: &[Value]) -> Vec<TestingPullRequest> {
     pulls.iter().filter_map(parse_testing_pull).collect()
 }
 
-/// Returns up to `MAX_CANDIDATE_RUNS` passing `CI` workflow run IDs for the commit,
-/// preferring `pull_request` runs first (newest first, as GitHub returns them).
-pub fn select_candidate_run_ids(workflows: &[Value]) -> Result<Vec<u64>, &'static str> {
+/// Classifies why a PR commit has no published `pr-builds` release asset yet by
+/// inspecting GitHub Actions `CI` workflow runs for that commit SHA.
+pub fn classify_missing_pr_build(workflows: &[Value]) -> &'static str {
     let ci_runs: Vec<&Value> = workflows
         .iter()
         .filter(|run| run.get("name").and_then(Value::as_str) == Some(TESTING_WORKFLOW_NAME))
         .collect();
     if ci_runs.is_empty() {
-        return Err("testing_build_not_found");
+        return "testing_build_not_found";
     }
-
-    let is_passing = |run: &&Value| {
+    if ci_runs
+        .iter()
+        .any(|run| run.get("status").and_then(Value::as_str) != Some("completed"))
+    {
+        return "testing_build_in_progress";
+    }
+    let any_passing = ci_runs.iter().any(|run| {
         run.get("status").and_then(Value::as_str) == Some("completed")
             && run.get("conclusion").and_then(Value::as_str) == Some("success")
-    };
-    let mut pr_runs = Vec::new();
-    let mut other_runs = Vec::new();
-    for run in ci_runs.iter().copied().filter(is_passing) {
-        let Some(id) = run.get("id").and_then(Value::as_u64) else {
-            continue;
-        };
-        if run.get("event").and_then(Value::as_str) == Some("pull_request") {
-            pr_runs.push(id);
-        } else {
-            other_runs.push(id);
-        }
-    }
-    pr_runs.extend(other_runs);
-    pr_runs.truncate(MAX_CANDIDATE_RUNS);
-    if !pr_runs.is_empty() {
-        return Ok(pr_runs);
-    }
-
-    let any_pending = ci_runs
-        .iter()
-        .any(|run| run.get("status").and_then(Value::as_str) != Some("completed"));
-    if any_pending {
-        Err("testing_build_in_progress")
+    });
+    if any_passing {
+        "testing_artifact_not_found"
     } else {
-        Err("testing_build_failed")
+        "testing_build_failed"
     }
 }
 
-pub fn select_testing_artifact(artifacts: &[Value]) -> Result<Option<u64>, &'static str> {
-    let mut saw_expired = false;
-    for artifact in artifacts {
-        if artifact.get("name").and_then(Value::as_str) != Some(TESTING_ARTIFACT_NAME) {
-            continue;
-        }
-        if artifact
-            .get("expired")
-            .and_then(Value::as_bool)
-            .unwrap_or(false)
-        {
-            saw_expired = true;
-            continue;
-        }
-        if let Some(id) = artifact.get("id").and_then(Value::as_u64).filter(|id| *id > 0) {
-            return Ok(Some(id));
-        }
-    }
-    if saw_expired {
-        Err("testing_artifact_expired")
-    } else {
-        Ok(None)
-    }
-}
-
-pub fn testing_artifact_download_url(artifact_id: u64) -> String {
-    format!("{TESTING_DOWNLOAD_ORIGIN}/{REPOSITORY}/actions/artifacts/{artifact_id}.zip")
-}
-
-pub fn parse_checksum_sidecar(text: &str) -> Result<String, &'static str> {
+pub fn parse_checksum_sidecar_for(
+    text: &str,
+    expected_asset_name: &str,
+) -> Result<String, &'static str> {
     let line = text.trim_end_matches(['\r', '\n']);
-    let (digest, name) = line
-        .split_once("  ")
-        .ok_or("testing_artifact_invalid")?;
+    let (digest, name) = line.split_once("  ").ok_or("testing_artifact_invalid")?;
     let valid_digest = digest.len() == 64
         && digest
             .bytes()
             .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte));
-    if !valid_digest || name != INNER_ZIP_NAME {
+    if !valid_digest || name != expected_asset_name {
         return Err("testing_artifact_invalid");
     }
     Ok(digest.to_owned())
 }
 
-fn read_zip_entry_bounded(
-    archive: &mut ZipArchive<Cursor<&[u8]>>,
-    name: &str,
-    max_bytes: usize,
-) -> Result<Vec<u8>, &'static str> {
-    let file = archive
-        .by_name(name)
-        .map_err(|_| "testing_artifact_invalid")?;
-    if file.size() > max_bytes as u64 {
-        return Err("testing_artifact_invalid");
+pub fn find_pr_release_assets(release: &Value, pr_id: u64) -> Option<PrReleaseAssetUrls> {
+    if release
+        .get("draft")
+        .and_then(Value::as_bool)
+        .unwrap_or(false)
+    {
+        return None;
     }
-    let mut bytes = Vec::with_capacity((file.size() as usize).min(max_bytes));
-    let mut reader = file.take((max_bytes as u64).saturating_add(1));
-    reader
-        .read_to_end(&mut bytes)
-        .map_err(|_| "testing_artifact_invalid")?;
-    if bytes.len() > max_bytes {
-        return Err("testing_artifact_invalid");
-    }
-    Ok(bytes)
-}
-
-fn sha256_hex(bytes: &[u8]) -> String {
-    let digest = Sha256::digest(bytes);
-    let mut hex = String::with_capacity(64);
-    for byte in digest {
-        hex.push_str(&format!("{byte:02x}"));
-    }
-    hex
-}
-
-pub fn prune_staging_dir(staging_dir: &Path) {
-    let Ok(entries) = fs::read_dir(staging_dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        let Some(name) = path.file_name().and_then(|name| name.to_str()) else {
+    let assets = release.get("assets")?.as_array()?;
+    let expected_zip = format!("Decky-Metadata-pr-{pr_id}.zip");
+    let expected_sha = format!("Decky-Metadata-pr-{pr_id}.zip.sha256");
+    let expected_manifest = format!("Decky-Metadata-pr-{pr_id}.manifest.json");
+    let mut zip_url = None;
+    let mut sha_url = None;
+    let mut manifest_url = None;
+    for asset in assets {
+        let Some(name) = asset.get("name").and_then(Value::as_str) else {
             continue;
         };
-        if (name.starts_with("Decky-Metadata-pr-") || name.starts_with(".Decky-Metadata-pr-"))
-            && (name.ends_with(".zip") || name.ends_with(".tmp"))
-        {
-            let _ = fs::remove_file(&path);
+        let Some(url) = asset
+            .get("browser_download_url")
+            .and_then(Value::as_str)
+            .filter(|url| url.starts_with(PR_RELEASE_DOWNLOAD_PREFIX))
+        else {
+            continue;
+        };
+        if name == expected_zip {
+            zip_url = Some(url.to_owned());
+        } else if name == expected_sha {
+            sha_url = Some(url.to_owned());
+        } else if name == expected_manifest {
+            manifest_url = Some(url.to_owned());
         }
     }
+    Some(PrReleaseAssetUrls {
+        zip_url: zip_url?,
+        sha_url: sha_url?,
+        manifest_url: manifest_url?,
+    })
 }
 
-pub fn extract_and_verify_testing_artifact(
-    archive_bytes: &[u8],
+/// Validates assets published under the rolling `pr-builds` GitHub Release.
+/// Returns `Ok(None)` when the published asset is for a different commit SHA
+/// (so the caller can inspect CI status for the newer commit).
+pub fn validate_pr_release_assets(
     pr_id: u64,
     head_sha: &str,
-    staging_dir: &Path,
-) -> Result<PreparedTestingBuild, &'static str> {
-    if pr_id == 0 || !is_valid_sha(head_sha) {
-        return Err("testing_invalid_request");
-    }
-    let mut archive = ZipArchive::new(Cursor::new(archive_bytes))
-        .map_err(|_| "testing_artifact_invalid")?;
-    let manifest_bytes =
-        read_zip_entry_bounded(&mut archive, INNER_MANIFEST_NAME, MAX_SIDECAR_BYTES)?;
-    let checksum_bytes = read_zip_entry_bounded(&mut archive, INNER_SHA_NAME, MAX_SIDECAR_BYTES)?;
-    let zip_bytes =
-        read_zip_entry_bounded(&mut archive, INNER_ZIP_NAME, MAX_TESTING_ARTIFACT_BYTES)?;
-
-    let manifest_value: Value =
-        serde_json::from_slice(&manifest_bytes).map_err(|_| "testing_artifact_invalid")?;
-    let manifest = parse_release_manifest(&manifest_value).ok_or("testing_artifact_invalid")?;
+    zip_url: &str,
+    manifest_value: &Value,
+    sha_text: &str,
+) -> Result<Option<PreparedTestingBuild>, &'static str> {
+    let manifest = parse_release_manifest(manifest_value).ok_or("testing_artifact_invalid")?;
+    let expected_zip = format!("Decky-Metadata-pr-{pr_id}.zip");
     if manifest.plugin_name != "Decky Metadata"
         || manifest.package_name != "decky-metadata"
-        || manifest.asset_name != INNER_ZIP_NAME
+        || manifest.asset_name != expected_zip
         || manifest.channel != "dev"
         || format!("v{}", manifest.version) != manifest.tag
         || parse_plugin_version(&manifest.version).is_none()
     {
         return Err("testing_artifact_invalid");
     }
-
-    let checksum_text =
-        std::str::from_utf8(&checksum_bytes).map_err(|_| "testing_artifact_invalid")?;
-    let sidecar_sha = parse_checksum_sidecar(checksum_text)?;
+    if manifest_value.get("prNumber").and_then(Value::as_u64) != Some(pr_id) {
+        return Err("testing_artifact_invalid");
+    }
+    let Some(manifest_sha) = manifest_value
+        .get("headSha")
+        .and_then(Value::as_str)
+        .filter(|sha| is_valid_sha(sha))
+        .map(str::to_ascii_lowercase)
+    else {
+        return Err("testing_artifact_invalid");
+    };
+    if manifest_sha != head_sha.to_ascii_lowercase() {
+        return Ok(None);
+    }
+    let sidecar_sha = parse_checksum_sidecar_for(sha_text, &expected_zip)?;
     let expected_sha = manifest.sha256.to_ascii_lowercase();
     if sidecar_sha != expected_sha {
         return Err("testing_artifact_sha_mismatch");
     }
-
-    let actual_sha = sha256_hex(&zip_bytes);
-    if actual_sha != expected_sha {
-        return Err("testing_artifact_sha_mismatch");
-    }
-
-    let staged_path = stage_verified_zip(staging_dir, pr_id, head_sha, &zip_bytes)
-        .map_err(|_| "testing_staging_failed")?;
-    let artifact_url = format!("file://{}", staged_path.display());
-
-    Ok(PreparedTestingBuild {
+    Ok(Some(PreparedTestingBuild {
         pr_id,
         version: manifest.version,
         tag: manifest.tag,
         channel: "development".to_owned(),
-        artifact_url,
+        artifact_url: zip_url.to_owned(),
         sha256: expected_sha,
         published_at: manifest.generated_at,
-    })
-}
-
-fn stage_verified_zip(
-    staging_dir: &Path,
-    pr_id: u64,
-    head_sha: &str,
-    zip_bytes: &[u8],
-) -> std::io::Result<PathBuf> {
-    fs::create_dir_all(staging_dir)?;
-    fs::set_permissions(staging_dir, fs::Permissions::from_mode(0o700))?;
-    prune_staging_dir(staging_dir);
-    let short_sha = &head_sha.to_ascii_lowercase()[..7];
-    let final_path = staging_dir.join(format!("Decky-Metadata-pr-{pr_id}-{short_sha}.zip"));
-    let temp_path = staging_dir.join(format!(
-        ".Decky-Metadata-pr-{pr_id}-{short_sha}.{}.tmp",
-        std::process::id()
-    ));
-    fs::write(&temp_path, zip_bytes)?;
-    fs::set_permissions(&temp_path, fs::Permissions::from_mode(0o644))?;
-    fs::rename(&temp_path, &final_path)?;
-    Ok(final_path)
+    }))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::io::Write;
-    use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
 
     const VALID_SHA: &str = "0123456789abcdef0123456789abcdef01234567";
-
-    fn build_outer_artifact(zip_bytes: &[u8], sha_override: Option<&str>, manifest_override: Option<Value>) -> Vec<u8> {
-        let actual_sha = sha256_hex(zip_bytes);
-        let sha = sha_override.unwrap_or(&actual_sha);
-        let manifest = manifest_override.unwrap_or_else(|| {
-            json!({
-                "schemaVersion": 1,
-                "pluginName": "Decky Metadata",
-                "packageName": "decky-metadata",
-                "version": "0.6.8-dev.pr42.g0123456",
-                "sourceVersion": "0.6.8-dev.pr42.g0123456",
-                "tag": "v0.6.8-dev.pr42.g0123456",
-                "channel": "dev",
-                "assetName": INNER_ZIP_NAME,
-                "sha256": sha,
-                "generatedAt": "2026-11-25T00:00:00Z"
-            })
-        });
-        let mut cursor = Cursor::new(Vec::new());
-        {
-            let mut writer = ZipWriter::new(&mut cursor);
-            let options = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-            writer.start_file(INNER_ZIP_NAME, options).unwrap();
-            writer.write_all(zip_bytes).unwrap();
-            writer.start_file(INNER_SHA_NAME, options).unwrap();
-            writer
-                .write_all(format!("{sha}  {INNER_ZIP_NAME}\n").as_bytes())
-                .unwrap();
-            writer.start_file(INNER_MANIFEST_NAME, options).unwrap();
-            writer
-                .write_all(serde_json::to_vec(&manifest).unwrap().as_slice())
-                .unwrap();
-            writer.finish().unwrap();
-        }
-        cursor.into_inner()
-    }
+    const OLDER_SHA: &str = "fedcba9876543210fedcba9876543210fedcba98";
 
     fn pull_json(number: u64, repo: &str, labels: &[&str]) -> Value {
         json!({
@@ -443,6 +325,23 @@ mod tests {
         })
     }
 
+    fn valid_manifest(pr_id: u64, sha: &str, digest: &str) -> Value {
+        json!({
+            "schemaVersion": 1,
+            "pluginName": "Decky Metadata",
+            "packageName": "decky-metadata",
+            "version": format!("0.6.8-dev.pr{pr_id}.g0123456"),
+            "sourceVersion": format!("0.6.8-dev.pr{pr_id}.g0123456"),
+            "tag": format!("v0.6.8-dev.pr{pr_id}.g0123456"),
+            "channel": "dev",
+            "assetName": format!("Decky-Metadata-pr-{pr_id}.zip"),
+            "sha256": digest,
+            "generatedAt": "2026-11-25T00:00:00Z",
+            "prNumber": pr_id,
+            "headSha": sha
+        })
+    }
+
     #[test]
     fn eligibility_allows_same_repo_or_opt_in_label_only() {
         let pulls = vec![
@@ -452,7 +351,10 @@ mod tests {
             pull_json(13, "contributor/Decky-Metadata", &["Test-Build"]),
         ];
         let parsed = filter_testing_pulls(&pulls);
-        assert_eq!(parsed.iter().map(|pr| pr.id).collect::<Vec<_>>(), vec![10, 12, 13]);
+        assert_eq!(
+            parsed.iter().map(|pr| pr.id).collect::<Vec<_>>(),
+            vec![10, 12, 13]
+        );
         assert!(!parsed[0].is_fork);
         assert!(parsed[1].is_fork);
         assert!(parsed[2].is_fork);
@@ -463,73 +365,101 @@ mod tests {
     }
 
     #[test]
-    fn workflow_run_selection_prefers_passing_pr_runs_and_classifies_missing_states() {
-        assert_eq!(select_candidate_run_ids(&[]), Err("testing_build_not_found"));
+    fn classify_missing_pr_build_distinguishes_ci_states() {
+        assert_eq!(classify_missing_pr_build(&[]), "testing_build_not_found");
         assert_eq!(
-            select_candidate_run_ids(&[json!({"id": 1, "name": "CI", "event": "pull_request", "status": "in_progress"})]),
-            Err("testing_build_in_progress")
+            classify_missing_pr_build(&[
+                json!({"id": 1, "name": "Other", "status": "completed", "conclusion": "success"})
+            ]),
+            "testing_build_not_found"
         );
         assert_eq!(
-            select_candidate_run_ids(&[json!({"id": 2, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "failure"})]),
-            Err("testing_build_failed")
+            classify_missing_pr_build(&[
+                json!({"id": 2, "name": "CI", "status": "in_progress"}),
+                json!({"id": 3, "name": "CI", "status": "completed", "conclusion": "failure"})
+            ]),
+            "testing_build_in_progress"
         );
-        let runs = vec![
-            json!({"id": 100, "name": "CI", "event": "push", "status": "completed", "conclusion": "success"}),
-            json!({"id": 101, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"}),
-            json!({"id": 102, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"}),
-            json!({"id": 103, "name": "Other", "event": "pull_request", "status": "completed", "conclusion": "success"}),
-        ];
-        assert_eq!(select_candidate_run_ids(&runs), Ok(vec![101, 102, 100]));
+        assert_eq!(
+            classify_missing_pr_build(&[
+                json!({"id": 4, "name": "CI", "status": "completed", "conclusion": "failure"})
+            ]),
+            "testing_build_failed"
+        );
+        assert_eq!(
+            classify_missing_pr_build(&[
+                json!({"id": 5, "name": "CI", "status": "completed", "conclusion": "success"})
+            ]),
+            "testing_artifact_not_found"
+        );
     }
 
     #[test]
-    fn artifact_extraction_verifies_manifest_and_sha_and_stages_clean_file() {
-        let base = std::env::var_os("TMPDIR")
-            .map(PathBuf::from)
-            .unwrap_or_else(|| PathBuf::from("/var/tmp/omp-1000"));
-        let dir = base.join(format!("decky-testing-stage-{}", std::process::id()));
-        let _ = fs::remove_dir_all(&dir);
-        fs::create_dir_all(&dir).unwrap();
-        let stale = dir.join("Decky-Metadata-pr-1-aaaaaaa.zip");
-        fs::write(&stale, b"old").unwrap();
+    fn pr_release_asset_lookup_and_validation_enforce_github_host_and_metadata() {
+        let zip_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip";
+        let sha_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip.sha256";
+        let manifest_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.manifest.json";
 
-        let payload = b"fake-plugin-zip-bytes";
-        let outer = build_outer_artifact(payload, None, None);
-        let prepared = extract_and_verify_testing_artifact(&outer, 42, VALID_SHA, &dir).unwrap();
+        let release = json!({
+            "draft": false,
+            "assets": [
+                {"name": "Decky-Metadata-pr-42.zip", "browser_download_url": zip_url},
+                {"name": "Decky-Metadata-pr-42.zip.sha256", "browser_download_url": sha_url},
+                {"name": "Decky-Metadata-pr-42.manifest.json", "browser_download_url": manifest_url}
+            ]
+        });
+        let found = find_pr_release_assets(&release, 42).unwrap();
+        assert_eq!(found.zip_url, zip_url);
+        assert!(find_pr_release_assets(&release, 99).is_none());
+
+        let foreign_host = json!({
+            "draft": false,
+            "assets": [
+                {"name": "Decky-Metadata-pr-42.zip", "browser_download_url": "https://evil.example/Decky-Metadata-pr-42.zip"},
+                {"name": "Decky-Metadata-pr-42.zip.sha256", "browser_download_url": sha_url},
+                {"name": "Decky-Metadata-pr-42.manifest.json", "browser_download_url": manifest_url}
+            ]
+        });
+        assert!(find_pr_release_assets(&foreign_host, 42).is_none());
+
+        let digest = "a".repeat(64);
+        let sidecar = format!("{digest}  Decky-Metadata-pr-42.zip\n");
+        let manifest = valid_manifest(42, VALID_SHA, &digest);
+        let prepared =
+            validate_pr_release_assets(42, VALID_SHA, zip_url, &manifest, &sidecar)
+                .unwrap()
+                .unwrap();
         assert_eq!(prepared.pr_id, 42);
-        assert_eq!(prepared.version, "0.6.8-dev.pr42.g0123456");
-        assert_eq!(prepared.sha256, sha256_hex(payload));
-        assert!(!stale.exists());
-        let staged_path = PathBuf::from(prepared.artifact_url.strip_prefix("file://").unwrap());
-        assert_eq!(fs::read(&staged_path).unwrap(), payload);
+        assert_eq!(prepared.artifact_url, zip_url);
+        assert_eq!(prepared.sha256, digest);
 
-        let tampered = build_outer_artifact(payload, Some(&"a".repeat(64)), None);
+        let stale_manifest = valid_manifest(42, OLDER_SHA, &digest);
         assert_eq!(
-            extract_and_verify_testing_artifact(&tampered, 42, VALID_SHA, &dir),
+            validate_pr_release_assets(42, VALID_SHA, zip_url, &stale_manifest, &sidecar),
+            Ok(None)
+        );
+
+        let mismatched_sidecar = format!("{}  Decky-Metadata-pr-42.zip\n", "b".repeat(64));
+        assert_eq!(
+            validate_pr_release_assets(42, VALID_SHA, zip_url, &manifest, &mismatched_sidecar),
             Err("testing_artifact_sha_mismatch")
         );
 
-        let wrong_plugin = build_outer_artifact(
-            payload,
-            None,
-            Some(json!({
-                "schemaVersion": 1,
-                "pluginName": "Other Plugin",
-                "packageName": "decky-metadata",
-                "version": "0.6.8-dev.pr42.g0123456",
-                "sourceVersion": "0.6.8-dev.pr42.g0123456",
-                "tag": "v0.6.8-dev.pr42.g0123456",
-                "channel": "dev",
-                "assetName": INNER_ZIP_NAME,
-                "sha256": sha256_hex(payload),
-                "generatedAt": "2026-11-25T00:00:00Z"
-            })),
-        );
+        let mut wrong_plugin = manifest.clone();
+        wrong_plugin["pluginName"] = json!("Other Plugin");
         assert_eq!(
-            extract_and_verify_testing_artifact(&wrong_plugin, 42, VALID_SHA, &dir),
+            validate_pr_release_assets(42, VALID_SHA, zip_url, &wrong_plugin, &sidecar),
             Err("testing_artifact_invalid")
         );
 
-        let _ = fs::remove_dir_all(&dir);
+        let mut wrong_pr = manifest;
+        wrong_pr["prNumber"] = json!(99);
+        assert_eq!(
+            validate_pr_release_assets(42, VALID_SHA, zip_url, &wrong_pr, &sidecar),
+            Err("testing_artifact_invalid")
+        );
     }
 }

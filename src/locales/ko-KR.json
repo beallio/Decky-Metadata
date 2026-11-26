@@ -135,6 +135,10 @@
       "showTimesDescription": "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
       "storeLabel": "상점",
       "storeDescription": "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다. 항상 자동 일치를 사용합니다. 게임별 HLTB 선택은 라이브러리 게임 페이지에만 적용됩니다.",
+      "statsHeading": "통계",
+      "styleHeading": "스타일",
+      "customizeHeading": "사용자 지정",
+      "cacheHeading": "캐시",
       "styleLabel": "HLTB 스타일",
       "styleDescription": "\"Clean\" 스타일은 CSS Loader 테마 \"Clean Gameview\"와 함께 사용하도록 만들어졌습니다",
       "styleDefault": "기본",
@@ -227,7 +231,8 @@
       "positionTopLeft": "왼쪽 위",
       "positionTopRight": "오른쪽 위",
       "loadingPreferences": "ProtonDB 배지 환경설정을 불러오는 중...",
-      "footnote": "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다."
+      "footnote": "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다.",
+      "gameCoversHeading": "게임 커버"
     },
     "miniAchievements": {
       "title": "미니 도전 과제",
@@ -318,7 +323,20 @@
       "confirmRevertBody": "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "소프트웨어 업데이트",
+      "checkForUpdates": "업데이트 확인",
+      "upToDateButton": "최신 상태",
+      "apply": "적용",
+      "applying": "적용 중...",
+      "moveToStableShort": "안정 버전으로 이동",
+      "revertToStableShort": "안정 버전으로 되돌리기",
+      "upToDateLastChecked": "최신 상태: 마지막 확인 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "업데이트 채널",
+      "channelOptionStable": "안정",
+      "channelOptionDevelopment": "개발",
+      "channelStableDescription": "검증된 안정 릴리스를 받습니다."
     },
     "versions": {
       "title": "버전",
@@ -362,6 +380,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "다시 시도",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -376,7 +395,8 @@
     "statMain": "메인 스토리",
     "statMainPlus": "메인 + 추가",
     "statComplete": "완벽 클리어",
-    "statAllStyles": "모든 플레이 방식"
+    "statAllStyles": "모든 플레이 방식",
+    "viewDetails": "세부 정보 보기"
   },
   "trailers": {
     "audio": "트레일러 오디오",

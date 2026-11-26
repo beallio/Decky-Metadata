@@ -136,6 +136,10 @@
       "showTimesDescription": "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
       "storeLabel": "Winkel",
       "storeDescription": "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel. Gebruikt altijd automatische herkenning; HLTB-keuzes per spel gelden alleen op spelpagina's in de bibliotheek.",
+      "statsHeading": "Statistieken",
+      "styleHeading": "Stijl",
+      "customizeHeading": "Aanpassen",
+      "cacheHeading": "Cache",
       "styleLabel": "HLTB-stijl",
       "styleDescription": "De \"Clean\"-stijlen zijn bedoeld voor het CSS Loader-thema \"Clean Gameview\"",
       "styleDefault": "Standaard",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Linksboven",
       "positionTopRight": "Rechtsboven",
       "loadingPreferences": "ProtonDB-badgevoorkeuren laden...",
-      "footnote": "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
+      "footnote": "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen.",
+      "gameCoversHeading": "Gamehoezen"
     },
     "miniAchievements": {
       "title": "Mini-prestaties",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Software-updates",
+      "checkForUpdates": "Controleren op updates",
+      "upToDateButton": "Up-to-date",
+      "apply": "Toepassen",
+      "applying": "Toepassen...",
+      "moveToStableShort": "Naar stabiel",
+      "revertToStableShort": "Terug naar stabiel",
+      "upToDateLastChecked": "Up-to-date: laatst gecontroleerd {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Updatekanaal",
+      "channelOptionStable": "Stabiel",
+      "channelOptionDevelopment": "Ontwikkeling",
+      "channelStableDescription": "Ontvangt geteste stabiele uitgaven."
     },
     "versions": {
       "title": "Versies",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Opnieuw proberen",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Hoofdverhaal",
     "statMainPlus": "Hoofdverhaal + extra's",
     "statComplete": "Completionist",
-    "statAllStyles": "Alle speelstijlen"
+    "statAllStyles": "Alle speelstijlen",
+    "viewDetails": "Details bekijken"
   },
   "trailers": {
     "audio": "Trailergeluid",

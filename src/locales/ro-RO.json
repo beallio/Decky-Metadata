@@ -137,6 +137,10 @@
       "showTimesDescription": "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
       "storeLabel": "Magazin",
       "storeDescription": "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam. Folosește întotdeauna potrivirea automată; alegerile HLTB per joc se aplică doar paginilor de joc din Bibliotecă.",
+      "statsHeading": "Statistici",
+      "styleHeading": "Stil",
+      "customizeHeading": "Personalizare",
+      "cacheHeading": "Cache",
       "styleLabel": "Stil HLTB",
       "styleDescription": "Stilurile „Clean” sunt concepute pentru a funcționa cu tema CSS Loader „Clean Gameview”",
       "styleDefault": "Implicit",
@@ -229,7 +233,8 @@
       "positionTopLeft": "Sus stânga",
       "positionTopRight": "Sus dreapta",
       "loadingPreferences": "Se încarcă preferințele pentru insignele ProtonDB...",
-      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+      "gameCoversHeading": "Coperți de jocuri"
     },
     "miniAchievements": {
       "title": "Realizări mini",
@@ -320,7 +325,20 @@
       "confirmRevertBody": "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Actualizări de software",
+      "checkForUpdates": "Verifică actualizările",
+      "upToDateButton": "La zi",
+      "apply": "Aplică",
+      "applying": "Se aplică...",
+      "moveToStableShort": "Treci la stabil",
+      "revertToStableShort": "Revino la stabil",
+      "upToDateLastChecked": "La zi: ultima verificare {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de actualizare",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Dezvoltare",
+      "channelStableDescription": "Primește versiuni stabile testate."
     },
     "versions": {
       "title": "Versiuni",
@@ -364,6 +382,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Încearcă din nou",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -378,7 +397,8 @@
     "statMain": "Povestea principală",
     "statMainPlus": "Principal + extra",
     "statComplete": "Completist",
-    "statAllStyles": "Toate stilurile"
+    "statAllStyles": "Toate stilurile",
+    "viewDetails": "Vezi detalii"
   },
   "trailers": {
     "audio": "Sunetul trailerului",

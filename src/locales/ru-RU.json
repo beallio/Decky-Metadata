@@ -138,6 +138,10 @@
       "showTimesDescription": "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
       "storeLabel": "Магазин",
       "storeDescription": "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam. Всегда используется автоматический подбор; выбор HLTB для отдельной игры действует только на страницах игр в библиотеке.",
+      "statsHeading": "Статистика",
+      "styleHeading": "Стиль",
+      "customizeHeading": "Настройка",
+      "cacheHeading": "Кэш",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стили «Clean» предназначены для работы с темой CSS Loader «Clean Gameview»",
       "styleDefault": "По умолчанию",
@@ -230,7 +234,8 @@
       "positionTopLeft": "Сверху слева",
       "positionTopRight": "Сверху справа",
       "loadingPreferences": "Загрузка настроек значков ProtonDB...",
-      "footnote": "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
+      "footnote": "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается.",
+      "gameCoversHeading": "Обложки игр"
     },
     "miniAchievements": {
       "title": "Мини-достижения",
@@ -321,7 +326,20 @@
       "confirmRevertBody": "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Обновления ПО",
+      "checkForUpdates": "Проверить обновления",
+      "upToDateButton": "Актуально",
+      "apply": "Применить",
+      "applying": "Применение...",
+      "moveToStableShort": "Перейти на стабильную",
+      "revertToStableShort": "Вернуться к стабильной",
+      "upToDateLastChecked": "Актуально: последняя проверка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал обновлений",
+      "channelOptionStable": "Стабильный",
+      "channelOptionDevelopment": "Разработка",
+      "channelStableDescription": "Получает проверенные стабильные релизы."
     },
     "versions": {
       "title": "Версии",
@@ -365,6 +383,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Повторить",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -379,7 +398,8 @@
     "statMain": "Основной сюжет",
     "statMainPlus": "Основной сюжет + доп.",
     "statComplete": "Полное прохождение",
-    "statAllStyles": "Все стили"
+    "statAllStyles": "Все стили",
+    "viewDetails": "Подробнее"
   },
   "trailers": {
     "audio": "Звук трейлера",

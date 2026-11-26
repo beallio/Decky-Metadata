@@ -137,6 +137,10 @@
       "showTimesDescription": "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
       "storeLabel": "Tienda",
       "storeDescription": "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam. Siempre usa coincidencia automática; las elecciones de HLTB por juego solo se aplican en las páginas de juego de la Biblioteca.",
+      "statsHeading": "Estadísticas",
+      "styleHeading": "Estilo",
+      "customizeHeading": "Personalizar",
+      "cacheHeading": "Caché",
       "styleLabel": "Estilo de HLTB",
       "styleDescription": "Los estilos «Clean» están pensados para funcionar con el tema «Clean Gameview» de CSS Loader",
       "styleDefault": "Predeterminado",
@@ -229,7 +233,8 @@
       "positionTopLeft": "Arriba a la izquierda",
       "positionTopRight": "Arriba a la derecha",
       "loadingPreferences": "Cargando las preferencias de las insignias de ProtonDB...",
-      "footnote": "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
+      "footnote": "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan.",
+      "gameCoversHeading": "Carátulas de juegos"
     },
     "miniAchievements": {
       "title": "Minilogros",
@@ -320,7 +325,20 @@
       "confirmRevertBody": "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Actualizaciones de software",
+      "checkForUpdates": "Buscar actualizaciones",
+      "upToDateButton": "Actualizado",
+      "apply": "Aplicar",
+      "applying": "Aplicando...",
+      "moveToStableShort": "Pasar a estable",
+      "revertToStableShort": "Volver a estable",
+      "upToDateLastChecked": "Actualizado: última comprobación {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de actualizaciones",
+      "channelOptionStable": "Estable",
+      "channelOptionDevelopment": "Desarrollo",
+      "channelStableDescription": "Recibe versiones estables probadas."
     },
     "versions": {
       "title": "Versiones",
@@ -364,6 +382,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Reintentar",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -378,7 +397,8 @@
     "statMain": "Historia principal",
     "statMainPlus": "Principal + extras",
     "statComplete": "Completista",
-    "statAllStyles": "Todos los estilos"
+    "statAllStyles": "Todos los estilos",
+    "viewDetails": "Ver detalles"
   },
   "trailers": {
     "audio": "Audio del tráiler",

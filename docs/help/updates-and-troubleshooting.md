@@ -4,11 +4,11 @@ Open Decky Metadata from the Quick Access Menu, then select the gear. Open **Upd
 
 ## Check for updates
 
-In **Updates**, select **Check now** to check immediately. **Automatically check for updates** controls background checks while the plugin is loaded. The **Status** field shows the result and, when available, when the check was last made.
+In **Updates**, **Software Updates** mirrors SteamOS's update control: its subtitle shows the running version and when updates were last checked, and its button updates in place (**Check For Updates**, **Checking...**, **Up-to-date**, **Apply**, or **Applying...**). **Automatically check for updates** controls background checks while the plugin is loaded.
 
-By default, the updater checks stable releases. Turn on **Receive development releases** to include prereleases intended for testing. Testing builds may contain regressions. A local build whose installed version includes a `+` can use the updater only to move to a stable release; install a development release manually instead.
+By default, **Update Channel** is set to **Stable**. Switch **Update Channel** to **Development** to include prereleases intended for testing. Testing builds may contain regressions. A local build whose installed version includes a `+` can use the updater only to move to a stable release; install a development release manually instead.
 
-**Installed Version** always shows the version that is running now. When you select **Install**, Decky Loader asks you to confirm the update in its own window. The new version is installed only after you confirm, and Decky Loader then reloads the plugin. Until then, the update stays offered. If you closed Decky Loader's window, or nothing happened, select **Install** again. If the plugin reloaded and **Install** is not shown, select **Check now**; with **Automatically check for updates** on, the plugin checks again by itself.
+When an update is available, **Software Updates** shows the current and available versions and changes its button to **Apply** (or **Move to Stable** / **Revert to Stable**). Selecting it hands the verified release to Decky Loader, which asks you to confirm in its own window. The new version is installed only after you confirm, and Decky Loader then reloads the plugin (refreshing the Settings page in place). Until then, the update stays offered. If you closed Decky Loader's window, or nothing happened, select **Apply** again. If the plugin reloaded and no update is shown, select **Check For Updates**; with **Automatically check for updates** on, the plugin checks again by itself.
 
 If the updater cannot install a candidate in your Decky environment, open **View Release Notes** and install the release ZIP manually. For the stable release, download `Decky-Metadata.zip` from the [latest release](https://github.com/beallio/Decky-Metadata/releases/latest), then use Decky's **Developer** settings and **Install Plugin from ZIP File** to choose the ZIP with **Browse** and select **Install**. Do not unzip it. The [README installation steps](../../README.md#install) show the full path through Decky.
 
@@ -20,7 +20,7 @@ The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/r
 
 ### Testing tab (pull request builds)
 
-Under **Updates → Developer**, turn on **Enable Testing tab** to add a **Testing** tab to Settings (off by default). The **Testing** tab lists open pull requests from `beallio/Decky-Metadata` and fork pull requests that carry the `test-build` label. Selecting **Install** downloads the CI build artifact, verifies its manifest and SHA-256 checksum, and hands the verified ZIP to Decky Loader to install. Because pull request builds are stamped as development versions (`X.Y.Z-dev.pr<number>.g<sha>`), you can return to a stable release afterward from **Updates**.
+Under **Updates → Developer**, turn on **Enable Testing tab** to add a **Testing** tab to Settings (off by default). The **Testing** tab lists open pull requests from `beallio/Decky-Metadata` and fork pull requests that carry the `test-build` label. Selecting **Install** verifies the build published to the `pr-builds` GitHub prerelease against its manifest and SHA-256 checksum, then hands the direct GitHub Releases ZIP to Decky Loader to install. Because pull request builds are stamped as development versions (`X.Y.Z-dev.pr<number>.g<sha>`), you can return to a stable release afterward from **Updates**.
 
 ## Mini achievements
 

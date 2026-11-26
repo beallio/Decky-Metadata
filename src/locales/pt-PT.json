@@ -137,6 +137,10 @@
       "showTimesDescription": "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
       "storeLabel": "Loja",
       "storeDescription": "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam. Utiliza sempre correspondência automática; as escolhas de HLTB por jogo aplicam-se apenas às páginas de jogos da Biblioteca.",
+      "statsHeading": "Estatísticas",
+      "styleHeading": "Estilo",
+      "customizeHeading": "Personalizar",
+      "cacheHeading": "Cache",
       "styleLabel": "Estilo do HLTB",
       "styleDescription": "Os estilos \"Clean\" foram pensados para funcionar com o tema \"Clean Gameview\" do CSS Loader",
       "styleDefault": "Predefinido",
@@ -229,7 +233,8 @@
       "positionTopLeft": "Superior esquerdo",
       "positionTopRight": "Superior direito",
       "loadingPreferences": "A carregar preferências do selo ProtonDB...",
-      "footnote": "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+      "footnote": "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+      "gameCoversHeading": "Capas de jogos"
     },
     "miniAchievements": {
       "title": "Miniconquistas",
@@ -320,7 +325,20 @@
       "confirmRevertBody": "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Atualizações de software",
+      "checkForUpdates": "Procurar atualizações",
+      "upToDateButton": "Atualizado",
+      "apply": "Aplicar",
+      "applying": "A aplicar...",
+      "moveToStableShort": "Mudar para estável",
+      "revertToStableShort": "Reverter para estável",
+      "upToDateLastChecked": "Atualizado: última verificação {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de atualizações",
+      "channelOptionStable": "Estável",
+      "channelOptionDevelopment": "Desenvolvimento",
+      "channelStableDescription": "Recebe versões estáveis testadas."
     },
     "versions": {
       "title": "Versões",
@@ -364,6 +382,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Tentar novamente",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -378,7 +397,8 @@
     "statMain": "História principal",
     "statMainPlus": "Principal + extras",
     "statComplete": "Completista",
-    "statAllStyles": "Todos os estilos"
+    "statAllStyles": "Todos os estilos",
+    "viewDetails": "Ver detalhes"
   },
   "trailers": {
     "audio": "Áudio do trailer",

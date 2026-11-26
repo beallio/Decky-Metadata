@@ -732,7 +732,6 @@ impl Updater {
         &mut self,
         pr_id: &Value,
         head_sha: &Value,
-        staging_dir: &std::path::Path,
     ) -> Result<Value, String> {
         let Some(pr_id) = pr_id.as_u64().filter(|id| *id > 0) else {
             return Ok(json!({"status": "failed", "message": "testing_invalid_request"}));
@@ -759,7 +758,7 @@ impl Updater {
         }
 
         // Re-verify the PR on GitHub so only open same-repo or `test-build`-labeled PRs
-        // at their current head SHA can be staged for installation.
+        // at their current head SHA can be prepared for installation.
         let pull_response = self.client.get_pull(pr_id).await;
         if let Some(failure) =
             self.rate_limit_failure(&pull_response, "GitHub PR verification was rate limited")
@@ -776,6 +775,104 @@ impl Updater {
             return Ok(json!({"status": "failed", "message": "testing_pr_outdated"}));
         }
 
+        // Fetch verified assets directly from the rolling `pr-builds` GitHub prerelease.
+        let pr_release_response = self
+            .client
+            .get_release(testing::PR_BUILDS_RELEASE_TAG)
+            .await;
+        if let Some(failure) = self.rate_limit_failure(
+            &pr_release_response,
+            "GitHub PR release lookup was rate limited",
+        ) {
+            return Ok(failure);
+        }
+        if !matches!(pr_release_response.status, 200 | 404) {
+            crate::logging::event(
+                "update",
+                "GitHub PR release lookup failed",
+                json!({"pr_id": pr_id, "status": pr_release_response.status}),
+                Level::Error,
+            );
+            return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+        }
+        if pr_release_response.status == 200
+            && let Some(urls) = testing::find_pr_release_assets(&pr_release_response.body, pr_id)
+        {
+            let manifest_response = self.client.get_manifest(&urls.manifest_url).await;
+            if let Some(failure) = self.rate_limit_failure(
+                &manifest_response,
+                "GitHub PR manifest download was rate limited",
+            ) {
+                return Ok(failure);
+            }
+            if manifest_response.status != 200 {
+                crate::logging::event(
+                    "update",
+                    "Testing PR manifest download failed",
+                    json!({"pr_id": pr_id, "status": manifest_response.status}),
+                    Level::Error,
+                );
+                return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+            }
+            let sha_response = match self
+                .client
+                .download_bytes(&urls.sha_url, testing::MAX_SIDECAR_BYTES)
+                .await
+            {
+                Ok(response) if response.status == 200 => response,
+                Ok(response) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR checksum download returned non-200 status",
+                        json!({"pr_id": pr_id, "status": response.status}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+                }
+                Err(error) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR checksum download failed",
+                        json!({"pr_id": pr_id, "error": error}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+                }
+            };
+            let sha_text = sha_response.text();
+            match testing::validate_pr_release_assets(
+                pr_id,
+                &head_sha,
+                &urls.zip_url,
+                &manifest_response.body,
+                &sha_text,
+            ) {
+                Ok(Some(prepared)) => {
+                    crate::logging::event(
+                        "update",
+                        "Prepared testing PR build from pr-builds release",
+                        json!({"pr_id": prepared.pr_id, "version": prepared.version}),
+                        Level::Info,
+                    );
+                    return Ok(prepared.to_value());
+                }
+                Ok(None) => {
+                    // pr-builds still holds an older commit for this PR; inspect CI runs below.
+                }
+                Err(code) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR release asset validation failed",
+                        json!({"pr_id": pr_id, "code": code}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": code}));
+                }
+            }
+        }
+
+        // No published asset for this commit yet: inspect CI workflow runs on GitHub
+        // to tell the user whether CI is still running, failed, or has not published yet.
         let runs_response = self.client.list_workflow_runs(&head_sha).await;
         if let Some(failure) =
             self.rate_limit_failure(&runs_response, "GitHub Actions lookup was rate limited")
@@ -792,113 +889,8 @@ impl Updater {
         else {
             return Ok(json!({"status": "failed", "message": "testing_build_not_found"}));
         };
-        let run_ids = match testing::select_candidate_run_ids(workflows) {
-            Ok(ids) => ids,
-            Err(code) => return Ok(json!({"status": "failed", "message": code})),
-        };
-
-        let mut artifact_id = None;
-        let mut saw_expired = false;
-        for run_id in run_ids {
-            let artifacts_response = self.client.list_run_artifacts(run_id).await;
-            if let Some(failure) = self.rate_limit_failure(
-                &artifacts_response,
-                "GitHub artifact lookup was rate limited",
-            ) {
-                return Ok(failure);
-            }
-            if artifacts_response.status != 200 {
-                continue;
-            }
-            let Some(artifacts) = artifacts_response
-                .body
-                .get("artifacts")
-                .and_then(Value::as_array)
-            else {
-                continue;
-            };
-            match testing::select_testing_artifact(artifacts) {
-                Ok(Some(id)) => {
-                    artifact_id = Some(id);
-                    break;
-                }
-                Ok(None) => continue,
-                Err("testing_artifact_expired") => {
-                    saw_expired = true;
-                }
-                Err(code) => return Ok(json!({"status": "failed", "message": code})),
-            }
-        }
-        let Some(artifact_id) = artifact_id else {
-            let code = if saw_expired {
-                "testing_artifact_expired"
-            } else {
-                "testing_artifact_not_found"
-            };
-            return Ok(json!({"status": "failed", "message": code}));
-        };
-
-        let download_url = testing::testing_artifact_download_url(artifact_id);
-        let download_response = match self
-            .client
-            .download_bytes(&download_url, testing::MAX_TESTING_ARTIFACT_BYTES)
-            .await
-        {
-            Ok(response) => response,
-            Err(error) => {
-                crate::logging::event(
-                    "update",
-                    "Testing PR artifact download failed",
-                    json!({"pr_id": pr_id, "artifact_id": artifact_id, "error": error}),
-                    Level::Error,
-                );
-                return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
-            }
-        };
-        if download_response.status != 200 {
-            crate::logging::event(
-                "update",
-                "Testing PR artifact download returned non-200 status",
-                json!({"pr_id": pr_id, "artifact_id": artifact_id, "status": download_response.status}),
-                Level::Error,
-            );
-            return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
-        }
-
-        let staging_dir = staging_dir.to_path_buf();
-        let archive_bytes = download_response.body;
-        let head_sha_owned = head_sha.clone();
-        let extracted = tokio::task::spawn_blocking(move || {
-            testing::extract_and_verify_testing_artifact(
-                &archive_bytes,
-                pr_id,
-                &head_sha_owned,
-                &staging_dir,
-            )
-        })
-        .await
-        .map_err(|error| error.to_string())?;
-
-        match extracted {
-            Ok(prepared) => {
-                crate::logging::event(
-                    "update",
-                    "Prepared testing PR build",
-                    json!({"pr_id": prepared.pr_id, "version": prepared.version}),
-                    Level::Info,
-                );
-                Ok(prepared.to_value())
-            }
-            Err(code) => {
-                crate::logging::event(
-                    "update",
-                    "Testing PR artifact verification failed",
-                    json!({"pr_id": pr_id, "code": code}),
-                    Level::Error,
-                );
-                Ok(json!({"status": "failed", "message": code}))
-            }
-        }
+        let code = testing::classify_missing_pr_build(workflows);
+        Ok(json!({"status": "failed", "message": code}))
     }
 }
 
@@ -1415,19 +1407,18 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn testing_versions_list_and_prepare_enforce_eligibility_and_verify_artifact() {
-        use std::io::Write;
-        use sha2::{Digest, Sha256};
-        use zip::{CompressionMethod, ZipWriter, write::SimpleFileOptions};
-
+    async fn testing_versions_list_and_prepare_enforce_eligibility_and_verify_pr_builds_release() {
         let sha = "abcdef0123456789abcdef0123456789abcdef01";
+        let digest = "b".repeat(64);
         let pulls_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls?state=open&per_page=100";
         let pull_42_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/42";
         let pull_43_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/43";
-        let runs_url = format!("https://api.github.com/repos/beallio/Decky-Metadata/actions/runs?head_sha={sha}&per_page=30");
-        let run_10_artifacts = "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs/10/artifacts";
-        let run_11_artifacts = "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs/11/artifacts";
-        let download_url = "https://nightly.link/beallio/Decky-Metadata/actions/artifacts/777.zip";
+        let pr_builds_url =
+            "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/pr-builds";
+        let zip_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip";
+        let manifest_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.manifest.json";
+        let sha_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip.sha256";
 
         let same_repo_pr = json!({
             "number": 42,
@@ -1465,10 +1456,17 @@ mod tests {
             "head": {"sha": sha, "repo": {"full_name": "contributor/Decky-Metadata"}},
             "labels": [{"name": "test-build"}]
         });
-
-        let payload = b"verified-plugin-zip";
-        let digest = format!("{:x}", Sha256::digest(payload));
-        let manifest_json = json!({
+        let release = json!({
+            "draft": false,
+            "prerelease": true,
+            "tag_name": "pr-builds",
+            "assets": [
+                {"name": "Decky-Metadata-pr-42.zip", "browser_download_url": zip_url},
+                {"name": "Decky-Metadata-pr-42.manifest.json", "browser_download_url": manifest_url},
+                {"name": "Decky-Metadata-pr-42.zip.sha256", "browser_download_url": sha_url}
+            ]
+        });
+        let pr_manifest = json!({
             "schemaVersion": 1,
             "pluginName": "Decky Metadata",
             "packageName": "decky-metadata",
@@ -1476,27 +1474,12 @@ mod tests {
             "sourceVersion": "0.6.8-dev.pr42.gabcdef0",
             "tag": "v0.6.8-dev.pr42.gabcdef0",
             "channel": "dev",
-            "assetName": "Decky-Metadata.zip",
+            "assetName": "Decky-Metadata-pr-42.zip",
             "sha256": digest,
-            "generatedAt": "2026-11-25T00:00:00Z"
+            "generatedAt": "2026-11-25T09:15:00Z",
+            "prNumber": 42,
+            "headSha": sha
         });
-        let mut cursor = std::io::Cursor::new(Vec::new());
-        {
-            let mut writer = ZipWriter::new(&mut cursor);
-            let opts = SimpleFileOptions::default().compression_method(CompressionMethod::Deflated);
-            writer.start_file("Decky-Metadata.zip", opts).unwrap();
-            writer.write_all(payload).unwrap();
-            writer.start_file("Decky-Metadata.zip.sha256", opts).unwrap();
-            writer
-                .write_all(format!("{digest}  Decky-Metadata.zip\n").as_bytes())
-                .unwrap();
-            writer.start_file("Decky-Metadata.manifest.json", opts).unwrap();
-            writer
-                .write_all(serde_json::to_vec(&manifest_json).unwrap().as_slice())
-                .unwrap();
-            writer.finish().unwrap();
-        }
-        let outer_zip = cursor.into_inner();
 
         let http = Http::fixtures(vec![
             fixture(
@@ -1507,35 +1490,9 @@ mod tests {
             ),
             fixture(pull_43_url, 200, unlabeled_fork_pr, &[]),
             fixture(pull_42_url, 200, same_repo_pr, &[]),
-            fixture(
-                &runs_url,
-                200,
-                json!({
-                    "workflow_runs": [
-                        {"id": 10, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"},
-                        {"id": 11, "name": "CI", "event": "pull_request", "status": "completed", "conclusion": "success"}
-                    ]
-                }),
-                &[],
-            ),
-            // First run has no artifact; second run has it.
-            fixture(run_10_artifacts, 200, json!({"total_count": 0, "artifacts": []}), &[]),
-            fixture(
-                run_11_artifacts,
-                200,
-                json!({"total_count": 1, "artifacts": [{"id": 777, "name": "decky-metadata-pr", "expired": false}]}),
-                &[],
-            ),
-            Fixture {
-                method: Method::GET,
-                url: download_url.to_owned(),
-                result: Ok(Response {
-                    status: 200,
-                    headers: HeaderMap::new(),
-                    body: outer_zip,
-                    url: download_url.to_owned(),
-                }),
-            },
+            fixture(pr_builds_url, 200, release, &[]),
+            fixture(manifest_url, 200, pr_manifest, &[]),
+            Fixture::text(sha_url, &format!("{digest}  Decky-Metadata-pr-42.zip\n")),
         ]);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.6.8", &json!({}));
@@ -1550,34 +1507,115 @@ mod tests {
             .collect();
         assert_eq!(ids, vec![42, 44]);
 
-        let base = std::env::var_os("TMPDIR")
-            .map(std::path::PathBuf::from)
-            .unwrap_or_else(|| std::path::PathBuf::from("/var/tmp/omp-1000"));
-        let stage = base.join(format!("decky-updater-testing-{}", std::process::id()));
-        let _ = std::fs::remove_dir_all(&stage);
-
         let rejected = updater
-            .prepare_testing_version(&json!(43), &json!(sha), &stage)
+            .prepare_testing_version(&json!(43), &json!(sha))
             .await
             .unwrap();
         assert_eq!(rejected["status"], "failed");
         assert_eq!(rejected["message"], "testing_pr_not_eligible");
 
         let ready = updater
-            .prepare_testing_version(&json!(42), &json!(sha), &stage)
+            .prepare_testing_version(&json!(42), &json!(sha))
             .await
             .unwrap();
         assert_eq!(ready["status"], "ready");
+        assert_eq!(ready["artifact_url"], zip_url);
         assert_eq!(ready["version"], "0.6.8-dev.pr42.gabcdef0");
         assert_eq!(ready["sha256"], digest);
-        let staged_path = ready["artifact_url"]
-            .as_str()
-            .unwrap()
-            .strip_prefix("file://")
-            .unwrap();
-        assert_eq!(std::fs::read(staged_path).unwrap(), payload);
+        fixture_http.assert_drained();
+    }
 
-        let _ = std::fs::remove_dir_all(&stage);
+    #[tokio::test]
+    async fn prepare_testing_version_classifies_missing_or_stale_pr_builds_from_ci_runs() {
+        let sha = "abcdef0123456789abcdef0123456789abcdef01";
+        let old_sha = "1111111111111111111111111111111111111111";
+        let digest = "b".repeat(64);
+        let pull_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/84";
+        let pr_builds_url =
+            "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/pr-builds";
+        let runs_url = format!(
+            "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs?head_sha={sha}&per_page=30"
+        );
+        let zip_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.zip";
+        let manifest_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.manifest.json";
+        let sha_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.zip.sha256";
+
+        let pr = json!({
+            "number": 84,
+            "state": "open",
+            "title": "Fix QAM progress bar",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/84",
+            "created_at": "2026-11-25T00:00:00Z",
+            "updated_at": "2026-11-25T01:00:00Z",
+            "draft": false,
+            "user": {"login": "beallio"},
+            "head": {"sha": sha, "repo": {"full_name": "beallio/Decky-Metadata"}},
+            "labels": []
+        });
+        let stale_release = json!({
+            "draft": false,
+            "prerelease": true,
+            "tag_name": "pr-builds",
+            "assets": [
+                {"name": "Decky-Metadata-pr-84.zip", "browser_download_url": zip_url},
+                {"name": "Decky-Metadata-pr-84.manifest.json", "browser_download_url": manifest_url},
+                {"name": "Decky-Metadata-pr-84.zip.sha256", "browser_download_url": sha_url}
+            ]
+        });
+        let stale_manifest = json!({
+            "schemaVersion": 1,
+            "pluginName": "Decky Metadata",
+            "packageName": "decky-metadata",
+            "version": "0.6.8-dev.pr84.g1111111",
+            "sourceVersion": "0.6.8-dev.pr84.g1111111",
+            "tag": "v0.6.8-dev.pr84.g1111111",
+            "channel": "dev",
+            "assetName": "Decky-Metadata-pr-84.zip",
+            "sha256": digest,
+            "generatedAt": "2026-11-25T08:00:00Z",
+            "prNumber": 84,
+            "headSha": old_sha
+        });
+
+        let http = Http::fixtures(vec![
+            // Case 1: pr-builds release does not exist yet and CI is running.
+            fixture(pull_url, 200, pr.clone(), &[]),
+            fixture(pr_builds_url, 404, json!({"message": "Not Found"}), &[]),
+            fixture(
+                &runs_url,
+                200,
+                json!({"workflow_runs": [{"id": 1, "name": "CI", "status": "in_progress"}]}),
+                &[],
+            ),
+            // Case 2: pr-builds has an older SHA and CI already succeeded.
+            fixture(pull_url, 200, pr, &[]),
+            fixture(pr_builds_url, 200, stale_release, &[]),
+            fixture(manifest_url, 200, stale_manifest, &[]),
+            Fixture::text(sha_url, &format!("{digest}  Decky-Metadata-pr-84.zip\n")),
+            fixture(
+                &runs_url,
+                200,
+                json!({"workflow_runs": [{"id": 2, "name": "CI", "status": "completed", "conclusion": "success"}]}),
+                &[],
+            ),
+        ]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.6.8", &json!({}));
+
+        let in_progress = updater
+            .prepare_testing_version(&json!(84), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(in_progress["status"], "failed");
+        assert_eq!(in_progress["message"], "testing_build_in_progress");
+
+        let unpublished = updater
+            .prepare_testing_version(&json!(84), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(unpublished["status"], "failed");
+        assert_eq!(unpublished["message"], "testing_artifact_not_found");
         fixture_http.assert_drained();
     }
 

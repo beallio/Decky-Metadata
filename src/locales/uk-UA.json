@@ -138,6 +138,10 @@
       "showTimesDescription": "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
       "storeLabel": "Крамниця",
       "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
+      "statsHeading": "Статистика",
+      "styleHeading": "Стиль",
+      "customizeHeading": "Налаштування",
+      "cacheHeading": "Кеш",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
       "styleDefault": "За замовчуванням",
@@ -230,7 +234,8 @@
       "positionTopLeft": "Зверху ліворуч",
       "positionTopRight": "Зверху праворуч",
       "loadingPreferences": "Завантаження налаштувань значків ProtonDB...",
-      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+      "gameCoversHeading": "Обкладинки ігор"
     },
     "miniAchievements": {
       "title": "Мінідосягнення",
@@ -321,7 +326,20 @@
       "confirmRevertBody": "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Оновлення ПЗ",
+      "checkForUpdates": "Перевірити оновлення",
+      "upToDateButton": "Актуально",
+      "apply": "Застосувати",
+      "applying": "Застосування...",
+      "moveToStableShort": "Перейти на стабільну",
+      "revertToStableShort": "Повернутися до стабільної",
+      "upToDateLastChecked": "Актуально: остання перевірка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал оновлень",
+      "channelOptionStable": "Стабільний",
+      "channelOptionDevelopment": "Розробка",
+      "channelStableDescription": "Отримує перевірені стабільні релізи."
     },
     "versions": {
       "title": "Версії",
@@ -365,6 +383,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Повторити",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -379,7 +398,8 @@
     "statMain": "Основний сюжет",
     "statMainPlus": "Основний сюжет + додатково",
     "statComplete": "Повне проходження",
-    "statAllStyles": "Усі стилі"
+    "statAllStyles": "Усі стилі",
+    "viewDetails": "Переглянути деталі"
   },
   "trailers": {
     "audio": "Звук трейлера",

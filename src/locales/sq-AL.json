@@ -136,6 +136,10 @@
       "showTimesDescription": "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
       "storeLabel": "Dyqani",
       "storeDescription": "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam. Përdor gjithmonë përputhjen automatike; zgjedhjet e HLTB për secilën lojë zbatohen vetëm në faqet e lojërave në Bibliotekë.",
+      "statsHeading": "Statistikat",
+      "styleHeading": "Stili",
+      "customizeHeading": "Personalizo",
+      "cacheHeading": "Memoria e përkohshme",
       "styleLabel": "Stili i HLTB",
       "styleDescription": "Stilet „Clean“ janë menduar për temën „Clean Gameview“ të CSS Loader",
       "styleDefault": "Parazgjedhur",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Lart majtas",
       "positionTopRight": "Lart djathtas",
       "loadingPreferences": "Po ngarkohen preferencat e distinktivëve ProtonDB...",
-      "footnote": "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
+      "footnote": "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen.",
+      "gameCoversHeading": "Kopertinat e lojërave"
     },
     "miniAchievements": {
       "title": "Arritjet mini",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Përditësimet e softuerit",
+      "checkForUpdates": "Kontrollo për përditësime",
+      "upToDateButton": "I përditësuar",
+      "apply": "Zbato",
+      "applying": "Duke zbatuar...",
+      "moveToStableShort": "Kalo në të qëndrueshme",
+      "revertToStableShort": "Kthehu në të qëndrueshme",
+      "upToDateLastChecked": "I përditësuar: kontrolluar së fundmi {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Kanali i përditësimeve",
+      "channelOptionStable": "I qëndrueshëm",
+      "channelOptionDevelopment": "Zhvillim",
+      "channelStableDescription": "Merr versione të qëndrueshme të testuara."
     },
     "versions": {
       "title": "Versionet",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Provo përsëri",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Historia kryesore",
     "statMainPlus": "Kryesorja + shtesat",
     "statComplete": "Përfundim i plotë",
-    "statAllStyles": "Të gjitha stilet"
+    "statAllStyles": "Të gjitha stilet",
+    "viewDetails": "Shiko detajet"
   },
   "trailers": {
     "audio": "Audio e trailerit",

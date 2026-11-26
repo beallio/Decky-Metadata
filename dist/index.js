@@ -142,13 +142,6 @@ const inlineStatusStyle = (kind) => ({
     ...inlineStatusBaseStyle,
     color: statusColor(kind),
 });
-/** A status shown as a Field value: color only, so Steam's own value font applies. */
-const statusValueStyle = (kind) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    color: statusColor(kind),
-});
 const busySpinnerStyle = {
     width: "18px",
     height: "18px",
@@ -3012,6 +3005,10 @@ var qam$o = {
 		showTimesDescription: "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
 		storeLabel: "المتجر",
 		storeDescription: "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
+		statsHeading: "الإحصائيات",
+		styleHeading: "النمط",
+		customizeHeading: "التخصيص",
+		cacheHeading: "ذاكرة التخزين المؤقت",
 		styleLabel: "نمط HLTB",
 		styleDescription: "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
 		styleDefault: "افتراضي",
@@ -3104,7 +3101,8 @@ var qam$o = {
 		positionTopLeft: "أعلى اليسار",
 		positionTopRight: "أعلى اليمين",
 		loadingPreferences: "جارٍ تحميل تفضيلات شارات ProtonDB...",
-		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+		gameCoversHeading: "أغلفة الألعاب"
 	},
 	miniAchievements: {
 		title: "الإنجازات المصغّرة",
@@ -3195,7 +3193,20 @@ var qam$o = {
 		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "تحديثات البرنامج",
+		checkForUpdates: "التحقق من وجود تحديثات",
+		upToDateButton: "محدّث",
+		apply: "تطبيق",
+		applying: "جارٍ التطبيق...",
+		moveToStableShort: "الانتقال إلى المستقر",
+		revertToStableShort: "الرجوع إلى المستقر",
+		upToDateLastChecked: "محدّث: آخر تحقق {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "قناة التحديث",
+		channelOptionStable: "مستقر",
+		channelOptionDevelopment: "تطوير",
+		channelStableDescription: "يتلقى الإصدارات المستقرة المختبرة."
 	},
 	versions: {
 		title: "الإصدارات",
@@ -3239,6 +3250,7 @@ var qam$o = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "إعادة المحاولة",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -3253,7 +3265,8 @@ var storeRow$o = {
 	statMain: "القصة الرئيسية",
 	statMainPlus: "الرئيسية + الإضافات",
 	statComplete: "الإكمال الكامل",
-	statAllStyles: "كل الأنماط"
+	statAllStyles: "كل الأنماط",
+	viewDetails: "عرض التفاصيل"
 };
 var trailers$o = {
 	audio: "صوت المقطع الدعائي",
@@ -3707,6 +3720,10 @@ var qam$n = {
 		showTimesDescription: "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
 		storeLabel: "Магазин",
 		storeDescription: "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam. Винаги използва автоматично съвпадение; изборът на HLTB за отделна игра важи само за страниците на игрите в библиотеката.",
+		statsHeading: "Статистики",
+		styleHeading: "Стил",
+		customizeHeading: "Персонализиране",
+		cacheHeading: "Кеш",
 		styleLabel: "Стил на HLTB",
 		styleDescription: "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
 		styleDefault: "По подразбиране",
@@ -3799,7 +3816,8 @@ var qam$n = {
 		positionTopLeft: "Горе вляво",
 		positionTopRight: "Горе вдясно",
 		loadingPreferences: "Зареждане на предпочитанията за значките на ProtonDB...",
-		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
+		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват.",
+		gameCoversHeading: "Обложки на игри"
 	},
 	miniAchievements: {
 		title: "Мини постижения",
@@ -3890,7 +3908,20 @@ var qam$n = {
 		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Софтуерни актуализации",
+		checkForUpdates: "Проверка за актуализации",
+		upToDateButton: "Актуално",
+		apply: "Приложи",
+		applying: "Прилагане...",
+		moveToStableShort: "Към стабилна",
+		revertToStableShort: "Връщане към стабилна",
+		upToDateLastChecked: "Актуално: последна проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал за актуализации",
+		channelOptionStable: "Стабилен",
+		channelOptionDevelopment: "Разработчески",
+		channelStableDescription: "Получава тествани стабилни издания."
 	},
 	versions: {
 		title: "Версии",
@@ -3934,6 +3965,7 @@ var qam$n = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Опитай отново",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -3948,7 +3980,8 @@ var storeRow$n = {
 	statMain: "Основна история",
 	statMainPlus: "Основна + екстри",
 	statComplete: "Пълно завършване",
-	statAllStyles: "Всички стилове"
+	statAllStyles: "Всички стилове",
+	viewDetails: "Преглед на подробности"
 };
 var trailers$n = {
 	audio: "Звук на трейлъра",
@@ -4404,6 +4437,10 @@ var qam$m = {
 		showTimesDescription: "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
 		storeLabel: "Obchod",
 		storeDescription: "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam. Vždy používá automatické párování; volby HLTB pro jednotlivé hry platí jen na stránkách her v knihovně.",
+		statsHeading: "Statistiky",
+		styleHeading: "Styl",
+		customizeHeading: "Přizpůsobení",
+		cacheHeading: "Mezipaměť",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Styly „Clean“ jsou určeny pro téma CSS Loaderu „Clean Gameview“",
 		styleDefault: "Výchozí",
@@ -4496,7 +4533,8 @@ var qam$m = {
 		positionTopLeft: "Vlevo nahoře",
 		positionTopRight: "Vpravo nahoře",
 		loadingPreferences: "Načítání předvoleb odznaků ProtonDB...",
-		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
+		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají.",
+		gameCoversHeading: "Obaly her"
 	},
 	miniAchievements: {
 		title: "Mini achievementy",
@@ -4587,7 +4625,20 @@ var qam$m = {
 		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizace softwaru",
+		checkForUpdates: "Zkontrolovat aktualizace",
+		upToDateButton: "Aktuální",
+		apply: "Použít",
+		applying: "Používání...",
+		moveToStableShort: "Přejít na stabilní",
+		revertToStableShort: "Vrátit na stabilní",
+		upToDateLastChecked: "Aktuální: naposledy zkontrolováno {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanál aktualizací",
+		channelOptionStable: "Stabilní",
+		channelOptionDevelopment: "Vývojový",
+		channelStableDescription: "Dostává otestovaná stabilní vydání."
 	},
 	versions: {
 		title: "Verze",
@@ -4631,6 +4682,7 @@ var qam$m = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Zkusit znovu",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -4645,7 +4697,8 @@ var storeRow$m = {
 	statMain: "Hlavní příběh",
 	statMainPlus: "Hlavní příběh + vedlejší",
 	statComplete: "Kompletace",
-	statAllStyles: "Všechny styly"
+	statAllStyles: "Všechny styly",
+	viewDetails: "Zobrazit podrobnosti"
 };
 var trailers$m = {
 	audio: "Zvuk traileru",
@@ -5099,6 +5152,10 @@ var qam$l = {
 		showTimesDescription: "Zeigt HowLongToBeat-Zeiten auf Spielseiten für Steam- und Nicht-Steam-Spiele.",
 		storeLabel: "Shop",
 		storeDescription: "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop. Verwendet immer die automatische Zuordnung; spielspezifische HLTB-Auswahlen gelten nur auf Spielseiten in der Bibliothek.",
+		statsHeading: "Statistiken",
+		styleHeading: "Stil",
+		customizeHeading: "Anpassen",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-Stil",
 		styleDescription: "Die „Clean“-Stile sind für das CSS-Loader-Theme „Clean Gameview“ gedacht",
 		styleDefault: "Standard",
@@ -5191,7 +5248,8 @@ var qam$l = {
 		positionTopLeft: "Oben links",
 		positionTopRight: "Oben rechts",
 		loadingPreferences: "ProtonDB-Abzeichen-Einstellungen werden geladen...",
-		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
+		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet.",
+		gameCoversHeading: "Spielcover"
 	},
 	miniAchievements: {
 		title: "Mini-Errungenschaften",
@@ -5282,7 +5340,20 @@ var qam$l = {
 		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-Updates",
+		checkForUpdates: "Nach Updates suchen",
+		upToDateButton: "Aktuell",
+		apply: "Anwenden",
+		applying: "Wird angewendet...",
+		moveToStableShort: "Zu Stabil wechseln",
+		revertToStableShort: "Auf Stabil zurücksetzen",
+		upToDateLastChecked: "Aktuell: zuletzt geprüft {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update-Kanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Entwicklung",
+		channelStableDescription: "Erhält getestete stabile Versionen."
 	},
 	versions: {
 		title: "Versionen",
@@ -5326,6 +5397,7 @@ var qam$l = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Erneut versuchen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -5340,7 +5412,8 @@ var storeRow$l = {
 	statMain: "Hauptstory",
 	statMainPlus: "Haupt + Extras",
 	statComplete: "Komplettist",
-	statAllStyles: "Alle Spielweisen"
+	statAllStyles: "Alle Spielweisen",
+	viewDetails: "Details anzeigen"
 };
 var trailers$l = {
 	audio: "Trailer-Ton",
@@ -5794,6 +5867,10 @@ var qam$k = {
 		showTimesDescription: "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
 		storeLabel: "Κατάστημα",
 		storeDescription: "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
+		statsHeading: "Στατιστικά",
+		styleHeading: "Στυλ",
+		customizeHeading: "Προσαρμογή",
+		cacheHeading: "Προσωρινή μνήμη",
 		styleLabel: "Στυλ HLTB",
 		styleDescription: "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
 		styleDefault: "Προεπιλογή",
@@ -5886,7 +5963,8 @@ var qam$k = {
 		positionTopLeft: "Πάνω αριστερά",
 		positionTopRight: "Πάνω δεξιά",
 		loadingPreferences: "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
-		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
+		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται.",
+		gameCoversHeading: "Εξώφυλλα παιχνιδιών"
 	},
 	miniAchievements: {
 		title: "Μίνι επιτεύγματα",
@@ -5977,7 +6055,20 @@ var qam$k = {
 		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ενημερώσεις λογισμικού",
+		checkForUpdates: "Έλεγχος για ενημερώσεις",
+		upToDateButton: "Ενημερωμένο",
+		apply: "Εφαρμογή",
+		applying: "Εφαρμογή...",
+		moveToStableShort: "Μετάβαση σε σταθερή",
+		revertToStableShort: "Επαναφορά σε σταθερή",
+		upToDateLastChecked: "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Κανάλι ενημερώσεων",
+		channelOptionStable: "Σταθερό",
+		channelOptionDevelopment: "Ανάπτυξης",
+		channelStableDescription: "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
 	},
 	versions: {
 		title: "Εκδόσεις",
@@ -6021,6 +6112,7 @@ var qam$k = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Δοκιμή ξανά",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -6035,7 +6127,8 @@ var storeRow$k = {
 	statMain: "Κύρια ιστορία",
 	statMainPlus: "Κύρια + επιπλέον",
 	statComplete: "Πλήρης ολοκλήρωση",
-	statAllStyles: "Όλα τα στυλ"
+	statAllStyles: "Όλα τα στυλ",
+	viewDetails: "Προβολή λεπτομερειών"
 };
 var trailers$k = {
 	audio: "Ήχος τρέιλερ",
@@ -6489,6 +6582,10 @@ var qam$j = {
 		showTimesDescription: "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
 		storeLabel: "Store",
 		storeDescription: "Show HowLongToBeat times in an info row on Steam Store game pages. Always uses automatic matching; per-game HLTB choices apply only on Library game pages.",
+		statsHeading: "Stats",
+		styleHeading: "Style",
+		customizeHeading: "Customize",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB Style",
 		styleDescription: "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
 		styleDefault: "Default",
@@ -6581,7 +6678,8 @@ var qam$j = {
 		positionTopLeft: "Top left",
 		positionTopRight: "Top right",
 		loadingPreferences: "Loading ProtonDB badge preferences...",
-		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
+		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+		gameCoversHeading: "Game covers"
 	},
 	miniAchievements: {
 		title: "Mini achievements",
@@ -6672,7 +6770,20 @@ var qam$j = {
 		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software Updates",
+		checkForUpdates: "Check For Updates",
+		upToDateButton: "Up-to-date",
+		apply: "Apply",
+		applying: "Applying...",
+		moveToStableShort: "Move to Stable",
+		revertToStableShort: "Revert to Stable",
+		upToDateLastChecked: "Up to date: last checked {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update Channel",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Development",
+		channelStableDescription: "Receives tested stable releases."
 	},
 	versions: {
 		title: "Versions",
@@ -6716,11 +6827,12 @@ var qam$j = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Retry",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
-		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
-		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		installModalDescription: "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
 	}
 };
@@ -6730,7 +6842,8 @@ var storeRow$j = {
 	statMain: "Main Story",
 	statMainPlus: "Main + Extras",
 	statComplete: "Completionist",
-	statAllStyles: "All Styles"
+	statAllStyles: "All Styles",
+	viewDetails: "View details"
 };
 var trailers$j = {
 	audio: "Trailer audio",
@@ -7185,6 +7298,10 @@ var qam$i = {
 		showTimesDescription: "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
 		storeLabel: "Tienda",
 		storeDescription: "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam. Siempre usa coincidencia automática; las elecciones de HLTB por juego solo se aplican en las páginas de juego de la Biblioteca.",
+		statsHeading: "Estadísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Caché",
 		styleLabel: "Estilo de HLTB",
 		styleDescription: "Los estilos «Clean» están pensados para funcionar con el tema «Clean Gameview» de CSS Loader",
 		styleDefault: "Predeterminado",
@@ -7277,7 +7394,8 @@ var qam$i = {
 		positionTopLeft: "Arriba a la izquierda",
 		positionTopRight: "Arriba a la derecha",
 		loadingPreferences: "Cargando las preferencias de las insignias de ProtonDB...",
-		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
+		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan.",
+		gameCoversHeading: "Carátulas de juegos"
 	},
 	miniAchievements: {
 		title: "Minilogros",
@@ -7368,7 +7486,20 @@ var qam$i = {
 		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizaciones de software",
+		checkForUpdates: "Buscar actualizaciones",
+		upToDateButton: "Actualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Pasar a estable",
+		revertToStableShort: "Volver a estable",
+		upToDateLastChecked: "Actualizado: última comprobación {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizaciones",
+		channelOptionStable: "Estable",
+		channelOptionDevelopment: "Desarrollo",
+		channelStableDescription: "Recibe versiones estables probadas."
 	},
 	versions: {
 		title: "Versiones",
@@ -7412,6 +7543,7 @@ var qam$i = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Reintentar",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -7426,7 +7558,8 @@ var storeRow$i = {
 	statMain: "Historia principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos los estilos"
+	statAllStyles: "Todos los estilos",
+	viewDetails: "Ver detalles"
 };
 var trailers$i = {
 	audio: "Audio del tráiler",
@@ -7880,6 +8013,10 @@ var qam$h = {
 		showTimesDescription: "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
 		storeLabel: "Kauppa",
 		storeDescription: "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
+		statsHeading: "Tilastot",
+		styleHeading: "Tyyli",
+		customizeHeading: "Mukauta",
+		cacheHeading: "Välimuisti",
 		styleLabel: "HLTB-tyyli",
 		styleDescription: "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
 		styleDefault: "Oletus",
@@ -7972,7 +8109,8 @@ var qam$h = {
 		positionTopLeft: "Vasemmassa yläkulmassa",
 		positionTopRight: "Oikeassa yläkulmassa",
 		loadingPreferences: "Ladataan ProtonDB-tunnusten asetuksia...",
-		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+		gameCoversHeading: "Pelien kannet"
 	},
 	miniAchievements: {
 		title: "Minisaavutukset",
@@ -8063,7 +8201,20 @@ var qam$h = {
 		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ohjelmistopäivitykset",
+		checkForUpdates: "Tarkista päivitykset",
+		upToDateButton: "Ajan tasalla",
+		apply: "Käytä",
+		applying: "Otetaan käyttöön...",
+		moveToStableShort: "Siirry vakaaseen",
+		revertToStableShort: "Palaa vakaaseen",
+		upToDateLastChecked: "Ajan tasalla: tarkistettu viimeksi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Päivityskanava",
+		channelOptionStable: "Vakaa",
+		channelOptionDevelopment: "Kehitys",
+		channelStableDescription: "Vastaanottaa testattuja vakaita julkaisuja."
 	},
 	versions: {
 		title: "Versiot",
@@ -8107,6 +8258,7 @@ var qam$h = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Yritä uudelleen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -8121,7 +8273,8 @@ var storeRow$h = {
 	statMain: "Pääjuoni",
 	statMainPlus: "Pääjuoni + lisät",
 	statComplete: "Kaikki suoritettuna",
-	statAllStyles: "Kaikki tyylit"
+	statAllStyles: "Kaikki tyylit",
+	viewDetails: "Näytä tiedot"
 };
 var trailers$h = {
 	audio: "Trailerin ääni",
@@ -8576,6 +8729,10 @@ var qam$g = {
 		showTimesDescription: "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
 		storeLabel: "Boutique",
 		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam. Utilise toujours la correspondance automatique ; les choix HLTB par jeu ne s'appliquent qu'aux pages de jeu de la Bibliothèque.",
+		statsHeading: "Statistiques",
+		styleHeading: "Style",
+		customizeHeading: "Personnaliser",
+		cacheHeading: "Cache",
 		styleLabel: "Style HLTB",
 		styleDescription: "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
 		styleDefault: "Par défaut",
@@ -8668,7 +8825,8 @@ var qam$g = {
 		positionTopLeft: "En haut à gauche",
 		positionTopRight: "En haut à droite",
 		loadingPreferences: "Chargement des préférences de badges ProtonDB...",
-		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
+		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+		gameCoversHeading: "Jaquettes de jeux"
 	},
 	miniAchievements: {
 		title: "Mini-succès",
@@ -8759,7 +8917,20 @@ var qam$g = {
 		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Mises à jour logicielles",
+		checkForUpdates: "Vérifier les mises à jour",
+		upToDateButton: "À jour",
+		apply: "Appliquer",
+		applying: "Application...",
+		moveToStableShort: "Passer en stable",
+		revertToStableShort: "Revenir en stable",
+		upToDateLastChecked: "À jour : dernière vérification {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de mise à jour",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Développement",
+		channelStableDescription: "Reçoit les versions stables testées."
 	},
 	versions: {
 		title: "Versions",
@@ -8803,6 +8974,7 @@ var qam$g = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Réessayer",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -8817,7 +8989,8 @@ var storeRow$g = {
 	statMain: "Histoire principale",
 	statMainPlus: "Histoire + extras",
 	statComplete: "Complétiste",
-	statAllStyles: "Tous les styles"
+	statAllStyles: "Tous les styles",
+	viewDetails: "Voir les détails"
 };
 var trailers$g = {
 	audio: "Audio de la bande-annonce",
@@ -9272,6 +9445,10 @@ var qam$f = {
 		showTimesDescription: "Mostra i tempi di HowLongToBeat nelle pagine dei giochi, sia Steam che non Steam.",
 		storeLabel: "Negozio",
 		storeDescription: "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam. Usa sempre la corrispondenza automatica; le scelte HLTB per singolo gioco si applicano solo alle pagine dei giochi nella Libreria.",
+		statsHeading: "Statistiche",
+		styleHeading: "Stile",
+		customizeHeading: "Personalizza",
+		cacheHeading: "Cache",
 		styleLabel: "Stile HLTB",
 		styleDescription: "Gli stili “Clean” sono pensati per funzionare con il tema CSS Loader “Clean Gameview”",
 		styleDefault: "Predefinito",
@@ -9364,7 +9541,8 @@ var qam$f = {
 		positionTopLeft: "In alto a sinistra",
 		positionTopRight: "In alto a destra",
 		loadingPreferences: "Caricamento delle preferenze dei badge ProtonDB...",
-		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
+		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti.",
+		gameCoversHeading: "Copertine dei giochi"
 	},
 	miniAchievements: {
 		title: "Mini obiettivi",
@@ -9455,7 +9633,20 @@ var qam$f = {
 		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aggiornamenti software",
+		checkForUpdates: "Cerca aggiornamenti",
+		upToDateButton: "Aggiornato",
+		apply: "Applica",
+		applying: "Applicazione...",
+		moveToStableShort: "Passa a stabile",
+		revertToStableShort: "Torna a stabile",
+		upToDateLastChecked: "Aggiornato: ultimo controllo {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canale di aggiornamento",
+		channelOptionStable: "Stabile",
+		channelOptionDevelopment: "Sviluppo",
+		channelStableDescription: "Riceve rilasci stabili testati."
 	},
 	versions: {
 		title: "Versioni",
@@ -9499,6 +9690,7 @@ var qam$f = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Riprova",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -9513,7 +9705,8 @@ var storeRow$f = {
 	statMain: "Storia principale",
 	statMainPlus: "Principale + extra",
 	statComplete: "Completista",
-	statAllStyles: "Tutti gli stili"
+	statAllStyles: "Tutti gli stili",
+	viewDetails: "Visualizza dettagli"
 };
 var trailers$f = {
 	audio: "Audio del trailer",
@@ -9966,6 +10159,10 @@ var qam$e = {
 		showTimesDescription: "Steam ゲームと Steam 以外のゲームのページに HowLongToBeat の時間を表示します。",
 		storeLabel: "ストア",
 		storeDescription: "Steam ストアのゲームページの情報行に HowLongToBeat の時間を表示します。常に自動一致を使用します。ゲームごとの HLTB 選択はライブラリのゲームページにのみ適用されます。",
+		statsHeading: "統計",
+		styleHeading: "スタイル",
+		customizeHeading: "カスタマイズ",
+		cacheHeading: "キャッシュ",
 		styleLabel: "HLTB スタイル",
 		styleDescription: "「Clean」スタイルは、CSS Loader テーマ「Clean Gameview」での使用を想定しています",
 		styleDefault: "既定",
@@ -10058,7 +10255,8 @@ var qam$e = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "ProtonDB バッジの設定を読み込み中...",
-		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
+		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。",
+		gameCoversHeading: "ゲームカバー"
 	},
 	miniAchievements: {
 		title: "ミニ実績",
@@ -10149,7 +10347,20 @@ var qam$e = {
 		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "ソフトウェアアップデート",
+		checkForUpdates: "アップデートを確認",
+		upToDateButton: "最新",
+		apply: "適用",
+		applying: "適用中...",
+		moveToStableShort: "安定版へ移行",
+		revertToStableShort: "安定版に戻す",
+		upToDateLastChecked: "最新: 最終確認 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "アップデートチャンネル",
+		channelOptionStable: "安定版",
+		channelOptionDevelopment: "開発版",
+		channelStableDescription: "テスト済みの安定版リリースを受け取ります。"
 	},
 	versions: {
 		title: "バージョン",
@@ -10193,6 +10404,7 @@ var qam$e = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "再試行",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -10207,7 +10419,8 @@ var storeRow$e = {
 	statMain: "メインストーリー",
 	statMainPlus: "メイン + サブ",
 	statComplete: "コンプリート",
-	statAllStyles: "すべてのスタイル"
+	statAllStyles: "すべてのスタイル",
+	viewDetails: "詳細を表示"
 };
 var trailers$e = {
 	audio: "トレーラー音声",
@@ -10661,6 +10874,10 @@ var qam$d = {
 		showTimesDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
 		storeLabel: "მაღაზია",
 		storeDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
+		statsHeading: "Isiḍanen",
+		styleHeading: "Aɣanib",
+		customizeHeading: "Sagen",
+		cacheHeading: "Tuffirt",
 		styleLabel: "HLTB-ის სტილი",
 		styleDescription: "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
 		styleDefault: "ნაგულისხმევი",
@@ -10753,7 +10970,8 @@ var qam$d = {
 		positionTopLeft: "ზედა მარცხენა",
 		positionTopRight: "ზედა მარჯვენა",
 		loadingPreferences: "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
-		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
+		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება.",
+		gameCoversHeading: "თამაშის ყდები"
 	},
 	miniAchievements: {
 		title: "მინი მიღწევები",
@@ -10844,7 +11062,20 @@ var qam$d = {
 		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "პროგრამული განახლებები",
+		checkForUpdates: "განახლებების შემოწმება",
+		upToDateButton: "განახლებულია",
+		apply: "გამოყენება",
+		applying: "გამოყენება...",
+		moveToStableShort: "სტაბილურზე გადასვლა",
+		revertToStableShort: "სტაბილურზე დაბრუნება",
+		upToDateLastChecked: "განახლებულია: ბოლო შემოწმება {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "განახლების არხი",
+		channelOptionStable: "სტაბილური",
+		channelOptionDevelopment: "განვითარების",
+		channelStableDescription: "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
 	},
 	versions: {
 		title: "ვერსიები",
@@ -10888,6 +11119,7 @@ var qam$d = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "თავიდან ცდა",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -10902,7 +11134,8 @@ var storeRow$d = {
 	statMain: "მთავარი სიუჟეტი",
 	statMainPlus: "მთავარი + დამატებითი",
 	statComplete: "სრულად გავლა",
-	statAllStyles: "ყველა სტილი"
+	statAllStyles: "ყველა სტილი",
+	viewDetails: "დეტალების ნახვა"
 };
 var trailers$d = {
 	audio: "ტრეილერის ხმა",
@@ -11355,6 +11588,10 @@ var qam$c = {
 		showTimesDescription: "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
 		storeLabel: "상점",
 		storeDescription: "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다. 항상 자동 일치를 사용합니다. 게임별 HLTB 선택은 라이브러리 게임 페이지에만 적용됩니다.",
+		statsHeading: "통계",
+		styleHeading: "스타일",
+		customizeHeading: "사용자 지정",
+		cacheHeading: "캐시",
 		styleLabel: "HLTB 스타일",
 		styleDescription: "\"Clean\" 스타일은 CSS Loader 테마 \"Clean Gameview\"와 함께 사용하도록 만들어졌습니다",
 		styleDefault: "기본",
@@ -11447,7 +11684,8 @@ var qam$c = {
 		positionTopLeft: "왼쪽 위",
 		positionTopRight: "오른쪽 위",
 		loadingPreferences: "ProtonDB 배지 환경설정을 불러오는 중...",
-		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다."
+		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다.",
+		gameCoversHeading: "게임 커버"
 	},
 	miniAchievements: {
 		title: "미니 도전 과제",
@@ -11538,7 +11776,20 @@ var qam$c = {
 		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "소프트웨어 업데이트",
+		checkForUpdates: "업데이트 확인",
+		upToDateButton: "최신 상태",
+		apply: "적용",
+		applying: "적용 중...",
+		moveToStableShort: "안정 버전으로 이동",
+		revertToStableShort: "안정 버전으로 되돌리기",
+		upToDateLastChecked: "최신 상태: 마지막 확인 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "업데이트 채널",
+		channelOptionStable: "안정",
+		channelOptionDevelopment: "개발",
+		channelStableDescription: "검증된 안정 릴리스를 받습니다."
 	},
 	versions: {
 		title: "버전",
@@ -11582,6 +11833,7 @@ var qam$c = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "다시 시도",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -11596,7 +11848,8 @@ var storeRow$c = {
 	statMain: "메인 스토리",
 	statMainPlus: "메인 + 추가",
 	statComplete: "완벽 클리어",
-	statAllStyles: "모든 플레이 방식"
+	statAllStyles: "모든 플레이 방식",
+	viewDetails: "세부 정보 보기"
 };
 var trailers$c = {
 	audio: "트레일러 오디오",
@@ -12050,6 +12303,10 @@ var qam$b = {
 		showTimesDescription: "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
 		storeLabel: "Winkel",
 		storeDescription: "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel. Gebruikt altijd automatische herkenning; HLTB-keuzes per spel gelden alleen op spelpagina's in de bibliotheek.",
+		statsHeading: "Statistieken",
+		styleHeading: "Stijl",
+		customizeHeading: "Aanpassen",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-stijl",
 		styleDescription: "De \"Clean\"-stijlen zijn bedoeld voor het CSS Loader-thema \"Clean Gameview\"",
 		styleDefault: "Standaard",
@@ -12142,7 +12399,8 @@ var qam$b = {
 		positionTopLeft: "Linksboven",
 		positionTopRight: "Rechtsboven",
 		loadingPreferences: "ProtonDB-badgevoorkeuren laden...",
-		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
+		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen.",
+		gameCoversHeading: "Gamehoezen"
 	},
 	miniAchievements: {
 		title: "Mini-prestaties",
@@ -12233,7 +12491,20 @@ var qam$b = {
 		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-updates",
+		checkForUpdates: "Controleren op updates",
+		upToDateButton: "Up-to-date",
+		apply: "Toepassen",
+		applying: "Toepassen...",
+		moveToStableShort: "Naar stabiel",
+		revertToStableShort: "Terug naar stabiel",
+		upToDateLastChecked: "Up-to-date: laatst gecontroleerd {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Updatekanaal",
+		channelOptionStable: "Stabiel",
+		channelOptionDevelopment: "Ontwikkeling",
+		channelStableDescription: "Ontvangt geteste stabiele uitgaven."
 	},
 	versions: {
 		title: "Versies",
@@ -12277,6 +12548,7 @@ var qam$b = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Opnieuw proberen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -12291,7 +12563,8 @@ var storeRow$b = {
 	statMain: "Hoofdverhaal",
 	statMainPlus: "Hoofdverhaal + extra's",
 	statComplete: "Completionist",
-	statAllStyles: "Alle speelstijlen"
+	statAllStyles: "Alle speelstijlen",
+	viewDetails: "Details bekijken"
 };
 var trailers$b = {
 	audio: "Trailergeluid",
@@ -12747,6 +13020,10 @@ var qam$a = {
 		showTimesDescription: "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
 		storeLabel: "Sklep",
 		storeDescription: "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam. Zawsze używa automatycznego dopasowania; wybory HLTB dla poszczególnych gier działają tylko na stronach gier w Bibliotece.",
+		statsHeading: "Statystyki",
+		styleHeading: "Styl",
+		customizeHeading: "Dostosuj",
+		cacheHeading: "Pamięć podręczna",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Style „Clean” są przeznaczone do współpracy z motywem CSS Loader „Clean Gameview”",
 		styleDefault: "Domyślny",
@@ -12839,7 +13116,8 @@ var qam$a = {
 		positionTopLeft: "Lewy górny róg",
 		positionTopRight: "Prawy górny róg",
 		loadingPreferences: "Wczytywanie ustawień odznak ProtonDB...",
-		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane."
+		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane.",
+		gameCoversHeading: "Okładki gier"
 	},
 	miniAchievements: {
 		title: "Mini osiągnięcia",
@@ -12930,7 +13208,20 @@ var qam$a = {
 		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizacje oprogramowania",
+		checkForUpdates: "Sprawdź aktualizacje",
+		upToDateButton: "Aktualne",
+		apply: "Zastosuj",
+		applying: "Stosowanie...",
+		moveToStableShort: "Przejdź na stabilną",
+		revertToStableShort: "Wróć do stabilnej",
+		upToDateLastChecked: "Aktualne: ostatnie sprawdzenie {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanał aktualizacji",
+		channelOptionStable: "Stabilny",
+		channelOptionDevelopment: "Rozwojowy",
+		channelStableDescription: "Otrzymuje przetestowane wydania stabilne."
 	},
 	versions: {
 		title: "Wersje",
@@ -12974,6 +13265,7 @@ var qam$a = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Spróbuj ponownie",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -12988,7 +13280,8 @@ var storeRow$a = {
 	statMain: "Główny wątek",
 	statMainPlus: "Główny wątek + dodatki",
 	statComplete: "Pełne ukończenie",
-	statAllStyles: "Wszystkie style"
+	statAllStyles: "Wszystkie style",
+	viewDetails: "Zobacz szczegóły"
 };
 var trailers$a = {
 	audio: "Dźwięk zwiastuna",
@@ -13443,6 +13736,10 @@ var qam$9 = {
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
 		storeDescription: "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam. Sempre usa correspondência automática; escolhas de HLTB por jogo se aplicam apenas às páginas de jogos da Biblioteca.",
+		statsHeading: "Estatísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Cache",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram feitos para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Padrão",
@@ -13535,7 +13832,8 @@ var qam$9 = {
 		positionTopLeft: "Superior esquerda",
 		positionTopRight: "Superior direita",
 		loadingPreferences: "Carregando preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Mini conquistas",
@@ -13626,7 +13924,20 @@ var qam$9 = {
 		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Verificar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -13670,6 +13981,7 @@ var qam$9 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tentar novamente",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -13684,7 +13996,8 @@ var storeRow$9 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$9 = {
 	audio: "Áudio do trailer",
@@ -14139,6 +14452,10 @@ var qam$8 = {
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
 		storeDescription: "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam. Utiliza sempre correspondência automática; as escolhas de HLTB por jogo aplicam-se apenas às páginas de jogos da Biblioteca.",
+		statsHeading: "Estatísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Cache",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram pensados para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Predefinido",
@@ -14231,7 +14548,8 @@ var qam$8 = {
 		positionTopLeft: "Superior esquerdo",
 		positionTopRight: "Superior direito",
 		loadingPreferences: "A carregar preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Miniconquistas",
@@ -14322,7 +14640,20 @@ var qam$8 = {
 		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Procurar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "A aplicar...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -14366,6 +14697,7 @@ var qam$8 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tentar novamente",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -14380,7 +14712,8 @@ var storeRow$8 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$8 = {
 	audio: "Áudio do trailer",
@@ -14835,6 +15168,10 @@ var qam$7 = {
 		showTimesDescription: "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
 		storeLabel: "Magazin",
 		storeDescription: "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam. Folosește întotdeauna potrivirea automată; alegerile HLTB per joc se aplică doar paginilor de joc din Bibliotecă.",
+		statsHeading: "Statistici",
+		styleHeading: "Stil",
+		customizeHeading: "Personalizare",
+		cacheHeading: "Cache",
 		styleLabel: "Stil HLTB",
 		styleDescription: "Stilurile „Clean” sunt concepute pentru a funcționa cu tema CSS Loader „Clean Gameview”",
 		styleDefault: "Implicit",
@@ -14927,7 +15264,8 @@ var qam$7 = {
 		positionTopLeft: "Sus stânga",
 		positionTopRight: "Sus dreapta",
 		loadingPreferences: "Se încarcă preferințele pentru insignele ProtonDB...",
-		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+		gameCoversHeading: "Coperți de jocuri"
 	},
 	miniAchievements: {
 		title: "Realizări mini",
@@ -15018,7 +15356,20 @@ var qam$7 = {
 		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizări de software",
+		checkForUpdates: "Verifică actualizările",
+		upToDateButton: "La zi",
+		apply: "Aplică",
+		applying: "Se aplică...",
+		moveToStableShort: "Treci la stabil",
+		revertToStableShort: "Revino la stabil",
+		upToDateLastChecked: "La zi: ultima verificare {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizare",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Dezvoltare",
+		channelStableDescription: "Primește versiuni stabile testate."
 	},
 	versions: {
 		title: "Versiuni",
@@ -15062,6 +15413,7 @@ var qam$7 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Încearcă din nou",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -15076,7 +15428,8 @@ var storeRow$7 = {
 	statMain: "Povestea principală",
 	statMainPlus: "Principal + extra",
 	statComplete: "Completist",
-	statAllStyles: "Toate stilurile"
+	statAllStyles: "Toate stilurile",
+	viewDetails: "Vezi detalii"
 };
 var trailers$7 = {
 	audio: "Sunetul trailerului",
@@ -15532,6 +15885,10 @@ var qam$6 = {
 		showTimesDescription: "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
 		storeLabel: "Магазин",
 		storeDescription: "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam. Всегда используется автоматический подбор; выбор HLTB для отдельной игры действует только на страницах игр в библиотеке.",
+		statsHeading: "Статистика",
+		styleHeading: "Стиль",
+		customizeHeading: "Настройка",
+		cacheHeading: "Кэш",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стили «Clean» предназначены для работы с темой CSS Loader «Clean Gameview»",
 		styleDefault: "По умолчанию",
@@ -15624,7 +15981,8 @@ var qam$6 = {
 		positionTopLeft: "Сверху слева",
 		positionTopRight: "Сверху справа",
 		loadingPreferences: "Загрузка настроек значков ProtonDB...",
-		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
+		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается.",
+		gameCoversHeading: "Обложки игр"
 	},
 	miniAchievements: {
 		title: "Мини-достижения",
@@ -15715,7 +16073,20 @@ var qam$6 = {
 		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Обновления ПО",
+		checkForUpdates: "Проверить обновления",
+		upToDateButton: "Актуально",
+		apply: "Применить",
+		applying: "Применение...",
+		moveToStableShort: "Перейти на стабильную",
+		revertToStableShort: "Вернуться к стабильной",
+		upToDateLastChecked: "Актуально: последняя проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал обновлений",
+		channelOptionStable: "Стабильный",
+		channelOptionDevelopment: "Разработка",
+		channelStableDescription: "Получает проверенные стабильные релизы."
 	},
 	versions: {
 		title: "Версии",
@@ -15759,6 +16130,7 @@ var qam$6 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Повторить",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -15773,7 +16145,8 @@ var storeRow$6 = {
 	statMain: "Основной сюжет",
 	statMainPlus: "Основной сюжет + доп.",
 	statComplete: "Полное прохождение",
-	statAllStyles: "Все стили"
+	statAllStyles: "Все стили",
+	viewDetails: "Подробнее"
 };
 var trailers$6 = {
 	audio: "Звук трейлера",
@@ -16227,6 +16600,10 @@ var qam$5 = {
 		showTimesDescription: "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
 		storeLabel: "Dyqani",
 		storeDescription: "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam. Përdor gjithmonë përputhjen automatike; zgjedhjet e HLTB për secilën lojë zbatohen vetëm në faqet e lojërave në Bibliotekë.",
+		statsHeading: "Statistikat",
+		styleHeading: "Stili",
+		customizeHeading: "Personalizo",
+		cacheHeading: "Memoria e përkohshme",
 		styleLabel: "Stili i HLTB",
 		styleDescription: "Stilet „Clean“ janë menduar për temën „Clean Gameview“ të CSS Loader",
 		styleDefault: "Parazgjedhur",
@@ -16319,7 +16696,8 @@ var qam$5 = {
 		positionTopLeft: "Lart majtas",
 		positionTopRight: "Lart djathtas",
 		loadingPreferences: "Po ngarkohen preferencat e distinktivëve ProtonDB...",
-		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
+		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen.",
+		gameCoversHeading: "Kopertinat e lojërave"
 	},
 	miniAchievements: {
 		title: "Arritjet mini",
@@ -16410,7 +16788,20 @@ var qam$5 = {
 		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Përditësimet e softuerit",
+		checkForUpdates: "Kontrollo për përditësime",
+		upToDateButton: "I përditësuar",
+		apply: "Zbato",
+		applying: "Duke zbatuar...",
+		moveToStableShort: "Kalo në të qëndrueshme",
+		revertToStableShort: "Kthehu në të qëndrueshme",
+		upToDateLastChecked: "I përditësuar: kontrolluar së fundmi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanali i përditësimeve",
+		channelOptionStable: "I qëndrueshëm",
+		channelOptionDevelopment: "Zhvillim",
+		channelStableDescription: "Merr versione të qëndrueshme të testuara."
 	},
 	versions: {
 		title: "Versionet",
@@ -16454,6 +16845,7 @@ var qam$5 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Provo përsëri",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -16468,7 +16860,8 @@ var storeRow$5 = {
 	statMain: "Historia kryesore",
 	statMainPlus: "Kryesorja + shtesat",
 	statComplete: "Përfundim i plotë",
-	statAllStyles: "Të gjitha stilet"
+	statAllStyles: "Të gjitha stilet",
+	viewDetails: "Shiko detajet"
 };
 var trailers$5 = {
 	audio: "Audio e trailerit",
@@ -16922,6 +17315,10 @@ var qam$4 = {
 		showTimesDescription: "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
 		storeLabel: "Butik",
 		storeDescription: "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken. Använder alltid automatisk matchning; HLTB-val per spel gäller endast på spelsidor i biblioteket.",
+		statsHeading: "Statistik",
+		styleHeading: "Stil",
+		customizeHeading: "Anpassa",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-stil",
 		styleDescription: "Stilarna ”Clean” är avsedda att fungera med CSS Loader-temat ”Clean Gameview”",
 		styleDefault: "Standard",
@@ -17014,7 +17411,8 @@ var qam$4 = {
 		positionTopLeft: "Övre vänster",
 		positionTopRight: "Övre höger",
 		loadingPreferences: "Läser in ProtonDB-märkesinställningar...",
-		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
+		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs.",
+		gameCoversHeading: "Spelomslag"
 	},
 	miniAchievements: {
 		title: "Miniprestationer",
@@ -17105,7 +17503,20 @@ var qam$4 = {
 		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Programvaruuppdateringar",
+		checkForUpdates: "Sök efter uppdateringar",
+		upToDateButton: "Uppdaterad",
+		apply: "Verkställ",
+		applying: "Verkställer...",
+		moveToStableShort: "Byt till stabil",
+		revertToStableShort: "Återgå till stabil",
+		upToDateLastChecked: "Uppdaterad: senast kontrollerad {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Uppdateringskanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Utveckling",
+		channelStableDescription: "Tar emot testade stabila versioner."
 	},
 	versions: {
 		title: "Versioner",
@@ -17149,6 +17560,7 @@ var qam$4 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Försök igen",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -17163,7 +17575,8 @@ var storeRow$4 = {
 	statMain: "Huvudhistoria",
 	statMainPlus: "Huvudhistoria + extra",
 	statComplete: "Completionist",
-	statAllStyles: "Alla spelstilar"
+	statAllStyles: "Alla spelstilar",
+	viewDetails: "Visa detaljer"
 };
 var trailers$4 = {
 	audio: "Trailerljud",
@@ -17617,6 +18030,10 @@ var qam$3 = {
 		showTimesDescription: "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
 		storeLabel: "Mağaza",
 		storeDescription: "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir. Her zaman otomatik eşleştirme kullanır; oyun bazlı HLTB seçimleri yalnızca Kütüphane oyun sayfalarında geçerlidir.",
+		statsHeading: "İstatistikler",
+		styleHeading: "Stil",
+		customizeHeading: "Özelleştir",
+		cacheHeading: "Önbellek",
 		styleLabel: "HLTB tarzı",
 		styleDescription: "\"Clean\" tarzları, CSS Loader teması \"Clean Gameview\" ile kullanılmak üzere tasarlanmıştır",
 		styleDefault: "Varsayılan",
@@ -17709,7 +18126,8 @@ var qam$3 = {
 		positionTopLeft: "Sol üst",
 		positionTopRight: "Sağ üst",
 		loadingPreferences: "ProtonDB rozet tercihleri yükleniyor...",
-		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
+		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir.",
+		gameCoversHeading: "Oyun kapakları"
 	},
 	miniAchievements: {
 		title: "Mini başarımlar",
@@ -17800,7 +18218,20 @@ var qam$3 = {
 		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Yazılım Güncellemeleri",
+		checkForUpdates: "Güncellemeleri Denetle",
+		upToDateButton: "Güncel",
+		apply: "Uygula",
+		applying: "Uygulanıyor...",
+		moveToStableShort: "Kararlı sürüme geç",
+		revertToStableShort: "Kararlı sürüme dön",
+		upToDateLastChecked: "Güncel: son denetim {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Güncelleme Kanalı",
+		channelOptionStable: "Kararlı",
+		channelOptionDevelopment: "Geliştirme",
+		channelStableDescription: "Test edilmiş kararlı sürümleri alır."
 	},
 	versions: {
 		title: "Sürümler",
@@ -17844,6 +18275,7 @@ var qam$3 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Tekrar dene",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -17858,7 +18290,8 @@ var storeRow$3 = {
 	statMain: "Ana Hikâye",
 	statMainPlus: "Ana + Ekstralar",
 	statComplete: "Tamamlayıcı",
-	statAllStyles: "Tüm Tarzlar"
+	statAllStyles: "Tüm Tarzlar",
+	viewDetails: "Ayrıntıları görüntüle"
 };
 var trailers$3 = {
 	audio: "Fragman sesi",
@@ -18314,6 +18747,10 @@ var qam$2 = {
 		showTimesDescription: "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
 		storeLabel: "Крамниця",
 		storeDescription: "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
+		statsHeading: "Статистика",
+		styleHeading: "Стиль",
+		customizeHeading: "Налаштування",
+		cacheHeading: "Кеш",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
 		styleDefault: "За замовчуванням",
@@ -18406,7 +18843,8 @@ var qam$2 = {
 		positionTopLeft: "Зверху ліворуч",
 		positionTopRight: "Зверху праворуч",
 		loadingPreferences: "Завантаження налаштувань значків ProtonDB...",
-		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+		gameCoversHeading: "Обкладинки ігор"
 	},
 	miniAchievements: {
 		title: "Мінідосягнення",
@@ -18497,7 +18935,20 @@ var qam$2 = {
 		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Оновлення ПЗ",
+		checkForUpdates: "Перевірити оновлення",
+		upToDateButton: "Актуально",
+		apply: "Застосувати",
+		applying: "Застосування...",
+		moveToStableShort: "Перейти на стабільну",
+		revertToStableShort: "Повернутися до стабільної",
+		upToDateLastChecked: "Актуально: остання перевірка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал оновлень",
+		channelOptionStable: "Стабільний",
+		channelOptionDevelopment: "Розробка",
+		channelStableDescription: "Отримує перевірені стабільні релізи."
 	},
 	versions: {
 		title: "Версії",
@@ -18541,6 +18992,7 @@ var qam$2 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "Повторити",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -18555,7 +19007,8 @@ var storeRow$2 = {
 	statMain: "Основний сюжет",
 	statMainPlus: "Основний сюжет + додатково",
 	statComplete: "Повне проходження",
-	statAllStyles: "Усі стилі"
+	statAllStyles: "Усі стилі",
+	viewDetails: "Переглянути деталі"
 };
 var trailers$2 = {
 	audio: "Звук трейлера",
@@ -19008,6 +19461,10 @@ var qam$1 = {
 		showTimesDescription: "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
 		storeLabel: "商店",
 		storeDescription: "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。始终使用自动匹配；按游戏指定的 HLTB 匹配仅适用于库中的游戏页面。",
+		statsHeading: "统计",
+		styleHeading: "样式",
+		customizeHeading: "自定义",
+		cacheHeading: "缓存",
 		styleLabel: "HLTB 样式",
 		styleDescription: "“Clean” 样式旨在与 CSS Loader 主题 “Clean Gameview” 搭配使用",
 		styleDefault: "默认",
@@ -19100,7 +19557,8 @@ var qam$1 = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在加载 ProtonDB 徽章偏好设置...",
-		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
+		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。",
+		gameCoversHeading: "游戏封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -19191,7 +19649,20 @@ var qam$1 = {
 		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "软件更新",
+		checkForUpdates: "检查更新",
+		upToDateButton: "已是最新",
+		apply: "应用",
+		applying: "正在应用...",
+		moveToStableShort: "切换到稳定版",
+		revertToStableShort: "回退到稳定版",
+		upToDateLastChecked: "已是最新：上次检查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "稳定版",
+		channelOptionDevelopment: "开发版",
+		channelStableDescription: "接收经过测试的稳定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -19235,6 +19706,7 @@ var qam$1 = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "重试",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -19249,7 +19721,8 @@ var storeRow$1 = {
 	statMain: "主线故事",
 	statMainPlus: "主线 + 额外内容",
 	statComplete: "完美通关",
-	statAllStyles: "所有游玩方式"
+	statAllStyles: "所有游玩方式",
+	viewDetails: "查看详情"
 };
 var trailers$1 = {
 	audio: "预告片音频",
@@ -19702,6 +20175,10 @@ var qam = {
 		showTimesDescription: "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
 		storeLabel: "商店",
 		storeDescription: "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
+		statsHeading: "統計",
+		styleHeading: "樣式",
+		customizeHeading: "自訂",
+		cacheHeading: "快取",
 		styleLabel: "HLTB 樣式",
 		styleDescription: "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
 		styleDefault: "預設",
@@ -19794,7 +20271,8 @@ var qam = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在載入 ProtonDB 徽章偏好設定...",
-		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。"
+		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。",
+		gameCoversHeading: "遊戲封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -19885,7 +20363,20 @@ var qam = {
 		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
 		developerHeading: "Developer",
 		enableTestingTab: "Enable Testing tab",
-		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "軟體更新",
+		checkForUpdates: "檢查更新",
+		upToDateButton: "已是最新",
+		apply: "套用",
+		applying: "正在套用...",
+		moveToStableShort: "切換至穩定版",
+		revertToStableShort: "回復至穩定版",
+		upToDateLastChecked: "已是最新：上次檢查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "穩定版",
+		channelOptionDevelopment: "開發版",
+		channelStableDescription: "接收經過測試的穩定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -19929,6 +20420,7 @@ var qam = {
 		draftBadge: "Draft",
 		install: "Install",
 		installing: "Preparing...",
+		retry: "重試",
 		info: "View on GitHub",
 		installModalTitle: "Install PR #{{id}}?",
 		modalDetails: "By {{author}} · Commit {{sha}}",
@@ -19943,7 +20435,8 @@ var storeRow = {
 	statMain: "主線故事",
 	statMainPlus: "主線 + 額外內容",
 	statComplete: "完美通關",
-	statAllStyles: "所有遊玩風格"
+	statAllStyles: "所有遊玩風格",
+	viewDetails: "檢視詳細資料"
 };
 var trailers = {
 	audio: "預告片音訊",
@@ -20528,14 +21021,31 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
+const ProgressBarField = DFL.ProgressBarWithInfo;
+const SCAN_PROGRESS_CLASS = "decky-metadata-scan-progress";
+const scanProgressCss = `
+.${SCAN_PROGRESS_CLASS} {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.${SCAN_PROGRESS_CLASS} div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+`;
 function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, onRefreshMetadata, inline = false, listReady = true, }) {
     const t = useT();
-    // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
-    const progress = scanBusy ? (SP_JSX.jsx(DFL.ProgressBarWithInfo, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
+    // Steam's ProgressBarWithInfo forwards Field props at runtime. Without childrenLayout="below",
+    // Field places the bar in FieldRightColumn (flex-shrink: 0, no min-width: 0), so long titles
+    // stretch the progress bar past the right edge of the QAM. Putting it in FieldLeftColumn via
+    // childrenLayout="below" and wrapping the QAM row in PanelSectionRow keeps it within the panel.
+    const progressStyle = scanBusy ? SP_JSX.jsx("style", { children: scanProgressCss }) : null;
+    const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [progressStyle, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress ? SP_JSX.jsx(DFL.PanelSectionRow, { children: progress }) : null] }));
 }
 function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, listReady = true, }) {
     const t = useT();
@@ -32491,15 +33001,95 @@ function useScanGames() {
 const SETTINGS_ROUTE = "/decky-metadata-settings";
 // The QAM panel gives this button the first focus when it opens.
 const SETTINGS_BUTTON_CLASS = "decky-metadata-settings-button";
-const openSettings = () => {
-    DFL.Navigation.CloseSideMenus();
-    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+const RELOAD_TAB_GLOBAL_KEY = "__DECKY_METADATA_SETTINGS_RELOAD_TAB__";
+const RELOAD_TAB_MAX_AGE_MS = 15000;
+let activeSettingsTab = null;
+const setActiveSettingsTab = (tab) => {
+    activeSettingsTab = tab;
+};
+const rememberSettingsTabForReload = () => {
+    if (!activeSettingsTab || !isSettingsRouteOpen())
+        return;
+    const host = globalThis;
+    host[RELOAD_TAB_GLOBAL_KEY] = { tab: activeSettingsTab, savedAt: Date.now() };
+};
+const consumeReloadSettingsTab = () => {
+    const host = globalThis;
+    const saved = host[RELOAD_TAB_GLOBAL_KEY];
+    delete host[RELOAD_TAB_GLOBAL_KEY];
+    if (!saved || typeof saved.tab !== "string" || typeof saved.savedAt !== "number")
+        return null;
+    if (Date.now() - saved.savedAt > RELOAD_TAB_MAX_AGE_MS)
+        return null;
+    return saved.tab;
+};
+const getSteamHistory = () => {
     // Current Steam has SteamUIStore and no Router global; older builds have Router.
     const host = globalThis;
     const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
-    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
-    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
+    return windowStore?.GamepadUIMainWindowInstance?.m_history;
+};
+// Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+const normalizeRoutePath = (pathname) => pathname?.replace(/^\/routes(?=\/)/, "");
+const isSettingsRouteOpen = () => normalizeRoutePath(getSteamHistory()?.location?.pathname) === SETTINGS_ROUTE;
+/**
+ * Decky's router wrapper only rebuilds its route list when `routes.size` changes and returns
+ * the same Switch element reference, so an in-place plugin reload while Settings is open leaves
+ * the old SettingsPage mounted. Briefly adding a sentinel route forces the route list rebuild,
+ * and `history.replace` on the same path makes React Router swap in the new SettingsPage without
+ * adding a duplicate history entry.
+ */
+const refreshOpenSettingsRoute = (routes) => {
+    const history = getSteamHistory();
+    const loc = history?.location;
+    if (normalizeRoutePath(loc?.pathname) !== SETTINGS_ROUTE || typeof history?.replace !== "function") {
+        return () => undefined;
+    }
+    const sentinel = `${SETTINGS_ROUTE}-reload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let sentinelRegistered = true;
+    let replaceTimer;
+    let cleanupTimer;
+    const removeSentinel = () => {
+        if (!sentinelRegistered)
+            return;
+        sentinelRegistered = false;
+        try {
+            routes.removeRoute(sentinel);
+        }
+        catch {
+            // Ignore cleanup errors during dismount.
+        }
+    };
+    routes.addRoute(sentinel, () => null, { exact: true });
+    replaceTimer = setTimeout(() => {
+        replaceTimer = undefined;
+        const latestHistory = getSteamHistory();
+        const latestLoc = latestHistory?.location;
+        if (normalizeRoutePath(latestLoc?.pathname) === SETTINGS_ROUTE && typeof latestHistory?.replace === "function") {
+            latestHistory.replace({
+                pathname: latestLoc?.pathname ?? SETTINGS_ROUTE,
+                search: latestLoc?.search ?? "",
+                hash: latestLoc?.hash ?? "",
+                state: latestLoc?.state,
+            });
+        }
+        cleanupTimer = setTimeout(() => {
+            cleanupTimer = undefined;
+            removeSentinel();
+        }, 50);
+    }, 50);
+    return () => {
+        if (replaceTimer !== undefined)
+            clearTimeout(replaceTimer);
+        if (cleanupTimer !== undefined)
+            clearTimeout(cleanupTimer);
+        removeSentinel();
+    };
+};
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    if (!isSettingsRouteOpen())
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
@@ -35121,7 +35711,7 @@ const MetadataPage = () => {
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
 const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
-const dropdownValueStyle$1 = { whiteSpace: "normal" };
+const dropdownValueStyle$2 = { whiteSpace: "normal" };
 function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, }) {
     const t = useT();
     const categoryLabel = (category) => {
@@ -35171,10 +35761,10 @@ function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, c
         label: scopeLabel(data),
     }));
     const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                     compatibilityDefaultBusy ||
                     compatibilityDefaultScopeBusy ||
-                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
+                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
 }
 
 /** Options for the Edit Metadata page that the game context menu opens. */
@@ -35194,12 +35784,24 @@ function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHom
     ];
     const disabled = !state.settingsLoaded || state.busy;
     const dependentDisabled = disabled || !state.settings.enabled;
+    const detailDependentDisabled = dependentDisabled || !state.settings.detailEnabled;
+    const homeDependentDisabled = dependentDisabled || !state.settings.homeEnabled;
     const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
     const display = state.displayWidth && state.displayHeight
         ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
         : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }), conflictNotice ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.detailHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.homeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) })) : null] })] }));
+    const actionableStatuses = new Set([
+        t("trailers.otherPluginActive"),
+        t("trailers.steamUiUnavailable"),
+        t("trailers.runtimeConflict"),
+        t("trailers.mediaSourceUnavailable"),
+        t("trailers.autoplayBlocked"),
+        t("trailers.settingsUnavailable"),
+        t("trailers.matchesUnavailable"),
+    ]);
+    const displayStatus = actionableStatuses.has(state.status) ? state.status : undefined;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: displayStatus, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }), conflictNotice || state.settingsError ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) : null, state.settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) : null] })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.detailHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: detailDependentDisabled, onChange: onDetailFadeInDelayChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: detailDependentDisabled, onChange: onAudioChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: detailDependentDisabled, onChange: onHideLogoChange })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.homeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: homeDependentDisabled, onChange: onHomeFadeInDelayChange })] })] }));
 }
 
 function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onBlurChange, }) {
@@ -35230,7 +35832,7 @@ function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStat
     const updateAppearance = (key, value) => {
         void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
     };
-    return SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }, key)), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.clearCacheButton"), disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: t("settings.action.clear") }), cacheStatus !== "idle" ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }), settings.style === "default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") })] }) : null, !settingsLoaded || notice || settingsError ? SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", children: [!settingsLoaded ? SP_JSX.jsx("div", { children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) : null] });
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }), !settingsLoaded || notice || settingsError ? SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", children: [!settingsLoaded ? SP_JSX.jsx("div", { children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.statsHeading") }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }, key)), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.styleHeading") }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.customizeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }), settings.style === "default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") })] }) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.clearCacheButton"), disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: t("settings.action.clear") }), cacheStatus !== "idle" ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) }) : null] })] });
 }
 
 function LogsBody({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -35246,46 +35848,126 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
     return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange }), (conflictNotice || state.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] })) : null] }));
 }
 
+// Matches SteamOS Settings -> System -> Software Updates: briefly show "Up-to-date"
+// disabled right after a clean check before returning the button to "Check For Updates".
+const UP_TO_DATE_COOLDOWN_MS = 4000;
+const dropdownValueStyle$1 = { whiteSpace: "normal" };
 function PluginUpdateBody() {
     const t = useT();
-    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
+    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
+    const [upToDateCooldown, setUpToDateCooldown] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (isChecking || errorMessage || checkResult?.status !== "current" || !checkResult.checked_at) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        const checkedMs = Date.parse(checkResult.checked_at);
+        const remaining = Number.isFinite(checkedMs) ? UP_TO_DATE_COOLDOWN_MS - (Date.now() - checkedMs) : 0;
+        if (remaining <= 0) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        setUpToDateCooldown(true);
+        const timer = globalThis.setTimeout(() => setUpToDateCooldown(false), remaining);
+        return () => globalThis.clearTimeout(timer);
+    }, [isChecking, errorMessage, checkResult?.status, checkResult?.checked_at]);
     const isLocalBuild = pluginVersion.includes("+");
-    const handleToggleChannel = (checked) => {
-        if (checked) {
+    const canInstall = candidate !== null && canInstallCandidate(candidate, pluginVersion);
+    const installedLabel = pluginVersion
+        ? `v${pluginVersion}${isLocalBuild ? ` ${t("qam.update.localBuild")}` : ""}`
+        : "";
+    const handleChannelChange = (next) => {
+        if (next === updateChannel)
+            return;
+        if (next === "development") {
             DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => void setUpdateChannel(true) }));
         }
         else {
             void setUpdateChannel(false);
         }
     };
-    const getStatusContent = () => {
-        if (isChecking) {
-            return SP_JSX.jsxs("span", { style: statusValueStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
+    const handleApplyClick = () => {
+        if (!candidate)
+            return;
+        if (candidate.action === "downgrade_to_stable") {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: candidate.version }), onOK: () => install(candidate) }));
         }
-        if (errorMessage) {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("error"), children: checkResult?.status === "failed"
-                    ? checkTimedOut
-                        ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-                        : t("qam.update.checkFailed")
-                    : t("updater.installation.failedTitle") }));
+        else {
+            void install(candidate);
         }
-        if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: statusValueStyle("success"), children: t("qam.update.upToDate") });
-        }
-        if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
-                    ? t("qam.update.latestDevelopment")
-                    : t("qam.update.updateAvailable") }));
-        }
-        return SP_JSX.jsx("span", { style: statusValueStyle("idle"), children: t("qam.update.neverChecked") });
     };
-    const lastCheckedText = checkResult?.checked_at
-        ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
-        : undefined;
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
-                            version: candidate.version,
-                            channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                        }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
+    const primaryBusy = isChecking || isInstalling || isHandoffPending;
+    const primaryDisabled = primaryBusy || upToDateCooldown;
+    const getPrimaryButtonText = () => {
+        if (isHandoffPending)
+            return t("qam.update.waitingForDecky");
+        if (isInstalling)
+            return t("qam.update.applying");
+        if (isChecking)
+            return t("qam.update.checking");
+        if (candidate && canInstall) {
+            switch (candidate.action) {
+                case "move_to_stable":
+                    return t("qam.update.moveToStableShort");
+                case "downgrade_to_stable":
+                    return t("qam.update.revertToStableShort");
+                default:
+                    return t("qam.update.apply");
+            }
+        }
+        if (upToDateCooldown)
+            return t("qam.update.upToDateButton");
+        return t("qam.update.checkForUpdates");
+    };
+    const onPrimaryAction = () => {
+        if (candidate && canInstall) {
+            handleApplyClick();
+        }
+        else {
+            void checkNow();
+        }
+    };
+    const unavailableText = candidate && !canInstall
+        ? (isLocalBuild && candidate.channel !== "stable"
+            ? t("qam.update.localBuildOnlyStable")
+            : t("qam.update.manualInstallUnavailable"))
+        : null;
+    const getSoftwareUpdatesDescription = () => {
+        if (candidate) {
+            const channelName = candidate.channel === "development"
+                ? t("qam.update.channelDevelopment")
+                : t("qam.update.channelStable");
+            const versionLine = pluginVersion
+                ? t("qam.update.versionArrow", { current: pluginVersion, next: candidate.version, channel: channelName })
+                : t("qam.update.newVersion", { version: candidate.version, channel: channelName });
+            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { children: versionLine }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })), unavailableText && (SP_JSX.jsx("div", { style: { color: statusColor("error") }, children: unavailableText }))] }));
+        }
+        if (checkResult?.status === "current" && checkResult.checked_at) {
+            const upToDateLine = t("qam.update.upToDateLastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${upToDateLine}` : upToDateLine;
+        }
+        if (checkResult?.checked_at) {
+            const checkedLine = t("qam.update.lastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${checkedLine}` : checkedLine;
+        }
+        return installedLabel || t("qam.update.neverChecked");
+    };
+    const errorHeading = checkResult?.status === "failed"
+        ? (checkTimedOut
+            ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+            : t("qam.update.checkFailed"))
+        : t("updater.installation.failedTitle");
+    const channelOptions = [
+        { data: "stable", label: t("qam.update.channelOptionStable") },
+        { data: "development", label: t("qam.update.channelOptionDevelopment") },
+    ];
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.update.softwareUpdates"), description: getSoftwareUpdatesDescription(), icon: candidate ? SP_JSX.jsx(FaExclamationTriangle, { style: { color: statusColor("warning") } }) : undefined, childrenContainerWidth: "fixed", children: SP_JSX.jsx(DFL.DialogButton, { onClick: onPrimaryAction, disabled: primaryDisabled, children: SP_JSX.jsx(ButtonLabel, { busy: primaryBusy, children: getPrimaryButtonText() }) }) }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorHeading }), SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.update.channelLabel"), description: updateChannel === "development"
+                            ? t("qam.update.receiveDevelopmentDescription")
+                            : t("qam.update.channelStableDescription"), rgOptions: channelOptions, selectedOption: updateChannel, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (option) => handleChannelChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: channelOptions.find((option) => option.data === updateChannel)?.label })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
 }
 
 const dropdownValueStyle = { whiteSpace: "normal" };
@@ -35299,12 +35981,13 @@ function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange,
     const { settings } = snapshot;
     const controlsDisabled = !snapshot.settingsLoaded;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const coverOptionsDisabled = dependentControlsDisabled || (!settings.home && !settings.library);
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
     const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
     const updateSetting = (key, value) => {
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.protondb.gameCoversHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: coverOptionsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: coverOptionsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) })] })] }));
 }
 
 const iconButtonStyle = {
@@ -35401,14 +36084,24 @@ function TestingInstallModal({ pr, closeModal }) {
                 action: "update",
                 updateTraceId: traceId,
             }).catch(() => undefined);
-            await invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId);
-            await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
-            toaster.toast({
-                title: t("updater.installation.startedTitle"),
-                body: t("updater.installation.startedBody", { version: prepared.version }),
-                duration: 3000,
-            });
+            // Close our verification dialog before invoking Decky Loader's own install
+            // confirmation modal so the two dialogs never stack or block each other.
             closeModal?.();
+            void invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId).then(async () => {
+                await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.startedTitle"),
+                    body: t("updater.installation.startedBody", { version: prepared.version }),
+                    duration: 3000,
+                });
+            }, async (caught) => {
+                await clearPendingUpdateInstall(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.failedTitle"),
+                    body: translateBackendError(caught),
+                    duration: 5000,
+                });
+            });
         }
         catch (caught) {
             if (recordedVersion) {
@@ -35418,7 +36111,11 @@ function TestingInstallModal({ pr, closeModal }) {
             setBusy(false);
         }
     };
-    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy ? t("qam.testing.installing") : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, onOK: () => void handleConfirm(), onCancel: () => {
+    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy
+            ? t("qam.testing.installing")
+            : error
+                ? t("qam.testing.retry")
+                : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, bHideCloseIcon: busy, onOK: () => handleConfirm(), onCancel: () => {
             if (!busy)
                 closeModal?.();
         }, onEscKeypress: () => {
@@ -41367,7 +42064,7 @@ function VersionsTab(props) {
 }
 function SettingsPage() {
     const t = useT();
-    const [page, setPage] = SP_REACT.useState("metadata");
+    const [page, setPage] = SP_REACT.useState(() => consumeReloadSettingsTab() ?? "metadata");
     // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
     const { games, loaded, scan } = useScanGames();
@@ -41380,6 +42077,10 @@ function SettingsPage() {
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
+    SP_REACT.useEffect(() => {
+        setActiveSettingsTab(page);
+        return () => setActiveSettingsTab(null);
+    }, [page]);
     // Each body renders its own Steam settings sections.
     const pages = [
         {
@@ -42022,6 +42723,7 @@ function installProtonDbGameView() {
 
 const LOCAL_CDP_TARGETS_URL = "http://localhost:8080/json";
 const STEAM_STORE_ROUTE = "/steamweb";
+const TARGET_DISCOVERY_FAST_INTERVAL_MS = 250;
 const TARGET_DISCOVERY_INTERVAL_MS = 1500;
 const MAX_STEAM_APP_ID = 0x80000000;
 const MAX_STORE_TITLE_LENGTH = 512;
@@ -42102,6 +42804,7 @@ const storeRowScript = (payload, revision) => {
     // Injected scripts cannot import i18n, so their labels are resolved here and embedded as data.
     const serializedHltbAriaLabel = JSON.stringify(t("storeRow.hltbAriaLabel"));
     const serializedProtonDbRatingAriaLabel = JSON.stringify(t("storeRow.protondbRating", { tier: "__TIER__" }));
+    const serializedViewDetailsLabel = JSON.stringify(t("storeRow.viewDetails"));
     return `(function () {
   "use strict";
   const requestedPayload = ${serializedPayload};
@@ -42109,6 +42812,7 @@ const storeRowScript = (payload, revision) => {
   const requestedRevision = ${serializedRevision};
   const hltbAriaLabel = ${serializedHltbAriaLabel};
   const protonDbRatingAriaLabelTemplate = ${serializedProtonDbRatingAriaLabel};
+  const viewDetailsLabel = ${serializedViewDetailsLabel};
   const ownerKey = "__deckyMetadataStoreInfoRowV1";
   const revisionKey = "__deckyMetadataStoreInfoRowRevisionV1";
   const rowId = "${ROW_ID}";
@@ -42121,8 +42825,10 @@ const storeRowScript = (payload, revision) => {
   const valueClass = "decky-metadata-store-row-value";
   const labelClass = "decky-metadata-store-row-label";
   const tierClass = "decky-metadata-store-row-tier";
+  const tierInfoClass = "decky-metadata-store-row-tier-info";
   const tierLabelClass = "decky-metadata-store-row-tier-label";
   const atomClass = "decky-metadata-store-row-atom";
+  const buttonClass = "decky-metadata-store-row-button";
   const validTiers = Object.freeze({ platinum: true, gold: true, silver: true, bronze: true, borked: true });
   const css = "#" + rowId + "{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}" +
     "#" + rowId + ">:only-child{grid-column:1 / -1}" +
@@ -42130,11 +42836,15 @@ const storeRowScript = (payload, revision) => {
     "." + headingClass + "{font:700 13px/17px 'Motiva Sans',Arial,sans-serif;color:var(--color-text-body-title,#f1f2f3);border-bottom:.67px solid rgb(49,69,96);padding-bottom:3px;margin-bottom:4px;text-transform:uppercase}" +
     "." + statsClass + "{display:flex;justify-content:space-between;list-style:none;margin:0;padding:0}" +
     "." + statsClass + " li{display:flex;flex-direction:column}" +
-    "." + valueClass + "{color:#fff;font-weight:700}" +
+    "." + valueClass + "{color:var(--color-blue-8,#1a9fff);font-weight:700}" +
     "." + labelClass + "{font-size:12px;opacity:.8}" +
-    "." + tierClass + "{display:flex;align-items:center;gap:8px}" +
-    "." + atomClass + "{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:currentColor;stroke-width:1.7}" +
-    "." + tierLabelClass + "{color:#fff;font-weight:700}";
+    "." + tierClass + "{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:5px 0}" +
+    "." + tierInfoClass + "{display:inline-flex;align-items:center;gap:8px}" +
+    "." + atomClass + "{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:1.7}" +
+    "." + tierLabelClass + "{font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;color:#ccd8e3;vertical-align:middle}" +
+    "." + buttonClass + "{display:inline-flex;align-items:center;color:#fff;background-color:var(--color-blue-8,#1a9fff);border-radius:2px;padding:6px 12px;font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;text-decoration:none;white-space:nowrap;box-shadow:rgba(0,0,0,.32) 0 3px 6px;transition:color .1s ease,background-color .1s ease,border-radius .1s ease}" +
+    "." + buttonClass + ":hover{color:#fff;cursor:pointer;background-color:#00bbff}" +
+    "." + buttonClass + ".gpfocus,." + buttonClass + ":focus-visible{color:#000;background-color:#fff;border-radius:0;outline:none}";
   const isAppId = function (value) {
     return Number.isSafeInteger(value) && value > 0 && value < 2147483648;
   };
@@ -42200,8 +42910,7 @@ const storeRowScript = (payload, revision) => {
     return requestedPayload === null;
   }
   if (existing && typeof existing.update === "function") {
-    existing.update(requestedPayload, requestedSignature, revision);
-    return true;
+    return existing.update(requestedPayload, requestedSignature, revision);
   }
 
   let disposed = false;
@@ -42266,13 +42975,16 @@ const storeRowScript = (payload, revision) => {
         bodyObserver = new MutationObserver(function (records) {
           if (disposed) return;
           const externalChange = records.some(function (record) {
+            if (row && (record.target === row || (typeof row.contains === "function" && row.contains(record.target)))) {
+              return false;
+            }
             const added = Array.from(record.addedNodes || []);
             const removed = Array.from(record.removedNodes || []);
             return added.some(function (node) { return node !== row; }) || removed.length > 0;
           });
           if (externalChange) render();
         });
-        bodyObserver.observe(body, { childList: true });
+        bodyObserver.observe(body, { childList: true, subtree: true });
       }
     }
   }
@@ -42352,55 +43064,64 @@ const storeRowScript = (payload, revision) => {
   function protonDbCard(payload) {
     const data = payload.protondb;
     if (!data) return null;
-    const card = document.createElement("a");
+    const card = document.createElement("div");
     card.className = cardClass;
     card.setAttribute("data-card", "protondb");
     card.setAttribute("aria-label", protonDbRatingAriaLabelTemplate.split("__TIER__").join(data.label));
-    card.href = "https://www.protondb.com/app/" + payload.steamAppId;
-    card.target = "_blank";
-    card.rel = "noopener noreferrer";
     card.appendChild(createHeading("ProtonDB"));
     const body = document.createElement("div");
     body.className = tierClass;
+    const info = document.createElement("div");
+    info.className = tierInfoClass;
     const atom = createAtom();
     atom.style.setProperty("color", data.color);
-    body.appendChild(atom);
+    info.appendChild(atom);
     const label = document.createElement("span");
     label.className = tierLabelClass;
     label.textContent = data.label;
-    body.appendChild(label);
+    info.appendChild(label);
+    body.appendChild(info);
+    const detailsButton = document.createElement("a");
+    detailsButton.className = buttonClass;
+    detailsButton.setAttribute("role", "button");
+    detailsButton.setAttribute("data-role", "details");
+    detailsButton.href = "https://www.protondb.com/app/" + payload.steamAppId;
+    detailsButton.target = "_blank";
+    detailsButton.rel = "noopener noreferrer";
+    detailsButton.textContent = viewDetailsLabel;
+    body.appendChild(detailsButton);
     card.appendChild(body);
     return card;
   }
 
   function render() {
-    if (disposed) return;
+    if (disposed) return false;
     if (!pageStillMatches()) {
       dispose();
-      return;
+      return false;
     }
     observeDocument();
     const body = document.body;
     const styleHost = document.head || document.documentElement;
-    if (!body || !styleHost) return;
+    if (!body || !styleHost) return false;
 
     const existingRow = ownedNode(rowId, "row");
-    if (existingRow === false) return;
+    if (existingRow === false) return false;
     const existingStyle = ownedNode(styleId, "style");
-    if (existingStyle === false) return;
+    if (existingStyle === false) return false;
     const anchor = document.getElementById(anchorId);
     const parent = anchor && anchor.parentNode;
     if (!anchor || !parent) {
       if (existingRow && typeof existingRow.remove === "function") existingRow.remove();
-      return;
+      return false;
     }
 
     style = existingStyle || document.createElement("style");
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = css;
     }
+    if (style.textContent !== css) style.textContent = css;
     if (style.parentNode !== styleHost) styleHost.appendChild(style);
 
     const appIdText = String(statePayload.steamAppId);
@@ -42414,7 +43135,7 @@ const storeRowScript = (payload, revision) => {
         existingRow.parentNode === parent && anchor.previousElementSibling === existingRow) {
       row = existingRow;
       if (marginTop) row.style.marginTop = marginTop;
-      return;
+      return true;
     }
     // Rebuild instead of patching in place: one fresh, attached registration per change keeps the nav tree simple.
     row = document.createElement("div");
@@ -42435,19 +43156,20 @@ const storeRowScript = (payload, revision) => {
     try {
       if (typeof window.ForceUpdateFocusElements === "function") window.ForceUpdateFocusElements(row);
     } catch {}
+    return true;
   }
 
   function update(nextPayload, nextSignature, nextRevision) {
-    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return;
+    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return false;
     stateRevision = nextRevision;
     if (!isPayload(nextPayload) || !isText(nextSignature, 2048) ||
         appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
       dispose();
-      return;
+      return false;
     }
     statePayload = nextPayload;
     stateSignature = nextSignature;
-    render();
+    return render();
   }
 
   function dispose() {
@@ -42475,8 +43197,7 @@ const storeRowScript = (payload, revision) => {
   document.addEventListener("pageleave", dispose);
   addHistoryObserver("pushState");
   addHistoryObserver("replaceState");
-  render();
-  return true;
+  return render();
 })();`;
 };
 const isSafeTargetId = (value) => validTargetText(value, 256);
@@ -42531,7 +43252,7 @@ const findSteamHistory = () => {
 };
 const routePath = (history) => {
     const pathname = history.location?.pathname;
-    return typeof pathname === "string" ? pathname : "";
+    return typeof pathname === "string" ? pathname.replace(/^\/routes(?=\/)/, "") : "";
 };
 const isDisposer = (value) => typeof value === "function";
 const listStoreCefTargets = async () => {
@@ -42761,10 +43482,11 @@ const installStoreInfoRow = () => {
     const scheduleDiscovery = () => {
         if (!isEligible() || discoveryTimer !== undefined || discoveryRunning)
             return;
+        const delay = currentSignature === undefined ? TARGET_DISCOVERY_FAST_INTERVAL_MS : TARGET_DISCOVERY_INTERVAL_MS;
         discoveryTimer = globalThis.setTimeout(() => {
             discoveryTimer = undefined;
             void discoverTarget();
-        }, TARGET_DISCOVERY_INTERVAL_MS);
+        }, delay);
     };
     const discoverTarget = async () => {
         if (!isEligible() || discoveryRunning)
@@ -42928,6 +43650,7 @@ var index = DFL.definePlugin(() => {
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
+    const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and
@@ -42938,6 +43661,8 @@ var index = DFL.definePlugin(() => {
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
+            cancelSettingsRefresh();
+            rememberSettingsTabForReload();
             stopTrailerController();
             stopMiniAchievementsController();
             stopProtonDbCovers();

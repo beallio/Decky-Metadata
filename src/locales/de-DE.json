@@ -136,6 +136,10 @@
       "showTimesDescription": "Zeigt HowLongToBeat-Zeiten auf Spielseiten für Steam- und Nicht-Steam-Spiele.",
       "storeLabel": "Shop",
       "storeDescription": "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop. Verwendet immer die automatische Zuordnung; spielspezifische HLTB-Auswahlen gelten nur auf Spielseiten in der Bibliothek.",
+      "statsHeading": "Statistiken",
+      "styleHeading": "Stil",
+      "customizeHeading": "Anpassen",
+      "cacheHeading": "Cache",
       "styleLabel": "HLTB-Stil",
       "styleDescription": "Die „Clean“-Stile sind für das CSS-Loader-Theme „Clean Gameview“ gedacht",
       "styleDefault": "Standard",
@@ -228,7 +232,8 @@
       "positionTopLeft": "Oben links",
       "positionTopRight": "Oben rechts",
       "loadingPreferences": "ProtonDB-Abzeichen-Einstellungen werden geladen...",
-      "footnote": "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
+      "footnote": "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet.",
+      "gameCoversHeading": "Spielcover"
     },
     "miniAchievements": {
       "title": "Mini-Errungenschaften",
@@ -319,7 +324,20 @@
       "confirmRevertBody": "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Software-Updates",
+      "checkForUpdates": "Nach Updates suchen",
+      "upToDateButton": "Aktuell",
+      "apply": "Anwenden",
+      "applying": "Wird angewendet...",
+      "moveToStableShort": "Zu Stabil wechseln",
+      "revertToStableShort": "Auf Stabil zurücksetzen",
+      "upToDateLastChecked": "Aktuell: zuletzt geprüft {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Update-Kanal",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Entwicklung",
+      "channelStableDescription": "Erhält getestete stabile Versionen."
     },
     "versions": {
       "title": "Versionen",
@@ -363,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Erneut versuchen",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +396,8 @@
     "statMain": "Hauptstory",
     "statMainPlus": "Haupt + Extras",
     "statComplete": "Komplettist",
-    "statAllStyles": "Alle Spielweisen"
+    "statAllStyles": "Alle Spielweisen",
+    "viewDetails": "Details anzeigen"
   },
   "trailers": {
     "audio": "Trailer-Ton",
