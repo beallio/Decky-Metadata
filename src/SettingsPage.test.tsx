@@ -15,7 +15,7 @@ const hooks = vi.hoisted(() => ({
   logs: { debugLogging: true },
   versions: { deckyVersion: "versions" },
   contextMenu: { settings: { gameIcon: true }, error: "", onChange: () => undefined },
-  updates: { pluginVersion: "0.6.7" },
+  updates: { pluginVersion: "0.6.7", testingTabEnabled: false },
 }));
 const controller = (name: string) => {
   let listener: (() => void) | null = null;
@@ -40,7 +40,9 @@ const navigation = vi.hoisted(() => ({ NavigateBack: vi.fn() }));
 vi.mock("react", () => ({
   useState: (initial: unknown) => {
     const index = harness.cursor++;
-    if (index >= harness.slots.length) harness.slots.push(initial);
+    if (index >= harness.slots.length) {
+      harness.slots.push(typeof initial === "function" ? (initial as () => unknown)() : initial);
+    }
     return [harness.slots[index], (value: unknown) => { harness.slots[index] = value; }];
   },
   useEffect: (effect: () => void | (() => void)) => harness.effects.push(effect),
@@ -51,7 +53,7 @@ vi.mock("@decky/ui", () => ({
   Navigation: navigation,
 }));
 vi.mock("react-icons/fa", () => ({
-  FaBars: "FaBars", FaClock: "FaClock", FaFileAlt: "FaFileAlt", FaInfoCircle: "FaInfoCircle",
+  FaBars: "FaBars", FaClock: "FaClock", FaFileAlt: "FaFileAlt", FaFlask: "FaFlask", FaInfoCircle: "FaInfoCircle",
   FaPlayCircle: "FaPlayCircle", FaSyncAlt: "FaSyncAlt", FaTrophy: "FaTrophy",
 }));
 vi.mock("react-icons/fa6", () => ({ FaTags: "FaTags" }));
@@ -69,8 +71,13 @@ vi.mock("./components/qam/MetadataSection", () => ({
 vi.mock("./components/qam/MiniAchievementsSection", () => ({ MiniAchievementsBody: "MiniAchievementsBody" }));
 vi.mock("./components/qam/PluginUpdateSection", () => ({ PluginUpdateBody: "PluginUpdateBody" }));
 vi.mock("./components/qam/ProtonDbBadgesSection", () => ({ ProtonDbBadgesBody: "ProtonDbBadgesBody" }));
+vi.mock("./components/qam/TestingSection", () => ({ TestingBody: "TestingBody" }));
 vi.mock("./components/qam/VersionsSection", () => ({ VersionsBody: "VersionsBody" }));
 vi.mock("./settingsLayout", () => ({ SettingsLayout: "SettingsLayout" }));
+vi.mock("./settingsRoute", () => ({
+  consumeReloadSettingsTab: vi.fn(() => null),
+  setActiveSettingsTab: vi.fn(),
+}));
 vi.mock("./i18n", () => ({
   currentSteamLanguage: vi.fn(),
   refreshLanguage: vi.fn(() => Promise.resolve("en-US")),
@@ -135,6 +142,7 @@ const mountTab = (id: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   harness.slots = [];
+  hooks.updates.testingTabEnabled = false;
   for (const name of ["trailers", "miniAchievements", "protonDb", "hltb"]) controllers[name] = controller(name);
 });
 
@@ -147,6 +155,22 @@ describe("SettingsPage", () => {
       "logs", "updates", "versions",
     ]);
     expect(pages.filter((page) => page.separatorBefore).map((page) => page.id)).toEqual(["logs"]);
+  });
+
+  it("shows the Testing tab after Updates only when enabled", () => {
+    hooks.updates.testingTabEnabled = true;
+    const pages = layout(render()).pages;
+
+    expect(pages.map((page) => page.id)).toEqual([
+      "metadata", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
+      "logs", "updates", "testing", "versions",
+    ]);
+
+    layout(render()).onPageRequested("testing");
+    expect(layout(render()).page).toBe("testing");
+
+    hooks.updates.testingTabEnabled = false;
+    expect(layout(render()).page).toBe("updates");
   });
 
   it("gives each page the state of the hook that owns it", () => {

@@ -30,23 +30,23 @@ Home previews always stay muted and keep Steam's native controls. They do not mo
 
 ## Choose trailer settings
 
-The main **Enable trailers** switch stays at the top. Plain **Detail view** and **Home view** subheadings separate the controls. All controls are available on the **Game trailers** tab in Settings.
+The top section holds **Enable trailers**, **Video quality**, and **Big Picture display**. Plain **Detail view** and **Home view** subheadings separate the view-specific controls below them. All controls are available on the **Game trailers** tab in Settings.
+
+### Shared settings
+
+**Video quality** sits directly below **Enable trailers**. It applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**. **Big Picture display** shows the detected resolution and target playback height, plus any actionable runtime warning or error.
 
 ### Detail view
 
-- **Detail view trailers** turns trailers on or off for game pages.
+- **Detail view trailers** turns trailers on or off for game pages. Turning it off disables the three Detail controls below it.
 - **Detail fade-in delay** controls the wait from opening a game page until a ready trailer appears.
 - **Detail trailer audio** controls sound on game pages; it is off by default. Sound fades in when a Detail trailer appears.
 - **Hide game logo during Detail trailers** hides the game-page logo while a trailer is visible. The logo returns when playback stops or fails, or when you leave the page. Logos inside the video are not changed.
 
 ### Home view
 
-- **Home view trailers** turns muted Home previews on or off.
+- **Home view trailers** turns muted Home previews on or off. Turning it off disables **Home fade-in delay**.
 - **Home fade-in delay** controls the wait from selecting or hovering over a game before trailer lookup starts. Moving to another game restarts this wait.
-
-### Shared settings
-
-**Video quality** stays outside both groups. It applies to both views and offers **Auto — match display**, **720p**, **1080p**, **1440p**, and **2160p**.
 
 Both delay sliders default to three seconds and can be set independently from 0 to 10 seconds. At 0, a trailer appears as soon as it is ready. The delay is separate from the fade animation.
 

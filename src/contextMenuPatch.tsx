@@ -38,10 +38,12 @@ import { isValidElement, type FC, type ReactNode } from "react";
 import {
   getNativeOverview,
   isNativeNonSteamShortcut,
+  isNativeSteamGame,
   patchInstallStatus,
   hasSteamInternals,
 } from "./steam/core";
 import { findSteamVar } from "./steam/steamUiModules";
+import { hltbController } from "./hltb/gameView";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 import { t } from "./i18n";
@@ -209,7 +211,11 @@ const insertOurEntry = (
   items: ({ key?: string | number | null; props?: { children?: ReactNode } } | null | undefined)[],
   appId: number
 ): EntryAnchor | null => {
-  if (!isNativeNonSteamShortcut(getNativeOverview(appId))) return null;
+  const nativeOverview = getNativeOverview(appId);
+  const eligible =
+    isNativeNonSteamShortcut(nativeOverview) ||
+    (hltbController.getSnapshot().effectiveEnabled && isNativeSteamGame(nativeOverview));
+  if (!eligible) return null;
   const entry = (
     <MenuItem
       key={ENTRY_KEY}
@@ -262,7 +268,7 @@ const syncOurEntry = (
   if (finalAppId > 0) {
     anchor = insertOurEntry(items, finalAppId);
     if (!anchor) {
-      inserted = "skipped-not-non-steam";
+      inserted = "skipped-not-eligible";
     }
   }
 

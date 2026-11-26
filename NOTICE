@@ -103,6 +103,17 @@ plugin-template contributor. Decky Metadata remains distributed under the
 GNU General Public License v3.0 or later; this notice does not claim new
 copyright ownership of the adapted runtime.
 
+Pull request testing UI
+-----------------------
+src/components/qam/TestingSection.tsx adapts the Testing pull-request list
+layout from Decky Loader (and the beallio/decky-loader fork), licensed under
+the GNU General Public License v2.0. Decky Metadata remains distributed under
+the GNU General Public License v3.0 or later.
+
+    Decky Loader
+    https://github.com/SteamDeckHomebrew/decky-loader
+    https://github.com/beallio/decky-loader
+
     BSD 3-Clause License
 
     Copyright (c) 2024, Hypothetical Plugin Developer

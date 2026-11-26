@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "პარამეტრების გახსნა", "action": { "refresh": "განახლება", "clear": "გასუფთავება", "view": "ნახვა", "check": "შემოწმება" } },
+  "settings": {
+    "open": "პარამეტრების გახსნა",
+    "action": {
+      "refresh": "განახლება",
+      "clear": "გასუფთავება",
+      "view": "ნახვა",
+      "check": "შემოწმება"
+    }
+  },
   "common": {
     "hours_one": "{{value}} საათი",
     "hours_other": "{{value}} საათი",
@@ -52,7 +60,21 @@
     "shortcut_name_changed": "მალსახმობის სახელი გადარქმევამდე შეიცვალა.",
     "shortcut_name_api_unavailable": "Steam-ის მალსახმობის სახელის API მიუწვდომელია",
     "shortcut_name_api_failed": "Steam-ის მალსახმობის სახელის API ვერ შესრულდა",
-    "shortcut_name_timeout": "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი."
+    "shortcut_name_timeout": "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი.",
+    "invalid_steam_app_id": "ეს თამაში არ არის სწორი Steam თამაში.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -113,7 +135,11 @@
       "showTimesLabel": "HowLongToBeat-ის დროების ჩვენება",
       "showTimesDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
       "storeLabel": "მაღაზია",
-      "storeDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში.",
+      "storeDescription": "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
+      "statsHeading": "Isiḍanen",
+      "styleHeading": "Aɣanib",
+      "customizeHeading": "Sagen",
+      "cacheHeading": "Tuffirt",
       "styleLabel": "HLTB-ის სტილი",
       "styleDescription": "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
       "styleDefault": "ნაგულისხმევი",
@@ -206,7 +232,8 @@
       "positionTopLeft": "ზედა მარცხენა",
       "positionTopRight": "ზედა მარჯვენა",
       "loadingPreferences": "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
-      "footnote": "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
+      "footnote": "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება.",
+      "gameCoversHeading": "თამაშის ყდები"
     },
     "miniAchievements": {
       "title": "მინი მიღწევები",
@@ -294,7 +321,23 @@
       "checkNow": "ახლა შემოწმება",
       "enableDevelopmentTitle": "ჩაირთოს განვითარების გამოშვებები?",
       "confirmRevertTitle": "დავუბრუნდეთ სტაბილურს?",
-      "confirmRevertBody": "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები."
+      "confirmRevertBody": "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "პროგრამული განახლებები",
+      "checkForUpdates": "განახლებების შემოწმება",
+      "upToDateButton": "განახლებულია",
+      "apply": "გამოყენება",
+      "applying": "გამოყენება...",
+      "moveToStableShort": "სტაბილურზე გადასვლა",
+      "revertToStableShort": "სტაბილურზე დაბრუნება",
+      "upToDateLastChecked": "განახლებულია: ბოლო შემოწმება {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "განახლების არხი",
+      "channelOptionStable": "სტაბილური",
+      "channelOptionDevelopment": "განვითარების",
+      "channelStableDescription": "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
     },
     "versions": {
       "title": "ვერსიები",
@@ -312,6 +355,39 @@
       "modalTitle": "პლაგინის ლოგები",
       "modalEmpty": "ბოლო ლოგები არ არის",
       "ok": "კარგი"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "თავიდან ცდა",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -320,7 +396,8 @@
     "statMain": "მთავარი სიუჟეტი",
     "statMainPlus": "მთავარი + დამატებითი",
     "statComplete": "სრულად გავლა",
-    "statAllStyles": "ყველა სტილი"
+    "statAllStyles": "ყველა სტილი",
+    "viewDetails": "დეტალების ნახვა"
   },
   "trailers": {
     "audio": "ტრეილერის ხმა",
@@ -419,7 +496,8 @@
       "cacheClearFailed": "ქეშის გასუფთავება ვერ მოხერხდა",
       "delisted": "გაყიდვიდან მოხსნილი Steam თამაშები",
       "logs": "ლოგები"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "მეტამონაცემების რედაქტირება..."
@@ -582,7 +660,8 @@
     },
     "steamTextLanguage": "Steam-ის ტექსტის ენა: {{language}}",
     "fetchSteamText": "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
-    "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
+    "steamTextUnavailable": "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა.",
+    "hltbDisabledNotice": "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში."
   },
   "matchPicker": {
     "help": "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",

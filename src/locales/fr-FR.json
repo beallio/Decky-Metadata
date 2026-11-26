@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Ouvrir les paramètres", "action": { "refresh": "Actualiser", "clear": "Effacer", "view": "Voir", "check": "Vérifier" } },
+  "settings": {
+    "open": "Ouvrir les paramètres",
+    "action": {
+      "refresh": "Actualiser",
+      "clear": "Effacer",
+      "view": "Voir",
+      "check": "Vérifier"
+    }
+  },
   "common": {
     "hours_one": "{{value}} heure",
     "hours_many": "{{value}} heures",
@@ -53,7 +61,21 @@
     "shortcut_name_changed": "Le nom du raccourci a changé avant le renommage.",
     "shortcut_name_api_unavailable": "L'API de nom de raccourci de Steam est indisponible",
     "shortcut_name_api_failed": "L'API de nom de raccourci de Steam a échoué",
-    "shortcut_name_timeout": "Steam n'a pas confirmé le nouveau nom du raccourci à temps."
+    "shortcut_name_timeout": "Steam n'a pas confirmé le nouveau nom du raccourci à temps.",
+    "invalid_steam_app_id": "Ce jeu n'est pas un jeu Steam valide.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -114,7 +136,11 @@
       "showTimesLabel": "Afficher les temps HowLongToBeat",
       "showTimesDescription": "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
       "storeLabel": "Boutique",
-      "storeDescription": "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
+      "storeDescription": "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam. Utilise toujours la correspondance automatique ; les choix HLTB par jeu ne s'appliquent qu'aux pages de jeu de la Bibliothèque.",
+      "statsHeading": "Statistiques",
+      "styleHeading": "Style",
+      "customizeHeading": "Personnaliser",
+      "cacheHeading": "Cache",
       "styleLabel": "Style HLTB",
       "styleDescription": "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
       "styleDefault": "Par défaut",
@@ -207,7 +233,8 @@
       "positionTopLeft": "En haut à gauche",
       "positionTopRight": "En haut à droite",
       "loadingPreferences": "Chargement des préférences de badges ProtonDB...",
-      "footnote": "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
+      "footnote": "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+      "gameCoversHeading": "Jaquettes de jeux"
     },
     "miniAchievements": {
       "title": "Mini-succès",
@@ -295,7 +322,23 @@
       "checkNow": "Vérifier maintenant",
       "enableDevelopmentTitle": "Activer les versions de développement ?",
       "confirmRevertTitle": "Revenir à la version stable ?",
-      "confirmRevertBody": "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration."
+      "confirmRevertBody": "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Mises à jour logicielles",
+      "checkForUpdates": "Vérifier les mises à jour",
+      "upToDateButton": "À jour",
+      "apply": "Appliquer",
+      "applying": "Application...",
+      "moveToStableShort": "Passer en stable",
+      "revertToStableShort": "Revenir en stable",
+      "upToDateLastChecked": "À jour : dernière vérification {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de mise à jour",
+      "channelOptionStable": "Stable",
+      "channelOptionDevelopment": "Développement",
+      "channelStableDescription": "Reçoit les versions stables testées."
     },
     "versions": {
       "title": "Versions",
@@ -313,6 +356,39 @@
       "modalTitle": "Journaux du plugin",
       "modalEmpty": "Aucun journal récent",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Réessayer",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -321,7 +397,8 @@
     "statMain": "Histoire principale",
     "statMainPlus": "Histoire + extras",
     "statComplete": "Complétiste",
-    "statAllStyles": "Tous les styles"
+    "statAllStyles": "Tous les styles",
+    "viewDetails": "Voir les détails"
   },
   "trailers": {
     "audio": "Audio de la bande-annonce",
@@ -420,7 +497,8 @@
       "cacheClearFailed": "Échec du vidage du cache",
       "delisted": "Jeux Steam retirés",
       "logs": "Journaux"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Modifier les métadonnées..."
@@ -583,7 +661,8 @@
     },
     "steamTextLanguage": "Langue du texte Steam : {{language}}",
     "fetchSteamText": "Charger le texte de Steam en {{language}}",
-    "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu."
+    "steamTextUnavailable": "Steam n'a renvoyé aucun texte pour ce jeu.",
+    "hltbDisabledNotice": "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres."
   },
   "matchPicker": {
     "help": "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",

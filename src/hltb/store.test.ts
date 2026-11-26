@@ -106,4 +106,26 @@ describe("HltbStore", () => {
     await settle();
     expect(store.view(620, inputs, now).entry).toBeNull();
   });
+
+  it("keeps pinned Library and automatic Store slots isolated for the same Steam app", async () => {
+    const pinnedInputs: HltbInputs = { steam: 65540, title: "Gothic 1 - classic", pinned: 4031 };
+    const storeInputs: HltbInputs = { steam: 65540, title: "Gothic 1 - classic", pinned: null };
+    const fetch = vi.fn<(...args: unknown[]) => Promise<HltbStatsResult>>()
+      .mockResolvedValueOnce(entry({ hltb_id: 4031, game_name: "Gothic", steam_appid_used: 65540, title_used: "Gothic 1 - classic", pinned_id_used: 4031, fetched_at: now }))
+      .mockResolvedValueOnce(entry({ hltb_id: 9999, game_name: "Gothic 1", steam_appid_used: 65540, title_used: "Gothic 1 - classic", pinned_id_used: null, fetched_at: now }));
+    const store = new HltbStore(fetch);
+
+    store.request(65540, false, pinnedInputs, now);
+    store.request(65540, false, storeInputs, now, false);
+    await settle();
+
+    expect(fetch).toHaveBeenNthCalledWith(1, 65540, false, "Gothic 1 - classic");
+    expect(fetch).toHaveBeenNthCalledWith(2, 65540, false, "Gothic 1 - classic", false);
+    expect(store.view(65540, pinnedInputs, now)).toMatchObject({ entry: { hltb_id: 4031 }, needsFetch: false });
+    expect(store.view(65540, storeInputs, now)).toMatchObject({ entry: { hltb_id: 9999 }, needsFetch: false });
+
+    store.forget(65540);
+    expect(store.view(65540, pinnedInputs, now)).toEqual({ entry: null, needsFetch: true });
+    expect(store.view(65540, storeInputs, now)).toEqual({ entry: null, needsFetch: true });
+  });
 });

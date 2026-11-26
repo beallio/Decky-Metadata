@@ -15,10 +15,21 @@ vi.mock("./i18n", async (importOriginal) => {
   return { ...actual, useT: () => actual.t };
 });
 
-import { openSettings, SETTINGS_ROUTE, SettingsTitleView } from "./settingsRoute";
+import {
+  consumeReloadSettingsTab,
+  openSettings,
+  refreshOpenSettingsRoute,
+  rememberSettingsTabForReload,
+  setActiveSettingsTab,
+  SETTINGS_ROUTE,
+  SettingsTitleView,
+} from "./settingsRoute";
 
-const store = (pathname: string) => ({ GamepadUIMainWindowInstance: { m_history: { location: { pathname } } } });
-const setRoute = (pathname: string) => vi.stubGlobal("SteamUIStore", { WindowStore: store(pathname) });
+const store = (pathname: string, replace?: ReturnType<typeof vi.fn>, state?: unknown) => ({
+  GamepadUIMainWindowInstance: { m_history: { location: { pathname, search: "", hash: "", state }, replace } },
+});
+const setRoute = (pathname: string, replace?: ReturnType<typeof vi.fn>, state?: unknown) =>
+  vi.stubGlobal("SteamUIStore", { WindowStore: store(pathname, replace, state) });
 
 describe("openSettings", () => {
   beforeEach(() => {
@@ -57,6 +68,85 @@ describe("openSettings", () => {
     openSettings();
 
     expect(calls).toEqual(["CloseSideMenus", `Navigate ${SETTINGS_ROUTE}`]);
+  });
+});
+
+describe("refreshOpenSettingsRoute", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    setActiveSettingsTab(null);
+    consumeReloadSettingsTab();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  });
+
+  it("rebuilds routes and replaces the open Settings location without pushing a duplicate entry", () => {
+    const replace = vi.fn();
+    const state = { FocusNavHistoryID: "State_1" };
+    setRoute(SETTINGS_ROUTE, replace, state);
+    const routes = { addRoute: vi.fn(), removeRoute: vi.fn() };
+
+    refreshOpenSettingsRoute(routes);
+
+    expect(routes.addRoute).toHaveBeenCalledOnce();
+    const sentinel = routes.addRoute.mock.calls[0][0] as string;
+    expect(sentinel).toMatch(/^\/decky-metadata-settings-reload-/);
+    expect(replace).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(50);
+    expect(replace).toHaveBeenCalledWith({ pathname: SETTINGS_ROUTE, search: "", hash: "", state });
+    expect(routes.removeRoute).not.toHaveBeenCalled();
+
+    vi.advanceTimersByTime(50);
+    expect(routes.removeRoute).toHaveBeenCalledWith(sentinel);
+  });
+
+  it("does nothing when another route is active", () => {
+    const replace = vi.fn();
+    setRoute("/library/home", replace);
+    const routes = { addRoute: vi.fn(), removeRoute: vi.fn() };
+
+    refreshOpenSettingsRoute(routes);
+    vi.runAllTimers();
+
+    expect(routes.addRoute).not.toHaveBeenCalled();
+    expect(replace).not.toHaveBeenCalled();
+  });
+
+  it("cancels pending replacement and cleans up the sentinel on dismount", () => {
+    const replace = vi.fn();
+    setRoute(SETTINGS_ROUTE, replace);
+    const routes = { addRoute: vi.fn(), removeRoute: vi.fn() };
+
+    const cancel = refreshOpenSettingsRoute(routes);
+    const sentinel = routes.addRoute.mock.calls[0][0] as string;
+    cancel();
+    vi.runAllTimers();
+
+    expect(replace).not.toHaveBeenCalled();
+    expect(routes.removeRoute).toHaveBeenCalledTimes(1);
+    expect(routes.removeRoute).toHaveBeenCalledWith(sentinel);
+  });
+
+  it("remembers the active Settings tab across an in-place reload and consumes it once", () => {
+    setRoute(SETTINGS_ROUTE);
+    setActiveSettingsTab("updates");
+    rememberSettingsTabForReload();
+
+    expect(consumeReloadSettingsTab()).toBe("updates");
+    expect(consumeReloadSettingsTab()).toBeNull();
+  });
+
+  it("drops a stale saved tab after the reload window expires", () => {
+    setRoute(SETTINGS_ROUTE);
+    setActiveSettingsTab("testing");
+    rememberSettingsTabForReload();
+
+    vi.advanceTimersByTime(20_000);
+    expect(consumeReloadSettingsTab()).toBeNull();
   });
 });
 

@@ -376,6 +376,20 @@ impl AppState {
                 .await;
             return Ok(result);
         }
+        if method == "get_testing_versions" || method == "prepare_testing_version" {
+            let mut snapshot = self.updater_snapshot().await?;
+            let result = if method == "get_testing_versions" {
+                snapshot.backend.list_testing_versions().await
+            } else {
+                snapshot
+                    .backend
+                    .prepare_testing_version(&args[0], &args[1])
+                    .await
+            };
+            self.adopt_rate_limit(snapshot.rate_limit, snapshot.backend.rate_limited_until)
+                .await;
+            return result;
+        }
         if method == "check_for_plugin_update" || method == "revalidate_plugin_update" {
             let mut snapshot = self.updater_snapshot().await?;
             let previous_cache = snapshot.backend.cache_payload();
@@ -452,6 +466,10 @@ impl AppState {
                     backend.set_automatic_checks(&args[0])?;
                     backend.settings_payload()
                 }
+                "set_testing_tab_enabled" => {
+                    backend.set_testing_tab_enabled(&args[0])?;
+                    backend.settings_payload()
+                }
                 "record_update_install_requested" => backend.record_install_requested(&args[0])?,
                 "confirm_update_install_handoff" => backend.confirm_install_handoff(&args[0])?,
                 "clear_pending_update_install" => backend.clear_pending_install(args.first())?,
@@ -462,6 +480,7 @@ impl AppState {
                 method,
                 "set_update_channel"
                     | "set_automatic_update_checks"
+                    | "set_testing_tab_enabled"
                     | "record_update_install_requested"
             ) || cache != previous_cache
             {

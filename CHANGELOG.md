@@ -4,6 +4,65 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-11-25
+
+Add Steam HLTB overrides, PR Testing tab, and Settings UI polish
+
+### Added
+
+- **Choose a HowLongToBeat game for Steam games.** When **Show HowLongToBeat
+  times** is enabled, Steam games now show **Edit Metadata...** in their menu
+  and open directly to the **HowLongToBeat** tab, so you can search for or pin
+  the right HowLongToBeat entry when automatic matching misses (for example,
+  *Gothic 1 - classic*). Per-game HLTB choices are stored separately from
+  non-Steam metadata and apply only to Library game pages; Steam Store pages
+  continue to use automatic matching.
+- **Testing tab for pull request builds.** Under **Updates → Developer**,
+  turn on **Enable Testing tab** to show a **Testing** tab in Settings. It lists
+  open pull requests from this repository (plus fork pull requests opted in with
+  the `test-build` label), lets you sort and open them on GitHub, and verifies
+  the build published to the `pr-builds` GitHub prerelease against its manifest
+  and SHA-256 checksum before handing the GitHub Releases ZIP to Decky Loader
+  to install.
+
+### Changed
+
+- **SteamOS-style Updates UI.** **Settings → Updates** now matches SteamOS's
+  **Software Updates** layout: a single **Software Updates** row shows the
+  installed version and last-checked status with one morphing button (**Check For
+  Updates** → **Checking...** → **Up-to-date** / **Apply** → **Applying...**),
+  paired with an **Update Channel** dropdown (**Stable** / **Development**).
+- **Focusable Metadata stats and Settings layout polish across ProtonDB, HLTB,
+  and Game trailers.** In **Settings → Metadata**, **Detected non-Steam games**,
+  **Metadata saved**, and **Missing metadata** are now selectable and focusable
+  like **Versions**. In **Settings → ProtonDB badges**, **Game view** and
+  **Store** sit directly below **Enable ProtonDB badges**, followed by a **Game
+  covers** subsection for **Home game covers**, **Library game covers**,
+  **Covers only on focus or hover**, and **Cover badge position** (the last two
+  are enabled only when **Home game covers** or **Library game covers** is on).
+  In **Settings → HLTB times**, controls below **Store** are grouped into
+  **Stats**, **Style**, **Customize**, and **Cache** subsections. In
+  **Settings → Game trailers**, **Video quality** and **Big Picture display**
+  sit below **Enable trailers** ahead of **Detail view** and **Home view**,
+  turning off **Detail view trailers** or **Home view trailers** disables its
+  connected controls, and **Big Picture display** shows status text only for
+  actionable warnings or errors.
+
+### Fixed
+
+- **Keep Refresh metadata progress inside the Quick Access Menu.** The
+  refresh progress bar now lays out below inside a `PanelSectionRow` with
+  clamped wrapping so long game titles stay within the right edge of the panel.
+- **Match Steam Store styling and fix first-pass loading for the Store info row.**
+  HowLongToBeat numbers now use Steam Store blue, the ProtonDB tier label matches
+  Steam Deck Compatibility's font and color, only the new **View details** button
+  inside the ProtonDB card is focusable (matching Steam's **Learn more** button),
+  and first-visit Store page navigation now observes nested DOM mounts and polls
+  faster until attached.
+- **Refresh Settings automatically when the plugin reloads.** Updating or
+  installing a PR build from **Settings** now refreshes the open Settings page in
+  place while keeping the active tab instead of leaving stale UI mounted.
+
 ## [0.6.7] - 2026-11-24
 
 Add a full-screen Settings page and support the November 2026 Steam Beta

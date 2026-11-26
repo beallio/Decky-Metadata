@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "فتح الإعدادات", "action": { "refresh": "تحديث", "clear": "مسح", "view": "عرض", "check": "تحقق" } },
+  "settings": {
+    "open": "فتح الإعدادات",
+    "action": {
+      "refresh": "تحديث",
+      "clear": "مسح",
+      "view": "عرض",
+      "check": "تحقق"
+    }
+  },
   "common": {
     "hours_zero": "{{value}} ساعة",
     "hours_one": "{{value}} ساعة",
@@ -56,7 +64,21 @@
     "shortcut_name_changed": "تغيّر اسم الاختصار قبل إعادة التسمية.",
     "shortcut_name_api_unavailable": "واجهة أسماء اختصارات Steam غير متاحة",
     "shortcut_name_api_failed": "فشلت واجهة أسماء اختصارات Steam",
-    "shortcut_name_timeout": "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب."
+    "shortcut_name_timeout": "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+    "invalid_steam_app_id": "هذه اللعبة ليست لعبة Steam صالحة.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -117,7 +139,11 @@
       "showTimesLabel": "إظهار أوقات HowLongToBeat",
       "showTimesDescription": "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
       "storeLabel": "المتجر",
-      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam.",
+      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
+      "statsHeading": "الإحصائيات",
+      "styleHeading": "النمط",
+      "customizeHeading": "التخصيص",
+      "cacheHeading": "ذاكرة التخزين المؤقت",
       "styleLabel": "نمط HLTB",
       "styleDescription": "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
       "styleDefault": "افتراضي",
@@ -210,7 +236,8 @@
       "positionTopLeft": "أعلى اليسار",
       "positionTopRight": "أعلى اليمين",
       "loadingPreferences": "جارٍ تحميل تفضيلات شارات ProtonDB...",
-      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+      "gameCoversHeading": "أغلفة الألعاب"
     },
     "miniAchievements": {
       "title": "الإنجازات المصغّرة",
@@ -298,7 +325,23 @@
       "checkNow": "تحقق الآن",
       "enableDevelopmentTitle": "هل تريد تفعيل إصدارات التطوير؟",
       "confirmRevertTitle": "هل تريد العودة إلى الإصدار المستقر؟",
-      "confirmRevertBody": "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات."
+      "confirmRevertBody": "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "تحديثات البرنامج",
+      "checkForUpdates": "التحقق من وجود تحديثات",
+      "upToDateButton": "محدّث",
+      "apply": "تطبيق",
+      "applying": "جارٍ التطبيق...",
+      "moveToStableShort": "الانتقال إلى المستقر",
+      "revertToStableShort": "الرجوع إلى المستقر",
+      "upToDateLastChecked": "محدّث: آخر تحقق {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "قناة التحديث",
+      "channelOptionStable": "مستقر",
+      "channelOptionDevelopment": "تطوير",
+      "channelStableDescription": "يتلقى الإصدارات المستقرة المختبرة."
     },
     "versions": {
       "title": "الإصدارات",
@@ -316,6 +359,39 @@
       "modalTitle": "سجلات الإضافة",
       "modalEmpty": "لا سجلات حديثة",
       "ok": "حسنًا"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "إعادة المحاولة",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -324,7 +400,8 @@
     "statMain": "القصة الرئيسية",
     "statMainPlus": "الرئيسية + الإضافات",
     "statComplete": "الإكمال الكامل",
-    "statAllStyles": "كل الأنماط"
+    "statAllStyles": "كل الأنماط",
+    "viewDetails": "عرض التفاصيل"
   },
   "trailers": {
     "audio": "صوت المقطع الدعائي",
@@ -423,7 +500,8 @@
       "cacheClearFailed": "فشل مسح الذاكرة المؤقتة",
       "delisted": "ألعاب Steam المحذوفة",
       "logs": "السجلات"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "تحرير البيانات الوصفية..."
@@ -586,7 +664,8 @@
     },
     "steamTextLanguage": "لغة نص Steam: {{language}}",
     "fetchSteamText": "تحميل نص Steam باللغة {{language}}",
-    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
+    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة.",
+    "hltbDisabledNotice": "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
   },
   "matchPicker": {
     "help": "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",

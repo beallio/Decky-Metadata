@@ -29,6 +29,7 @@ vi.mock("../backend", () => ({
   recordUpdateInstallRequested: vi.fn(),
   revalidatePluginUpdate: vi.fn(),
   setAutomaticUpdateChecks: vi.fn(),
+  setTestingTabEnabled: vi.fn(),
   setUpdateChannel: vi.fn(),
 }));
 vi.mock("./deckyInstaller", () => ({
@@ -86,6 +87,7 @@ const createDeps = (
   getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
     update_channel: "stable",
     automatic_update_checks: true,
+    testing_tab_enabled: false,
   })),
   getUpdateCheckContext: vi.fn(async (): Promise<UpdateRpcResult<UpdateCheckContext>> => ({
     status: "failed",
@@ -98,10 +100,17 @@ const createDeps = (
   setUpdateChannel: vi.fn(async (channel: UpdateChannel): Promise<UpdateRpcResult<UpdateSettings>> => ({
     update_channel: channel,
     automatic_update_checks: true,
+    testing_tab_enabled: false,
   })),
   setAutomaticUpdateChecks: vi.fn(async (enabled: boolean): Promise<UpdateRpcResult<UpdateSettings>> => ({
     update_channel: "stable",
     automatic_update_checks: enabled,
+    testing_tab_enabled: false,
+  })),
+  setTestingTabEnabled: vi.fn(async (enabled: boolean): Promise<UpdateRpcResult<UpdateSettings>> => ({
+    update_channel: "stable",
+    automatic_update_checks: true,
+    testing_tab_enabled: enabled,
   })),
   clearPendingUpdateInstall: vi.fn(async (): Promise<UpdateRpcResult<UpdateCheckContext>> => ({
     status: "failed",
@@ -155,6 +164,7 @@ describe("plugin update controller", () => {
       getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: "stable",
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
       revalidatePluginUpdate: vi.fn(() => revalidation.promise),
     });
@@ -235,7 +245,7 @@ describe("plugin update controller", () => {
     expect(controller.getSnapshot().updateChannel).toBe("development");
     expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
 
-    save.resolve({ update_channel: "development", automatic_update_checks: true });
+    save.resolve({ update_channel: "development", automatic_update_checks: true, testing_tab_enabled: false });
     await change;
     await flushPromises();
     expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(2);
@@ -271,10 +281,12 @@ describe("plugin update controller", () => {
       getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: "stable",
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
       setUpdateChannel: vi.fn(async (channel: UpdateChannel): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: channel,
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
     });
     controller.subscribe(() => undefined);
@@ -339,11 +351,11 @@ describe("plugin update controller", () => {
 
     const channel = controller.setUpdateChannel(true);
     const automatic = controller.setAutomaticUpdateChecks(false);
-    channelSave.resolve({ update_channel: "development", automatic_update_checks: true });
+    channelSave.resolve({ update_channel: "development", automatic_update_checks: true, testing_tab_enabled: false });
     await channel;
     expect(controller.getSnapshot()).toMatchObject({ updateChannel: "development", automaticUpdateChecks: false });
 
-    automaticSave.resolve({ update_channel: "development", automatic_update_checks: false });
+    automaticSave.resolve({ update_channel: "development", automatic_update_checks: false, testing_tab_enabled: false });
     await automatic;
     expect(controller.getSnapshot()).toMatchObject({ updateChannel: "development", automaticUpdateChecks: false });
   });
@@ -362,7 +374,7 @@ describe("plugin update controller", () => {
     const automatic = controller.setAutomaticUpdateChecks(false);
     channelSave.reject(new Error("disk full"));
     await channel;
-    automaticSave.resolve({ update_channel: "stable", automatic_update_checks: false });
+    automaticSave.resolve({ update_channel: "stable", automatic_update_checks: false, testing_tab_enabled: false });
     await automatic;
     await flushPromises();
 
@@ -376,6 +388,7 @@ describe("plugin update controller", () => {
       getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: "stable",
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
       setAutomaticUpdateChecks: vi.fn(() => save.promise),
     });
@@ -387,7 +400,7 @@ describe("plugin update controller", () => {
     await flushPromises();
     expect(deps.checkForPluginUpdate).not.toHaveBeenCalled();
 
-    save.resolve({ update_channel: "stable", automatic_update_checks: true });
+    save.resolve({ update_channel: "stable", automatic_update_checks: true, testing_tab_enabled: false });
     await change;
     await flushPromises();
     expect(deps.checkForPluginUpdate).toHaveBeenCalledOnce();
@@ -431,6 +444,7 @@ describe("plugin update controller", () => {
       getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: "development",
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
       setUpdateChannel: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         status: "failed",
@@ -439,14 +453,20 @@ describe("plugin update controller", () => {
       setAutomaticUpdateChecks: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         status: "skipped",
       })),
+      setTestingTabEnabled: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
+        status: "failed",
+        message: "no",
+      })),
     });
     controller.subscribe(() => undefined);
     await flushPromises();
 
     await controller.setUpdateChannel(false);
     await controller.setAutomaticUpdateChecks(true);
+    await controller.setTestingTabEnabled(true);
     expect(controller.getSnapshot().updateChannel).toBe("development");
     expect(controller.getSnapshot().automaticUpdateChecks).toBe(false);
+    expect(controller.getSnapshot().testingTabEnabled).toBe(false);
   });
 
   it("records and confirms an install, then keeps the loaded version until Decky reloads the plugin", async () => {
@@ -528,6 +548,7 @@ describe("plugin update controller", () => {
       getUpdateSettings: vi.fn(async (): Promise<UpdateRpcResult<UpdateSettings>> => ({
         update_channel: "stable",
         automatic_update_checks: false,
+        testing_tab_enabled: false,
       })),
       getUpdateCheckContext: vi.fn(async (): Promise<UpdateRpcResult<UpdateCheckContext>> => ({
         ...context(),
@@ -568,7 +589,7 @@ describe("plugin update controller", () => {
     await flushPromises();
     expect(deps.checkForPluginUpdate).not.toHaveBeenCalled();
 
-    settings.resolve({ update_channel: "stable", automatic_update_checks: true });
+    settings.resolve({ update_channel: "stable", automatic_update_checks: true, testing_tab_enabled: false });
     await flushPromises();
     expect(deps.checkForPluginUpdate).toHaveBeenCalledTimes(1);
   });

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Отваряне на настройките", "action": { "refresh": "Обнови", "clear": "Изчисти", "view": "Преглед", "check": "Провери" } },
+  "settings": {
+    "open": "Отваряне на настройките",
+    "action": {
+      "refresh": "Обнови",
+      "clear": "Изчисти",
+      "view": "Преглед",
+      "check": "Провери"
+    }
+  },
   "common": {
     "hours_one": "{{value}} час",
     "hours_other": "{{value}} часа",
@@ -52,7 +60,21 @@
     "shortcut_name_changed": "Името на прекия път се промени преди преименуването.",
     "shortcut_name_api_unavailable": "API на Steam за имена на преки пътища не е достъпен",
     "shortcut_name_api_failed": "API на Steam за имена на преки пътища върна грешка",
-    "shortcut_name_timeout": "Steam не потвърди новото име на прекия път навреме."
+    "shortcut_name_timeout": "Steam не потвърди новото име на прекия път навреме.",
+    "invalid_steam_app_id": "Тази игра не е валидна Steam игра.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -113,7 +135,11 @@
       "showTimesLabel": "Показване на времената от HowLongToBeat",
       "showTimesDescription": "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
       "storeLabel": "Магазин",
-      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam.",
+      "storeDescription": "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam. Винаги използва автоматично съвпадение; изборът на HLTB за отделна игра важи само за страниците на игрите в библиотеката.",
+      "statsHeading": "Статистики",
+      "styleHeading": "Стил",
+      "customizeHeading": "Персонализиране",
+      "cacheHeading": "Кеш",
       "styleLabel": "Стил на HLTB",
       "styleDescription": "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
       "styleDefault": "По подразбиране",
@@ -206,7 +232,8 @@
       "positionTopLeft": "Горе вляво",
       "positionTopRight": "Горе вдясно",
       "loadingPreferences": "Зареждане на предпочитанията за значките на ProtonDB...",
-      "footnote": "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
+      "footnote": "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват.",
+      "gameCoversHeading": "Обложки на игри"
     },
     "miniAchievements": {
       "title": "Мини постижения",
@@ -294,7 +321,23 @@
       "checkNow": "Проверка сега",
       "enableDevelopmentTitle": "Да се активират ли развойни издания?",
       "confirmRevertTitle": "Да се върне ли към стабилна версия?",
-      "confirmRevertBody": "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията."
+      "confirmRevertBody": "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Софтуерни актуализации",
+      "checkForUpdates": "Проверка за актуализации",
+      "upToDateButton": "Актуално",
+      "apply": "Приложи",
+      "applying": "Прилагане...",
+      "moveToStableShort": "Към стабилна",
+      "revertToStableShort": "Връщане към стабилна",
+      "upToDateLastChecked": "Актуално: последна проверка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал за актуализации",
+      "channelOptionStable": "Стабилен",
+      "channelOptionDevelopment": "Разработчески",
+      "channelStableDescription": "Получава тествани стабилни издания."
     },
     "versions": {
       "title": "Версии",
@@ -312,6 +355,39 @@
       "modalTitle": "Дневници на приставката",
       "modalEmpty": "Няма скорошни записи",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Опитай отново",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -320,7 +396,8 @@
     "statMain": "Основна история",
     "statMainPlus": "Основна + екстри",
     "statComplete": "Пълно завършване",
-    "statAllStyles": "Всички стилове"
+    "statAllStyles": "Всички стилове",
+    "viewDetails": "Преглед на подробности"
   },
   "trailers": {
     "audio": "Звук на трейлъра",
@@ -419,7 +496,8 @@
       "cacheClearFailed": "Изчистването на кеша е неуспешно",
       "delisted": "Премахнати от Steam игри",
       "logs": "Дневници"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Редактиране на метаданните..."
@@ -582,7 +660,8 @@
     },
     "steamTextLanguage": "Език на текста в Steam: {{language}}",
     "fetchSteamText": "Зареждане на текст от Steam на {{language}}",
-    "steamTextUnavailable": "Steam не върна текст за тази игра."
+    "steamTextUnavailable": "Steam не върна текст за тази игра.",
+    "hltbDisabledNotice": "Времената от HowLongToBeat в момента са изключени в Настройки."
   },
   "matchPicker": {
     "help": "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",

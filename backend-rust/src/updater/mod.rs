@@ -3,6 +3,7 @@ pub mod discovery;
 pub mod models;
 pub mod pending;
 pub mod rate_limit;
+pub mod testing;
 
 use crate::{
     http::Http,
@@ -50,11 +51,19 @@ impl Updater {
             .get("automatic_update_checks")
             .and_then(Value::as_bool)
             .unwrap_or(true);
+        let testing_tab_enabled = settings
+            .get("testing_tab_enabled")
+            .and_then(Value::as_bool)
+            .unwrap_or(false);
         let mut normalized_settings = Map::new();
         normalized_settings.insert("update_channel".to_owned(), json!(channel));
         normalized_settings.insert(
             "automatic_update_checks".to_owned(),
             json!(automatic_checks),
+        );
+        normalized_settings.insert(
+            "testing_tab_enabled".to_owned(),
+            json!(testing_tab_enabled),
         );
 
         let mut cache = cache
@@ -147,6 +156,18 @@ impl Updater {
         Ok(())
     }
 
+    pub fn set_testing_tab_enabled(&mut self, enabled: &Value) -> Result<(), String> {
+        let enabled = py_truthy(enabled);
+        self.settings["testing_tab_enabled"] = json!(enabled);
+        crate::logging::event(
+            "update",
+            "Testing tab visibility changed",
+            json!({"enabled": enabled}),
+            Level::Info,
+        );
+        Ok(())
+    }
+
     pub fn context(&mut self) -> Value {
         let now = self.now();
         let rate_limited_until = match self.rate_limited_until.clone() {
@@ -165,6 +186,7 @@ impl Updater {
         json!({
             "update_channel": self.channel(),
             "automatic_update_checks": self.settings["automatic_update_checks"],
+            "testing_tab_enabled": self.settings["testing_tab_enabled"],
             "installed_version": self.installed_version,
             "last_checked_at": self.cache.get("last_checked_at").cloned().unwrap_or(Value::Null),
             "last_checked_channel": self.cache.get("last_checked_channel").cloned().unwrap_or(Value::Null),
@@ -628,6 +650,247 @@ impl Updater {
             .remove("pending_update_install");
         self.clear_stale_cache();
         Ok(true)
+    }
+
+    fn rate_limit_failure(
+        &mut self,
+        response: &models::JsonResponse,
+        context: &str,
+    ) -> Option<Value> {
+        if !matches!(response.status, 403 | 429) {
+            return None;
+        }
+        let now = self.now();
+        let until = retry_after_until(&response.headers, now);
+        let retry_after = isoformat_utc(until);
+        self.rate_limited_until = Some(until);
+        let message = response
+            .body
+            .get("message")
+            .map(py_string)
+            .filter(|message| !message.is_empty())
+            .unwrap_or_else(|| "rate_limited".to_owned());
+        crate::logging::event(
+            "update",
+            context,
+            json!({"status": response.status, "message": message}),
+            Level::Warn,
+        );
+        Some(json!({
+            "status": "failed",
+            "checked_at": isoformat_utc(now),
+            "message": message,
+            "retry_after": retry_after
+        }))
+    }
+
+    pub async fn list_testing_versions(&mut self) -> Result<Value, String> {
+        let now = self.now();
+        if let Some(until) = self.rate_limited_until.clone() {
+            if now < until {
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": isoformat_utc(now),
+                    "message": "rate_limit_cooldown",
+                    "retry_after": isoformat_utc(until)
+                }));
+            }
+            self.rate_limited_until = None;
+        }
+        let response = self.client.list_open_pulls().await;
+        if let Some(failure) =
+            self.rate_limit_failure(&response, "GitHub PR discovery was rate limited")
+        {
+            return Ok(failure);
+        }
+        let checked_at = isoformat_utc(self.now());
+        if response.status != 200 || !response.body.is_array() {
+            crate::logging::event(
+                "update",
+                "GitHub PR discovery failed",
+                json!({"status": response.status}),
+                Level::Error,
+            );
+            return Ok(json!({
+                "status": "failed",
+                "checked_at": checked_at,
+                "message": "testing_pulls_fetch_failed"
+            }));
+        }
+        let items: Vec<Value> = testing::filter_testing_pulls(response.body.as_array().unwrap())
+            .into_iter()
+            .map(|pr| pr.to_value())
+            .collect();
+        Ok(json!({
+            "status": "ok",
+            "checked_at": checked_at,
+            "items": items
+        }))
+    }
+
+    pub async fn prepare_testing_version(
+        &mut self,
+        pr_id: &Value,
+        head_sha: &Value,
+    ) -> Result<Value, String> {
+        let Some(pr_id) = pr_id.as_u64().filter(|id| *id > 0) else {
+            return Ok(json!({"status": "failed", "message": "testing_invalid_request"}));
+        };
+        let Some(head_sha) = head_sha
+            .as_str()
+            .filter(|sha| testing::is_valid_sha(sha))
+            .map(str::to_ascii_lowercase)
+        else {
+            return Ok(json!({"status": "failed", "message": "testing_invalid_request"}));
+        };
+
+        let now = self.now();
+        if let Some(until) = self.rate_limited_until.clone() {
+            if now < until {
+                return Ok(json!({
+                    "status": "failed",
+                    "checked_at": isoformat_utc(now),
+                    "message": "rate_limit_cooldown",
+                    "retry_after": isoformat_utc(until)
+                }));
+            }
+            self.rate_limited_until = None;
+        }
+
+        // Re-verify the PR on GitHub so only open same-repo or `test-build`-labeled PRs
+        // at their current head SHA can be prepared for installation.
+        let pull_response = self.client.get_pull(pr_id).await;
+        if let Some(failure) =
+            self.rate_limit_failure(&pull_response, "GitHub PR verification was rate limited")
+        {
+            return Ok(failure);
+        }
+        if pull_response.status != 200 || !pull_response.body.is_object() {
+            return Ok(json!({"status": "failed", "message": "testing_pulls_fetch_failed"}));
+        }
+        let Some(pull) = testing::parse_testing_pull(&pull_response.body) else {
+            return Ok(json!({"status": "failed", "message": "testing_pr_not_eligible"}));
+        };
+        if pull.head_sha != head_sha {
+            return Ok(json!({"status": "failed", "message": "testing_pr_outdated"}));
+        }
+
+        // Fetch verified assets directly from the rolling `pr-builds` GitHub prerelease.
+        let pr_release_response = self
+            .client
+            .get_release(testing::PR_BUILDS_RELEASE_TAG)
+            .await;
+        if let Some(failure) = self.rate_limit_failure(
+            &pr_release_response,
+            "GitHub PR release lookup was rate limited",
+        ) {
+            return Ok(failure);
+        }
+        if !matches!(pr_release_response.status, 200 | 404) {
+            crate::logging::event(
+                "update",
+                "GitHub PR release lookup failed",
+                json!({"pr_id": pr_id, "status": pr_release_response.status}),
+                Level::Error,
+            );
+            return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+        }
+        if pr_release_response.status == 200
+            && let Some(urls) = testing::find_pr_release_assets(&pr_release_response.body, pr_id)
+        {
+            let manifest_response = self.client.get_manifest(&urls.manifest_url).await;
+            if let Some(failure) = self.rate_limit_failure(
+                &manifest_response,
+                "GitHub PR manifest download was rate limited",
+            ) {
+                return Ok(failure);
+            }
+            if manifest_response.status != 200 {
+                crate::logging::event(
+                    "update",
+                    "Testing PR manifest download failed",
+                    json!({"pr_id": pr_id, "status": manifest_response.status}),
+                    Level::Error,
+                );
+                return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+            }
+            let sha_response = match self
+                .client
+                .download_bytes(&urls.sha_url, testing::MAX_SIDECAR_BYTES)
+                .await
+            {
+                Ok(response) if response.status == 200 => response,
+                Ok(response) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR checksum download returned non-200 status",
+                        json!({"pr_id": pr_id, "status": response.status}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+                }
+                Err(error) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR checksum download failed",
+                        json!({"pr_id": pr_id, "error": error}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": "testing_download_failed"}));
+                }
+            };
+            let sha_text = sha_response.text();
+            match testing::validate_pr_release_assets(
+                pr_id,
+                &head_sha,
+                &urls.zip_url,
+                &manifest_response.body,
+                &sha_text,
+            ) {
+                Ok(Some(prepared)) => {
+                    crate::logging::event(
+                        "update",
+                        "Prepared testing PR build from pr-builds release",
+                        json!({"pr_id": prepared.pr_id, "version": prepared.version}),
+                        Level::Info,
+                    );
+                    return Ok(prepared.to_value());
+                }
+                Ok(None) => {
+                    // pr-builds still holds an older commit for this PR; inspect CI runs below.
+                }
+                Err(code) => {
+                    crate::logging::event(
+                        "update",
+                        "Testing PR release asset validation failed",
+                        json!({"pr_id": pr_id, "code": code}),
+                        Level::Error,
+                    );
+                    return Ok(json!({"status": "failed", "message": code}));
+                }
+            }
+        }
+
+        // No published asset for this commit yet: inspect CI workflow runs on GitHub
+        // to tell the user whether CI is still running, failed, or has not published yet.
+        let runs_response = self.client.list_workflow_runs(&head_sha).await;
+        if let Some(failure) =
+            self.rate_limit_failure(&runs_response, "GitHub Actions lookup was rate limited")
+        {
+            return Ok(failure);
+        }
+        if runs_response.status != 200 {
+            return Ok(json!({"status": "failed", "message": "testing_build_not_found"}));
+        }
+        let Some(workflows) = runs_response
+            .body
+            .get("workflow_runs")
+            .and_then(Value::as_array)
+        else {
+            return Ok(json!({"status": "failed", "message": "testing_build_not_found"}));
+        };
+        let code = testing::classify_missing_pr_build(workflows);
+        Ok(json!({"status": "failed", "message": code}))
     }
 }
 
@@ -1124,15 +1387,236 @@ mod tests {
         );
         assert_eq!(
             updater.settings_payload(),
-            json!({"update_channel": "development", "automatic_update_checks": false})
+            json!({
+                "update_channel": "development",
+                "automatic_update_checks": false,
+                "testing_tab_enabled": false
+            })
         );
         assert_eq!(updater.cache_payload(), json!({"custom_cache_entry": 7}));
         updater.set_channel(&json!("nightly")).unwrap();
         updater.set_automatic_checks(&json!([])).unwrap();
+        updater.set_testing_tab_enabled(&json!(true)).unwrap();
         assert_eq!(updater.settings_payload()["update_channel"], "stable");
         assert_eq!(updater.settings_payload()["automatic_update_checks"], false);
+        assert_eq!(updater.settings_payload()["testing_tab_enabled"], true);
         updater.set_automatic_checks(&json!("enabled")).unwrap();
+        updater.set_testing_tab_enabled(&json!(false)).unwrap();
         assert_eq!(updater.settings_payload()["automatic_update_checks"], true);
+        assert_eq!(updater.settings_payload()["testing_tab_enabled"], false);
+    }
+
+    #[tokio::test]
+    async fn testing_versions_list_and_prepare_enforce_eligibility_and_verify_pr_builds_release() {
+        let sha = "abcdef0123456789abcdef0123456789abcdef01";
+        let digest = "b".repeat(64);
+        let pulls_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls?state=open&per_page=100";
+        let pull_42_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/42";
+        let pull_43_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/43";
+        let pr_builds_url =
+            "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/pr-builds";
+        let zip_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip";
+        let manifest_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.manifest.json";
+        let sha_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-42.zip.sha256";
+
+        let same_repo_pr = json!({
+            "number": 42,
+            "state": "open",
+            "title": "Add testing tab",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/42",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "beallio"},
+            "head": {"sha": sha, "repo": {"full_name": "beallio/Decky-Metadata"}},
+            "labels": []
+        });
+        let unlabeled_fork_pr = json!({
+            "number": 43,
+            "state": "open",
+            "title": "Unapproved fork",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/43",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "outsider"},
+            "head": {"sha": sha, "repo": {"full_name": "outsider/Decky-Metadata"}},
+            "labels": []
+        });
+        let labeled_fork_pr = json!({
+            "number": 44,
+            "state": "open",
+            "title": "Opt-in fork",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/44",
+            "created_at": "2026-11-20T00:00:00Z",
+            "updated_at": "2026-11-24T00:00:00Z",
+            "draft": false,
+            "user": {"login": "contributor"},
+            "head": {"sha": sha, "repo": {"full_name": "contributor/Decky-Metadata"}},
+            "labels": [{"name": "test-build"}]
+        });
+        let release = json!({
+            "draft": false,
+            "prerelease": true,
+            "tag_name": "pr-builds",
+            "assets": [
+                {"name": "Decky-Metadata-pr-42.zip", "browser_download_url": zip_url},
+                {"name": "Decky-Metadata-pr-42.manifest.json", "browser_download_url": manifest_url},
+                {"name": "Decky-Metadata-pr-42.zip.sha256", "browser_download_url": sha_url}
+            ]
+        });
+        let pr_manifest = json!({
+            "schemaVersion": 1,
+            "pluginName": "Decky Metadata",
+            "packageName": "decky-metadata",
+            "version": "0.6.8-dev.pr42.gabcdef0",
+            "sourceVersion": "0.6.8-dev.pr42.gabcdef0",
+            "tag": "v0.6.8-dev.pr42.gabcdef0",
+            "channel": "dev",
+            "assetName": "Decky-Metadata-pr-42.zip",
+            "sha256": digest,
+            "generatedAt": "2026-11-25T09:15:00Z",
+            "prNumber": 42,
+            "headSha": sha
+        });
+
+        let http = Http::fixtures(vec![
+            fixture(
+                pulls_url,
+                200,
+                json!([same_repo_pr.clone(), unlabeled_fork_pr.clone(), labeled_fork_pr]),
+                &[],
+            ),
+            fixture(pull_43_url, 200, unlabeled_fork_pr, &[]),
+            fixture(pull_42_url, 200, same_repo_pr, &[]),
+            fixture(pr_builds_url, 200, release, &[]),
+            fixture(manifest_url, 200, pr_manifest, &[]),
+            Fixture::text(sha_url, &format!("{digest}  Decky-Metadata-pr-42.zip\n")),
+        ]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.6.8", &json!({}));
+
+        let list = updater.list_testing_versions().await.unwrap();
+        assert_eq!(list["status"], "ok");
+        let ids: Vec<u64> = list["items"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|item| item["id"].as_u64().unwrap())
+            .collect();
+        assert_eq!(ids, vec![42, 44]);
+
+        let rejected = updater
+            .prepare_testing_version(&json!(43), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(rejected["status"], "failed");
+        assert_eq!(rejected["message"], "testing_pr_not_eligible");
+
+        let ready = updater
+            .prepare_testing_version(&json!(42), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(ready["status"], "ready");
+        assert_eq!(ready["artifact_url"], zip_url);
+        assert_eq!(ready["version"], "0.6.8-dev.pr42.gabcdef0");
+        assert_eq!(ready["sha256"], digest);
+        fixture_http.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn prepare_testing_version_classifies_missing_or_stale_pr_builds_from_ci_runs() {
+        let sha = "abcdef0123456789abcdef0123456789abcdef01";
+        let old_sha = "1111111111111111111111111111111111111111";
+        let digest = "b".repeat(64);
+        let pull_url = "https://api.github.com/repos/beallio/Decky-Metadata/pulls/84";
+        let pr_builds_url =
+            "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/pr-builds";
+        let runs_url = format!(
+            "https://api.github.com/repos/beallio/Decky-Metadata/actions/runs?head_sha={sha}&per_page=30"
+        );
+        let zip_url =
+            "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.zip";
+        let manifest_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.manifest.json";
+        let sha_url = "https://github.com/beallio/Decky-Metadata/releases/download/pr-builds/Decky-Metadata-pr-84.zip.sha256";
+
+        let pr = json!({
+            "number": 84,
+            "state": "open",
+            "title": "Fix QAM progress bar",
+            "html_url": "https://github.com/beallio/Decky-Metadata/pull/84",
+            "created_at": "2026-11-25T00:00:00Z",
+            "updated_at": "2026-11-25T01:00:00Z",
+            "draft": false,
+            "user": {"login": "beallio"},
+            "head": {"sha": sha, "repo": {"full_name": "beallio/Decky-Metadata"}},
+            "labels": []
+        });
+        let stale_release = json!({
+            "draft": false,
+            "prerelease": true,
+            "tag_name": "pr-builds",
+            "assets": [
+                {"name": "Decky-Metadata-pr-84.zip", "browser_download_url": zip_url},
+                {"name": "Decky-Metadata-pr-84.manifest.json", "browser_download_url": manifest_url},
+                {"name": "Decky-Metadata-pr-84.zip.sha256", "browser_download_url": sha_url}
+            ]
+        });
+        let stale_manifest = json!({
+            "schemaVersion": 1,
+            "pluginName": "Decky Metadata",
+            "packageName": "decky-metadata",
+            "version": "0.6.8-dev.pr84.g1111111",
+            "sourceVersion": "0.6.8-dev.pr84.g1111111",
+            "tag": "v0.6.8-dev.pr84.g1111111",
+            "channel": "dev",
+            "assetName": "Decky-Metadata-pr-84.zip",
+            "sha256": digest,
+            "generatedAt": "2026-11-25T08:00:00Z",
+            "prNumber": 84,
+            "headSha": old_sha
+        });
+
+        let http = Http::fixtures(vec![
+            // Case 1: pr-builds release does not exist yet and CI is running.
+            fixture(pull_url, 200, pr.clone(), &[]),
+            fixture(pr_builds_url, 404, json!({"message": "Not Found"}), &[]),
+            fixture(
+                &runs_url,
+                200,
+                json!({"workflow_runs": [{"id": 1, "name": "CI", "status": "in_progress"}]}),
+                &[],
+            ),
+            // Case 2: pr-builds has an older SHA and CI already succeeded.
+            fixture(pull_url, 200, pr, &[]),
+            fixture(pr_builds_url, 200, stale_release, &[]),
+            fixture(manifest_url, 200, stale_manifest, &[]),
+            Fixture::text(sha_url, &format!("{digest}  Decky-Metadata-pr-84.zip\n")),
+            fixture(
+                &runs_url,
+                200,
+                json!({"workflow_runs": [{"id": 2, "name": "CI", "status": "completed", "conclusion": "success"}]}),
+                &[],
+            ),
+        ]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.6.8", &json!({}));
+
+        let in_progress = updater
+            .prepare_testing_version(&json!(84), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(in_progress["status"], "failed");
+        assert_eq!(in_progress["message"], "testing_build_in_progress");
+
+        let unpublished = updater
+            .prepare_testing_version(&json!(84), &json!(sha))
+            .await
+            .unwrap();
+        assert_eq!(unpublished["status"], "failed");
+        assert_eq!(unpublished["message"], "testing_artifact_not_found");
+        fixture_http.assert_drained();
     }
 
     #[tokio::test]

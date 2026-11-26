@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "開啟設定", "action": { "refresh": "重新整理", "clear": "清除", "view": "查看", "check": "檢查" } },
+  "settings": {
+    "open": "開啟設定",
+    "action": {
+      "refresh": "重新整理",
+      "clear": "清除",
+      "view": "查看",
+      "check": "檢查"
+    }
+  },
   "common": {
     "hours_other": "{{value}} 小時",
     "hoursShort": "{{value}} 小時",
@@ -51,7 +59,21 @@
     "shortcut_name_changed": "重新命名前捷徑名稱已變更。",
     "shortcut_name_api_unavailable": "Steam 捷徑名稱 API 無法使用",
     "shortcut_name_api_failed": "Steam 捷徑名稱 API 呼叫失敗",
-    "shortcut_name_timeout": "Steam 未及時確認新的捷徑名稱。"
+    "shortcut_name_timeout": "Steam 未及時確認新的捷徑名稱。",
+    "invalid_steam_app_id": "此遊戲不是有效的 Steam 遊戲。",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -112,7 +134,11 @@
       "showTimesLabel": "顯示 HowLongToBeat 時數",
       "showTimesDescription": "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
       "storeLabel": "商店",
-      "storeDescription": "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。",
+      "storeDescription": "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
+      "statsHeading": "統計",
+      "styleHeading": "樣式",
+      "customizeHeading": "自訂",
+      "cacheHeading": "快取",
       "styleLabel": "HLTB 樣式",
       "styleDescription": "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
       "styleDefault": "預設",
@@ -205,7 +231,8 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "正在載入 ProtonDB 徽章偏好設定...",
-      "footnote": "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。"
+      "footnote": "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。",
+      "gameCoversHeading": "遊戲封面"
     },
     "miniAchievements": {
       "title": "迷你成就",
@@ -293,7 +320,23 @@
       "checkNow": "立即檢查",
       "enableDevelopmentTitle": "啟用開發版本？",
       "confirmRevertTitle": "回復至穩定版？",
-      "confirmRevertBody": "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。"
+      "confirmRevertBody": "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "軟體更新",
+      "checkForUpdates": "檢查更新",
+      "upToDateButton": "已是最新",
+      "apply": "套用",
+      "applying": "正在套用...",
+      "moveToStableShort": "切換至穩定版",
+      "revertToStableShort": "回復至穩定版",
+      "upToDateLastChecked": "已是最新：上次檢查 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "更新通道",
+      "channelOptionStable": "穩定版",
+      "channelOptionDevelopment": "開發版",
+      "channelStableDescription": "接收經過測試的穩定版本。"
     },
     "versions": {
       "title": "版本",
@@ -311,6 +354,39 @@
       "modalTitle": "外掛日誌",
       "modalEmpty": "沒有最近的日誌",
       "ok": "確定"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "重試",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -319,7 +395,8 @@
     "statMain": "主線故事",
     "statMainPlus": "主線 + 額外內容",
     "statComplete": "完美通關",
-    "statAllStyles": "所有遊玩風格"
+    "statAllStyles": "所有遊玩風格",
+    "viewDetails": "檢視詳細資料"
   },
   "trailers": {
     "audio": "預告片音訊",
@@ -418,7 +495,8 @@
       "cacheClearFailed": "清除快取失敗",
       "delisted": "已下架的 Steam 遊戲",
       "logs": "日誌"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "編輯中繼資料..."
@@ -581,7 +659,8 @@
     },
     "steamTextLanguage": "Steam 文字語言：{{language}}",
     "fetchSteamText": "載入 Steam 文字（{{language}}）",
-    "steamTextUnavailable": "Steam 未傳回此遊戲的文字。"
+    "steamTextUnavailable": "Steam 未傳回此遊戲的文字。",
+    "hltbDisabledNotice": "HowLongToBeat 時數目前已在設定中關閉。"
   },
   "matchPicker": {
     "help": "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",

@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Відкрити налаштування", "action": { "refresh": "Оновити", "clear": "Очистити", "view": "Переглянути", "check": "Перевірити" } },
+  "settings": {
+    "open": "Відкрити налаштування",
+    "action": {
+      "refresh": "Оновити",
+      "clear": "Очистити",
+      "view": "Переглянути",
+      "check": "Перевірити"
+    }
+  },
   "common": {
     "hours_one": "{{value}} година",
     "hours_few": "{{value}} години",
@@ -54,7 +62,21 @@
     "shortcut_name_changed": "Назва ярлика змінилася до перейменування.",
     "shortcut_name_api_unavailable": "API назв ярликів Steam недоступний",
     "shortcut_name_api_failed": "Збій API назв ярликів Steam",
-    "shortcut_name_timeout": "Steam не підтвердив нову назву ярлика вчасно."
+    "shortcut_name_timeout": "Steam не підтвердив нову назву ярлика вчасно.",
+    "invalid_steam_app_id": "Ця гра не є дійсною грою Steam.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -115,7 +137,11 @@
       "showTimesLabel": "Показувати час HowLongToBeat",
       "showTimesDescription": "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
       "storeLabel": "Крамниця",
-      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam.",
+      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
+      "statsHeading": "Статистика",
+      "styleHeading": "Стиль",
+      "customizeHeading": "Налаштування",
+      "cacheHeading": "Кеш",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
       "styleDefault": "За замовчуванням",
@@ -208,7 +234,8 @@
       "positionTopLeft": "Зверху ліворуч",
       "positionTopRight": "Зверху праворуч",
       "loadingPreferences": "Завантаження налаштувань значків ProtonDB...",
-      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+      "gameCoversHeading": "Обкладинки ігор"
     },
     "miniAchievements": {
       "title": "Мінідосягнення",
@@ -296,7 +323,23 @@
       "checkNow": "Перевірити зараз",
       "enableDevelopmentTitle": "Увімкнути збірки для розробки?",
       "confirmRevertTitle": "Повернутися до стабільної версії?",
-      "confirmRevertBody": "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією."
+      "confirmRevertBody": "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Оновлення ПЗ",
+      "checkForUpdates": "Перевірити оновлення",
+      "upToDateButton": "Актуально",
+      "apply": "Застосувати",
+      "applying": "Застосування...",
+      "moveToStableShort": "Перейти на стабільну",
+      "revertToStableShort": "Повернутися до стабільної",
+      "upToDateLastChecked": "Актуально: остання перевірка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал оновлень",
+      "channelOptionStable": "Стабільний",
+      "channelOptionDevelopment": "Розробка",
+      "channelStableDescription": "Отримує перевірені стабільні релізи."
     },
     "versions": {
       "title": "Версії",
@@ -314,6 +357,39 @@
       "modalTitle": "Журнали плагіна",
       "modalEmpty": "Немає недавніх записів",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Повторити",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -322,7 +398,8 @@
     "statMain": "Основний сюжет",
     "statMainPlus": "Основний сюжет + додатково",
     "statComplete": "Повне проходження",
-    "statAllStyles": "Усі стилі"
+    "statAllStyles": "Усі стилі",
+    "viewDetails": "Переглянути деталі"
   },
   "trailers": {
     "audio": "Звук трейлера",
@@ -421,7 +498,8 @@
       "cacheClearFailed": "Не вдалося очистити кеш",
       "delisted": "Ігри, вилучені зі Steam",
       "logs": "Журнали"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Редагувати метадані..."
@@ -584,7 +662,8 @@
     },
     "steamTextLanguage": "Мова тексту Steam: {{language}}",
     "fetchSteamText": "Завантажити текст Steam мовою {{language}}",
-    "steamTextUnavailable": "Steam не повернув текст для цієї гри."
+    "steamTextUnavailable": "Steam не повернув текст для цієї гри.",
+    "hltbDisabledNotice": "Час HowLongToBeat зараз вимкнено в налаштуваннях."
   },
   "matchPicker": {
     "help": "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",

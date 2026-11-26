@@ -1,6 +1,6 @@
 import { Focusable, Navigation } from "@decky/ui";
 import { useEffect, useState, type ComponentProps } from "react";
-import { FaBars, FaClock, FaFileAlt, FaInfoCircle, FaPlayCircle, FaSyncAlt, FaTrophy } from "react-icons/fa";
+import { FaBars, FaClock, FaFileAlt, FaFlask, FaInfoCircle, FaPlayCircle, FaSyncAlt, FaTrophy } from "react-icons/fa";
 import { FaTags } from "react-icons/fa6";
 import { SiSteamdeck } from "react-icons/si";
 import { CompatibilityBody } from "./components/qam/CompatibilitySection";
@@ -12,6 +12,7 @@ import { MetadataMaintenanceBody, MetadataScanBody } from "./components/qam/Meta
 import { MiniAchievementsBody } from "./components/qam/MiniAchievementsSection";
 import { PluginUpdateBody } from "./components/qam/PluginUpdateSection";
 import { ProtonDbBadgesBody } from "./components/qam/ProtonDbBadgesSection";
+import { TestingBody } from "./components/qam/TestingSection";
 import { VersionsBody } from "./components/qam/VersionsSection";
 import { hltbController } from "./hltb/gameView";
 import { currentSteamLanguage, refreshLanguage, useT } from "./i18n";
@@ -26,6 +27,7 @@ import { useVersions } from "./settings/useVersions";
 import { useScanGames } from "./settings/useScanGames";
 import { scanView } from "./settings/scanView";
 import { SettingsLayout, type SettingsLayoutPage } from "./settingsLayout";
+import { consumeReloadSettingsTab, setActiveSettingsTab } from "./settingsRoute";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
 import { trailerController } from "./trailers/controller";
 import { usePluginUpdateController } from "./updater/pluginUpdateController";
@@ -45,6 +47,7 @@ const icons = {
   contextMenu: <FaBars />,
   logs: <FaFileAlt />,
   updates: <FaSyncAlt />,
+  testing: <FaFlask />,
   versions: <FaInfoCircle />,
 };
 
@@ -134,7 +137,7 @@ function VersionsTab(props: Omit<ComponentProps<typeof VersionsBody>, "pluginVer
 
 export function SettingsPage() {
   const t = useT();
-  const [page, setPage] = useState("metadata");
+  const [page, setPage] = useState(() => consumeReloadSettingsTab() ?? "metadata");
 
   // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
   // so state kept in a page body would reset on a tab switch.
@@ -144,10 +147,16 @@ export function SettingsPage() {
   const logs = useLogsSettings();
   const versions = useVersions();
   const contextMenu = useContextMenuSettings();
+  const { testingTabEnabled } = usePluginUpdateController();
 
   useEffect(() => {
     void refreshLanguage();
   }, []);
+
+  useEffect(() => {
+    setActiveSettingsTab(page);
+    return () => setActiveSettingsTab(null);
+  }, [page]);
 
   // Each body renders its own Steam settings sections.
   const pages: SettingsLayoutPage[] = [
@@ -183,13 +192,17 @@ export function SettingsPage() {
     { id: "contextMenu", label: t("qam.contextMenu.title"), icon: icons.contextMenu, content: <ContextMenuBody {...contextMenu} /> },
     { id: "logs", label: t("qam.logs.title"), icon: icons.logs, separatorBefore: true, content: <LogsBody {...logs} /> },
     { id: "updates", label: t("qam.update.title"), icon: icons.updates, content: <PluginUpdateBody /> },
+    ...(testingTabEnabled
+      ? [{ id: "testing", label: t("qam.testing.title"), icon: icons.testing, content: <TestingBody /> }]
+      : []),
     { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: <VersionsTab {...versions} /> },
   ];
+  const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
 
   return (
     <Focusable className={rootClassName} onCancelButton={() => Navigation.NavigateBack()}>
       <style>{css}</style>
-      <SettingsLayout pages={pages} page={page} onPageRequested={setPage} />
+      <SettingsLayout pages={pages} page={activePage} onPageRequested={setPage} />
     </Focusable>
   );
 }

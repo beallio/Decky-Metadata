@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Abrir configurações", "action": { "refresh": "Atualizar", "clear": "Limpar", "view": "Ver", "check": "Verificar" } },
+  "settings": {
+    "open": "Abrir configurações",
+    "action": {
+      "refresh": "Atualizar",
+      "clear": "Limpar",
+      "view": "Ver",
+      "check": "Verificar"
+    }
+  },
   "common": {
     "hours_one": "{{value}} hora",
     "hours_many": "{{value}} de horas",
@@ -53,7 +61,21 @@
     "shortcut_name_changed": "O nome do atalho mudou antes da renomeação.",
     "shortcut_name_api_unavailable": "A API de nome de atalho da Steam está indisponível",
     "shortcut_name_api_failed": "A API de nome de atalho da Steam falhou",
-    "shortcut_name_timeout": "A Steam não confirmou o novo nome do atalho a tempo."
+    "shortcut_name_timeout": "A Steam não confirmou o novo nome do atalho a tempo.",
+    "invalid_steam_app_id": "Este jogo não é um jogo Steam válido.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -114,7 +136,11 @@
       "showTimesLabel": "Mostrar tempos do HowLongToBeat",
       "showTimesDescription": "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
       "storeLabel": "Loja",
-      "storeDescription": "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam.",
+      "storeDescription": "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam. Sempre usa correspondência automática; escolhas de HLTB por jogo se aplicam apenas às páginas de jogos da Biblioteca.",
+      "statsHeading": "Estatísticas",
+      "styleHeading": "Estilo",
+      "customizeHeading": "Personalizar",
+      "cacheHeading": "Cache",
       "styleLabel": "Estilo do HLTB",
       "styleDescription": "Os estilos \"Clean\" foram feitos para funcionar com o tema \"Clean Gameview\" do CSS Loader",
       "styleDefault": "Padrão",
@@ -207,7 +233,8 @@
       "positionTopLeft": "Superior esquerda",
       "positionTopRight": "Superior direita",
       "loadingPreferences": "Carregando preferências do selo ProtonDB...",
-      "footnote": "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+      "footnote": "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+      "gameCoversHeading": "Capas de jogos"
     },
     "miniAchievements": {
       "title": "Mini conquistas",
@@ -295,7 +322,23 @@
       "checkNow": "Verificar agora",
       "enableDevelopmentTitle": "Ativar versões de desenvolvimento?",
       "confirmRevertTitle": "Reverter para o canal estável?",
-      "confirmRevertBody": "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração."
+      "confirmRevertBody": "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Atualizações de software",
+      "checkForUpdates": "Verificar atualizações",
+      "upToDateButton": "Atualizado",
+      "apply": "Aplicar",
+      "applying": "Aplicando...",
+      "moveToStableShort": "Mudar para estável",
+      "revertToStableShort": "Reverter para estável",
+      "upToDateLastChecked": "Atualizado: última verificação {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de atualizações",
+      "channelOptionStable": "Estável",
+      "channelOptionDevelopment": "Desenvolvimento",
+      "channelStableDescription": "Recebe versões estáveis testadas."
     },
     "versions": {
       "title": "Versões",
@@ -313,6 +356,39 @@
       "modalTitle": "Logs do plugin",
       "modalEmpty": "Nenhum log recente",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Tentar novamente",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -321,7 +397,8 @@
     "statMain": "História principal",
     "statMainPlus": "Principal + extras",
     "statComplete": "Completista",
-    "statAllStyles": "Todos os estilos"
+    "statAllStyles": "Todos os estilos",
+    "viewDetails": "Ver detalhes"
   },
   "trailers": {
     "audio": "Áudio do trailer",
@@ -420,7 +497,8 @@
       "cacheClearFailed": "Falha ao limpar o cache",
       "delisted": "Jogos removidos da Loja Steam",
       "logs": "Logs"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Editar metadados..."
@@ -583,7 +661,8 @@
     },
     "steamTextLanguage": "Idioma do texto da Steam: {{language}}",
     "fetchSteamText": "Carregar texto da Steam em {{language}}",
-    "steamTextUnavailable": "A Steam não retornou texto para este jogo."
+    "steamTextUnavailable": "A Steam não retornou texto para este jogo.",
+    "hltbDisabledNotice": "Os tempos do HowLongToBeat estão desativados nas Configurações."
   },
   "matchPicker": {
     "help": "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",

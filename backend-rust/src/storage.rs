@@ -388,6 +388,7 @@ pub fn default_data() -> Value {
     json!({
         "release_date_format": RELEASE_DATE_FORMAT,
         "metadata": {},
+        "steam_overrides": {},
         "shortcut_names": {},
         "settings": default_settings(),
         "update_settings": {},
@@ -829,6 +830,47 @@ pub fn positive_shortcut_app_id(value: &Value) -> Option<u32> {
     (parsed > 0 && parsed <= u32::MAX as i128).then_some(parsed as u32)
 }
 
+/// Native Steam AppIDs stay below the 32-bit shortcut boundary (`0x8000_0000`).
+pub fn positive_steam_app_id(value: &Value) -> Option<u32> {
+    positive_shortcut_app_id(value).filter(|id| *id < 0x8000_0000)
+}
+
+/// Validates and normalizes a per-game override for a native Steam game.
+/// Returns `Ok(None)` when every override field is cleared so the entry can be removed.
+pub fn validate_steam_override(value: &Value) -> Result<Option<Value>, String> {
+    let source = value
+        .as_object()
+        .ok_or_else(|| "invalid Steam override".to_owned())?;
+    let mut normalized = Map::new();
+    if let Some(raw_hltb) = source.get("hltb_game_id") {
+        if !raw_hltb.is_null() {
+            let id = positive_steam_app_id(raw_hltb)
+                .ok_or_else(|| "invalid HowLongToBeat game ID".to_owned())?;
+            normalized.insert("hltb_game_id".to_owned(), json!(id));
+        }
+    }
+    if normalized.is_empty() {
+        Ok(None)
+    } else {
+        Ok(Some(Value::Object(normalized)))
+    }
+}
+
+fn normalize_steam_overrides(saved: Option<Value>) -> Value {
+    let mut normalized = Map::new();
+    if let Some(Value::Object(entries)) = saved {
+        for (key, value) in entries {
+            let Some(app_id) = positive_steam_app_id(&Value::String(key)) else {
+                continue;
+            };
+            if let Ok(Some(entry)) = validate_steam_override(&value) {
+                normalized.insert(app_id.to_string(), entry);
+            }
+        }
+    }
+    Value::Object(normalized)
+}
+
 pub fn stored_shortcut_name_state(value: &Value) -> Option<Value> {
     let state = value.as_object()?;
     let original_name = validate_shortcut_name(state.get("original_name")?)?;
@@ -965,6 +1007,7 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
         .remove("release_date_format")
         .unwrap_or_else(|| Value::String(RELEASE_DATE_FORMAT.to_owned()));
     let metadata = truthy_object(source.remove("metadata"), "metadata")?;
+    let steam_overrides = normalize_steam_overrides(source.remove("steam_overrides"));
     let shortcut_names = match source.remove("shortcut_names") {
         Some(Value::Object(shortcut_names)) => Value::Object(shortcut_names),
         _ => Value::Object(Map::new()),
@@ -976,6 +1019,7 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     let mut merged = Map::new();
     merged.insert("release_date_format".to_owned(), release_date_format);
     merged.insert("metadata".to_owned(), metadata);
+    merged.insert("steam_overrides".to_owned(), steam_overrides);
     merged.insert("shortcut_names".to_owned(), shortcut_names);
     merged.insert("settings".to_owned(), settings);
     merged.insert("update_settings".to_owned(), update_settings);

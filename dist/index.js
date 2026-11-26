@@ -91,12 +91,21 @@ const colors = {
     success: "#5ba32b",
     warning: "#ffc53d",
     error: "#ec5d5e",
+    text: "#dcdedf",
     textSecondary: "#b8bcbf",
     surfaceKnockout: "#0e141b",
 };
+// Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
+const space = {
+    sm: 8};
 // Type scale - px, matching the reference (12 / 13 / 14 / 16 / 20).
 const fontSize = {
-    sm: 13};
+    xs: 12,
+    sm: 13,
+    lg: 16};
+const fontWeight = {
+    medium: 500,
+    bold: 700};
 // Steam's UI face; Gaming Mode already uses it, set explicitly for parity/Desktop.
 const fontFamily = '"Motiva Sans", Arial, sans-serif';
 const statusColor = (kind) => ({
@@ -131,13 +140,6 @@ const inlineStatusBaseStyle = {
 };
 const inlineStatusStyle = (kind) => ({
     ...inlineStatusBaseStyle,
-    color: statusColor(kind),
-});
-/** A status shown as a Field value: color only, so Steam's own value font applies. */
-const statusValueStyle = (kind) => ({
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
     color: statusColor(kind),
 });
 const busySpinnerStyle = {
@@ -2927,7 +2929,21 @@ var backend$p = {
 	shortcut_name_changed: "تغيّر اسم الاختصار قبل إعادة التسمية.",
 	shortcut_name_api_unavailable: "واجهة أسماء اختصارات Steam غير متاحة",
 	shortcut_name_api_failed: "فشلت واجهة أسماء اختصارات Steam",
-	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب."
+	shortcut_name_timeout: "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+	invalid_steam_app_id: "هذه اللعبة ليست لعبة Steam صالحة.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$o = {
 	check: {
@@ -2988,7 +3004,11 @@ var qam$o = {
 		showTimesLabel: "إظهار أوقات HowLongToBeat",
 		showTimesDescription: "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
 		storeLabel: "المتجر",
-		storeDescription: "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam.",
+		storeDescription: "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
+		statsHeading: "الإحصائيات",
+		styleHeading: "النمط",
+		customizeHeading: "التخصيص",
+		cacheHeading: "ذاكرة التخزين المؤقت",
 		styleLabel: "نمط HLTB",
 		styleDescription: "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
 		styleDefault: "افتراضي",
@@ -3081,7 +3101,8 @@ var qam$o = {
 		positionTopLeft: "أعلى اليسار",
 		positionTopRight: "أعلى اليمين",
 		loadingPreferences: "جارٍ تحميل تفضيلات شارات ProtonDB...",
-		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+		footnote: "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+		gameCoversHeading: "أغلفة الألعاب"
 	},
 	miniAchievements: {
 		title: "الإنجازات المصغّرة",
@@ -3169,7 +3190,23 @@ var qam$o = {
 		checkNow: "تحقق الآن",
 		enableDevelopmentTitle: "هل تريد تفعيل إصدارات التطوير؟",
 		confirmRevertTitle: "هل تريد العودة إلى الإصدار المستقر؟",
-		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات."
+		confirmRevertBody: "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "تحديثات البرنامج",
+		checkForUpdates: "التحقق من وجود تحديثات",
+		upToDateButton: "محدّث",
+		apply: "تطبيق",
+		applying: "جارٍ التطبيق...",
+		moveToStableShort: "الانتقال إلى المستقر",
+		revertToStableShort: "الرجوع إلى المستقر",
+		upToDateLastChecked: "محدّث: آخر تحقق {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "قناة التحديث",
+		channelOptionStable: "مستقر",
+		channelOptionDevelopment: "تطوير",
+		channelStableDescription: "يتلقى الإصدارات المستقرة المختبرة."
 	},
 	versions: {
 		title: "الإصدارات",
@@ -3187,6 +3224,39 @@ var qam$o = {
 		modalTitle: "سجلات الإضافة",
 		modalEmpty: "لا سجلات حديثة",
 		ok: "حسنًا"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "إعادة المحاولة",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$o = {
@@ -3195,7 +3265,8 @@ var storeRow$o = {
 	statMain: "القصة الرئيسية",
 	statMainPlus: "الرئيسية + الإضافات",
 	statComplete: "الإكمال الكامل",
-	statAllStyles: "كل الأنماط"
+	statAllStyles: "كل الأنماط",
+	viewDetails: "عرض التفاصيل"
 };
 var trailers$o = {
 	audio: "صوت المقطع الدعائي",
@@ -3294,7 +3365,8 @@ var panel$o = {
 		cacheClearFailed: "فشل مسح الذاكرة المؤقتة",
 		delisted: "ألعاب Steam المحذوفة",
 		logs: "السجلات"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$o = {
 	editMetadata: "تحرير البيانات الوصفية..."
@@ -3457,7 +3529,8 @@ var editor$o = {
 	},
 	steamTextLanguage: "لغة نص Steam: {{language}}",
 	fetchSteamText: "تحميل نص Steam باللغة {{language}}",
-	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة."
+	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة.",
+	hltbDisabledNotice: "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
 };
 var matchPicker$o = {
 	help: "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
@@ -3571,7 +3644,21 @@ var backend$o = {
 	shortcut_name_changed: "Името на прекия път се промени преди преименуването.",
 	shortcut_name_api_unavailable: "API на Steam за имена на преки пътища не е достъпен",
 	shortcut_name_api_failed: "API на Steam за имена на преки пътища върна грешка",
-	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме."
+	shortcut_name_timeout: "Steam не потвърди новото име на прекия път навреме.",
+	invalid_steam_app_id: "Тази игра не е валидна Steam игра.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$n = {
 	check: {
@@ -3632,7 +3719,11 @@ var qam$n = {
 		showTimesLabel: "Показване на времената от HowLongToBeat",
 		showTimesDescription: "Показва времената от HowLongToBeat на страниците на игрите за Steam и не-Steam игри.",
 		storeLabel: "Магазин",
-		storeDescription: "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam.",
+		storeDescription: "Показва времената от HowLongToBeat в информационен ред на страниците на игрите в Магазина на Steam. Винаги използва автоматично съвпадение; изборът на HLTB за отделна игра важи само за страниците на игрите в библиотеката.",
+		statsHeading: "Статистики",
+		styleHeading: "Стил",
+		customizeHeading: "Персонализиране",
+		cacheHeading: "Кеш",
 		styleLabel: "Стил на HLTB",
 		styleDescription: "Стиловете „Clean“ са предназначени за темата „Clean Gameview“ на CSS Loader",
 		styleDefault: "По подразбиране",
@@ -3725,7 +3816,8 @@ var qam$n = {
 		positionTopLeft: "Горе вляво",
 		positionTopRight: "Горе вдясно",
 		loadingPreferences: "Зареждане на предпочитанията за значките на ProtonDB...",
-		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват."
+		footnote: "Оценките идват директно от ProtonDB. Те описват общностния опит, а не оценката за съвместимост на Valve; игрите без съвпадение и игрите без ниво в ProtonDB се скриват.",
+		gameCoversHeading: "Обложки на игри"
 	},
 	miniAchievements: {
 		title: "Мини постижения",
@@ -3813,7 +3905,23 @@ var qam$n = {
 		checkNow: "Проверка сега",
 		enableDevelopmentTitle: "Да се активират ли развойни издания?",
 		confirmRevertTitle: "Да се върне ли към стабилна версия?",
-		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията."
+		confirmRevertBody: "Сигурни ли сте, че искате да се върнете към стабилна v{{version}}? Това е понижаване и може да доведе до загуба на данни или проблеми с конфигурацията.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Софтуерни актуализации",
+		checkForUpdates: "Проверка за актуализации",
+		upToDateButton: "Актуално",
+		apply: "Приложи",
+		applying: "Прилагане...",
+		moveToStableShort: "Към стабилна",
+		revertToStableShort: "Връщане към стабилна",
+		upToDateLastChecked: "Актуално: последна проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал за актуализации",
+		channelOptionStable: "Стабилен",
+		channelOptionDevelopment: "Разработчески",
+		channelStableDescription: "Получава тествани стабилни издания."
 	},
 	versions: {
 		title: "Версии",
@@ -3831,6 +3939,39 @@ var qam$n = {
 		modalTitle: "Дневници на приставката",
 		modalEmpty: "Няма скорошни записи",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Опитай отново",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$n = {
@@ -3839,7 +3980,8 @@ var storeRow$n = {
 	statMain: "Основна история",
 	statMainPlus: "Основна + екстри",
 	statComplete: "Пълно завършване",
-	statAllStyles: "Всички стилове"
+	statAllStyles: "Всички стилове",
+	viewDetails: "Преглед на подробности"
 };
 var trailers$n = {
 	audio: "Звук на трейлъра",
@@ -3938,7 +4080,8 @@ var panel$n = {
 		cacheClearFailed: "Изчистването на кеша е неуспешно",
 		delisted: "Премахнати от Steam игри",
 		logs: "Дневници"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$n = {
 	editMetadata: "Редактиране на метаданните..."
@@ -4101,7 +4244,8 @@ var editor$n = {
 	},
 	steamTextLanguage: "Език на текста в Steam: {{language}}",
 	fetchSteamText: "Зареждане на текст от Steam на {{language}}",
-	steamTextUnavailable: "Steam не върна текст за тази игра."
+	steamTextUnavailable: "Steam не върна текст за тази игра.",
+	hltbDisabledNotice: "Времената от HowLongToBeat в момента са изключени в Настройки."
 };
 var matchPicker$n = {
 	help: "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",
@@ -4217,7 +4361,21 @@ var backend$n = {
 	shortcut_name_changed: "Název zástupce se před přejmenováním změnil.",
 	shortcut_name_api_unavailable: "API názvů zástupců Steam není dostupné",
 	shortcut_name_api_failed: "API názvů zástupců Steam selhalo",
-	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce."
+	shortcut_name_timeout: "Steam včas nepotvrdil nový název zástupce.",
+	invalid_steam_app_id: "Tato hra není platná hra ze služby Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$m = {
 	check: {
@@ -4278,7 +4436,11 @@ var qam$m = {
 		showTimesLabel: "Zobrazovat časy HowLongToBeat",
 		showTimesDescription: "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
 		storeLabel: "Obchod",
-		storeDescription: "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam.",
+		storeDescription: "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam. Vždy používá automatické párování; volby HLTB pro jednotlivé hry platí jen na stránkách her v knihovně.",
+		statsHeading: "Statistiky",
+		styleHeading: "Styl",
+		customizeHeading: "Přizpůsobení",
+		cacheHeading: "Mezipaměť",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Styly „Clean“ jsou určeny pro téma CSS Loaderu „Clean Gameview“",
 		styleDefault: "Výchozí",
@@ -4371,7 +4533,8 @@ var qam$m = {
 		positionTopLeft: "Vlevo nahoře",
 		positionTopRight: "Vpravo nahoře",
 		loadingPreferences: "Načítání předvoleb odznaků ProtonDB...",
-		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
+		footnote: "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají.",
+		gameCoversHeading: "Obaly her"
 	},
 	miniAchievements: {
 		title: "Mini achievementy",
@@ -4459,7 +4622,23 @@ var qam$m = {
 		checkNow: "Zkontrolovat nyní",
 		enableDevelopmentTitle: "Povolit vývojová vydání?",
 		confirmRevertTitle: "Vrátit se na stabilní verzi?",
-		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací."
+		confirmRevertBody: "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizace softwaru",
+		checkForUpdates: "Zkontrolovat aktualizace",
+		upToDateButton: "Aktuální",
+		apply: "Použít",
+		applying: "Používání...",
+		moveToStableShort: "Přejít na stabilní",
+		revertToStableShort: "Vrátit na stabilní",
+		upToDateLastChecked: "Aktuální: naposledy zkontrolováno {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanál aktualizací",
+		channelOptionStable: "Stabilní",
+		channelOptionDevelopment: "Vývojový",
+		channelStableDescription: "Dostává otestovaná stabilní vydání."
 	},
 	versions: {
 		title: "Verze",
@@ -4477,6 +4656,39 @@ var qam$m = {
 		modalTitle: "Protokoly pluginu",
 		modalEmpty: "Žádné nedávné záznamy",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Zkusit znovu",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$m = {
@@ -4485,7 +4697,8 @@ var storeRow$m = {
 	statMain: "Hlavní příběh",
 	statMainPlus: "Hlavní příběh + vedlejší",
 	statComplete: "Kompletace",
-	statAllStyles: "Všechny styly"
+	statAllStyles: "Všechny styly",
+	viewDetails: "Zobrazit podrobnosti"
 };
 var trailers$m = {
 	audio: "Zvuk traileru",
@@ -4584,7 +4797,8 @@ var panel$m = {
 		cacheClearFailed: "Vymazání mezipaměti se nezdařilo",
 		delisted: "Hry vyřazené ze Steamu",
 		logs: "Protokoly"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$m = {
 	editMetadata: "Upravit metadata..."
@@ -4747,7 +4961,8 @@ var editor$m = {
 	},
 	steamTextLanguage: "Jazyk textu ve Steamu: {{language}}",
 	fetchSteamText: "Načíst text ze Steamu v jazyce {{language}}",
-	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text."
+	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text.",
+	hltbDisabledNotice: "Časy HowLongToBeat jsou v nastavení momentálně vypnuté."
 };
 var matchPicker$m = {
 	help: "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
@@ -4861,7 +5076,21 @@ var backend$m = {
 	shortcut_name_changed: "Der Verknüpfungsname hat sich vor dem Umbenennen geändert.",
 	shortcut_name_api_unavailable: "API für Steam-Verknüpfungsnamen ist nicht verfügbar",
 	shortcut_name_api_failed: "API für Steam-Verknüpfungsnamen ist fehlgeschlagen",
-	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt."
+	shortcut_name_timeout: "Steam hat den neuen Verknüpfungsnamen nicht rechtzeitig bestätigt.",
+	invalid_steam_app_id: "Dieses Spiel ist kein gültiges Steam-Spiel.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$l = {
 	check: {
@@ -4922,7 +5151,11 @@ var qam$l = {
 		showTimesLabel: "HowLongToBeat-Zeiten anzeigen",
 		showTimesDescription: "Zeigt HowLongToBeat-Zeiten auf Spielseiten für Steam- und Nicht-Steam-Spiele.",
 		storeLabel: "Shop",
-		storeDescription: "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop.",
+		storeDescription: "Zeigt HowLongToBeat-Zeiten in einer Infozeile auf Spielseiten im Steam-Shop. Verwendet immer die automatische Zuordnung; spielspezifische HLTB-Auswahlen gelten nur auf Spielseiten in der Bibliothek.",
+		statsHeading: "Statistiken",
+		styleHeading: "Stil",
+		customizeHeading: "Anpassen",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-Stil",
 		styleDescription: "Die „Clean“-Stile sind für das CSS-Loader-Theme „Clean Gameview“ gedacht",
 		styleDefault: "Standard",
@@ -5015,7 +5248,8 @@ var qam$l = {
 		positionTopLeft: "Oben links",
 		positionTopRight: "Oben rechts",
 		loadingPreferences: "ProtonDB-Abzeichen-Einstellungen werden geladen...",
-		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet."
+		footnote: "Bewertungen stammen direkt von ProtonDB. Sie beschreiben die Community-Erfahrung, nicht Valves Kompatibilitätsbewertung; nicht zugeordnete Spiele und Spiele ohne ProtonDB-Stufe werden ausgeblendet.",
+		gameCoversHeading: "Spielcover"
 	},
 	miniAchievements: {
 		title: "Mini-Errungenschaften",
@@ -5103,7 +5337,23 @@ var qam$l = {
 		checkNow: "Jetzt prüfen",
 		enableDevelopmentTitle: "Entwicklungsversionen aktivieren?",
 		confirmRevertTitle: "Zu Stable zurückkehren?",
-		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen."
+		confirmRevertBody: "Bist du sicher, dass du zu Stable v{{version}} zurückkehren möchtest? Das ist ein Downgrade und kann zu Datenverlust oder Konfigurationsproblemen führen.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-Updates",
+		checkForUpdates: "Nach Updates suchen",
+		upToDateButton: "Aktuell",
+		apply: "Anwenden",
+		applying: "Wird angewendet...",
+		moveToStableShort: "Zu Stabil wechseln",
+		revertToStableShort: "Auf Stabil zurücksetzen",
+		upToDateLastChecked: "Aktuell: zuletzt geprüft {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update-Kanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Entwicklung",
+		channelStableDescription: "Erhält getestete stabile Versionen."
 	},
 	versions: {
 		title: "Versionen",
@@ -5121,6 +5371,39 @@ var qam$l = {
 		modalTitle: "Plugin-Protokolle",
 		modalEmpty: "Keine aktuellen Protokolle",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Erneut versuchen",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$l = {
@@ -5129,7 +5412,8 @@ var storeRow$l = {
 	statMain: "Hauptstory",
 	statMainPlus: "Haupt + Extras",
 	statComplete: "Komplettist",
-	statAllStyles: "Alle Spielweisen"
+	statAllStyles: "Alle Spielweisen",
+	viewDetails: "Details anzeigen"
 };
 var trailers$l = {
 	audio: "Trailer-Ton",
@@ -5228,7 +5512,8 @@ var panel$l = {
 		cacheClearFailed: "Cache-Leerung fehlgeschlagen",
 		delisted: "Aus dem Shop entfernte Steam-Spiele",
 		logs: "Protokolle"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$l = {
 	editMetadata: "Metadaten bearbeiten..."
@@ -5391,7 +5676,8 @@ var editor$l = {
 	},
 	steamTextLanguage: "Sprache des Steam-Texts: {{language}}",
 	fetchSteamText: "Steam-Text auf {{language}} laden",
-	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben."
+	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben.",
+	hltbDisabledNotice: "HowLongToBeat-Zeiten sind derzeit in den Einstellungen deaktiviert."
 };
 var matchPicker$l = {
 	help: "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
@@ -5505,7 +5791,21 @@ var backend$l = {
 	shortcut_name_changed: "Το όνομα της συντόμευσης άλλαξε πριν από τη μετονομασία.",
 	shortcut_name_api_unavailable: "Το API ονομάτων συντομεύσεων του Steam δεν είναι διαθέσιμο",
 	shortcut_name_api_failed: "Το API ονομάτων συντομεύσεων του Steam απέτυχε",
-	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως."
+	shortcut_name_timeout: "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως.",
+	invalid_steam_app_id: "Αυτό το παιχνίδι δεν είναι έγκυρο παιχνίδι Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$k = {
 	check: {
@@ -5566,7 +5866,11 @@ var qam$k = {
 		showTimesLabel: "Εμφάνιση χρόνων HowLongToBeat",
 		showTimesDescription: "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
 		storeLabel: "Κατάστημα",
-		storeDescription: "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam.",
+		storeDescription: "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
+		statsHeading: "Στατιστικά",
+		styleHeading: "Στυλ",
+		customizeHeading: "Προσαρμογή",
+		cacheHeading: "Προσωρινή μνήμη",
 		styleLabel: "Στυλ HLTB",
 		styleDescription: "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
 		styleDefault: "Προεπιλογή",
@@ -5659,7 +5963,8 @@ var qam$k = {
 		positionTopLeft: "Πάνω αριστερά",
 		positionTopRight: "Πάνω δεξιά",
 		loadingPreferences: "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
-		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
+		footnote: "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται.",
+		gameCoversHeading: "Εξώφυλλα παιχνιδιών"
 	},
 	miniAchievements: {
 		title: "Μίνι επιτεύγματα",
@@ -5747,7 +6052,23 @@ var qam$k = {
 		checkNow: "Έλεγχος τώρα",
 		enableDevelopmentTitle: "Ενεργοποίηση εκδόσεων ανάπτυξης;",
 		confirmRevertTitle: "Επιστροφή στο σταθερό κανάλι;",
-		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης."
+		confirmRevertBody: "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ενημερώσεις λογισμικού",
+		checkForUpdates: "Έλεγχος για ενημερώσεις",
+		upToDateButton: "Ενημερωμένο",
+		apply: "Εφαρμογή",
+		applying: "Εφαρμογή...",
+		moveToStableShort: "Μετάβαση σε σταθερή",
+		revertToStableShort: "Επαναφορά σε σταθερή",
+		upToDateLastChecked: "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Κανάλι ενημερώσεων",
+		channelOptionStable: "Σταθερό",
+		channelOptionDevelopment: "Ανάπτυξης",
+		channelStableDescription: "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
 	},
 	versions: {
 		title: "Εκδόσεις",
@@ -5765,6 +6086,39 @@ var qam$k = {
 		modalTitle: "Αρχεία καταγραφής πρόσθετου",
 		modalEmpty: "Δεν υπάρχουν πρόσφατες καταγραφές",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Δοκιμή ξανά",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$k = {
@@ -5773,7 +6127,8 @@ var storeRow$k = {
 	statMain: "Κύρια ιστορία",
 	statMainPlus: "Κύρια + επιπλέον",
 	statComplete: "Πλήρης ολοκλήρωση",
-	statAllStyles: "Όλα τα στυλ"
+	statAllStyles: "Όλα τα στυλ",
+	viewDetails: "Προβολή λεπτομερειών"
 };
 var trailers$k = {
 	audio: "Ήχος τρέιλερ",
@@ -5872,7 +6227,8 @@ var panel$k = {
 		cacheClearFailed: "Η εκκαθάριση προσωρινής μνήμης απέτυχε",
 		delisted: "Καταργημένα παιχνίδια Steam",
 		logs: "Αρχεία καταγραφής"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$k = {
 	editMetadata: "Επεξεργασία μεταδεδομένων..."
@@ -6035,7 +6391,8 @@ var editor$k = {
 	},
 	steamTextLanguage: "Γλώσσα κειμένου Steam: {{language}}",
 	fetchSteamText: "Φόρτωση κειμένου από το Steam στα {{language}}",
-	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
+	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι.",
+	hltbDisabledNotice: "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις."
 };
 var matchPicker$k = {
 	help: "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
@@ -6149,7 +6506,21 @@ var backend$k = {
 	shortcut_name_changed: "The shortcut name changed before the rename.",
 	shortcut_name_api_unavailable: "Steam shortcut name API is unavailable",
 	shortcut_name_api_failed: "Steam shortcut name API failed",
-	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time."
+	shortcut_name_timeout: "Steam did not confirm the new shortcut name in time.",
+	invalid_steam_app_id: "This game is not a valid Steam game.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$j = {
 	check: {
@@ -6210,7 +6581,11 @@ var qam$j = {
 		showTimesLabel: "Show HowLongToBeat times",
 		showTimesDescription: "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
 		storeLabel: "Store",
-		storeDescription: "Show HowLongToBeat times in an info row on Steam Store game pages.",
+		storeDescription: "Show HowLongToBeat times in an info row on Steam Store game pages. Always uses automatic matching; per-game HLTB choices apply only on Library game pages.",
+		statsHeading: "Stats",
+		styleHeading: "Style",
+		customizeHeading: "Customize",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB Style",
 		styleDescription: "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
 		styleDefault: "Default",
@@ -6303,7 +6678,8 @@ var qam$j = {
 		positionTopLeft: "Top left",
 		positionTopRight: "Top right",
 		loadingPreferences: "Loading ProtonDB badge preferences...",
-		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
+		footnote: "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+		gameCoversHeading: "Game covers"
 	},
 	miniAchievements: {
 		title: "Mini achievements",
@@ -6391,7 +6767,23 @@ var qam$j = {
 		checkNow: "Check now",
 		enableDevelopmentTitle: "Enable Development Releases?",
 		confirmRevertTitle: "Revert to Stable?",
-		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues."
+		confirmRevertBody: "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software Updates",
+		checkForUpdates: "Check For Updates",
+		upToDateButton: "Up-to-date",
+		apply: "Apply",
+		applying: "Applying...",
+		moveToStableShort: "Move to Stable",
+		revertToStableShort: "Revert to Stable",
+		upToDateLastChecked: "Up to date: last checked {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Update Channel",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Development",
+		channelStableDescription: "Receives tested stable releases."
 	},
 	versions: {
 		title: "Versions",
@@ -6409,6 +6801,39 @@ var qam$j = {
 		modalTitle: "Plugin Logs",
 		modalEmpty: "No recent logs",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Retry",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$j = {
@@ -6417,7 +6842,8 @@ var storeRow$j = {
 	statMain: "Main Story",
 	statMainPlus: "Main + Extras",
 	statComplete: "Completionist",
-	statAllStyles: "All Styles"
+	statAllStyles: "All Styles",
+	viewDetails: "View details"
 };
 var trailers$j = {
 	audio: "Trailer audio",
@@ -6516,7 +6942,8 @@ var panel$j = {
 		cacheClearFailed: "Cache clear failed",
 		delisted: "Delisted Steam games",
 		logs: "Logs"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$j = {
 	editMetadata: "Edit Metadata..."
@@ -6679,7 +7106,8 @@ var editor$j = {
 	},
 	steamTextLanguage: "Steam text language: {{language}}",
 	fetchSteamText: "Load Steam text in {{language}}",
-	steamTextUnavailable: "Steam did not return text for this game."
+	steamTextUnavailable: "Steam did not return text for this game.",
+	hltbDisabledNotice: "HowLongToBeat times are currently turned off in Settings."
 };
 var matchPicker$j = {
 	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
@@ -6794,7 +7222,21 @@ var backend$j = {
 	shortcut_name_changed: "El nombre del acceso directo cambió antes de renombrarlo.",
 	shortcut_name_api_unavailable: "La API de nombres de accesos directos de Steam no está disponible",
 	shortcut_name_api_failed: "La API de nombres de accesos directos de Steam ha fallado",
-	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo."
+	shortcut_name_timeout: "Steam no confirmó el nuevo nombre del acceso directo a tiempo.",
+	invalid_steam_app_id: "Este juego no es un juego de Steam válido.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$i = {
 	check: {
@@ -6855,7 +7297,11 @@ var qam$i = {
 		showTimesLabel: "Mostrar tiempos de HowLongToBeat",
 		showTimesDescription: "Muestra los tiempos de HowLongToBeat en las páginas de juego, tanto de Steam como de juegos que no son de Steam.",
 		storeLabel: "Tienda",
-		storeDescription: "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam.",
+		storeDescription: "Muestra los tiempos de HowLongToBeat en una fila de información de las páginas de juego de la tienda de Steam. Siempre usa coincidencia automática; las elecciones de HLTB por juego solo se aplican en las páginas de juego de la Biblioteca.",
+		statsHeading: "Estadísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Caché",
 		styleLabel: "Estilo de HLTB",
 		styleDescription: "Los estilos «Clean» están pensados para funcionar con el tema «Clean Gameview» de CSS Loader",
 		styleDefault: "Predeterminado",
@@ -6948,7 +7394,8 @@ var qam$i = {
 		positionTopLeft: "Arriba a la izquierda",
 		positionTopRight: "Arriba a la derecha",
 		loadingPreferences: "Cargando las preferencias de las insignias de ProtonDB...",
-		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan."
+		footnote: "Las valoraciones proceden directamente de ProtonDB. Describen la experiencia de la comunidad, no la valoración de compatibilidad de Valve; los juegos sin coincidencia y los que no tienen nivel de ProtonDB se ocultan.",
+		gameCoversHeading: "Carátulas de juegos"
 	},
 	miniAchievements: {
 		title: "Minilogros",
@@ -7036,7 +7483,23 @@ var qam$i = {
 		checkNow: "Comprobar ahora",
 		enableDevelopmentTitle: "¿Activar las versiones de desarrollo?",
 		confirmRevertTitle: "¿Volver a la versión estable?",
-		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración."
+		confirmRevertBody: "¿Seguro que quieres volver a la versión estable v{{version}}? Esto supone bajar de versión y podría provocar pérdida de datos o problemas de configuración.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizaciones de software",
+		checkForUpdates: "Buscar actualizaciones",
+		upToDateButton: "Actualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Pasar a estable",
+		revertToStableShort: "Volver a estable",
+		upToDateLastChecked: "Actualizado: última comprobación {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizaciones",
+		channelOptionStable: "Estable",
+		channelOptionDevelopment: "Desarrollo",
+		channelStableDescription: "Recibe versiones estables probadas."
 	},
 	versions: {
 		title: "Versiones",
@@ -7054,6 +7517,39 @@ var qam$i = {
 		modalTitle: "Registros del plugin",
 		modalEmpty: "No hay registros recientes",
 		ok: "Aceptar"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Reintentar",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$i = {
@@ -7062,7 +7558,8 @@ var storeRow$i = {
 	statMain: "Historia principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos los estilos"
+	statAllStyles: "Todos los estilos",
+	viewDetails: "Ver detalles"
 };
 var trailers$i = {
 	audio: "Audio del tráiler",
@@ -7161,7 +7658,8 @@ var panel$i = {
 		cacheClearFailed: "Error al borrar la caché",
 		delisted: "Juegos de Steam retirados",
 		logs: "Registros"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$i = {
 	editMetadata: "Editar metadatos..."
@@ -7324,7 +7822,8 @@ var editor$i = {
 	},
 	steamTextLanguage: "Idioma del texto de Steam: {{language}}",
 	fetchSteamText: "Cargar el texto de Steam en {{language}}",
-	steamTextUnavailable: "Steam no devolvió texto para este juego."
+	steamTextUnavailable: "Steam no devolvió texto para este juego.",
+	hltbDisabledNotice: "Los tiempos de HowLongToBeat están desactivados actualmente en Ajustes."
 };
 var matchPicker$i = {
 	help: "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
@@ -7438,7 +7937,21 @@ var backend$i = {
 	shortcut_name_changed: "Pikakuvakkeen nimi muuttui ennen uudelleennimeämistä.",
 	shortcut_name_api_unavailable: "Steamin pikakuvakkeiden nimirajapinta ei ole käytettävissä",
 	shortcut_name_api_failed: "Steamin pikakuvakkeiden nimirajapinta epäonnistui",
-	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa."
+	shortcut_name_timeout: "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa.",
+	invalid_steam_app_id: "Tämä peli ei ole kelvollinen Steam-peli.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$h = {
 	check: {
@@ -7499,7 +8012,11 @@ var qam$h = {
 		showTimesLabel: "Näytä HowLongToBeat-ajat",
 		showTimesDescription: "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
 		storeLabel: "Kauppa",
-		storeDescription: "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla.",
+		storeDescription: "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
+		statsHeading: "Tilastot",
+		styleHeading: "Tyyli",
+		customizeHeading: "Mukauta",
+		cacheHeading: "Välimuisti",
 		styleLabel: "HLTB-tyyli",
 		styleDescription: "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
 		styleDefault: "Oletus",
@@ -7592,7 +8109,8 @@ var qam$h = {
 		positionTopLeft: "Vasemmassa yläkulmassa",
 		positionTopRight: "Oikeassa yläkulmassa",
 		loadingPreferences: "Ladataan ProtonDB-tunnusten asetuksia...",
-		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+		footnote: "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+		gameCoversHeading: "Pelien kannet"
 	},
 	miniAchievements: {
 		title: "Minisaavutukset",
@@ -7680,7 +8198,23 @@ var qam$h = {
 		checkNow: "Tarkista nyt",
 		enableDevelopmentTitle: "Otetaanko kehitysjulkaisut käyttöön?",
 		confirmRevertTitle: "Palataanko vakaaseen versioon?",
-		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin."
+		confirmRevertBody: "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Ohjelmistopäivitykset",
+		checkForUpdates: "Tarkista päivitykset",
+		upToDateButton: "Ajan tasalla",
+		apply: "Käytä",
+		applying: "Otetaan käyttöön...",
+		moveToStableShort: "Siirry vakaaseen",
+		revertToStableShort: "Palaa vakaaseen",
+		upToDateLastChecked: "Ajan tasalla: tarkistettu viimeksi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Päivityskanava",
+		channelOptionStable: "Vakaa",
+		channelOptionDevelopment: "Kehitys",
+		channelStableDescription: "Vastaanottaa testattuja vakaita julkaisuja."
 	},
 	versions: {
 		title: "Versiot",
@@ -7698,6 +8232,39 @@ var qam$h = {
 		modalTitle: "Liitännäisen lokit",
 		modalEmpty: "Ei viimeaikaisia lokeja",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Yritä uudelleen",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$h = {
@@ -7706,7 +8273,8 @@ var storeRow$h = {
 	statMain: "Pääjuoni",
 	statMainPlus: "Pääjuoni + lisät",
 	statComplete: "Kaikki suoritettuna",
-	statAllStyles: "Kaikki tyylit"
+	statAllStyles: "Kaikki tyylit",
+	viewDetails: "Näytä tiedot"
 };
 var trailers$h = {
 	audio: "Trailerin ääni",
@@ -7805,7 +8373,8 @@ var panel$h = {
 		cacheClearFailed: "Välimuistin tyhjennys epäonnistui",
 		delisted: "Poistetut Steam-pelit",
 		logs: "Lokit"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$h = {
 	editMetadata: "Muokkaa metatietoja..."
@@ -7968,7 +8537,8 @@ var editor$h = {
 	},
 	steamTextLanguage: "Steamin tekstin kieli: {{language}}",
 	fetchSteamText: "Lataa Steamin teksti kielellä {{language}}",
-	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille."
+	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille.",
+	hltbDisabledNotice: "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa."
 };
 var matchPicker$h = {
 	help: "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
@@ -8083,7 +8653,21 @@ var backend$h = {
 	shortcut_name_changed: "Le nom du raccourci a changé avant le renommage.",
 	shortcut_name_api_unavailable: "L'API de nom de raccourci de Steam est indisponible",
 	shortcut_name_api_failed: "L'API de nom de raccourci de Steam a échoué",
-	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps."
+	shortcut_name_timeout: "Steam n'a pas confirmé le nouveau nom du raccourci à temps.",
+	invalid_steam_app_id: "Ce jeu n'est pas un jeu Steam valide.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$g = {
 	check: {
@@ -8144,7 +8728,11 @@ var qam$g = {
 		showTimesLabel: "Afficher les temps HowLongToBeat",
 		showTimesDescription: "Affiche les temps HowLongToBeat sur les pages de jeu, pour les jeux Steam et non Steam.",
 		storeLabel: "Boutique",
-		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam.",
+		storeDescription: "Affiche les temps HowLongToBeat dans une ligne d'informations sur les pages de jeu de la boutique Steam. Utilise toujours la correspondance automatique ; les choix HLTB par jeu ne s'appliquent qu'aux pages de jeu de la Bibliothèque.",
+		statsHeading: "Statistiques",
+		styleHeading: "Style",
+		customizeHeading: "Personnaliser",
+		cacheHeading: "Cache",
 		styleLabel: "Style HLTB",
 		styleDescription: "Les styles « Clean » sont conçus pour fonctionner avec le thème CSS Loader « Clean Gameview »",
 		styleDefault: "Par défaut",
@@ -8237,7 +8825,8 @@ var qam$g = {
 		positionTopLeft: "En haut à gauche",
 		positionTopRight: "En haut à droite",
 		loadingPreferences: "Chargement des préférences de badges ProtonDB...",
-		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués."
+		footnote: "Les notes proviennent directement de ProtonDB. Elles décrivent l'expérience de la communauté, pas la note de compatibilité de Valve ; les jeux non associés et ceux sans niveau ProtonDB sont masqués.",
+		gameCoversHeading: "Jaquettes de jeux"
 	},
 	miniAchievements: {
 		title: "Mini-succès",
@@ -8325,7 +8914,23 @@ var qam$g = {
 		checkNow: "Vérifier maintenant",
 		enableDevelopmentTitle: "Activer les versions de développement ?",
 		confirmRevertTitle: "Revenir à la version stable ?",
-		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration."
+		confirmRevertBody: "Voulez-vous vraiment revenir à la version stable v{{version}} ? Il s'agit d'une rétrogradation qui peut entraîner une perte de données ou des problèmes de configuration.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Mises à jour logicielles",
+		checkForUpdates: "Vérifier les mises à jour",
+		upToDateButton: "À jour",
+		apply: "Appliquer",
+		applying: "Application...",
+		moveToStableShort: "Passer en stable",
+		revertToStableShort: "Revenir en stable",
+		upToDateLastChecked: "À jour : dernière vérification {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de mise à jour",
+		channelOptionStable: "Stable",
+		channelOptionDevelopment: "Développement",
+		channelStableDescription: "Reçoit les versions stables testées."
 	},
 	versions: {
 		title: "Versions",
@@ -8343,6 +8948,39 @@ var qam$g = {
 		modalTitle: "Journaux du plugin",
 		modalEmpty: "Aucun journal récent",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Réessayer",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$g = {
@@ -8351,7 +8989,8 @@ var storeRow$g = {
 	statMain: "Histoire principale",
 	statMainPlus: "Histoire + extras",
 	statComplete: "Complétiste",
-	statAllStyles: "Tous les styles"
+	statAllStyles: "Tous les styles",
+	viewDetails: "Voir les détails"
 };
 var trailers$g = {
 	audio: "Audio de la bande-annonce",
@@ -8450,7 +9089,8 @@ var panel$g = {
 		cacheClearFailed: "Échec du vidage du cache",
 		delisted: "Jeux Steam retirés",
 		logs: "Journaux"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$g = {
 	editMetadata: "Modifier les métadonnées..."
@@ -8613,7 +9253,8 @@ var editor$g = {
 	},
 	steamTextLanguage: "Langue du texte Steam : {{language}}",
 	fetchSteamText: "Charger le texte de Steam en {{language}}",
-	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu."
+	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu.",
+	hltbDisabledNotice: "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres."
 };
 var matchPicker$g = {
 	help: "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
@@ -8728,7 +9369,21 @@ var backend$g = {
 	shortcut_name_changed: "Il nome del collegamento è cambiato prima della rinomina.",
 	shortcut_name_api_unavailable: "L'API di Steam per il nome dei collegamenti non è disponibile",
 	shortcut_name_api_failed: "L'API di Steam per il nome dei collegamenti ha restituito un errore",
-	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento."
+	shortcut_name_timeout: "Steam non ha confermato in tempo il nuovo nome del collegamento.",
+	invalid_steam_app_id: "Questo gioco non è un gioco Steam valido.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$f = {
 	check: {
@@ -8789,7 +9444,11 @@ var qam$f = {
 		showTimesLabel: "Mostra i tempi di HowLongToBeat",
 		showTimesDescription: "Mostra i tempi di HowLongToBeat nelle pagine dei giochi, sia Steam che non Steam.",
 		storeLabel: "Negozio",
-		storeDescription: "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam.",
+		storeDescription: "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam. Usa sempre la corrispondenza automatica; le scelte HLTB per singolo gioco si applicano solo alle pagine dei giochi nella Libreria.",
+		statsHeading: "Statistiche",
+		styleHeading: "Stile",
+		customizeHeading: "Personalizza",
+		cacheHeading: "Cache",
 		styleLabel: "Stile HLTB",
 		styleDescription: "Gli stili “Clean” sono pensati per funzionare con il tema CSS Loader “Clean Gameview”",
 		styleDefault: "Predefinito",
@@ -8882,7 +9541,8 @@ var qam$f = {
 		positionTopLeft: "In alto a sinistra",
 		positionTopRight: "In alto a destra",
 		loadingPreferences: "Caricamento delle preferenze dei badge ProtonDB...",
-		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
+		footnote: "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti.",
+		gameCoversHeading: "Copertine dei giochi"
 	},
 	miniAchievements: {
 		title: "Mini obiettivi",
@@ -8970,7 +9630,23 @@ var qam$f = {
 		checkNow: "Controlla ora",
 		enableDevelopmentTitle: "Abilitare le versioni di sviluppo?",
 		confirmRevertTitle: "Tornare alla versione stabile?",
-		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione."
+		confirmRevertBody: "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aggiornamenti software",
+		checkForUpdates: "Cerca aggiornamenti",
+		upToDateButton: "Aggiornato",
+		apply: "Applica",
+		applying: "Applicazione...",
+		moveToStableShort: "Passa a stabile",
+		revertToStableShort: "Torna a stabile",
+		upToDateLastChecked: "Aggiornato: ultimo controllo {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canale di aggiornamento",
+		channelOptionStable: "Stabile",
+		channelOptionDevelopment: "Sviluppo",
+		channelStableDescription: "Riceve rilasci stabili testati."
 	},
 	versions: {
 		title: "Versioni",
@@ -8988,6 +9664,39 @@ var qam$f = {
 		modalTitle: "Log del plugin",
 		modalEmpty: "Nessun log recente",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Riprova",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$f = {
@@ -8996,7 +9705,8 @@ var storeRow$f = {
 	statMain: "Storia principale",
 	statMainPlus: "Principale + extra",
 	statComplete: "Completista",
-	statAllStyles: "Tutti gli stili"
+	statAllStyles: "Tutti gli stili",
+	viewDetails: "Visualizza dettagli"
 };
 var trailers$f = {
 	audio: "Audio del trailer",
@@ -9095,7 +9805,8 @@ var panel$f = {
 		cacheClearFailed: "Svuotamento della cache non riuscito",
 		delisted: "Giochi Steam rimossi",
 		logs: "Log"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$f = {
 	editMetadata: "Modifica metadati..."
@@ -9258,7 +9969,8 @@ var editor$f = {
 	},
 	steamTextLanguage: "Lingua del testo Steam: {{language}}",
 	fetchSteamText: "Carica il testo di Steam in {{language}}",
-	steamTextUnavailable: "Steam non ha restituito testo per questo gioco."
+	steamTextUnavailable: "Steam non ha restituito testo per questo gioco.",
+	hltbDisabledNotice: "I tempi di HowLongToBeat sono attualmente disattivati nelle Impostazioni."
 };
 var matchPicker$f = {
 	help: "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
@@ -9371,7 +10083,21 @@ var backend$f = {
 	shortcut_name_changed: "名前を変更する前にショートカット名が変更されました。",
 	shortcut_name_api_unavailable: "Steam のショートカット名 API を利用できません",
 	shortcut_name_api_failed: "Steam のショートカット名 API が失敗しました",
-	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。"
+	shortcut_name_timeout: "Steam が新しいショートカット名を時間内に確認できませんでした。",
+	invalid_steam_app_id: "このゲームは有効な Steam ゲームではありません。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$e = {
 	check: {
@@ -9432,7 +10158,11 @@ var qam$e = {
 		showTimesLabel: "HowLongToBeat の時間を表示",
 		showTimesDescription: "Steam ゲームと Steam 以外のゲームのページに HowLongToBeat の時間を表示します。",
 		storeLabel: "ストア",
-		storeDescription: "Steam ストアのゲームページの情報行に HowLongToBeat の時間を表示します。",
+		storeDescription: "Steam ストアのゲームページの情報行に HowLongToBeat の時間を表示します。常に自動一致を使用します。ゲームごとの HLTB 選択はライブラリのゲームページにのみ適用されます。",
+		statsHeading: "統計",
+		styleHeading: "スタイル",
+		customizeHeading: "カスタマイズ",
+		cacheHeading: "キャッシュ",
 		styleLabel: "HLTB スタイル",
 		styleDescription: "「Clean」スタイルは、CSS Loader テーマ「Clean Gameview」での使用を想定しています",
 		styleDefault: "既定",
@@ -9525,7 +10255,8 @@ var qam$e = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "ProtonDB バッジの設定を読み込み中...",
-		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。"
+		footnote: "評価は ProtonDB から直接取得されます。これはコミュニティの体験を示すもので、Valve の互換性評価ではありません。一致しないゲームや ProtonDB ティアのないゲームでは表示されません。",
+		gameCoversHeading: "ゲームカバー"
 	},
 	miniAchievements: {
 		title: "ミニ実績",
@@ -9613,7 +10344,23 @@ var qam$e = {
 		checkNow: "今すぐ確認",
 		enableDevelopmentTitle: "開発リリースを有効にしますか？",
 		confirmRevertTitle: "安定版に戻しますか？",
-		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。"
+		confirmRevertBody: "安定版 v{{version}} に戻してよろしいですか？これはダウングレードであり、データ損失や設定の問題が発生する可能性があります。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "ソフトウェアアップデート",
+		checkForUpdates: "アップデートを確認",
+		upToDateButton: "最新",
+		apply: "適用",
+		applying: "適用中...",
+		moveToStableShort: "安定版へ移行",
+		revertToStableShort: "安定版に戻す",
+		upToDateLastChecked: "最新: 最終確認 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "アップデートチャンネル",
+		channelOptionStable: "安定版",
+		channelOptionDevelopment: "開発版",
+		channelStableDescription: "テスト済みの安定版リリースを受け取ります。"
 	},
 	versions: {
 		title: "バージョン",
@@ -9631,6 +10378,39 @@ var qam$e = {
 		modalTitle: "プラグインのログ",
 		modalEmpty: "最近のログはありません",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "再試行",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$e = {
@@ -9639,7 +10419,8 @@ var storeRow$e = {
 	statMain: "メインストーリー",
 	statMainPlus: "メイン + サブ",
 	statComplete: "コンプリート",
-	statAllStyles: "すべてのスタイル"
+	statAllStyles: "すべてのスタイル",
+	viewDetails: "詳細を表示"
 };
 var trailers$e = {
 	audio: "トレーラー音声",
@@ -9738,7 +10519,8 @@ var panel$e = {
 		cacheClearFailed: "キャッシュの消去に失敗しました",
 		delisted: "配信終了した Steam ゲーム",
 		logs: "ログ"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$e = {
 	editMetadata: "メタデータを編集..."
@@ -9901,7 +10683,8 @@ var editor$e = {
 	},
 	steamTextLanguage: "Steam テキストの言語: {{language}}",
 	fetchSteamText: "{{language}} で Steam のテキストを読み込む",
-	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。"
+	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。",
+	hltbDisabledNotice: "HowLongToBeat の時間は現在設定でオフになっています。"
 };
 var matchPicker$e = {
 	help: "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
@@ -10015,7 +10798,21 @@ var backend$e = {
 	shortcut_name_changed: "მალსახმობის სახელი გადარქმევამდე შეიცვალა.",
 	shortcut_name_api_unavailable: "Steam-ის მალსახმობის სახელის API მიუწვდომელია",
 	shortcut_name_api_failed: "Steam-ის მალსახმობის სახელის API ვერ შესრულდა",
-	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი."
+	shortcut_name_timeout: "Steam-მა დროულად არ დაადასტურა მალსახმობის ახალი სახელი.",
+	invalid_steam_app_id: "ეს თამაში არ არის სწორი Steam თამაში.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$d = {
 	check: {
@@ -10076,7 +10873,11 @@ var qam$d = {
 		showTimesLabel: "HowLongToBeat-ის დროების ჩვენება",
 		showTimesDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam და არა-Steam თამაშების გვერდებზე.",
 		storeLabel: "მაღაზია",
-		storeDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში.",
+		storeDescription: "აჩვენებს HowLongToBeat-ის დროებს Steam მაღაზიის თამაშის გვერდებზე საინფორმაციო სტრიქონში. ყოველთვის იყენებს ავტომატურ დამთხვევას; თითოეული თამაშის HLTB არჩევანი მოქმედებს მხოლოდ ბიბლიოთეკის თამაშის გვერდებზე.",
+		statsHeading: "Isiḍanen",
+		styleHeading: "Aɣanib",
+		customizeHeading: "Sagen",
+		cacheHeading: "Tuffirt",
 		styleLabel: "HLTB-ის სტილი",
 		styleDescription: "„Clean“ სტილები განკუთვნილია CSS Loader-ის თემა „Clean Gameview“-თან სამუშაოდ",
 		styleDefault: "ნაგულისხმევი",
@@ -10169,7 +10970,8 @@ var qam$d = {
 		positionTopLeft: "ზედა მარცხენა",
 		positionTopRight: "ზედა მარჯვენა",
 		loadingPreferences: "ProtonDB-ის ნიშნის პარამეტრები იტვირთება...",
-		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება."
+		footnote: "შეფასებები მოდის უშუალოდ ProtonDB-იდან. ისინი აღწერენ საზოგადოების გამოცდილებას და არა Valve-ის თავსებადობის შეფასებას; შესატყვისის არმქონე თამაშები და თამაშები ProtonDB-ის დონის გარეშე იმალება.",
+		gameCoversHeading: "თამაშის ყდები"
 	},
 	miniAchievements: {
 		title: "მინი მიღწევები",
@@ -10257,7 +11059,23 @@ var qam$d = {
 		checkNow: "ახლა შემოწმება",
 		enableDevelopmentTitle: "ჩაირთოს განვითარების გამოშვებები?",
 		confirmRevertTitle: "დავუბრუნდეთ სტაბილურს?",
-		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები."
+		confirmRevertBody: "დარწმუნებული ხართ, რომ გსურთ სტაბილურ v{{version}}-ზე დაბრუნება? ეს დაქვეითებაა და შეიძლება გამოიწვიოს მონაცემების დაკარგვა ან კონფიგურაციის პრობლემები.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "პროგრამული განახლებები",
+		checkForUpdates: "განახლებების შემოწმება",
+		upToDateButton: "განახლებულია",
+		apply: "გამოყენება",
+		applying: "გამოყენება...",
+		moveToStableShort: "სტაბილურზე გადასვლა",
+		revertToStableShort: "სტაბილურზე დაბრუნება",
+		upToDateLastChecked: "განახლებულია: ბოლო შემოწმება {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "განახლების არხი",
+		channelOptionStable: "სტაბილური",
+		channelOptionDevelopment: "განვითარების",
+		channelStableDescription: "იღებს შემოწმებულ სტაბილურ გამოშვებებს."
 	},
 	versions: {
 		title: "ვერსიები",
@@ -10275,6 +11093,39 @@ var qam$d = {
 		modalTitle: "პლაგინის ლოგები",
 		modalEmpty: "ბოლო ლოგები არ არის",
 		ok: "კარგი"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "თავიდან ცდა",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$d = {
@@ -10283,7 +11134,8 @@ var storeRow$d = {
 	statMain: "მთავარი სიუჟეტი",
 	statMainPlus: "მთავარი + დამატებითი",
 	statComplete: "სრულად გავლა",
-	statAllStyles: "ყველა სტილი"
+	statAllStyles: "ყველა სტილი",
+	viewDetails: "დეტალების ნახვა"
 };
 var trailers$d = {
 	audio: "ტრეილერის ხმა",
@@ -10382,7 +11234,8 @@ var panel$d = {
 		cacheClearFailed: "ქეშის გასუფთავება ვერ მოხერხდა",
 		delisted: "გაყიდვიდან მოხსნილი Steam თამაშები",
 		logs: "ლოგები"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$d = {
 	editMetadata: "მეტამონაცემების რედაქტირება..."
@@ -10545,7 +11398,8 @@ var editor$d = {
 	},
 	steamTextLanguage: "Steam-ის ტექსტის ენა: {{language}}",
 	fetchSteamText: "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
-	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა."
+	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა.",
+	hltbDisabledNotice: "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში."
 };
 var matchPicker$d = {
 	help: "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
@@ -10658,7 +11512,21 @@ var backend$d = {
 	shortcut_name_changed: "이름을 바꾸기 전에 바로가기 이름이 변경되었습니다.",
 	shortcut_name_api_unavailable: "Steam 바로가기 이름 API를 사용할 수 없습니다",
 	shortcut_name_api_failed: "Steam 바로가기 이름 API가 실패했습니다",
-	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다."
+	shortcut_name_timeout: "Steam이 시간 내에 새 바로가기 이름을 확인하지 못했습니다.",
+	invalid_steam_app_id: "이 게임은 유효한 Steam 게임이 아닙니다.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$c = {
 	check: {
@@ -10719,7 +11587,11 @@ var qam$c = {
 		showTimesLabel: "HowLongToBeat 시간 표시",
 		showTimesDescription: "Steam 게임과 비Steam 게임의 게임 페이지에 HowLongToBeat 시간을 표시합니다.",
 		storeLabel: "상점",
-		storeDescription: "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다.",
+		storeDescription: "Steam 상점 게임 페이지의 정보 행에 HowLongToBeat 시간을 표시합니다. 항상 자동 일치를 사용합니다. 게임별 HLTB 선택은 라이브러리 게임 페이지에만 적용됩니다.",
+		statsHeading: "통계",
+		styleHeading: "스타일",
+		customizeHeading: "사용자 지정",
+		cacheHeading: "캐시",
 		styleLabel: "HLTB 스타일",
 		styleDescription: "\"Clean\" 스타일은 CSS Loader 테마 \"Clean Gameview\"와 함께 사용하도록 만들어졌습니다",
 		styleDefault: "기본",
@@ -10812,7 +11684,8 @@ var qam$c = {
 		positionTopLeft: "왼쪽 위",
 		positionTopRight: "오른쪽 위",
 		loadingPreferences: "ProtonDB 배지 환경설정을 불러오는 중...",
-		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다."
+		footnote: "평가는 ProtonDB에서 직접 제공됩니다. 이는 커뮤니티 경험을 나타내며 Valve의 호환성 평가가 아닙니다. 일치하지 않거나 ProtonDB 등급이 없는 게임에서는 숨겨집니다.",
+		gameCoversHeading: "게임 커버"
 	},
 	miniAchievements: {
 		title: "미니 도전 과제",
@@ -10900,7 +11773,23 @@ var qam$c = {
 		checkNow: "지금 확인",
 		enableDevelopmentTitle: "개발 릴리스를 사용할까요?",
 		confirmRevertTitle: "안정 버전으로 되돌릴까요?",
-		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다."
+		confirmRevertBody: "안정 버전 v{{version}}(으)로 되돌리시겠습니까? 이는 다운그레이드이며 데이터 손실이나 구성 문제가 발생할 수 있습니다.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "소프트웨어 업데이트",
+		checkForUpdates: "업데이트 확인",
+		upToDateButton: "최신 상태",
+		apply: "적용",
+		applying: "적용 중...",
+		moveToStableShort: "안정 버전으로 이동",
+		revertToStableShort: "안정 버전으로 되돌리기",
+		upToDateLastChecked: "최신 상태: 마지막 확인 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "업데이트 채널",
+		channelOptionStable: "안정",
+		channelOptionDevelopment: "개발",
+		channelStableDescription: "검증된 안정 릴리스를 받습니다."
 	},
 	versions: {
 		title: "버전",
@@ -10918,6 +11807,39 @@ var qam$c = {
 		modalTitle: "플러그인 로그",
 		modalEmpty: "최근 로그가 없습니다",
 		ok: "확인"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "다시 시도",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$c = {
@@ -10926,7 +11848,8 @@ var storeRow$c = {
 	statMain: "메인 스토리",
 	statMainPlus: "메인 + 추가",
 	statComplete: "완벽 클리어",
-	statAllStyles: "모든 플레이 방식"
+	statAllStyles: "모든 플레이 방식",
+	viewDetails: "세부 정보 보기"
 };
 var trailers$c = {
 	audio: "트레일러 오디오",
@@ -11025,7 +11948,8 @@ var panel$c = {
 		cacheClearFailed: "캐시 지우기에 실패했습니다",
 		delisted: "판매 중지된 Steam 게임",
 		logs: "로그"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$c = {
 	editMetadata: "메타데이터 편집..."
@@ -11188,7 +12112,8 @@ var editor$c = {
 	},
 	steamTextLanguage: "Steam 텍스트 언어: {{language}}",
 	fetchSteamText: "Steam 텍스트 불러오기 ({{language}})",
-	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다."
+	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다.",
+	hltbDisabledNotice: "HowLongToBeat 시간은 현재 설정에서 꺼져 있습니다."
 };
 var matchPicker$c = {
 	help: "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
@@ -11302,7 +12227,21 @@ var backend$c = {
 	shortcut_name_changed: "De naam van de snelkoppeling is gewijzigd voordat deze werd hernoemd.",
 	shortcut_name_api_unavailable: "API voor Steam-snelkoppelingsnamen is niet beschikbaar",
 	shortcut_name_api_failed: "API voor Steam-snelkoppelingsnamen is mislukt",
-	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd."
+	shortcut_name_timeout: "Steam heeft de nieuwe naam van de snelkoppeling niet op tijd bevestigd.",
+	invalid_steam_app_id: "Dit spel is geen geldig Steam-spel.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$b = {
 	check: {
@@ -11363,7 +12302,11 @@ var qam$b = {
 		showTimesLabel: "HowLongToBeat-tijden tonen",
 		showTimesDescription: "Toon HowLongToBeat-tijden op spelpagina's voor Steam- en niet-Steam-games.",
 		storeLabel: "Winkel",
-		storeDescription: "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel.",
+		storeDescription: "Toon HowLongToBeat-tijden in een informatieregel op spelpagina's in de Steam-winkel. Gebruikt altijd automatische herkenning; HLTB-keuzes per spel gelden alleen op spelpagina's in de bibliotheek.",
+		statsHeading: "Statistieken",
+		styleHeading: "Stijl",
+		customizeHeading: "Aanpassen",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-stijl",
 		styleDescription: "De \"Clean\"-stijlen zijn bedoeld voor het CSS Loader-thema \"Clean Gameview\"",
 		styleDefault: "Standaard",
@@ -11456,7 +12399,8 @@ var qam$b = {
 		positionTopLeft: "Linksboven",
 		positionTopRight: "Rechtsboven",
 		loadingPreferences: "ProtonDB-badgevoorkeuren laden...",
-		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen."
+		footnote: "Beoordelingen komen rechtstreeks van ProtonDB. Ze beschrijven de ervaring van de community, niet de compatibiliteitsbeoordeling van Valve; games zonder match en games zonder ProtonDB-niveau worden verborgen.",
+		gameCoversHeading: "Gamehoezen"
 	},
 	miniAchievements: {
 		title: "Mini-prestaties",
@@ -11544,7 +12488,23 @@ var qam$b = {
 		checkNow: "Nu controleren",
 		enableDevelopmentTitle: "Ontwikkelreleases inschakelen?",
 		confirmRevertTitle: "Terug naar stabiele versie?",
-		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen."
+		confirmRevertBody: "Weet je zeker dat je wilt teruggaan naar stabiele versie v{{version}}? Dit is een downgrade en kan leiden tot gegevensverlies of configuratieproblemen.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Software-updates",
+		checkForUpdates: "Controleren op updates",
+		upToDateButton: "Up-to-date",
+		apply: "Toepassen",
+		applying: "Toepassen...",
+		moveToStableShort: "Naar stabiel",
+		revertToStableShort: "Terug naar stabiel",
+		upToDateLastChecked: "Up-to-date: laatst gecontroleerd {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Updatekanaal",
+		channelOptionStable: "Stabiel",
+		channelOptionDevelopment: "Ontwikkeling",
+		channelStableDescription: "Ontvangt geteste stabiele uitgaven."
 	},
 	versions: {
 		title: "Versies",
@@ -11562,6 +12522,39 @@ var qam$b = {
 		modalTitle: "Plug-inlogboeken",
 		modalEmpty: "Geen recente logboeken",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Opnieuw proberen",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$b = {
@@ -11570,7 +12563,8 @@ var storeRow$b = {
 	statMain: "Hoofdverhaal",
 	statMainPlus: "Hoofdverhaal + extra's",
 	statComplete: "Completionist",
-	statAllStyles: "Alle speelstijlen"
+	statAllStyles: "Alle speelstijlen",
+	viewDetails: "Details bekijken"
 };
 var trailers$b = {
 	audio: "Trailergeluid",
@@ -11669,7 +12663,8 @@ var panel$b = {
 		cacheClearFailed: "Cache wissen mislukt",
 		delisted: "Uit de winkel verwijderde Steam-games",
 		logs: "Logboeken"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$b = {
 	editMetadata: "Metadata bewerken..."
@@ -11832,7 +12827,8 @@ var editor$b = {
 	},
 	steamTextLanguage: "Taal van Steam-tekst: {{language}}",
 	fetchSteamText: "Steam-tekst laden in {{language}}",
-	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd."
+	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd.",
+	hltbDisabledNotice: "HowLongToBeat-tijden staan momenteel uit in Instellingen."
 };
 var matchPicker$b = {
 	help: "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
@@ -11948,7 +12944,21 @@ var backend$b = {
 	shortcut_name_changed: "Nazwa skrótu zmieniła się przed aktualizacją.",
 	shortcut_name_api_unavailable: "Interfejs API nazw skrótów Steam jest niedostępny",
 	shortcut_name_api_failed: "Błąd interfejsu API nazw skrótów Steam",
-	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu."
+	shortcut_name_timeout: "Steam nie potwierdził na czas nowej nazwy skrótu.",
+	invalid_steam_app_id: "Ta gra nie jest prawidłową grą Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$a = {
 	check: {
@@ -12009,7 +13019,11 @@ var qam$a = {
 		showTimesLabel: "Pokazuj czasy HowLongToBeat",
 		showTimesDescription: "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
 		storeLabel: "Sklep",
-		storeDescription: "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam.",
+		storeDescription: "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam. Zawsze używa automatycznego dopasowania; wybory HLTB dla poszczególnych gier działają tylko na stronach gier w Bibliotece.",
+		statsHeading: "Statystyki",
+		styleHeading: "Styl",
+		customizeHeading: "Dostosuj",
+		cacheHeading: "Pamięć podręczna",
 		styleLabel: "Styl HLTB",
 		styleDescription: "Style „Clean” są przeznaczone do współpracy z motywem CSS Loader „Clean Gameview”",
 		styleDefault: "Domyślny",
@@ -12102,7 +13116,8 @@ var qam$a = {
 		positionTopLeft: "Lewy górny róg",
 		positionTopRight: "Prawy górny róg",
 		loadingPreferences: "Wczytywanie ustawień odznak ProtonDB...",
-		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane."
+		footnote: "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane.",
+		gameCoversHeading: "Okładki gier"
 	},
 	miniAchievements: {
 		title: "Mini osiągnięcia",
@@ -12190,7 +13205,23 @@ var qam$a = {
 		checkNow: "Sprawdź teraz",
 		enableDevelopmentTitle: "Włączyć wydania deweloperskie?",
 		confirmRevertTitle: "Wrócić do stabilnej wersji?",
-		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją."
+		confirmRevertBody: "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Aktualizacje oprogramowania",
+		checkForUpdates: "Sprawdź aktualizacje",
+		upToDateButton: "Aktualne",
+		apply: "Zastosuj",
+		applying: "Stosowanie...",
+		moveToStableShort: "Przejdź na stabilną",
+		revertToStableShort: "Wróć do stabilnej",
+		upToDateLastChecked: "Aktualne: ostatnie sprawdzenie {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanał aktualizacji",
+		channelOptionStable: "Stabilny",
+		channelOptionDevelopment: "Rozwojowy",
+		channelStableDescription: "Otrzymuje przetestowane wydania stabilne."
 	},
 	versions: {
 		title: "Wersje",
@@ -12208,6 +13239,39 @@ var qam$a = {
 		modalTitle: "Dzienniki wtyczki",
 		modalEmpty: "Brak ostatnich wpisów",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Spróbuj ponownie",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$a = {
@@ -12216,7 +13280,8 @@ var storeRow$a = {
 	statMain: "Główny wątek",
 	statMainPlus: "Główny wątek + dodatki",
 	statComplete: "Pełne ukończenie",
-	statAllStyles: "Wszystkie style"
+	statAllStyles: "Wszystkie style",
+	viewDetails: "Zobacz szczegóły"
 };
 var trailers$a = {
 	audio: "Dźwięk zwiastuna",
@@ -12315,7 +13380,8 @@ var panel$a = {
 		cacheClearFailed: "Czyszczenie pamięci podręcznej nie powiodło się",
 		delisted: "Gry usunięte ze Steam",
 		logs: "Dzienniki"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$a = {
 	editMetadata: "Edytuj metadane..."
@@ -12478,7 +13544,8 @@ var editor$a = {
 	},
 	steamTextLanguage: "Język tekstu Steam: {{language}}",
 	fetchSteamText: "Wczytaj tekst ze Steam w języku: {{language}}",
-	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry."
+	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry.",
+	hltbDisabledNotice: "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach."
 };
 var matchPicker$a = {
 	help: "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
@@ -12593,7 +13660,21 @@ var backend$a = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nome de atalho da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nome de atalho da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	invalid_steam_app_id: "Este jogo não é um jogo Steam válido.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$9 = {
 	check: {
@@ -12654,7 +13735,11 @@ var qam$9 = {
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
-		storeDescription: "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam.",
+		storeDescription: "Mostra os tempos do HowLongToBeat em uma linha de informações nas páginas de jogos da Loja Steam. Sempre usa correspondência automática; escolhas de HLTB por jogo se aplicam apenas às páginas de jogos da Biblioteca.",
+		statsHeading: "Estatísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Cache",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram feitos para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Padrão",
@@ -12747,7 +13832,8 @@ var qam$9 = {
 		positionTopLeft: "Superior esquerda",
 		positionTopRight: "Superior direita",
 		loadingPreferences: "Carregando preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Elas descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Mini conquistas",
@@ -12835,7 +13921,23 @@ var qam$9 = {
 		checkNow: "Verificar agora",
 		enableDevelopmentTitle: "Ativar versões de desenvolvimento?",
 		confirmRevertTitle: "Reverter para o canal estável?",
-		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração."
+		confirmRevertBody: "Tem certeza de que deseja reverter para a versão estável v{{version}}? Isso é um downgrade e pode causar perda de dados ou problemas de configuração.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Verificar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "Aplicando...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -12853,6 +13955,39 @@ var qam$9 = {
 		modalTitle: "Logs do plugin",
 		modalEmpty: "Nenhum log recente",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Tentar novamente",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$9 = {
@@ -12861,7 +13996,8 @@ var storeRow$9 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$9 = {
 	audio: "Áudio do trailer",
@@ -12960,7 +14096,8 @@ var panel$9 = {
 		cacheClearFailed: "Falha ao limpar o cache",
 		delisted: "Jogos removidos da Loja Steam",
 		logs: "Logs"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$9 = {
 	editMetadata: "Editar metadados..."
@@ -13123,7 +14260,8 @@ var editor$9 = {
 	},
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
-	steamTextUnavailable: "A Steam não retornou texto para este jogo."
+	steamTextUnavailable: "A Steam não retornou texto para este jogo.",
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão desativados nas Configurações."
 };
 var matchPicker$9 = {
 	help: "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
@@ -13238,7 +14376,21 @@ var backend$9 = {
 	shortcut_name_changed: "O nome do atalho mudou antes da renomeação.",
 	shortcut_name_api_unavailable: "A API de nomes de atalhos da Steam está indisponível",
 	shortcut_name_api_failed: "A API de nomes de atalhos da Steam falhou",
-	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo."
+	shortcut_name_timeout: "A Steam não confirmou o novo nome do atalho a tempo.",
+	invalid_steam_app_id: "Este jogo não é um jogo Steam válido.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$8 = {
 	check: {
@@ -13299,7 +14451,11 @@ var qam$8 = {
 		showTimesLabel: "Mostrar tempos do HowLongToBeat",
 		showTimesDescription: "Mostra os tempos do HowLongToBeat nas páginas de jogos da Steam e de jogos que não são da Steam.",
 		storeLabel: "Loja",
-		storeDescription: "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam.",
+		storeDescription: "Mostra os tempos do HowLongToBeat numa linha de informações nas páginas de jogos da Loja Steam. Utiliza sempre correspondência automática; as escolhas de HLTB por jogo aplicam-se apenas às páginas de jogos da Biblioteca.",
+		statsHeading: "Estatísticas",
+		styleHeading: "Estilo",
+		customizeHeading: "Personalizar",
+		cacheHeading: "Cache",
 		styleLabel: "Estilo do HLTB",
 		styleDescription: "Os estilos \"Clean\" foram pensados para funcionar com o tema \"Clean Gameview\" do CSS Loader",
 		styleDefault: "Predefinido",
@@ -13392,7 +14548,8 @@ var qam$8 = {
 		positionTopLeft: "Superior esquerdo",
 		positionTopRight: "Superior direito",
 		loadingPreferences: "A carregar preferências do selo ProtonDB...",
-		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos."
+		footnote: "As avaliações vêm diretamente do ProtonDB. Descrevem a experiência da comunidade, não a classificação de compatibilidade da Valve; jogos sem correspondência e jogos sem classificação no ProtonDB ficam ocultos.",
+		gameCoversHeading: "Capas de jogos"
 	},
 	miniAchievements: {
 		title: "Miniconquistas",
@@ -13480,7 +14637,23 @@ var qam$8 = {
 		checkNow: "Verificar agora",
 		enableDevelopmentTitle: "Ativar versões de desenvolvimento?",
 		confirmRevertTitle: "Reverter para o canal estável?",
-		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração."
+		confirmRevertBody: "Tem a certeza de que quer reverter para a versão estável v{{version}}? Isto é um downgrade e pode causar perda de dados ou problemas de configuração.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Atualizações de software",
+		checkForUpdates: "Procurar atualizações",
+		upToDateButton: "Atualizado",
+		apply: "Aplicar",
+		applying: "A aplicar...",
+		moveToStableShort: "Mudar para estável",
+		revertToStableShort: "Reverter para estável",
+		upToDateLastChecked: "Atualizado: última verificação {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de atualizações",
+		channelOptionStable: "Estável",
+		channelOptionDevelopment: "Desenvolvimento",
+		channelStableDescription: "Recebe versões estáveis testadas."
 	},
 	versions: {
 		title: "Versões",
@@ -13498,6 +14671,39 @@ var qam$8 = {
 		modalTitle: "Registos do plugin",
 		modalEmpty: "Sem registos recentes",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Tentar novamente",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$8 = {
@@ -13506,7 +14712,8 @@ var storeRow$8 = {
 	statMain: "História principal",
 	statMainPlus: "Principal + extras",
 	statComplete: "Completista",
-	statAllStyles: "Todos os estilos"
+	statAllStyles: "Todos os estilos",
+	viewDetails: "Ver detalhes"
 };
 var trailers$8 = {
 	audio: "Áudio do trailer",
@@ -13605,7 +14812,8 @@ var panel$8 = {
 		cacheClearFailed: "Falha ao limpar a cache",
 		delisted: "Jogos removidos da Loja Steam",
 		logs: "Registos"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$8 = {
 	editMetadata: "Editar metadados..."
@@ -13768,7 +14976,8 @@ var editor$8 = {
 	},
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
-	steamTextUnavailable: "A Steam não devolveu texto para este jogo."
+	steamTextUnavailable: "A Steam não devolveu texto para este jogo.",
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão atualmente desativados nas Definições."
 };
 var matchPicker$8 = {
 	help: "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
@@ -13883,7 +15092,21 @@ var backend$8 = {
 	shortcut_name_changed: "Numele scurtăturii s-a schimbat înainte de redenumire.",
 	shortcut_name_api_unavailable: "API-ul Steam pentru numele scurtăturilor nu este disponibil",
 	shortcut_name_api_failed: "API-ul Steam pentru numele scurtăturilor a eșuat",
-	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii."
+	shortcut_name_timeout: "Steam nu a confirmat la timp noul nume al scurtăturii.",
+	invalid_steam_app_id: "Acest joc nu este un joc Steam valid.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$7 = {
 	check: {
@@ -13944,7 +15167,11 @@ var qam$7 = {
 		showTimesLabel: "Afișează timpii HowLongToBeat",
 		showTimesDescription: "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
 		storeLabel: "Magazin",
-		storeDescription: "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam.",
+		storeDescription: "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam. Folosește întotdeauna potrivirea automată; alegerile HLTB per joc se aplică doar paginilor de joc din Bibliotecă.",
+		statsHeading: "Statistici",
+		styleHeading: "Stil",
+		customizeHeading: "Personalizare",
+		cacheHeading: "Cache",
 		styleLabel: "Stil HLTB",
 		styleDescription: "Stilurile „Clean” sunt concepute pentru a funcționa cu tema CSS Loader „Clean Gameview”",
 		styleDefault: "Implicit",
@@ -14037,7 +15264,8 @@ var qam$7 = {
 		positionTopLeft: "Sus stânga",
 		positionTopRight: "Sus dreapta",
 		loadingPreferences: "Se încarcă preferințele pentru insignele ProtonDB...",
-		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+		footnote: "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+		gameCoversHeading: "Coperți de jocuri"
 	},
 	miniAchievements: {
 		title: "Realizări mini",
@@ -14125,7 +15353,23 @@ var qam$7 = {
 		checkNow: "Verifică acum",
 		enableDevelopmentTitle: "Activezi versiunile de dezvoltare?",
 		confirmRevertTitle: "Revii la versiunea stabilă?",
-		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare."
+		confirmRevertBody: "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Actualizări de software",
+		checkForUpdates: "Verifică actualizările",
+		upToDateButton: "La zi",
+		apply: "Aplică",
+		applying: "Se aplică...",
+		moveToStableShort: "Treci la stabil",
+		revertToStableShort: "Revino la stabil",
+		upToDateLastChecked: "La zi: ultima verificare {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Canal de actualizare",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Dezvoltare",
+		channelStableDescription: "Primește versiuni stabile testate."
 	},
 	versions: {
 		title: "Versiuni",
@@ -14143,6 +15387,39 @@ var qam$7 = {
 		modalTitle: "Jurnalele pluginului",
 		modalEmpty: "Niciun jurnal recent",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Încearcă din nou",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$7 = {
@@ -14151,7 +15428,8 @@ var storeRow$7 = {
 	statMain: "Povestea principală",
 	statMainPlus: "Principal + extra",
 	statComplete: "Completist",
-	statAllStyles: "Toate stilurile"
+	statAllStyles: "Toate stilurile",
+	viewDetails: "Vezi detalii"
 };
 var trailers$7 = {
 	audio: "Sunetul trailerului",
@@ -14250,7 +15528,8 @@ var panel$7 = {
 		cacheClearFailed: "Golirea memoriei cache a eșuat",
 		delisted: "Jocuri Steam retrase",
 		logs: "Jurnale"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$7 = {
 	editMetadata: "Editează metadatele..."
@@ -14413,7 +15692,8 @@ var editor$7 = {
 	},
 	steamTextLanguage: "Limba textului Steam: {{language}}",
 	fetchSteamText: "Încarcă textul Steam în {{language}}",
-	steamTextUnavailable: "Steam nu a returnat text pentru acest joc."
+	steamTextUnavailable: "Steam nu a returnat text pentru acest joc.",
+	hltbDisabledNotice: "Timpii HowLongToBeat sunt dezactivați în prezent în Setări."
 };
 var matchPicker$7 = {
 	help: "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
@@ -14529,7 +15809,21 @@ var backend$7 = {
 	shortcut_name_changed: "Название ярлыка изменилось до переименования.",
 	shortcut_name_api_unavailable: "API названий ярлыков Steam недоступен",
 	shortcut_name_api_failed: "Сбой API названий ярлыков Steam",
-	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя."
+	shortcut_name_timeout: "Steam не подтвердил новое название ярлыка вовремя.",
+	invalid_steam_app_id: "Эта игра не является корректной игрой Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$6 = {
 	check: {
@@ -14590,7 +15884,11 @@ var qam$6 = {
 		showTimesLabel: "Показывать время HowLongToBeat",
 		showTimesDescription: "Показывать время HowLongToBeat на страницах игры для игр Steam и игр вне Steam.",
 		storeLabel: "Магазин",
-		storeDescription: "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam.",
+		storeDescription: "Показывать время HowLongToBeat в строке сведений на страницах игр в магазине Steam. Всегда используется автоматический подбор; выбор HLTB для отдельной игры действует только на страницах игр в библиотеке.",
+		statsHeading: "Статистика",
+		styleHeading: "Стиль",
+		customizeHeading: "Настройка",
+		cacheHeading: "Кэш",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стили «Clean» предназначены для работы с темой CSS Loader «Clean Gameview»",
 		styleDefault: "По умолчанию",
@@ -14683,7 +15981,8 @@ var qam$6 = {
 		positionTopLeft: "Сверху слева",
 		positionTopRight: "Сверху справа",
 		loadingPreferences: "Загрузка настроек значков ProtonDB...",
-		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается."
+		footnote: "Оценки берутся напрямую из ProtonDB. Они отражают опыт сообщества, а не оценку совместимости Valve; для несопоставленных игр и игр без уровня ProtonDB значок скрывается.",
+		gameCoversHeading: "Обложки игр"
 	},
 	miniAchievements: {
 		title: "Мини-достижения",
@@ -14771,7 +16070,23 @@ var qam$6 = {
 		checkNow: "Проверить сейчас",
 		enableDevelopmentTitle: "Включить сборки для разработки?",
 		confirmRevertTitle: "Вернуться к стабильной версии?",
-		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией."
+		confirmRevertBody: "Вы уверены, что хотите вернуться к стабильной v{{version}}? Это откат, который может привести к потере данных или проблемам с конфигурацией.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Обновления ПО",
+		checkForUpdates: "Проверить обновления",
+		upToDateButton: "Актуально",
+		apply: "Применить",
+		applying: "Применение...",
+		moveToStableShort: "Перейти на стабильную",
+		revertToStableShort: "Вернуться к стабильной",
+		upToDateLastChecked: "Актуально: последняя проверка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал обновлений",
+		channelOptionStable: "Стабильный",
+		channelOptionDevelopment: "Разработка",
+		channelStableDescription: "Получает проверенные стабильные релизы."
 	},
 	versions: {
 		title: "Версии",
@@ -14789,6 +16104,39 @@ var qam$6 = {
 		modalTitle: "Журналы плагина",
 		modalEmpty: "Нет недавних записей",
 		ok: "ОК"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Повторить",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$6 = {
@@ -14797,7 +16145,8 @@ var storeRow$6 = {
 	statMain: "Основной сюжет",
 	statMainPlus: "Основной сюжет + доп.",
 	statComplete: "Полное прохождение",
-	statAllStyles: "Все стили"
+	statAllStyles: "Все стили",
+	viewDetails: "Подробнее"
 };
 var trailers$6 = {
 	audio: "Звук трейлера",
@@ -14896,7 +16245,8 @@ var panel$6 = {
 		cacheClearFailed: "Не удалось очистить кэш",
 		delisted: "Игры, удалённые из Steam",
 		logs: "Журналы"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$6 = {
 	editMetadata: "Редактировать метаданные..."
@@ -15059,7 +16409,8 @@ var editor$6 = {
 	},
 	steamTextLanguage: "Язык текста Steam: {{language}}",
 	fetchSteamText: "Загрузить текст Steam на языке {{language}}",
-	steamTextUnavailable: "Steam не вернул текст для этой игры."
+	steamTextUnavailable: "Steam не вернул текст для этой игры.",
+	hltbDisabledNotice: "Время HowLongToBeat сейчас отключено в настройках."
 };
 var matchPicker$6 = {
 	help: "Найдите игру в Steam, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет. Оно не переименовывает ярлык и не заменяет ваш арт.",
@@ -15173,7 +16524,21 @@ var backend$6 = {
 	shortcut_name_changed: "Emri i shkurtores ndryshoi përpara riemërtimit.",
 	shortcut_name_api_unavailable: "API i emrave të shkurtoreve të Steam nuk është i disponueshëm",
 	shortcut_name_api_failed: "API i emrave të shkurtoreve të Steam dështoi",
-	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë."
+	shortcut_name_timeout: "Steam nuk e konfirmoi emrin e ri të shkurtores në kohë.",
+	invalid_steam_app_id: "Kjo lojë nuk është një lojë e vlefshme e Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$5 = {
 	check: {
@@ -15234,7 +16599,11 @@ var qam$5 = {
 		showTimesLabel: "Shfaq kohët e HowLongToBeat",
 		showTimesDescription: "Shfaq kohët e HowLongToBeat në faqet e lojërave për lojëra të Steam dhe jo-Steam.",
 		storeLabel: "Dyqani",
-		storeDescription: "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam.",
+		storeDescription: "Shfaq kohët e HowLongToBeat në një rresht informacioni në faqet e lojërave në Dyqanin e Steam. Përdor gjithmonë përputhjen automatike; zgjedhjet e HLTB për secilën lojë zbatohen vetëm në faqet e lojërave në Bibliotekë.",
+		statsHeading: "Statistikat",
+		styleHeading: "Stili",
+		customizeHeading: "Personalizo",
+		cacheHeading: "Memoria e përkohshme",
 		styleLabel: "Stili i HLTB",
 		styleDescription: "Stilet „Clean“ janë menduar për temën „Clean Gameview“ të CSS Loader",
 		styleDefault: "Parazgjedhur",
@@ -15327,7 +16696,8 @@ var qam$5 = {
 		positionTopLeft: "Lart majtas",
 		positionTopRight: "Lart djathtas",
 		loadingPreferences: "Po ngarkohen preferencat e distinktivëve ProtonDB...",
-		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen."
+		footnote: "Vlerësimet vijnë drejtpërdrejt nga ProtonDB. Ato përshkruajnë përvojën e komunitetit, jo vlerësimin e përputhshmërisë së Valve; lojërat pa përputhje dhe ato pa nivel ProtonDB fshihen.",
+		gameCoversHeading: "Kopertinat e lojërave"
 	},
 	miniAchievements: {
 		title: "Arritjet mini",
@@ -15415,7 +16785,23 @@ var qam$5 = {
 		checkNow: "Kontrollo tani",
 		enableDevelopmentTitle: "Të aktivizohen publikimet e zhvillimit?",
 		confirmRevertTitle: "Të kthehesh te versioni i qëndrueshëm?",
-		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi."
+		confirmRevertBody: "Je i sigurt që dëshiron të kthehesh te v{{version}} i qëndrueshëm? Kjo është zbritje versioni dhe mund të shkaktojë humbje të dhënash ose probleme konfigurimi.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Përditësimet e softuerit",
+		checkForUpdates: "Kontrollo për përditësime",
+		upToDateButton: "I përditësuar",
+		apply: "Zbato",
+		applying: "Duke zbatuar...",
+		moveToStableShort: "Kalo në të qëndrueshme",
+		revertToStableShort: "Kthehu në të qëndrueshme",
+		upToDateLastChecked: "I përditësuar: kontrolluar së fundmi {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Kanali i përditësimeve",
+		channelOptionStable: "I qëndrueshëm",
+		channelOptionDevelopment: "Zhvillim",
+		channelStableDescription: "Merr versione të qëndrueshme të testuara."
 	},
 	versions: {
 		title: "Versionet",
@@ -15433,6 +16819,39 @@ var qam$5 = {
 		modalTitle: "Regjistrat e shtojcës",
 		modalEmpty: "Nuk ka regjistra të fundit",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Provo përsëri",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$5 = {
@@ -15441,7 +16860,8 @@ var storeRow$5 = {
 	statMain: "Historia kryesore",
 	statMainPlus: "Kryesorja + shtesat",
 	statComplete: "Përfundim i plotë",
-	statAllStyles: "Të gjitha stilet"
+	statAllStyles: "Të gjitha stilet",
+	viewDetails: "Shiko detajet"
 };
 var trailers$5 = {
 	audio: "Audio e trailerit",
@@ -15540,7 +16960,8 @@ var panel$5 = {
 		cacheClearFailed: "Pastrimi i cache-it dështoi",
 		delisted: "Lojëra të hequra nga Steam",
 		logs: "Regjistrat"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$5 = {
 	editMetadata: "Redakto metadatat..."
@@ -15703,7 +17124,8 @@ var editor$5 = {
 	},
 	steamTextLanguage: "Gjuha e tekstit të Steam: {{language}}",
 	fetchSteamText: "Ngarko tekstin e Steam në {{language}}",
-	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë."
+	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë.",
+	hltbDisabledNotice: "Kohët e HowLongToBeat janë aktualisht të çaktivizuara në Cilësime."
 };
 var matchPicker$5 = {
 	help: "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
@@ -15817,7 +17239,21 @@ var backend$5 = {
 	shortcut_name_changed: "Genvägens namn ändrades före namnbytet.",
 	shortcut_name_api_unavailable: "Steams API för genvägsnamn är inte tillgängligt",
 	shortcut_name_api_failed: "Steams API för genvägsnamn misslyckades",
-	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid."
+	shortcut_name_timeout: "Steam bekräftade inte det nya genvägsnamnet i tid.",
+	invalid_steam_app_id: "Det här spelet är inte ett giltigt Steam-spel.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$4 = {
 	check: {
@@ -15878,7 +17314,11 @@ var qam$4 = {
 		showTimesLabel: "Visa HowLongToBeat-tider",
 		showTimesDescription: "Visa HowLongToBeat-tider på spelsidor för Steam-spel och icke-Steam-spel.",
 		storeLabel: "Butik",
-		storeDescription: "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken.",
+		storeDescription: "Visa HowLongToBeat-tider i en informationsrad på spelsidor i Steam-butiken. Använder alltid automatisk matchning; HLTB-val per spel gäller endast på spelsidor i biblioteket.",
+		statsHeading: "Statistik",
+		styleHeading: "Stil",
+		customizeHeading: "Anpassa",
+		cacheHeading: "Cache",
 		styleLabel: "HLTB-stil",
 		styleDescription: "Stilarna ”Clean” är avsedda att fungera med CSS Loader-temat ”Clean Gameview”",
 		styleDefault: "Standard",
@@ -15971,7 +17411,8 @@ var qam$4 = {
 		positionTopLeft: "Övre vänster",
 		positionTopRight: "Övre höger",
 		loadingPreferences: "Läser in ProtonDB-märkesinställningar...",
-		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs."
+		footnote: "Betygen kommer direkt från ProtonDB. De beskriver gemenskapens erfarenhet, inte Valves kompatibilitetsbetyg; spel utan matchning och spel utan ProtonDB-nivå döljs.",
+		gameCoversHeading: "Spelomslag"
 	},
 	miniAchievements: {
 		title: "Miniprestationer",
@@ -16059,7 +17500,23 @@ var qam$4 = {
 		checkNow: "Kontrollera nu",
 		enableDevelopmentTitle: "Aktivera utvecklingsutgåvor?",
 		confirmRevertTitle: "Återgå till stabil version?",
-		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem."
+		confirmRevertBody: "Är du säker på att du vill återgå till stabil v{{version}}? Detta är en nedgradering och kan leda till dataförlust eller konfigurationsproblem.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Programvaruuppdateringar",
+		checkForUpdates: "Sök efter uppdateringar",
+		upToDateButton: "Uppdaterad",
+		apply: "Verkställ",
+		applying: "Verkställer...",
+		moveToStableShort: "Byt till stabil",
+		revertToStableShort: "Återgå till stabil",
+		upToDateLastChecked: "Uppdaterad: senast kontrollerad {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Uppdateringskanal",
+		channelOptionStable: "Stabil",
+		channelOptionDevelopment: "Utveckling",
+		channelStableDescription: "Tar emot testade stabila versioner."
 	},
 	versions: {
 		title: "Versioner",
@@ -16077,6 +17534,39 @@ var qam$4 = {
 		modalTitle: "Plugin-loggar",
 		modalEmpty: "Inga aktuella loggar",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Försök igen",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$4 = {
@@ -16085,7 +17575,8 @@ var storeRow$4 = {
 	statMain: "Huvudhistoria",
 	statMainPlus: "Huvudhistoria + extra",
 	statComplete: "Completionist",
-	statAllStyles: "Alla spelstilar"
+	statAllStyles: "Alla spelstilar",
+	viewDetails: "Visa detaljer"
 };
 var trailers$4 = {
 	audio: "Trailerljud",
@@ -16184,7 +17675,8 @@ var panel$4 = {
 		cacheClearFailed: "Det gick inte att rensa cachen",
 		delisted: "Borttagna Steam-spel",
 		logs: "Loggar"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$4 = {
 	editMetadata: "Redigera metadata..."
@@ -16347,7 +17839,8 @@ var editor$4 = {
 	},
 	steamTextLanguage: "Språk för Steam-text: {{language}}",
 	fetchSteamText: "Läs in Steam-text på {{language}}",
-	steamTextUnavailable: "Steam returnerade ingen text för det här spelet."
+	steamTextUnavailable: "Steam returnerade ingen text för det här spelet.",
+	hltbDisabledNotice: "HowLongToBeat-tider är för närvarande avstängda i Inställningar."
 };
 var matchPicker$4 = {
 	help: "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
@@ -16461,7 +17954,21 @@ var backend$4 = {
 	shortcut_name_changed: "Kısayol adı, yeniden adlandırmadan önce değişti.",
 	shortcut_name_api_unavailable: "Steam kısayol adı API'si kullanılamıyor",
 	shortcut_name_api_failed: "Steam kısayol adı API'si başarısız oldu",
-	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı."
+	shortcut_name_timeout: "Steam yeni kısayol adını zamanında onaylamadı.",
+	invalid_steam_app_id: "Bu oyun geçerli bir Steam oyunu değil.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$3 = {
 	check: {
@@ -16522,7 +18029,11 @@ var qam$3 = {
 		showTimesLabel: "HowLongToBeat sürelerini göster",
 		showTimesDescription: "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
 		storeLabel: "Mağaza",
-		storeDescription: "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir.",
+		storeDescription: "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir. Her zaman otomatik eşleştirme kullanır; oyun bazlı HLTB seçimleri yalnızca Kütüphane oyun sayfalarında geçerlidir.",
+		statsHeading: "İstatistikler",
+		styleHeading: "Stil",
+		customizeHeading: "Özelleştir",
+		cacheHeading: "Önbellek",
 		styleLabel: "HLTB tarzı",
 		styleDescription: "\"Clean\" tarzları, CSS Loader teması \"Clean Gameview\" ile kullanılmak üzere tasarlanmıştır",
 		styleDefault: "Varsayılan",
@@ -16615,7 +18126,8 @@ var qam$3 = {
 		positionTopLeft: "Sol üst",
 		positionTopRight: "Sağ üst",
 		loadingPreferences: "ProtonDB rozet tercihleri yükleniyor...",
-		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
+		footnote: "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir.",
+		gameCoversHeading: "Oyun kapakları"
 	},
 	miniAchievements: {
 		title: "Mini başarımlar",
@@ -16703,7 +18215,23 @@ var qam$3 = {
 		checkNow: "Şimdi denetle",
 		enableDevelopmentTitle: "Geliştirme Sürümleri Etkinleştirilsin mi?",
 		confirmRevertTitle: "Kararlı Sürüme Dönülsün mü?",
-		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir."
+		confirmRevertBody: "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Yazılım Güncellemeleri",
+		checkForUpdates: "Güncellemeleri Denetle",
+		upToDateButton: "Güncel",
+		apply: "Uygula",
+		applying: "Uygulanıyor...",
+		moveToStableShort: "Kararlı sürüme geç",
+		revertToStableShort: "Kararlı sürüme dön",
+		upToDateLastChecked: "Güncel: son denetim {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Güncelleme Kanalı",
+		channelOptionStable: "Kararlı",
+		channelOptionDevelopment: "Geliştirme",
+		channelStableDescription: "Test edilmiş kararlı sürümleri alır."
 	},
 	versions: {
 		title: "Sürümler",
@@ -16721,6 +18249,39 @@ var qam$3 = {
 		modalTitle: "Eklenti Günlükleri",
 		modalEmpty: "Yakın tarihli günlük yok",
 		ok: "Tamam"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Tekrar dene",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$3 = {
@@ -16729,7 +18290,8 @@ var storeRow$3 = {
 	statMain: "Ana Hikâye",
 	statMainPlus: "Ana + Ekstralar",
 	statComplete: "Tamamlayıcı",
-	statAllStyles: "Tüm Tarzlar"
+	statAllStyles: "Tüm Tarzlar",
+	viewDetails: "Ayrıntıları görüntüle"
 };
 var trailers$3 = {
 	audio: "Fragman sesi",
@@ -16828,7 +18390,8 @@ var panel$3 = {
 		cacheClearFailed: "Önbellek temizleme başarısız oldu",
 		delisted: "Satıştan kaldırılmış Steam oyunları",
 		logs: "Günlükler"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$3 = {
 	editMetadata: "Meta Verileri Düzenle..."
@@ -16991,7 +18554,8 @@ var editor$3 = {
 	},
 	steamTextLanguage: "Steam metin dili: {{language}}",
 	fetchSteamText: "Steam metnini {{language}} dilinde yükle",
-	steamTextUnavailable: "Steam bu oyun için metin döndürmedi."
+	steamTextUnavailable: "Steam bu oyun için metin döndürmedi.",
+	hltbDisabledNotice: "HowLongToBeat süreleri şu anda Ayarlar'da kapalı."
 };
 var matchPicker$3 = {
 	help: "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
@@ -17107,7 +18671,21 @@ var backend$3 = {
 	shortcut_name_changed: "Назва ярлика змінилася до перейменування.",
 	shortcut_name_api_unavailable: "API назв ярликів Steam недоступний",
 	shortcut_name_api_failed: "Збій API назв ярликів Steam",
-	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно."
+	shortcut_name_timeout: "Steam не підтвердив нову назву ярлика вчасно.",
+	invalid_steam_app_id: "Ця гра не є дійсною грою Steam.",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$2 = {
 	check: {
@@ -17168,7 +18746,11 @@ var qam$2 = {
 		showTimesLabel: "Показувати час HowLongToBeat",
 		showTimesDescription: "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
 		storeLabel: "Крамниця",
-		storeDescription: "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam.",
+		storeDescription: "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
+		statsHeading: "Статистика",
+		styleHeading: "Стиль",
+		customizeHeading: "Налаштування",
+		cacheHeading: "Кеш",
 		styleLabel: "Стиль HLTB",
 		styleDescription: "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
 		styleDefault: "За замовчуванням",
@@ -17261,7 +18843,8 @@ var qam$2 = {
 		positionTopLeft: "Зверху ліворуч",
 		positionTopRight: "Зверху праворуч",
 		loadingPreferences: "Завантаження налаштувань значків ProtonDB...",
-		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+		footnote: "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+		gameCoversHeading: "Обкладинки ігор"
 	},
 	miniAchievements: {
 		title: "Мінідосягнення",
@@ -17349,7 +18932,23 @@ var qam$2 = {
 		checkNow: "Перевірити зараз",
 		enableDevelopmentTitle: "Увімкнути збірки для розробки?",
 		confirmRevertTitle: "Повернутися до стабільної версії?",
-		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією."
+		confirmRevertBody: "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "Оновлення ПЗ",
+		checkForUpdates: "Перевірити оновлення",
+		upToDateButton: "Актуально",
+		apply: "Застосувати",
+		applying: "Застосування...",
+		moveToStableShort: "Перейти на стабільну",
+		revertToStableShort: "Повернутися до стабільної",
+		upToDateLastChecked: "Актуально: остання перевірка {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "Канал оновлень",
+		channelOptionStable: "Стабільний",
+		channelOptionDevelopment: "Розробка",
+		channelStableDescription: "Отримує перевірені стабільні релізи."
 	},
 	versions: {
 		title: "Версії",
@@ -17367,6 +18966,39 @@ var qam$2 = {
 		modalTitle: "Журнали плагіна",
 		modalEmpty: "Немає недавніх записів",
 		ok: "OK"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "Повторити",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$2 = {
@@ -17375,7 +19007,8 @@ var storeRow$2 = {
 	statMain: "Основний сюжет",
 	statMainPlus: "Основний сюжет + додатково",
 	statComplete: "Повне проходження",
-	statAllStyles: "Усі стилі"
+	statAllStyles: "Усі стилі",
+	viewDetails: "Переглянути деталі"
 };
 var trailers$2 = {
 	audio: "Звук трейлера",
@@ -17474,7 +19107,8 @@ var panel$2 = {
 		cacheClearFailed: "Не вдалося очистити кеш",
 		delisted: "Ігри, вилучені зі Steam",
 		logs: "Журнали"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$2 = {
 	editMetadata: "Редагувати метадані..."
@@ -17637,7 +19271,8 @@ var editor$2 = {
 	},
 	steamTextLanguage: "Мова тексту Steam: {{language}}",
 	fetchSteamText: "Завантажити текст Steam мовою {{language}}",
-	steamTextUnavailable: "Steam не повернув текст для цієї гри."
+	steamTextUnavailable: "Steam не повернув текст для цієї гри.",
+	hltbDisabledNotice: "Час HowLongToBeat зараз вимкнено в налаштуваннях."
 };
 var matchPicker$2 = {
 	help: "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",
@@ -17750,7 +19385,21 @@ var backend$2 = {
 	shortcut_name_changed: "重命名前快捷方式名称已更改。",
 	shortcut_name_api_unavailable: "Steam 快捷方式名称 API 不可用",
 	shortcut_name_api_failed: "Steam 快捷方式名称 API 调用失败",
-	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。"
+	shortcut_name_timeout: "Steam 未能及时确认新的快捷方式名称。",
+	invalid_steam_app_id: "此游戏不是有效的 Steam 游戏。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater$1 = {
 	check: {
@@ -17811,7 +19460,11 @@ var qam$1 = {
 		showTimesLabel: "显示 HowLongToBeat 时长",
 		showTimesDescription: "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
 		storeLabel: "商店",
-		storeDescription: "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。",
+		storeDescription: "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。始终使用自动匹配；按游戏指定的 HLTB 匹配仅适用于库中的游戏页面。",
+		statsHeading: "统计",
+		styleHeading: "样式",
+		customizeHeading: "自定义",
+		cacheHeading: "缓存",
 		styleLabel: "HLTB 样式",
 		styleDescription: "“Clean” 样式旨在与 CSS Loader 主题 “Clean Gameview” 搭配使用",
 		styleDefault: "默认",
@@ -17904,7 +19557,8 @@ var qam$1 = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在加载 ProtonDB 徽章偏好设置...",
-		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
+		footnote: "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。",
+		gameCoversHeading: "游戏封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -17992,7 +19646,23 @@ var qam$1 = {
 		checkNow: "立即检查",
 		enableDevelopmentTitle: "启用开发版本？",
 		confirmRevertTitle: "回退到稳定版？",
-		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。"
+		confirmRevertBody: "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "软件更新",
+		checkForUpdates: "检查更新",
+		upToDateButton: "已是最新",
+		apply: "应用",
+		applying: "正在应用...",
+		moveToStableShort: "切换到稳定版",
+		revertToStableShort: "回退到稳定版",
+		upToDateLastChecked: "已是最新：上次检查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "稳定版",
+		channelOptionDevelopment: "开发版",
+		channelStableDescription: "接收经过测试的稳定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -18010,6 +19680,39 @@ var qam$1 = {
 		modalTitle: "插件日志",
 		modalEmpty: "没有最近的日志",
 		ok: "确定"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "重试",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow$1 = {
@@ -18018,7 +19721,8 @@ var storeRow$1 = {
 	statMain: "主线故事",
 	statMainPlus: "主线 + 额外内容",
 	statComplete: "完美通关",
-	statAllStyles: "所有游玩方式"
+	statAllStyles: "所有游玩方式",
+	viewDetails: "查看详情"
 };
 var trailers$1 = {
 	audio: "预告片音频",
@@ -18117,7 +19821,8 @@ var panel$1 = {
 		cacheClearFailed: "清除缓存失败",
 		delisted: "已下架的 Steam 游戏",
 		logs: "日志"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu$1 = {
 	editMetadata: "编辑元数据..."
@@ -18280,7 +19985,8 @@ var editor$1 = {
 	},
 	steamTextLanguage: "Steam 文本语言：{{language}}",
 	fetchSteamText: "加载 Steam 文本（{{language}}）",
-	steamTextUnavailable: "Steam 未返回此游戏的文本。"
+	steamTextUnavailable: "Steam 未返回此游戏的文本。",
+	hltbDisabledNotice: "HowLongToBeat 时长目前已在设置中关闭。"
 };
 var matchPicker$1 = {
 	help: "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
@@ -18393,7 +20099,21 @@ var backend$1 = {
 	shortcut_name_changed: "重新命名前捷徑名稱已變更。",
 	shortcut_name_api_unavailable: "Steam 捷徑名稱 API 無法使用",
 	shortcut_name_api_failed: "Steam 捷徑名稱 API 呼叫失敗",
-	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。"
+	shortcut_name_timeout: "Steam 未及時確認新的捷徑名稱。",
+	invalid_steam_app_id: "此遊戲不是有效的 Steam 遊戲。",
+	testing_pulls_fetch_failed: "Failed to load pull requests from GitHub",
+	testing_invalid_request: "Invalid pull request build request",
+	testing_pr_not_eligible: "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+	testing_pr_outdated: "This pull request has new commits. Refresh the list and try again.",
+	testing_build_not_found: "No CI build was found for this pull request commit yet.",
+	testing_build_in_progress: "The CI build for this pull request is still running. Try again once it finishes.",
+	testing_build_failed: "The latest CI build for this pull request failed.",
+	testing_artifact_not_found: "No downloadable test build artifact was found for this pull request.",
+	testing_artifact_expired: "The CI build artifact for this pull request has expired.",
+	testing_download_failed: "Failed to download the pull request build artifact.",
+	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
+	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
+	testing_staging_failed: "Failed to stage the verified pull request build on disk."
 };
 var updater = {
 	check: {
@@ -18454,7 +20174,11 @@ var qam = {
 		showTimesLabel: "顯示 HowLongToBeat 時數",
 		showTimesDescription: "在 Steam 遊戲與非 Steam 遊戲頁面顯示 HowLongToBeat 時數。",
 		storeLabel: "商店",
-		storeDescription: "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。",
+		storeDescription: "在 Steam 商店遊戲頁面的資訊列中顯示 HowLongToBeat 時數。一律使用自動配對；個別遊戲的 HLTB 選擇僅適用於收藏庫的遊戲頁面。",
+		statsHeading: "統計",
+		styleHeading: "樣式",
+		customizeHeading: "自訂",
+		cacheHeading: "快取",
 		styleLabel: "HLTB 樣式",
 		styleDescription: "「Clean」樣式是為了搭配 CSS Loader 主題「Clean Gameview」而設計",
 		styleDefault: "預設",
@@ -18547,7 +20271,8 @@ var qam = {
 		positionTopLeft: "左上",
 		positionTopRight: "右上",
 		loadingPreferences: "正在載入 ProtonDB 徽章偏好設定...",
-		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。"
+		footnote: "評分直接來自 ProtonDB。它們代表社群體驗，而非 Valve 的相容性評級；未比對到的遊戲與沒有 ProtonDB 分級的遊戲會隱藏徽章。",
+		gameCoversHeading: "遊戲封面"
 	},
 	miniAchievements: {
 		title: "迷你成就",
@@ -18635,7 +20360,23 @@ var qam = {
 		checkNow: "立即檢查",
 		enableDevelopmentTitle: "啟用開發版本？",
 		confirmRevertTitle: "回復至穩定版？",
-		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。"
+		confirmRevertBody: "確定要回復至穩定版 v{{version}} 嗎？這是降級動作，可能導致資料遺失或設定問題。",
+		developerHeading: "Developer",
+		enableTestingTab: "Enable Testing tab",
+		enableTestingTabDescription: "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+		softwareUpdates: "軟體更新",
+		checkForUpdates: "檢查更新",
+		upToDateButton: "已是最新",
+		apply: "套用",
+		applying: "正在套用...",
+		moveToStableShort: "切換至穩定版",
+		revertToStableShort: "回復至穩定版",
+		upToDateLastChecked: "已是最新：上次檢查 {{date}}",
+		versionArrow: "v{{current}} → v{{next}} ({{channel}})",
+		channelLabel: "更新通道",
+		channelOptionStable: "穩定版",
+		channelOptionDevelopment: "開發版",
+		channelStableDescription: "接收經過測試的穩定版本。"
 	},
 	versions: {
 		title: "版本",
@@ -18653,6 +20394,39 @@ var qam = {
 		modalTitle: "外掛日誌",
 		modalEmpty: "沒有最近的日誌",
 		ok: "確定"
+	},
+	testing: {
+		title: "Testing",
+		header: "Pull request builds",
+		eligibilityNote: "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+		refreshLabel: "Refresh pull requests",
+		loading: "Loading pull requests...",
+		loadError: "Failed to load pull requests",
+		noPrs: "No eligible open pull requests found.",
+		items: "Items",
+		sort: {
+			updated: "Updated",
+			opened: "Opened",
+			number: "PR #",
+			author: "Author",
+			title: "Title"
+		},
+		sortAscending: "Sort ascending",
+		sortDescending: "Sort descending",
+		author: "By {{author}}",
+		opened: "Opened {{date}}",
+		updated: "Updated {{date}}",
+		forkBadge: "Fork · test-build",
+		draftBadge: "Draft",
+		install: "Install",
+		installing: "Preparing...",
+		retry: "重試",
+		info: "View on GitHub",
+		installModalTitle: "Install PR #{{id}}?",
+		modalDetails: "By {{author}} · Commit {{sha}}",
+		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
+		prepareFailed: "Failed to prepare pull request build."
 	}
 };
 var storeRow = {
@@ -18661,7 +20435,8 @@ var storeRow = {
 	statMain: "主線故事",
 	statMainPlus: "主線 + 額外內容",
 	statComplete: "完美通關",
-	statAllStyles: "所有遊玩風格"
+	statAllStyles: "所有遊玩風格",
+	viewDetails: "檢視詳細資料"
 };
 var trailers = {
 	audio: "預告片音訊",
@@ -18760,7 +20535,8 @@ var panel = {
 		cacheClearFailed: "清除快取失敗",
 		delisted: "已下架的 Steam 遊戲",
 		logs: "日誌"
-	}
+	},
+	testingTabSaveError: "Testing tab setting could not be saved"
 };
 var contextMenu = {
 	editMetadata: "編輯中繼資料..."
@@ -18923,7 +20699,8 @@ var editor = {
 	},
 	steamTextLanguage: "Steam 文字語言：{{language}}",
 	fetchSteamText: "載入 Steam 文字（{{language}}）",
-	steamTextUnavailable: "Steam 未傳回此遊戲的文字。"
+	steamTextUnavailable: "Steam 未傳回此遊戲的文字。",
+	hltbDisabledNotice: "HowLongToBeat 時數目前已在設定中關閉。"
 };
 var matchPicker = {
 	help: "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
@@ -19244,14 +21021,31 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
+const ProgressBarField = DFL.ProgressBarWithInfo;
+const SCAN_PROGRESS_CLASS = "decky-metadata-scan-progress";
+const scanProgressCss = `
+.${SCAN_PROGRESS_CLASS} {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.${SCAN_PROGRESS_CLASS} div {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+`;
 function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, scanMessage, scanCompleted, scanTotal, onRefreshMetadata, inline = false, listReady = true, }) {
     const t = useT();
-    // Native default is a fixed-width, focusable column at the right; the bar uses the whole row instead.
-    const progress = scanBusy ? (SP_JSX.jsx(DFL.ProgressBarWithInfo, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
+    // Steam's ProgressBarWithInfo forwards Field props at runtime. Without childrenLayout="below",
+    // Field places the bar in FieldRightColumn (flex-shrink: 0, no min-width: 0), so long titles
+    // stretch the progress bar past the right edge of the QAM. Putting it in FieldLeftColumn via
+    // childrenLayout="below" and wrapping the QAM row in PanelSectionRow keeps it within the panel.
+    const progressStyle = scanBusy ? SP_JSX.jsx("style", { children: scanProgressCss }) : null;
+    const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
-        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
+        return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [progressStyle, SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), bottomSeparator: "none", children: String(detectedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), bottomSeparator: "none", children: String(savedCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), bottomSeparator: "none", children: String(missingCount) }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: t("qam.metadata.refreshDescription"), bottomSeparator: "none", disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("qam.metadata.refresh") }) }), progress ? SP_JSX.jsx(DFL.PanelSectionRow, { children: progress }) : null] }));
 }
 function MetadataMaintenanceBody({ scanBusy, cacheBusy, delistedCountText, delistedDateText, delistedBusy, onClearCache, onRefreshDelisted, listReady = true, }) {
     const t = useT();
@@ -19309,6 +21103,9 @@ const getUpdateCheckContext = callable("get_update_check_context");
 const getUpdateSettings = callable("get_update_settings");
 const setUpdateChannel = callable("set_update_channel");
 const setAutomaticUpdateChecks = callable("set_automatic_update_checks");
+const setTestingTabEnabled = callable("set_testing_tab_enabled");
+const getTestingVersions = callable("get_testing_versions");
+const prepareTestingVersion = callable("prepare_testing_version");
 const getTrailerSettings = callable("get_trailer_settings");
 const setTrailerSettings = callable("set_trailer_settings");
 const getMiniAchievementsEnabled = callable("get_mini_achievements_enabled");
@@ -19319,6 +21116,9 @@ const getEditorHeaderSettings = callable("get_editor_header_settings");
 const setEditorHeaderSettings = callable("set_editor_header_settings");
 const getProviderCache = callable("get_provider_cache");
 const putProtonDbCache = callable("put_protondb_cache");
+const getAllSteamOverrides = callable("get_all_steam_overrides");
+const getSteamOverride = callable("get_steam_override");
+const saveSteamOverride = callable("save_steam_override");
 const getHltbSettings = callable("get_hltb_settings");
 const setHltbSettings = callable("set_hltb_settings");
 const getHltbStats = callable("get_hltb_stats");
@@ -19346,6 +21146,7 @@ var backend = /*#__PURE__*/Object.freeze({
     frontendLog: frontendLog,
     getActivityRefreshProgress: getActivityRefreshProgress,
     getAllMetadata: getAllMetadata,
+    getAllSteamOverrides: getAllSteamOverrides,
     getCommunityFallbackPage: getCommunityFallbackPage,
     getCompatibilityDefault: getCompatibilityDefault,
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
@@ -19365,10 +21166,13 @@ var backend = /*#__PURE__*/Object.freeze({
     getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
     getShortcutNameManagement: getShortcutNameManagement,
+    getSteamOverride: getSteamOverride,
     getSystemVersions: getSystemVersions,
+    getTestingVersions: getTestingVersions,
     getTrailerSettings: getTrailerSettings,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
+    prepareTestingVersion: prepareTestingVersion,
     previewFetchedMetadata: previewFetchedMetadata,
     previewSteamMetadata: previewSteamMetadata,
     putProtonDbCache: putProtonDbCache,
@@ -19381,6 +21185,7 @@ var backend = /*#__PURE__*/Object.freeze({
     saveMetadataIfUnchanged: saveMetadataIfUnchanged,
     savePreviewedMetadata: savePreviewedMetadata,
     saveShortcutNameState: saveShortcutNameState,
+    saveSteamOverride: saveSteamOverride,
     searchHltbGames: searchHltbGames,
     searchMetadata: searchMetadata,
     searchSteamMatches: searchSteamMatches,
@@ -19392,6 +21197,7 @@ var backend = /*#__PURE__*/Object.freeze({
     setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setProtonDbBadgeSettings: setProtonDbBadgeSettings,
+    setTestingTabEnabled: setTestingTabEnabled,
     setTrailerSettings: setTrailerSettings,
     setUpdateChannel: setUpdateChannel,
     startRefreshSteamActivities: startRefreshSteamActivities,
@@ -19479,26 +21285,40 @@ function PluginInstallAction({ candidate, currentVersion, isChecking, isInstalli
 // THIS FILE IS AUTO GENERATED
 function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 496 512"},"child":[{"tag":"path","attr":{"d":"M496 256c0 137-111.2 248-248.4 248-113.8 0-209.6-76.3-239-180.4l95.2 39.3c6.4 32.1 34.9 56.4 68.9 56.4 39.2 0 71.9-32.4 70.2-73.5l84.5-60.2c52.1 1.3 95.8-40.9 95.8-93.5 0-51.6-42-93.5-93.7-93.5s-93.7 42-93.7 93.5v1.2L176.6 279c-15.5-.9-30.7 3.4-43.5 12.1L0 236.1C10.2 108.4 117.1 8 247.6 8 384.8 8 496 119 496 256zM155.7 384.3l-30.5-12.6a52.79 52.79 0 0 0 27.2 25.8c26.9 11.2 57.8-1.6 69-28.4 5.4-13 5.5-27.3.1-40.3-5.4-13-15.5-23.2-28.5-28.6-12.9-5.4-26.7-5.2-38.9-.6l31.5 13c19.8 8.2 29.2 30.9 20.9 50.7-8.3 19.9-31 29.2-50.8 21zm173.8-129.9c-34.4 0-62.4-28-62.4-62.3s28-62.3 62.4-62.3 62.4 28 62.4 62.3-27.9 62.3-62.4 62.3zm.1-15.6c25.9 0 46.9-21 46.9-46.8 0-25.9-21-46.8-46.9-46.8s-46.9 21-46.9 46.8c.1 25.8 21.1 46.8 46.9 46.8z"},"child":[]}]})(props);
+}function FaUser (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M224 256c70.7 0 128-57.3 128-128S294.7 0 224 0 96 57.3 96 128s57.3 128 128 128zm89.6 32h-16.7c-22.2 10.2-46.9 16-72.9 16s-50.6-5.8-72.9-16h-16.7C60.2 288 0 348.2 0 422.4V464c0 26.5 21.5 48 48 48h352c26.5 0 48-21.5 48-48v-41.6c0-74.2-60.2-134.4-134.4-134.4z"},"child":[]}]})(props);
 }function FaTrophy (props) {
   return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M552 64H448V24c0-13.3-10.7-24-24-24H152c-13.3 0-24 10.7-24 24v40H24C10.7 64 0 74.7 0 88v56c0 35.7 22.5 72.4 61.9 100.7 31.5 22.7 69.8 37.1 110 41.7C203.3 338.5 240 360 240 360v72h-48c-35.3 0-64 20.7-64 56v12c0 6.6 5.4 12 12 12h296c6.6 0 12-5.4 12-12v-12c0-35.3-28.7-56-64-56h-48v-72s36.7-21.5 68.1-73.6c40.3-4.6 78.6-19 110-41.7 39.3-28.3 61.9-65 61.9-100.7V88c0-13.3-10.7-24-24-24zM99.3 192.8C74.9 175.2 64 155.6 64 144v-16h64.2c1 32.6 5.8 61.2 12.8 86.2-15.1-5.2-29.2-12.4-41.7-21.4zM512 144c0 16.1-17.7 36.1-35.3 48.8-12.5 9-26.7 16.2-41.8 21.4 7-25 11.8-53.6 12.8-86.2H512v16z"},"child":[]}]})(props);
 }function FaSyncAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M370.72 133.28C339.458 104.008 298.888 87.962 255.848 88c-77.458.068-144.328 53.178-162.791 126.85-1.344 5.363-6.122 9.15-11.651 9.15H24.103c-7.498 0-13.194-6.807-11.807-14.176C33.933 94.924 134.813 8 256 8c66.448 0 126.791 26.136 171.315 68.685L463.03 40.97C478.149 25.851 504 36.559 504 57.941V192c0 13.255-10.745 24-24 24H345.941c-21.382 0-32.09-25.851-16.971-40.971l41.75-41.749zM32 296h134.059c21.382 0 32.09 25.851 16.971 40.971l-41.75 41.75c31.262 29.273 71.835 45.319 114.876 45.28 77.418-.07 144.315-53.144 162.787-126.849 1.344-5.363 6.122-9.15 11.651-9.15h57.304c7.498 0 13.194 6.807 11.807 14.176C478.067 417.076 377.187 504 256 504c-66.448 0-126.791-26.136-171.315-68.685L48.97 471.03C33.851 486.149 8 475.441 8 454.059V320c0-13.255 10.745-24 24-24z"},"child":[]}]})(props);
+}function FaSortAmountUpAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M240 96h64a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16h-64a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm0 128h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm256 192H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h256a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm-256-64h192a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zM16 160h48v304a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16V160h48c14.21 0 21.39-17.24 11.31-27.31l-80-96a16 16 0 0 0-22.62 0l-80 96C-5.35 142.74 1.78 160 16 160z"},"child":[]}]})(props);
+}function FaSortAmountDownAlt (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M240 96h64a16 16 0 0 0 16-16V48a16 16 0 0 0-16-16h-64a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm0 128h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm256 192H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h256a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zm-256-64h192a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16H240a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16zm-64 0h-48V48a16 16 0 0 0-16-16H80a16 16 0 0 0-16 16v304H16c-14.19 0-21.37 17.24-11.29 27.31l80 96a16 16 0 0 0 22.62 0l80-96C197.35 369.26 190.22 352 176 352z"},"child":[]}]})(props);
 }function FaPlayCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119 8 8 119 8 256s111 248 248 248 248-111 248-248S393 8 256 8zm115.7 272l-176 101c-15.8 8.8-35.7-2.5-35.7-21V152c0-18.4 19.8-29.8 35.7-21l176 107c16.4 9.2 16.4 32.9 0 42z"},"child":[]}]})(props);
 }function FaPencilAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M497.9 142.1l-46.1 46.1c-4.7 4.7-12.3 4.7-17 0l-111-111c-4.7-4.7-4.7-12.3 0-17l46.1-46.1c18.7-18.7 49.1-18.7 67.9 0l60.1 60.1c18.8 18.7 18.8 49.1 0 67.9zM284.2 99.8L21.6 362.4.4 483.9c-2.9 16.4 11.4 30.6 27.8 27.8l121.5-21.3 262.6-262.6c4.7-4.7 4.7-12.3 0-17l-111-111c-4.8-4.7-12.4-4.7-17.1 0zM124.1 339.9c-5.5-5.5-5.5-14.3 0-19.8l154-154c5.5-5.5 14.3-5.5 19.8 0s5.5 14.3 0 19.8l-154 154c-5.5 5.5-14.3 5.5-19.8 0zM88 424h48v36.3l-64.5 11.3-31.1-31.1L51.7 376H88v48z"},"child":[]}]})(props);
+}function FaInfo (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 192 512"},"child":[{"tag":"path","attr":{"d":"M20 424.229h20V279.771H20c-11.046 0-20-8.954-20-20V212c0-11.046 8.954-20 20-20h112c11.046 0 20 8.954 20 20v212.229h20c11.046 0 20 8.954 20 20V492c0 11.046-8.954 20-20 20H20c-11.046 0-20-8.954-20-20v-47.771c0-11.046 8.954-20 20-20zM96 0C56.235 0 24 32.235 24 72s32.235 72 72 72 72-32.235 72-72S135.764 0 96 0z"},"child":[]}]})(props);
 }function FaInfoCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
+}function FaFlask (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M437.2 403.5L320 215V64h8c13.3 0 24-10.7 24-24V24c0-13.3-10.7-24-24-24H120c-13.3 0-24 10.7-24 24v16c0 13.3 10.7 24 24 24h8v151L10.8 403.5C-18.5 450.6 15.3 512 70.9 512h306.2c55.7 0 89.4-61.5 60.1-108.5zM137.9 320l48.2-77.6c3.7-5.2 5.8-11.6 5.8-18.4V64h64v160c0 6.9 2.2 13.2 5.8 18.4l48.2 77.6h-172z"},"child":[]}]})(props);
 }function FaFileAlt (props) {
   return GenIcon({"attr":{"viewBox":"0 0 384 512"},"child":[{"tag":"path","attr":{"d":"M224 136V0H24C10.7 0 0 10.7 0 24v464c0 13.3 10.7 24 24 24h336c13.3 0 24-10.7 24-24V160H248c-13.2 0-24-10.8-24-24zm64 236c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-64c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12v8zm0-72v8c0 6.6-5.4 12-12 12H108c-6.6 0-12-5.4-12-12v-8c0-6.6 5.4-12 12-12h168c6.6 0 12 5.4 12 12zm96-114.1v6.1H256V0h6.1c6.4 0 12.5 2.5 17 7l97.9 98c4.5 4.5 7 10.6 7 16.9z"},"child":[]}]})(props);
 }function FaExclamationTriangle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 576 512"},"child":[{"tag":"path","attr":{"d":"M569.517 440.013C587.975 472.007 564.806 512 527.94 512H48.054c-36.937 0-59.999-40.055-41.577-71.987L246.423 23.985c18.467-32.009 64.72-31.951 83.154 0l239.94 416.028zM288 354c-25.405 0-46 20.595-46 46s20.595 46 46 46 46-20.595 46-46-20.595-46-46-46zm-43.673-165.346l7.418 136c.347 6.364 5.609 11.346 11.982 11.346h48.546c6.373 0 11.635-4.982 11.982-11.346l7.418-136c.375-6.874-5.098-12.654-11.982-12.654h-63.383c-6.884 0-12.356 5.78-11.981 12.654z"},"child":[]}]})(props);
+}function FaDownload (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M216 0h80c13.3 0 24 10.7 24 24v168h87.7c17.8 0 26.7 21.5 14.1 34.1L269.7 378.3c-7.5 7.5-19.8 7.5-27.3 0L90.1 226.1c-12.6-12.6-3.7-34.1 14.1-34.1H192V24c0-13.3 10.7-24 24-24zm296 376v112c0 13.3-10.7 24-24 24H24c-13.3 0-24-10.7-24-24V376c0-13.3 10.7-24 24-24h146.7l49 49c20.1 20.1 52.5 20.1 72.6 0l49-49H488c13.3 0 24 10.7 24 24zm-124 88c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20zm64 0c0-11-9-20-20-20s-20 9-20 20 9 20 20 20 20-9 20-20z"},"child":[]}]})(props);
 }function FaCog (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
 }function FaClock (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
 }function FaCheckCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
+}function FaCaretDown (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 320 512"},"child":[{"tag":"path","attr":{"d":"M31.3 192h257.3c17.8 0 26.7 21.5 14.1 34.1L174.1 354.8c-7.8 7.8-20.5 7.8-28.3 0L17.2 226.1C4.6 213.5 13.5 192 31.3 192z"},"child":[]}]})(props);
 }function FaBars (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M16 132h416c8.837 0 16-7.163 16-16V76c0-8.837-7.163-16-16-16H16C7.163 60 0 67.163 0 76v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16zm0 160h416c8.837 0 16-7.163 16-16v-40c0-8.837-7.163-16-16-16H16c-8.837 0-16 7.163-16 16v40c0 8.837 7.163 16 16 16z"},"child":[]}]})(props);
 }
@@ -19511,7 +21331,7 @@ const toastLogoStyle = {
     justifyContent: "center",
     height: "100%",
 };
-function notify(kind, heading, body) {
+function notify$1(kind, heading, body) {
     const logo = (SP_JSX.jsx("span", { style: toastLogoStyle, children: kind === "success" ? (SP_JSX.jsx(FaCheckCircle, { color: colors.success, size: 28 })) : kind === "error" ? (SP_JSX.jsx(FaExclamationTriangle, { color: colors.error, size: 28 })) : (SP_JSX.jsx(FaExclamationTriangle, { color: colors.warning, size: 28 })) }));
     try {
         toaster.toast({ title: `${TITLE} · ${heading}`, body, duration: DURATION, logo });
@@ -19520,9 +21340,9 @@ function notify(kind, heading, body) {
         // The Decky toaster may be unavailable outside the runtime.
     }
 }
-const toastSuccess = (heading, body) => notify("success", heading, body);
-const toastWarn = (heading, body) => notify("warning", heading, body);
-const toastError = (heading, body) => notify("error", heading, body);
+const toastSuccess = (heading, body) => notify$1("success", heading, body);
+const toastWarn = (heading, body) => notify$1("warning", heading, body);
+const toastError = (heading, body) => notify$1("error", heading, body);
 
 const initialUpdateState = {
     phase: "hydrating",
@@ -19623,8 +21443,15 @@ function updateReducer(state, action) {
 const DEFAULT_UPDATE_SETTINGS = {
     update_channel: "stable",
     automatic_update_checks: true,
+    testing_tab_enabled: false,
 };
-const resolveLoadedUpdateSettings = (result) => ("status" in result ? DEFAULT_UPDATE_SETTINGS : result);
+const resolveLoadedUpdateSettings = (result) => "status" in result
+    ? DEFAULT_UPDATE_SETTINGS
+    : {
+        ...DEFAULT_UPDATE_SETTINGS,
+        ...result,
+        testing_tab_enabled: Boolean(result.testing_tab_enabled),
+    };
 
 function logUpdate(traceId, stage, details) {
     const detailsStr = details
@@ -19682,6 +21509,12 @@ class PluginUpdateControllerStore {
             writable: true,
             value: null
         });
+        Object.defineProperty(this, "pendingTestingTab", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
         // True from the Install click until Decky answers or the install fails: no check or second install meanwhile.
         Object.defineProperty(this, "installOwned", {
             enumerable: true,
@@ -19709,6 +21542,7 @@ class PluginUpdateControllerStore {
                 pluginVersion: "",
                 updateChannel: "stable",
                 automaticUpdateChecks: true,
+                testingTabEnabled: false,
                 settingsLoaded: false,
                 candidate: null,
                 checkResult: null,
@@ -19836,6 +21670,42 @@ class PluginUpdateControllerStore {
                 }
                 if (this.pendingAutomatic === pending)
                     this.pendingAutomatic = null;
+                if (saved)
+                    this.applySettings(saved);
+                else
+                    this.publish();
+            }
+        });
+        Object.defineProperty(this, "setTestingTabEnabled", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: async (enabled) => {
+                const pending = { value: enabled };
+                const generation = this.generation;
+                this.pendingTestingTab = pending;
+                this.publish();
+                let saved = null;
+                try {
+                    const result = await this.deps.setTestingTabEnabled(enabled);
+                    if (generation !== this.generation)
+                        return;
+                    if ("status" in result) {
+                        this.deps.toastError(t("panel.toast.updates"), result.message ? translateBackendError(result.message) : t("panel.testingTabSaveError"));
+                    }
+                    else {
+                        saved = resolveLoadedUpdateSettings(result);
+                    }
+                }
+                catch (error) {
+                    if (generation !== this.generation)
+                        return;
+                    logUpdate(null, "testing_tab_setting_save_failed", {
+                        message: error instanceof Error ? error.message : String(error),
+                    });
+                }
+                if (this.pendingTestingTab === pending)
+                    this.pendingTestingTab = null;
                 if (saved)
                     this.applySettings(saved);
                 else
@@ -20001,6 +21871,9 @@ class PluginUpdateControllerStore {
     }
     get automaticUpdateChecks() {
         return this.pendingAutomatic?.value ?? this.confirmed.automatic_update_checks;
+    }
+    get testingTabEnabled() {
+        return this.pendingTestingTab?.value ?? this.confirmed.testing_tab_enabled;
     }
     dropActiveCheck() {
         this.activeCheckId += 1;
@@ -20246,6 +22119,7 @@ class PluginUpdateControllerStore {
             pluginVersion: this.pluginVersion,
             updateChannel: this.updateChannel,
             automaticUpdateChecks: this.automaticUpdateChecks,
+            testingTabEnabled: this.testingTabEnabled,
             settingsLoaded: this.settingsLoaded,
             candidate: this.state.candidate,
             checkResult: this.state.checkResult,
@@ -20283,6 +22157,7 @@ const pluginUpdateController = new PluginUpdateControllerStore({
     checkForPluginUpdate,
     setUpdateChannel,
     setAutomaticUpdateChecks,
+    setTestingTabEnabled,
     clearPendingUpdateInstall,
     confirmUpdateInstallHandoff,
     recordUpdateInstallRequested,
@@ -20307,6 +22182,7 @@ function usePluginUpdateController() {
         install: pluginUpdateController.install,
         setUpdateChannel: pluginUpdateController.setUpdateChannel,
         setAutomaticUpdateChecks: pluginUpdateController.setAutomaticUpdateChecks,
+        setTestingTabEnabled: pluginUpdateController.setTestingTabEnabled,
     };
 }
 
@@ -20736,6 +22612,8 @@ const steamPatchTargetsReady = () => {
 };
 const hasActivityStore = () => !!steamInternals().appActivityStore;
 const NON_STEAM_APP_TYPE = 1073741824;
+/** EAppType bitmask for playable Steam titles (Game, Demo, Beta); excludes Tools/Proton, Videos, Music, Apps. */
+const NATIVE_STEAM_GAME_APP_TYPE_MASK = 1 | 8 | 65536;
 const GAME_DETAIL_ROUTES = [
     "/library/app/:appid",
     "/library/details/:appid",
@@ -20989,6 +22867,19 @@ const isNativeNonSteamShortcut = (overview) => {
     catch (_error) {
         return false;
     }
+};
+/**
+ * True for native Steam games (Game, Demo, Beta) — never shortcuts, Tools/Proton,
+ * Soundtracks, Videos, or Applications.
+ */
+const isNativeSteamGame = (overview) => {
+    if (!overview || isNativeNonSteamShortcut(overview))
+        return false;
+    const appId = Number(overview?.appid);
+    if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000)
+        return false;
+    const appType = Number(overview?.app_type);
+    return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
 };
 const getOverview = (appId) => {
     try {
@@ -23233,7 +25124,7 @@ const nativeReleaseDate = (value) => {
 const CSS_IDENTIFIER_RE = /^[A-Za-z_-][A-Za-z0-9_-]*$/;
 const GLOBAL_MIRROR_KEY = "__DECKY_METADATA_NATIVE_CLASSES__";
 let translatedClasses = {};
-const listeners = new Set();
+const listeners$1 = new Set();
 function isValidCssIdentifier(value) {
     return typeof value === "string" && CSS_IDENTIFIER_RE.test(value);
 }
@@ -23265,7 +25156,7 @@ function setNativeCssClasses(raw) {
     }
     translatedClasses = next;
     mirrorToSteamWindow(next);
-    for (const listener of Array.from(listeners)) {
+    for (const listener of Array.from(listeners$1)) {
         try {
             listener();
         }
@@ -23284,9 +25175,9 @@ function resolveSteamCssClass(primary, key) {
     return getNativeCssClass(key);
 }
 function subscribeNativeCssClasses(listener) {
-    listeners.add(listener);
+    listeners$1.add(listener);
     return () => {
-        listeners.delete(listener);
+        listeners$1.delete(listener);
     };
 }
 
@@ -27587,6 +29478,1288 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        const notice = t("conflicts.pluginConflict", {
+            pluginName: conflict.pluginName,
+            feature,
+        });
+        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
+    }
+    return conflict.detectionAvailable ? ""
+        : t("conflicts.detectionUnavailable", { feature });
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
+}
+
+let pending;
+/** One saved-cache read shared by the features that seed from it at startup. */
+const loadProviderCache = () => {
+    pending ?? (pending = getProviderCache());
+    return pending;
+};
+/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
+const releaseProviderCache = () => {
+    pending = undefined;
+};
+
+const DEFAULT_HLTB_SETTINGS = {
+    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
+    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    nativeDetailsCorners: false,
+    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
+};
+const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
+const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
+function normalizeHltbSettings(value) {
+    const stored = object(value);
+    const appearance = object(stored.appearance);
+    const defaults = DEFAULT_HLTB_SETTINGS;
+    const defaultAppearance = defaults.appearance;
+    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
+        ? stored.style : defaults.style;
+    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+        ? appearance.blur : defaultAppearance.blur;
+    return {
+        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
+        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
+        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
+        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
+        showMain: bool(stored.showMain, defaults.showMain),
+        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
+        showComplete: bool(stored.showComplete, defaults.showComplete),
+        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
+        appearance: {
+            custom: bool(appearance.custom, defaultAppearance.custom),
+            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
+            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
+            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
+            border: bool(appearance.border, defaultAppearance.border),
+            blur,
+        },
+    };
+}
+
+const MAX_STEAM_APP_ID$1 = 0x7fffffff;
+const validPositiveId = (value) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= MAX_STEAM_APP_ID$1 ? id : null;
+};
+const overrides = new Map();
+const listeners = new Set();
+const notify = () => {
+    for (const listener of listeners) {
+        try {
+            listener();
+        }
+        catch {
+            // One unmounting view cannot block other listeners.
+        }
+    }
+};
+const getSteamOverrideCached = (appId) => {
+    const id = validPositiveId(appId);
+    return id === null ? undefined : overrides.get(id);
+};
+const getSteamHltbOverride = (appId) => validPositiveId(getSteamOverrideCached(appId)?.hltb_game_id);
+const setSteamOverrideCached = (appId, value) => {
+    const id = validPositiveId(appId);
+    if (id === null)
+        return;
+    const hltbId = validPositiveId(value?.hltb_game_id);
+    if (hltbId === null) {
+        if (!overrides.delete(id))
+            return;
+    }
+    else {
+        const previous = overrides.get(id);
+        if (previous?.hltb_game_id === hltbId)
+            return;
+        overrides.set(id, { hltb_game_id: hltbId });
+    }
+    notify();
+};
+const replaceSteamOverrides = (entries) => {
+    overrides.clear();
+    if (entries && typeof entries === "object") {
+        for (const [key, entry] of Object.entries(entries)) {
+            const appId = validPositiveId(key);
+            const hltbId = validPositiveId(entry?.hltb_game_id);
+            if (appId !== null && hltbId !== null) {
+                overrides.set(appId, { hltb_game_id: hltbId });
+            }
+        }
+    }
+    notify();
+};
+const clearSteamOverrideCache = () => {
+    if (overrides.size === 0)
+        return;
+    overrides.clear();
+    notify();
+};
+const subscribeSteamOverrides = (listener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+const DAY_MS = 86400000;
+const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
+const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
+const isEntry = (value) => value.status === "matched" || value.status === "no_match";
+const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Isolates pinned Library lookups from automatic Store lookups for the same Steam app. */
+const slotKey = (appId, pinned) => `${appId}:${pinned ?? ""}`;
+/** Saved HLTB results by app ID, available synchronously while a game page renders. */
+class HltbStore {
+    constructor(fetchStats = getHltbStats) {
+        Object.defineProperty(this, "fetchStats", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchStats
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "blocked", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "inFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "retryAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    /** Load saved entries; a result fetched during this session wins. */
+    seed(entries) {
+        for (const [id, entry] of Object.entries(entries)) {
+            const appId = Number(id);
+            if (Number.isSafeInteger(appId) && appId > 0) {
+                const key = slotKey(appId, entry.pinned_id_used ?? null);
+                if (!this.entries.has(key))
+                    this.entries.set(key, entry);
+            }
+        }
+    }
+    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
+    view(appId, inputs, now = Date.now()) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.blocked.get(key) === inputsKey(inputs))
+            return { entry: null, needsFetch: false };
+        const entry = this.entries.get(key);
+        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
+            entry.pinned_id_used !== inputs.pinned)
+            return { entry: null, needsFetch: true };
+        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
+        return { entry, needsFetch: now - entry.fetched_at >= ttl };
+    }
+    /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
+    request(appId, isShortcut, inputs, now = Date.now(), usePinned = true) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now)
+            return;
+        const request = {};
+        this.inFlight.set(key, request);
+        const ownsRequest = () => this.inFlight.get(key) === request;
+        const call = usePinned
+            ? this.fetchStats(appId, isShortcut, inputs.title)
+            : this.fetchStats(appId, isShortcut, inputs.title, false);
+        void call.then((result) => {
+            if (!ownsRequest())
+                return;
+            if (isEntry(result)) {
+                const resultKey = slotKey(appId, result.pinned_id_used ?? null);
+                this.entries.set(resultKey, result);
+                this.blocked.delete(resultKey);
+            }
+            else if (result.status === "error") {
+                this.retryAt.set(key, Date.now() + Math.max(1000, result.retry_after_ms));
+            }
+            else {
+                this.blocked.set(key, inputsKey(inputs));
+            }
+            this.notify(appId);
+        }, () => {
+            if (ownsRequest())
+                this.retryAt.set(key, Date.now() + 30000);
+        }).finally(() => {
+            if (ownsRequest())
+                this.inFlight.delete(key);
+        });
+    }
+    subscribe(appId, listener) {
+        let set = this.listeners.get(appId);
+        if (!set)
+            this.listeners.set(appId, set = new Set());
+        set.add(listener);
+        return () => {
+            set.delete(listener);
+            if (set.size === 0)
+                this.listeners.delete(appId);
+        };
+    }
+    /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
+    forget(appId) {
+        const prefix = `${appId}:`;
+        for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
+            for (const key of [...map.keys()]) {
+                if (key.startsWith(prefix))
+                    map.delete(key);
+            }
+        }
+        this.notify(appId);
+    }
+    /** Forget everything, e.g. after Clear cache or when the feature stops. */
+    reset() {
+        this.entries.clear();
+        this.blocked.clear();
+        this.inFlight.clear();
+        this.retryAt.clear();
+        for (const appId of [...this.listeners.keys()])
+            this.notify(appId);
+    }
+    notify(appId) {
+        for (const listener of this.listeners.get(appId) ?? []) {
+            try {
+                listener();
+            }
+            catch {
+                // One unmounting page must not block others.
+            }
+        }
+    }
+}
+const hltbStore = new HltbStore();
+
+/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
+class HltbController {
+    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }, loadSteamOverrides = () => typeof getAllSteamOverrides === "function" ? getAllSteamOverrides() : Promise.resolve({})) {
+        Object.defineProperty(this, "runtime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: runtime
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: store
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "loadSteamOverrides", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadSteamOverrides
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposeRuntime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = this.initialSnapshot();
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = { ...this.initialSnapshot(), busy: true };
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("hltb") });
+        });
+        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
+            this.store.seed(cache.hltb.entries); }, () => undefined);
+        const overridesReady = this.loadSteamOverrides().then((entries) => { if (this.isCurrent(generation))
+            replaceSteamOverrides(entries); }, () => undefined);
+        void Promise.all([this.settingsStore.get(), overridesReady]).then(([settings]) => {
+            if (!this.isCurrent(generation))
+                return;
+            const saved = normalizeHltbSettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false });
+        }, (error) => {
+            if (!this.isCurrent(generation))
+                return;
+            warn("bridge", "HLTB settings load failed", error);
+            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.publish({ settingsLoaded: false, busy: false });
+        this.store.reset();
+        clearSteamOverrideCache();
+        this.listeners.clear();
+    }
+    async setSettings(next) {
+        const current = this.snapshot;
+        if (!this.mounted || !current.settingsLoaded)
+            return false;
+        const requested = normalizeHltbSettings(next);
+        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
+            return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const generation = this.generation;
+        while (this.queued && this.isCurrent(generation)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(generation)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, busy: false });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(generation)) {
+                    warn("bridge", "HLTB settings save failed", error);
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: t("hltb.settingsError.saveFailed"),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(generation))
+            this.saving = false;
+    }
+    async clearCache() {
+        if (!this.mounted)
+            return false;
+        this.publish({ cacheStatus: "clearing" });
+        try {
+            await this.settingsStore.clear();
+            this.store.reset();
+            this.publish({ cacheStatus: "cleared" });
+            return true;
+        }
+        catch (error) {
+            warn("bridge", "HLTB cache clear failed", error);
+            this.publish({ cacheStatus: "failed" });
+            return false;
+        }
+    }
+    initialSnapshot() {
+        return Object.freeze({
+            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
+        });
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    publish(update) {
+        const next = { ...this.snapshot, ...update };
+        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
+        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
+        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
+        if (changed)
+            this.applyRuntime(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // A closing QAM panel cannot block the feature.
+            }
+        }
+    }
+    applyRuntime(enabled) {
+        try {
+            if (enabled) {
+                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
+            }
+            else {
+                const dispose = this.disposeRuntime;
+                this.disposeRuntime = undefined;
+                dispose?.();
+            }
+        }
+        catch (error$1) {
+            error("patch", "HLTB runtime transition failed", error$1);
+            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
+        }
+    }
+}
+
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache;
+let menuButtonClassesCache;
+const detailsClasses = () => {
+    if (!detailsClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+            if (found && typeof found === "object")
+                detailsClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return detailsClassesCache ?? {};
+};
+const menuButtonClasses = () => {
+    if (!menuButtonClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+            if (found && typeof found === "object")
+                menuButtonClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return menuButtonClassesCache ?? {};
+};
+const css$2 = `
+/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
+#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
+.decky-metadata-hltb-info {
+  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
+  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
+  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
+}
+/* Sit on the bottom of the header instead of pushing the Play section down. */
+.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
+/* "Push Play button down": take layout height below the header so Play moves down. */
+#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
+.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
+.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
+  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
+}
+.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
+/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
+.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
+.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
+.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
+.decky-metadata-hltb-info li { text-align: center; }
+.decky-metadata-hltb-info p { margin: 0; }
+.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
+.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
+.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
+`;
+function HltbStats({ stats, hltbId, settings, launching }) {
+    const t = useT();
+    if (!stats || launching || Object.values(stats).every(value => value <= 0))
+        return null;
+    const { appearance, style } = settings;
+    const vars = {};
+    if (appearance.custom) {
+        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
+        if (appearance.textShadow)
+            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
+        if (appearance.textScale !== 100)
+            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
+        if (!appearance.border)
+            vars["--hltb-border-width"] = "0";
+    }
+    const items = [
+        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
+        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
+        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
+        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
+    ];
+    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
+    const classes = [
+        style === "default" ? "decky-metadata-hltb-default" : "",
+        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
+        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
+        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+        flow ? "decky-metadata-hltb-flow" : "",
+    ].filter(Boolean).join(" ");
+    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+    const nativeDetailsClasses = detailsClasses();
+    const nativeMenuButtonClasses = menuButtonClasses();
+    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
+}
+
+const ROW_KEY = "decky-metadata-hltb-row";
+const JOINED_CLASS = "decky-metadata-hltb-joined";
+const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
+const px = (value) => String(Math.round(value * 100) / 100);
+/** One blur surface: the Play section's own, grown up over the HLTB bar. */
+const joinedRule = (height, paddingTop) => {
+    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+    if (inner && playSection)
+        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+    if (playSection)
+        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+    return `.${JOINED_CLASS} + * ${rule}`;
+};
+const findHeaderElement = (row) => {
+    const container = row.parentElement;
+    if (!container)
+        return undefined;
+    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
+    if (headerClass) {
+        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+        if (matched)
+            return matched;
+    }
+    return row.previousElementSibling ?? undefined;
+};
+const findPlaySectionElement = (row) => {
+    const next = row.nextElementSibling;
+    if (!next)
+        return null;
+    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    if (playSectionClass) {
+        return next.querySelector(`.${playSectionClass}`);
+    }
+    return next.firstElementChild ?? next;
+};
+const positiveId = (value, maximum) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
+};
+/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
+const hltbInputs = (appId, isShortcut, title) => {
+    if (!isShortcut) {
+        return { steam: positiveId(appId, 0x7fffffff), title, pinned: getSteamHltbOverride(appId) };
+    }
+    const record = metadataCache[String(appId)];
+    return {
+        steam: positiveId(record?.steam_appid, 0x7fffffff),
+        title,
+        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
+    };
+};
+function useHltbSnapshot() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+/** Hide the row while Steam's header animates into a game launch. */
+function useLaunching(ref, active) {
+    const [launching, setLaunching] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (!active || !ref.current)
+            return;
+        const header = findHeaderElement(ref.current);
+        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+        const capsule = topCapsuleClass
+            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+            : header?.firstElementChild ?? undefined;
+        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
+        if (!capsule || !View)
+            return;
+        const observer = new View(() => {
+            const name = capsule.className;
+            const entering = [
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
+            ].some((value) => value && name.includes(value));
+            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
+        });
+        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, [active]);
+    return launching;
+}
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+function useHltbMatch(appId, wanted) {
+    const [, rerender] = SP_REACT.useState(0);
+    const native = getNativeOverview(appId);
+    const isShortcut = isNativeNonSteamShortcut(native);
+    const title = String(native?.display_name ?? "").trim();
+    const inputs = hltbInputs(appId, isShortcut, title);
+    const active = wanted && title !== "";
+    const view = hltbStore.view(appId, inputs);
+    SP_REACT.useEffect(() => {
+        const refresh = () => rerender((value) => value + 1);
+        const unsubscribeStore = hltbStore.subscribe(appId, refresh);
+        const unsubscribeOverrides = isShortcut ? undefined : subscribeSteamOverrides(refresh);
+        return () => {
+            unsubscribeStore();
+            unsubscribeOverrides?.();
+        };
+    }, [appId, isShortcut]);
+    SP_REACT.useEffect(() => {
+        if (active && view.needsFetch)
+            hltbStore.request(appId, isShortcut, inputs);
+    });
+    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+/**
+ * Copy the native Play section's surface onto the row for the "Clean" styles, or
+ * with clean-default on a blurred Play bar, extend that one blur over both rows:
+ * the bar and underlay stay transparent and the Play rule supplies the surface.
+ */
+function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
+    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
+    const padding = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
+            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+            return;
+        }
+        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
+        const resize = { element: null, observer: null };
+        function update() {
+            const section = findPlaySectionElement(row);
+            const bar = row.querySelector(".decky-metadata-hltb-info");
+            if (!section) {
+                for (const name of names)
+                    row.style.removeProperty(name);
+                resize.observer?.disconnect();
+                resize.element = null;
+                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+                return;
+            }
+            const computed = view.getComputedStyle(section);
+            // Native padding is only readable while our own rule is not applied.
+            if (!row.classList.contains(JOINED_CLASS))
+                padding.current = parseFloat(computed.paddingTop) || 0;
+            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
+            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
+            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
+            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
+            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
+            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
+            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
+            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
+            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
+            if (bar !== resize.element) {
+                resize.observer?.disconnect();
+                resize.element = bar;
+                if (bar) {
+                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
+                    resize.observer.observe(bar);
+                }
+            }
+            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
+            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
+        }
+        update();
+        const observer = new view.MutationObserver(update);
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        observer.observe(row.parentElement, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+            resize.observer?.disconnect();
+            for (const name of names)
+                row.style.removeProperty(name);
+        };
+    }, [enabled, style, blur, pushPlayDown]);
+    return surface;
+}
+/**
+ * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
+ * the header art: pushing Play down would leave that bar without its backdrop.
+ */
+function useStatusBandOverlay(ref, wanted) {
+    const [overlay, setOverlay] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setOverlay(false);
+            return;
+        }
+        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
+        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
+        let frame = 0;
+        const touching = () => {
+            const header = findHeaderElement(row);
+            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+            const art = headerBgClass
+                ? header?.querySelector(`.${headerBgClass}`)
+                : header?.querySelector("img")?.parentElement ?? undefined;
+            if (!art)
+                return false;
+            const bounds = art.getBoundingClientRect();
+            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
+            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
+                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
+                .map((rect) => rect.bottom));
+            // Rect, not layout: Steam scales the page while it animates in.
+            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
+            const displacement = flow?.getBoundingClientRect().height ?? 0;
+            for (const bar of Array.from(container.querySelectorAll(selector))) {
+                const rect = bar.getBoundingClientRect();
+                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
+                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
+                    rect.top - bottom > displacement + 1)
+                    continue;
+                const own = view.getComputedStyle(bar);
+                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
+                    continue;
+                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
+                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
+                let visible = true;
+                for (let element = bar; element; element = element.parentElement) {
+                    const style = view.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                        (!suppressed && Number(style.opacity) <= 0)) {
+                        visible = false;
+                        break;
+                    }
+                    if (element === container)
+                        break;
+                }
+                if (visible)
+                    return true;
+            }
+            return false;
+        };
+        const update = () => {
+            frame = 0;
+            const next = touching();
+            setOverlay((previous) => previous === next ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, {
+            childList: true, subtree: true, attributes: true,
+            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
+        });
+        // CSS Loader themes restyle the page from the head and the root element alone.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        const resize = new view.ResizeObserver(schedule);
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        schedule();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            view.removeEventListener("resize", schedule);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted && overlay;
+}
+/** A border box's layout top: unaffected by transforms and scroll position. */
+function layoutTop(element) {
+    let top = 0;
+    for (let node = element; node; node = node.offsetParent)
+        top += node.offsetTop;
+    return top;
+}
+/**
+ * How far Play can move down before its button would go under Big Picture's footer.
+ * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
+ */
+function usePushRoom(ref, wanted) {
+    const [room, setRoom] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setRoom((previous) => previous === null ? previous : null);
+            return;
+        }
+        let frame = 0;
+        let footer = null;
+        const resize = new view.ResizeObserver(() => schedule());
+        const footerResize = new view.ResizeObserver(() => schedule());
+        const measure = () => {
+            // The whole surface that moves Play down in flow mode, margins included. Never
+            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
+            const surface = row.querySelector("#decky-metadata-hltb");
+            const surfaceStyle = surface && view.getComputedStyle(surface);
+            const rowHeight = surface
+                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
+                : 0;
+            const section = findPlaySectionElement(row);
+            if (!rowHeight || !section)
+                return null;
+            let scroller = container.parentElement;
+            while (scroller) {
+                const style = view.getComputedStyle(scroller);
+                if (/(auto|scroll)/.test(style.overflowY))
+                    break;
+                scroller = scroller.parentElement;
+            }
+            if (!scroller || scroller.clientHeight <= 0)
+                return null;
+            const nextFooter = document.querySelector("#Footer");
+            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+            if (nextFooter !== footer) {
+                footerResize.disconnect();
+                footer = nextFooter;
+                if (footer)
+                    footerResize.observe(footer);
+            }
+            const header = findHeaderElement(row);
+            if (!header)
+                return null;
+            // Layout, not rects: Steam scales and translates the page while it animates in,
+            // and a rect read mid-animation would stick until something else moved.
+            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+            const artBottom = layoutTop(header) + header.offsetHeight;
+            // The visible bar's border box; the labels may overhang it but Play clears the bar.
+            const footerTop = footer && footer.offsetHeight > 0
+                ? layoutTop(footer)
+                : layoutTop(scroller) + scroller.clientHeight;
+            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
+            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
+            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
+            // The button face; the wrapper's AppActionButton class is the fallback.
+            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
+                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
+            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+            const buttonBottom = button
+                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+                : section.offsetHeight - lift;
+            const free = footerTop - 4 - artBottom - buttonBottom;
+            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
+        };
+        const update = () => {
+            frame = 0;
+            const next = measure();
+            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+        // Themes restyle the page and the footer from the head and the root element.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        if (document.body)
+            observer.observe(document.body, { childList: true, subtree: true });
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        // Steam animates the page in without any resize or mutation: re-measure when it ends.
+        document.addEventListener("transitionend", schedule, true);
+        document.addEventListener("animationend", schedule, true);
+        update();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            footerResize.disconnect();
+            view.removeEventListener("resize", schedule);
+            document.removeEventListener("transitionend", schedule, true);
+            document.removeEventListener("animationend", schedule, true);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted ? room : null;
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useHltbSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
+    const launching = useLaunching(ref, active);
+    const { settings } = snapshot;
+    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+    const overlay = useStatusBandOverlay(ref, pushWanted);
+    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
+    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
+    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
+    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
+    if (!active)
+        return null;
+    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
+}
+/** True for the child that holds Steam's Play section (the row goes right above it). */
+const isPlaySection = (child) => {
+    const props = (child?.props ?? {});
+    const inner = props.children?.props ?? {};
+    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
+        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
+};
+function installHltbGameView() {
+    const unpatchers = [];
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+            if (!routeProps)
+                return tree;
+            let appId = 0;
+            const handler = DFL.createReactTreePatcher([
+                (inner) => {
+                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                    appId = Number(children?.props?.overview?.appid) || 0;
+                    return children ?? null;
+                },
+            ], (_args, ret) => {
+                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                    node.props.children.some(isPlaySection)))?.props?.children;
+                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                    return ret;
+                const index = children.findIndex(isPlaySection);
+                if (index >= 0)
+                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+                return ret;
+            });
+            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
+            unpatchers.push(() => renderPatch.unpatch());
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    }
+    return () => {
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+const hltbController = new HltbController({ install: installHltbGameView });
+
 // The edit key is inserted for shortcuts. Keep the legacy keys in the removal
 // set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
@@ -27712,7 +30885,10 @@ const visibleText = (children) => {
     return SP_REACT.isValidElement(children) ? visibleText(children.props.children) : "";
 };
 const insertOurEntry = (items, appId) => {
-    if (!isNativeNonSteamShortcut(getNativeOverview(appId)))
+    const nativeOverview = getNativeOverview(appId);
+    const eligible = isNativeNonSteamShortcut(nativeOverview) ||
+        (hltbController.getSnapshot().effectiveEnabled && isNativeSteamGame(nativeOverview));
+    if (!eligible)
         return null;
     const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: t("contextMenu.editMetadata") }, ENTRY_KEY));
     const propertiesIndex = items.findIndex((node) => DFL.findInReactTree(node, hasAppPropertiesHandler));
@@ -27754,7 +30930,7 @@ const syncOurEntry = (phase, items, ownerAppId, fallbackAppId) => {
     if (finalAppId > 0) {
         anchor = insertOurEntry(items, finalAppId);
         if (!anchor) {
-            inserted = "skipped-not-non-steam";
+            inserted = "skipped-not-eligible";
         }
     }
     traceMenu(phase, ownerAppId, fallbackAppId, finalAppId, isAppContextMenu, removed, inserted, anchor, items);
@@ -29825,15 +33001,95 @@ function useScanGames() {
 const SETTINGS_ROUTE = "/decky-metadata-settings";
 // The QAM panel gives this button the first focus when it opens.
 const SETTINGS_BUTTON_CLASS = "decky-metadata-settings-button";
-const openSettings = () => {
-    DFL.Navigation.CloseSideMenus();
-    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+const RELOAD_TAB_GLOBAL_KEY = "__DECKY_METADATA_SETTINGS_RELOAD_TAB__";
+const RELOAD_TAB_MAX_AGE_MS = 15000;
+let activeSettingsTab = null;
+const setActiveSettingsTab = (tab) => {
+    activeSettingsTab = tab;
+};
+const rememberSettingsTabForReload = () => {
+    if (!activeSettingsTab || !isSettingsRouteOpen())
+        return;
+    const host = globalThis;
+    host[RELOAD_TAB_GLOBAL_KEY] = { tab: activeSettingsTab, savedAt: Date.now() };
+};
+const consumeReloadSettingsTab = () => {
+    const host = globalThis;
+    const saved = host[RELOAD_TAB_GLOBAL_KEY];
+    delete host[RELOAD_TAB_GLOBAL_KEY];
+    if (!saved || typeof saved.tab !== "string" || typeof saved.savedAt !== "number")
+        return null;
+    if (Date.now() - saved.savedAt > RELOAD_TAB_MAX_AGE_MS)
+        return null;
+    return saved.tab;
+};
+const getSteamHistory = () => {
     // Current Steam has SteamUIStore and no Router global; older builds have Router.
     const host = globalThis;
     const windowStore = host.SteamUIStore?.WindowStore ?? host.SteamUIStore?.m_WindowStore ?? host.Router?.WindowStore;
-    const path = windowStore?.GamepadUIMainWindowInstance?.m_history?.location?.pathname;
-    // Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
-    if (path?.replace(/^\/routes(?=\/)/, "") !== SETTINGS_ROUTE)
+    return windowStore?.GamepadUIMainWindowInstance?.m_history;
+};
+// Some route contexts report Steam's "/routes" prefix; both forms are the open Settings page.
+const normalizeRoutePath = (pathname) => pathname?.replace(/^\/routes(?=\/)/, "");
+const isSettingsRouteOpen = () => normalizeRoutePath(getSteamHistory()?.location?.pathname) === SETTINGS_ROUTE;
+/**
+ * Decky's router wrapper only rebuilds its route list when `routes.size` changes and returns
+ * the same Switch element reference, so an in-place plugin reload while Settings is open leaves
+ * the old SettingsPage mounted. Briefly adding a sentinel route forces the route list rebuild,
+ * and `history.replace` on the same path makes React Router swap in the new SettingsPage without
+ * adding a duplicate history entry.
+ */
+const refreshOpenSettingsRoute = (routes) => {
+    const history = getSteamHistory();
+    const loc = history?.location;
+    if (normalizeRoutePath(loc?.pathname) !== SETTINGS_ROUTE || typeof history?.replace !== "function") {
+        return () => undefined;
+    }
+    const sentinel = `${SETTINGS_ROUTE}-reload-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    let sentinelRegistered = true;
+    let replaceTimer;
+    let cleanupTimer;
+    const removeSentinel = () => {
+        if (!sentinelRegistered)
+            return;
+        sentinelRegistered = false;
+        try {
+            routes.removeRoute(sentinel);
+        }
+        catch {
+            // Ignore cleanup errors during dismount.
+        }
+    };
+    routes.addRoute(sentinel, () => null, { exact: true });
+    replaceTimer = setTimeout(() => {
+        replaceTimer = undefined;
+        const latestHistory = getSteamHistory();
+        const latestLoc = latestHistory?.location;
+        if (normalizeRoutePath(latestLoc?.pathname) === SETTINGS_ROUTE && typeof latestHistory?.replace === "function") {
+            latestHistory.replace({
+                pathname: latestLoc?.pathname ?? SETTINGS_ROUTE,
+                search: latestLoc?.search ?? "",
+                hash: latestLoc?.hash ?? "",
+                state: latestLoc?.state,
+            });
+        }
+        cleanupTimer = setTimeout(() => {
+            cleanupTimer = undefined;
+            removeSentinel();
+        }, 50);
+    }, 50);
+    return () => {
+        if (replaceTimer !== undefined)
+            clearTimeout(replaceTimer);
+        if (cleanupTimer !== undefined)
+            clearTimeout(cleanupTimer);
+        removeSentinel();
+    };
+};
+const openSettings = () => {
+    DFL.Navigation.CloseSideMenus();
+    // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
+    if (!isSettingsRouteOpen())
         DFL.Navigation.Navigate(SETTINGS_ROUTE);
 };
 // QAM header: the Decky display name plus a gear that opens Settings.
@@ -30324,1191 +33580,6 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                     ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
-
-const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
-const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
-const KNOWN_CONFLICTS = {
-    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
-    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
-    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
-    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
-};
-const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
-const FALLBACK_POLL_MS = 1000;
-const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
-const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
-    typeof value.addEventListener === "function" && "removeEventListener" in value &&
-    typeof value.removeEventListener === "function";
-const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
-/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
-class PluginConflictMonitor {
-    constructor(getLoader = currentLoader) {
-        Object.defineProperty(this, "getLoader", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: getLoader
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "events", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                protondb: UNAVAILABLE,
-                trailers: UNAVAILABLE,
-                miniAchievements: UNAVAILABLE,
-                hltb: UNAVAILABLE,
-            }
-        });
-        Object.defineProperty(this, "handleUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.refresh()
-        });
-    }
-    getConflict(feature) {
-        return this.conflicts[feature];
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => { this.listeners.delete(listener); };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        this.refresh();
-    }
-    stop() {
-        this.mounted = false;
-        this.attachEvents(undefined);
-        this.setPolling(false);
-        this.publish(undefined, undefined);
-        this.listeners.clear();
-    }
-    attachEvents(events) {
-        if (events === this.events)
-            return;
-        try {
-            this.events?.removeEventListener("update", this.handleUpdate);
-        }
-        catch { /* Loader may be unloading. */ }
-        this.events = undefined;
-        try {
-            if (isStateEvents(events)) {
-                events.addEventListener("update", this.handleUpdate);
-                this.events = events;
-            }
-        }
-        catch { /* Poll when Loader state notifications are unavailable. */ }
-    }
-    setPolling(enabled) {
-        if (enabled && this.pollTimer === undefined) {
-            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
-        }
-        else if (!enabled && this.pollTimer !== undefined) {
-            window.clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
-    }
-    refresh() {
-        if (!this.mounted)
-            return;
-        let plugins;
-        let disabled;
-        try {
-            const loader = this.getLoader();
-            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
-                ? loader.deckyState : undefined;
-            if (state !== null && typeof state === "object") {
-                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
-                const inventory = "publicState" in state && typeof state.publicState === "function"
-                    ? state.publicState() : undefined;
-                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
-                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
-                    plugins = inventory.plugins;
-                    disabled = inventory.disabledPlugins;
-                }
-            }
-            else {
-                this.attachEvents(undefined);
-            }
-        }
-        catch {
-            this.attachEvents(undefined);
-        }
-        this.publish(plugins, disabled);
-        this.setPolling(!this.events || !plugins || !disabled);
-    }
-    publish(plugins, disabled) {
-        let changed = false;
-        for (const feature of FEATURES) {
-            const conflict = KNOWN_CONFLICTS[feature];
-            const next = !plugins || !disabled ? UNAVAILABLE
-                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
-                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
-            if (next === this.conflicts[feature])
-                continue;
-            this.conflicts[feature] = next;
-            changed = true;
-        }
-        if (!changed)
-            return;
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* One feature must not block another subscriber. */ }
-        }
-    }
-}
-function featureConflictNotice(conflict, feature, savedEnabled) {
-    if (conflict.pluginName) {
-        const notice = t("conflicts.pluginConflict", {
-            pluginName: conflict.pluginName,
-            feature,
-        });
-        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
-    }
-    return conflict.detectionAvailable ? ""
-        : t("conflicts.detectionUnavailable", { feature });
-}
-const pluginConflicts = new PluginConflictMonitor();
-function startPluginConflicts() {
-    pluginConflicts.mount();
-    return () => pluginConflicts.stop();
-}
-
-let pending;
-/** One saved-cache read shared by the features that seed from it at startup. */
-const loadProviderCache = () => {
-    pending ?? (pending = getProviderCache());
-    return pending;
-};
-/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
-const releaseProviderCache = () => {
-    pending = undefined;
-};
-
-const DEFAULT_HLTB_SETTINGS = {
-    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
-    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-    nativeDetailsCorners: false,
-    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
-};
-const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
-const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
-const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
-function normalizeHltbSettings(value) {
-    const stored = object(value);
-    const appearance = object(stored.appearance);
-    const defaults = DEFAULT_HLTB_SETTINGS;
-    const defaultAppearance = defaults.appearance;
-    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
-        ? stored.style : defaults.style;
-    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
-        ? appearance.blur : defaultAppearance.blur;
-    return {
-        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
-        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
-        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
-        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
-        showMain: bool(stored.showMain, defaults.showMain),
-        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
-        showComplete: bool(stored.showComplete, defaults.showComplete),
-        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
-        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
-        appearance: {
-            custom: bool(appearance.custom, defaultAppearance.custom),
-            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
-            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
-            border: bool(appearance.border, defaultAppearance.border),
-            blur,
-        },
-    };
-}
-
-const DAY_MS = 86400000;
-const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
-const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
-const isEntry = (value) => value.status === "matched" || value.status === "no_match";
-const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
-/** Saved HLTB results by app ID, available synchronously while a game page renders. */
-class HltbStore {
-    constructor(fetchStats = getHltbStats) {
-        Object.defineProperty(this, "fetchStats", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: fetchStats
-        });
-        Object.defineProperty(this, "entries", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "blocked", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "inFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "retryAt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-    }
-    /** Load saved entries; a result fetched during this session wins. */
-    seed(entries) {
-        for (const [id, entry] of Object.entries(entries)) {
-            const appId = Number(id);
-            if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId))
-                this.entries.set(appId, entry);
-        }
-    }
-    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
-    view(appId, inputs, now = Date.now()) {
-        if (this.blocked.get(appId) === inputsKey(inputs))
-            return { entry: null, needsFetch: false };
-        const entry = this.entries.get(appId);
-        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
-            entry.pinned_id_used !== inputs.pinned)
-            return { entry: null, needsFetch: true };
-        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
-        return { entry, needsFetch: now - entry.fetched_at >= ttl };
-    }
-    /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
-    request(appId, isShortcut, inputs, now = Date.now()) {
-        if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now)
-            return;
-        const request = {};
-        this.inFlight.set(appId, request);
-        const ownsRequest = () => this.inFlight.get(appId) === request;
-        void this.fetchStats(appId, isShortcut, inputs.title).then((result) => {
-            if (!ownsRequest())
-                return;
-            if (isEntry(result)) {
-                this.entries.set(appId, result);
-                this.blocked.delete(appId);
-            }
-            else if (result.status === "error") {
-                this.retryAt.set(appId, Date.now() + Math.max(1000, result.retry_after_ms));
-            }
-            else {
-                this.blocked.set(appId, inputsKey(inputs));
-            }
-            this.notify(appId);
-        }, () => {
-            if (ownsRequest())
-                this.retryAt.set(appId, Date.now() + 30000);
-        }).finally(() => {
-            if (ownsRequest())
-                this.inFlight.delete(appId);
-        });
-    }
-    subscribe(appId, listener) {
-        let set = this.listeners.get(appId);
-        if (!set)
-            this.listeners.set(appId, set = new Set());
-        set.add(listener);
-        return () => {
-            set.delete(listener);
-            if (set.size === 0)
-                this.listeners.delete(appId);
-        };
-    }
-    /** Forget one game after Remove metadata; its next view asks the backend again. */
-    forget(appId) {
-        this.entries.delete(appId);
-        this.blocked.delete(appId);
-        this.retryAt.delete(appId);
-        this.inFlight.delete(appId);
-        this.notify(appId);
-    }
-    /** Forget everything, e.g. after Clear cache or when the feature stops. */
-    reset() {
-        this.entries.clear();
-        this.blocked.clear();
-        this.inFlight.clear();
-        this.retryAt.clear();
-        for (const appId of [...this.listeners.keys()])
-            this.notify(appId);
-    }
-    notify(appId) {
-        for (const listener of this.listeners.get(appId) ?? []) {
-            try {
-                listener();
-            }
-            catch {
-                // One unmounting page must not block others.
-            }
-        }
-    }
-}
-const hltbStore = new HltbStore();
-
-/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
-class HltbController {
-    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }) {
-        Object.defineProperty(this, "runtime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: runtime
-        });
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: store
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "loadCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadCache
-        });
-        Object.defineProperty(this, "settingsStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: settingsStore
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "disposeRuntime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        /** Last settings the backend confirmed; a failed save shows these again. */
-        Object.defineProperty(this, "confirmed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Latest requested settings waiting for the in-flight save, plus their callers. */
-        Object.defineProperty(this, "queued", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "saving", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        this.snapshot = this.initialSnapshot();
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const generation = ++this.generation;
-        this.snapshot = { ...this.initialSnapshot(), busy: true };
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.publish({ conflict: this.conflicts.getConflict("hltb") });
-        });
-        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
-            this.store.seed(cache.hltb.entries); }, () => undefined);
-        void this.settingsStore.get().then((settings) => {
-            if (!this.isCurrent(generation))
-                return;
-            const saved = normalizeHltbSettings(settings);
-            this.confirmed = saved;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false });
-        }, (error) => {
-            if (!this.isCurrent(generation))
-                return;
-            warn("bridge", "HLTB settings load failed", error);
-            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
-        });
-    }
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.generation += 1;
-        this.queued?.settles.forEach((settle) => settle(false));
-        this.queued = undefined;
-        this.saving = false;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.publish({ settingsLoaded: false, busy: false });
-        this.store.reset();
-        this.listeners.clear();
-    }
-    async setSettings(next) {
-        const current = this.snapshot;
-        if (!this.mounted || !current.settingsLoaded)
-            return false;
-        const requested = normalizeHltbSettings(next);
-        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
-            return false;
-        // Publish optimistically: the section builds its next change from the snapshot,
-        // and controls must not dim while a save is in flight.
-        this.publish({ settings: requested, busy: true, settingsError: "" });
-        return new Promise((resolve) => {
-            if (this.queued) {
-                // Latest wins; earlier callers settle with this newer value's save.
-                this.queued.settings = requested;
-                this.queued.settles.push(resolve);
-            }
-            else {
-                this.queued = { settings: requested, settles: [resolve] };
-            }
-            if (this.saving)
-                return;
-            this.saving = true;
-            void this.drainSaves();
-        });
-    }
-    /** Saves one request at a time so a toggle pressed during a save is not lost. */
-    async drainSaves() {
-        const generation = this.generation;
-        while (this.queued && this.isCurrent(generation)) {
-            const { settings, settles } = this.queued;
-            this.queued = undefined;
-            let saved = false;
-            try {
-                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
-                if (this.isCurrent(generation)) {
-                    this.confirmed = confirmed;
-                    saved = true;
-                    // A newer request is queued; showing this value first would flash it.
-                    if (!this.queued)
-                        this.publish({ settings: confirmed, busy: false });
-                }
-            }
-            catch (error) {
-                if (this.isCurrent(generation)) {
-                    warn("bridge", "HLTB settings save failed", error);
-                    this.queued?.settles.forEach((settle) => settle(false));
-                    this.queued = undefined;
-                    this.publish({
-                        settings: this.confirmed ?? this.snapshot.settings,
-                        busy: false,
-                        settingsError: t("hltb.settingsError.saveFailed"),
-                    });
-                }
-            }
-            for (const settle of settles)
-                settle(saved);
-        }
-        // A remount may already own the save state; only the current generation clears it.
-        if (this.isCurrent(generation))
-            this.saving = false;
-    }
-    async clearCache() {
-        if (!this.mounted)
-            return false;
-        this.publish({ cacheStatus: "clearing" });
-        try {
-            await this.settingsStore.clear();
-            this.store.reset();
-            this.publish({ cacheStatus: "cleared" });
-            return true;
-        }
-        catch (error) {
-            warn("bridge", "HLTB cache clear failed", error);
-            this.publish({ cacheStatus: "failed" });
-            return false;
-        }
-    }
-    initialSnapshot() {
-        return Object.freeze({
-            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
-        });
-    }
-    isCurrent(generation) {
-        return this.mounted && generation === this.generation;
-    }
-    publish(update) {
-        const next = { ...this.snapshot, ...update };
-        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
-        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
-        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
-        if (changed)
-            this.applyRuntime(effectiveEnabled);
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // A closing QAM panel cannot block the feature.
-            }
-        }
-    }
-    applyRuntime(enabled) {
-        try {
-            if (enabled) {
-                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
-            }
-            else {
-                const dispose = this.disposeRuntime;
-                this.disposeRuntime = undefined;
-                dispose?.();
-            }
-        }
-        catch (error$1) {
-            error("patch", "HLTB runtime transition failed", error$1);
-            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
-        }
-    }
-}
-
-// Steam may register these CSS modules after the plugin loads.
-let detailsClassesCache;
-let menuButtonClassesCache;
-const detailsClasses = () => {
-    if (!detailsClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
-            if (found && typeof found === "object")
-                detailsClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return detailsClassesCache ?? {};
-};
-const menuButtonClasses = () => {
-    if (!menuButtonClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
-            if (found && typeof found === "object")
-                menuButtonClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return menuButtonClassesCache ?? {};
-};
-const css$2 = `
-/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
-#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
-.decky-metadata-hltb-info {
-  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
-  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
-  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
-}
-/* Sit on the bottom of the header instead of pushing the Play section down. */
-.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-/* "Push Play button down": take layout height below the header so Play moves down. */
-#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
-.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
-.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
-  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
-}
-.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
-/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
-.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
-.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
-.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
-.decky-metadata-hltb-info li { text-align: center; }
-.decky-metadata-hltb-info p { margin: 0; }
-.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
-.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
-:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
-:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
-:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
-.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
-`;
-function HltbStats({ stats, hltbId, settings, launching }) {
-    const t = useT();
-    if (!stats || launching || Object.values(stats).every(value => value <= 0))
-        return null;
-    const { appearance, style } = settings;
-    const vars = {};
-    if (appearance.custom) {
-        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
-        if (appearance.textShadow)
-            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
-        if (appearance.textScale !== 100)
-            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
-        if (!appearance.border)
-            vars["--hltb-border-width"] = "0";
-    }
-    const items = [
-        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
-        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
-        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
-        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
-    ];
-    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
-    const classes = [
-        style === "default" ? "decky-metadata-hltb-default" : "",
-        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
-        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
-        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
-        flow ? "decky-metadata-hltb-flow" : "",
-    ].filter(Boolean).join(" ");
-    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    const nativeDetailsClasses = detailsClasses();
-    const nativeMenuButtonClasses = menuButtonClasses();
-    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
-    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
-    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
-                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
-}
-
-const ROW_KEY = "decky-metadata-hltb-row";
-const JOINED_CLASS = "decky-metadata-hltb-joined";
-const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
-const px = (value) => String(Math.round(value * 100) / 100);
-/** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height, paddingTop) => {
-    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
-    if (inner && playSection)
-        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
-    if (playSection)
-        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
-    return `.${JOINED_CLASS} + * ${rule}`;
-};
-const findHeaderElement = (row) => {
-    const container = row.parentElement;
-    if (!container)
-        return undefined;
-    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
-    if (headerClass) {
-        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
-        if (matched)
-            return matched;
-    }
-    return row.previousElementSibling ?? undefined;
-};
-const findPlaySectionElement = (row) => {
-    const next = row.nextElementSibling;
-    if (!next)
-        return null;
-    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    if (playSectionClass) {
-        return next.querySelector(`.${playSectionClass}`);
-    }
-    return next.firstElementChild ?? next;
-};
-const positiveId = (value, maximum) => {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
-};
-/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
-const hltbInputs = (appId, isShortcut, title) => {
-    if (!isShortcut)
-        return { steam: positiveId(appId, 0x7fffffff), title, pinned: null };
-    const record = metadataCache[String(appId)];
-    return {
-        steam: positiveId(record?.steam_appid, 0x7fffffff),
-        title,
-        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
-    };
-};
-function useHltbSnapshot() {
-    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setSnapshot(hltbController.getSnapshot());
-        const unsubscribe = hltbController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    return snapshot;
-}
-/** Hide the row while Steam's header animates into a game launch. */
-function useLaunching(ref, active) {
-    const [launching, setLaunching] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        if (!active || !ref.current)
-            return;
-        const header = findHeaderElement(ref.current);
-        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
-        const capsule = topCapsuleClass
-            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
-            : header?.firstElementChild ?? undefined;
-        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
-        if (!capsule || !View)
-            return;
-        const observer = new View(() => {
-            const name = capsule.className;
-            const entering = [
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
-            ].some((value) => value && name.includes(value));
-            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
-            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
-        });
-        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
-        return () => observer.disconnect();
-    }, [active]);
-    return launching;
-}
-/**
- * The HLTB game a page shows for this app, looked up when missing or stale.
- * Nothing is looked up or returned unless `wanted` and the game has a title.
- */
-function useHltbMatch(appId, wanted) {
-    const [, rerender] = SP_REACT.useState(0);
-    const native = getNativeOverview(appId);
-    const isShortcut = isNativeNonSteamShortcut(native);
-    const title = String(native?.display_name ?? "").trim();
-    const inputs = hltbInputs(appId, isShortcut, title);
-    const active = wanted && title !== "";
-    const view = hltbStore.view(appId, inputs);
-    SP_REACT.useEffect(() => hltbStore.subscribe(appId, () => rerender((value) => value + 1)), [appId]);
-    SP_REACT.useEffect(() => {
-        if (active && view.needsFetch)
-            hltbStore.request(appId, isShortcut, inputs);
-    });
-    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
-}
-/**
- * Copy the native Play section's surface onto the row for the "Clean" styles, or
- * with clean-default on a blurred Play bar, extend that one blur over both rows:
- * the bar and underlay stay transparent and the Play rule supplies the surface.
- */
-function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
-    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
-    const padding = SP_REACT.useRef(0);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
-            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-            return;
-        }
-        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
-        const resize = { element: null, observer: null };
-        function update() {
-            const section = findPlaySectionElement(row);
-            const bar = row.querySelector(".decky-metadata-hltb-info");
-            if (!section) {
-                for (const name of names)
-                    row.style.removeProperty(name);
-                resize.observer?.disconnect();
-                resize.element = null;
-                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-                return;
-            }
-            const computed = view.getComputedStyle(section);
-            // Native padding is only readable while our own rule is not applied.
-            if (!row.classList.contains(JOINED_CLASS))
-                padding.current = parseFloat(computed.paddingTop) || 0;
-            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
-            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
-            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
-            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
-            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
-            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
-            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
-            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
-            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
-            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
-            if (bar !== resize.element) {
-                resize.observer?.disconnect();
-                resize.element = bar;
-                if (bar) {
-                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
-                    resize.observer.observe(bar);
-                }
-            }
-            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
-            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
-        }
-        update();
-        const observer = new view.MutationObserver(update);
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        observer.observe(row.parentElement, { childList: true, subtree: true });
-        return () => {
-            observer.disconnect();
-            resize.observer?.disconnect();
-            for (const name of names)
-                row.style.removeProperty(name);
-        };
-    }, [enabled, style, blur, pushPlayDown]);
-    return surface;
-}
-/**
- * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
- * the header art: pushing Play down would leave that bar without its backdrop.
- */
-function useStatusBandOverlay(ref, wanted) {
-    const [overlay, setOverlay] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setOverlay(false);
-            return;
-        }
-        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
-        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
-        let frame = 0;
-        const touching = () => {
-            const header = findHeaderElement(row);
-            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
-            const art = headerBgClass
-                ? header?.querySelector(`.${headerBgClass}`)
-                : header?.querySelector("img")?.parentElement ?? undefined;
-            if (!art)
-                return false;
-            const bounds = art.getBoundingClientRect();
-            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
-            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
-                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
-                .map((rect) => rect.bottom));
-            // Rect, not layout: Steam scales the page while it animates in.
-            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
-            const displacement = flow?.getBoundingClientRect().height ?? 0;
-            for (const bar of Array.from(container.querySelectorAll(selector))) {
-                const rect = bar.getBoundingClientRect();
-                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
-                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
-                    rect.top - bottom > displacement + 1)
-                    continue;
-                const own = view.getComputedStyle(bar);
-                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
-                    continue;
-                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
-                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
-                let visible = true;
-                for (let element = bar; element; element = element.parentElement) {
-                    const style = view.getComputedStyle(element);
-                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                        (!suppressed && Number(style.opacity) <= 0)) {
-                        visible = false;
-                        break;
-                    }
-                    if (element === container)
-                        break;
-                }
-                if (visible)
-                    return true;
-            }
-            return false;
-        };
-        const update = () => {
-            frame = 0;
-            const next = touching();
-            setOverlay((previous) => previous === next ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, {
-            childList: true, subtree: true, attributes: true,
-            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
-        });
-        // CSS Loader themes restyle the page from the head and the root element alone.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        const resize = new view.ResizeObserver(schedule);
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        schedule();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            view.removeEventListener("resize", schedule);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted && overlay;
-}
-/** A border box's layout top: unaffected by transforms and scroll position. */
-function layoutTop(element) {
-    let top = 0;
-    for (let node = element; node; node = node.offsetParent)
-        top += node.offsetTop;
-    return top;
-}
-/**
- * How far Play can move down before its button would go under Big Picture's footer.
- * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
- */
-function usePushRoom(ref, wanted) {
-    const [room, setRoom] = SP_REACT.useState(null);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setRoom((previous) => previous === null ? previous : null);
-            return;
-        }
-        let frame = 0;
-        let footer = null;
-        const resize = new view.ResizeObserver(() => schedule());
-        const footerResize = new view.ResizeObserver(() => schedule());
-        const measure = () => {
-            // The whole surface that moves Play down in flow mode, margins included. Never
-            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
-            const surface = row.querySelector("#decky-metadata-hltb");
-            const surfaceStyle = surface && view.getComputedStyle(surface);
-            const rowHeight = surface
-                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
-                : 0;
-            const section = findPlaySectionElement(row);
-            if (!rowHeight || !section)
-                return null;
-            let scroller = container.parentElement;
-            while (scroller) {
-                const style = view.getComputedStyle(scroller);
-                if (/(auto|scroll)/.test(style.overflowY))
-                    break;
-                scroller = scroller.parentElement;
-            }
-            if (!scroller || scroller.clientHeight <= 0)
-                return null;
-            const nextFooter = document.querySelector("#Footer");
-            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
-            if (nextFooter !== footer) {
-                footerResize.disconnect();
-                footer = nextFooter;
-                if (footer)
-                    footerResize.observe(footer);
-            }
-            const header = findHeaderElement(row);
-            if (!header)
-                return null;
-            // Layout, not rects: Steam scales and translates the page while it animates in,
-            // and a rect read mid-animation would stick until something else moved.
-            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
-            const artBottom = layoutTop(header) + header.offsetHeight;
-            // The visible bar's border box; the labels may overhang it but Play clears the bar.
-            const footerTop = footer && footer.offsetHeight > 0
-                ? layoutTop(footer)
-                : layoutTop(scroller) + scroller.clientHeight;
-            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
-            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
-            // The button face; the wrapper's AppActionButton class is the fallback.
-            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
-                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
-            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
-            const buttonBottom = button
-                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
-                : section.offsetHeight - lift;
-            const free = footerTop - 4 - artBottom - buttonBottom;
-            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
-        };
-        const update = () => {
-            frame = 0;
-            const next = measure();
-            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
-        // Themes restyle the page and the footer from the head and the root element.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        if (document.body)
-            observer.observe(document.body, { childList: true, subtree: true });
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        // Steam animates the page in without any resize or mutation: re-measure when it ends.
-        document.addEventListener("transitionend", schedule, true);
-        document.addEventListener("animationend", schedule, true);
-        update();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            footerResize.disconnect();
-            view.removeEventListener("resize", schedule);
-            document.removeEventListener("transitionend", schedule, true);
-            document.removeEventListener("animationend", schedule, true);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted ? room : null;
-}
-function HltbGameRow({ appId }) {
-    const snapshot = useHltbSnapshot();
-    const ref = SP_REACT.useRef(null);
-    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
-    const launching = useLaunching(ref, active);
-    const { settings } = snapshot;
-    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
-    const overlay = useStatusBandOverlay(ref, pushWanted);
-    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
-    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
-    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
-    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
-    if (!active)
-        return null;
-    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
-}
-/** True for the child that holds Steam's Play section (the row goes right above it). */
-const isPlaySection = (child) => {
-    const props = (child?.props ?? {});
-    const inner = props.children?.props ?? {};
-    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
-        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
-};
-function installHltbGameView() {
-    const unpatchers = [];
-    for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-            if (!routeProps)
-                return tree;
-            let appId = 0;
-            const handler = DFL.createReactTreePatcher([
-                (inner) => {
-                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                    appId = Number(children?.props?.overview?.appid) || 0;
-                    return children ?? null;
-                },
-            ], (_args, ret) => {
-                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                    node.props.children.some(isPlaySection)))?.props?.children;
-                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                    return ret;
-                const index = children.findIndex(isPlaySection);
-                if (index >= 0)
-                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
-                return ret;
-            });
-            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-            unpatchers.push(() => renderPatch.unpatch());
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
-    }
-    return () => {
-        for (const unpatch of unpatchers.splice(0)) {
-            try {
-                unpatch();
-            }
-            catch {
-                // Steam may already have released the route.
-            }
-        }
-    };
-}
-const hltbController = new HltbController({ install: installHltbGameView });
 
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
@@ -32465,6 +34536,52 @@ const MetadataPage = () => {
         const baselineReleaseText = releaseTextRef.current;
         const baselineRatingText = ratingTextRef.current;
         const baselineSteamAppIdText = steamAppIdTextRef.current;
+        if (!nonSteam) {
+            recordShortcutSettled(requestedEntry, true);
+            let override;
+            try {
+                override = await getSteamOverride(appId);
+            }
+            catch {
+                recordEditorLoadTiming(requestedEntry, (timing) => {
+                    if (timing.metadataSettledAt === null) {
+                        timing.metadataSettledAt = performance.now();
+                        timing.metadataOk = false;
+                    }
+                });
+                emitEditorLoadTiming(requestedEntry);
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return;
+                setMetadataHydratedEntry(null);
+                return;
+            }
+            recordEditorLoadTiming(requestedEntry, (timing) => {
+                if (timing.metadataSettledAt === null) {
+                    timing.metadataSettledAt = performance.now();
+                    timing.metadataOk = true;
+                }
+            });
+            if (!isCurrentEditorEntry(requestedEntry))
+                return;
+            const saved = {
+                ...metadataTemplate(appName(appId)),
+                hltb_game_id: override?.hltb_game_id ?? null,
+            };
+            savedRecordRef.current = saved;
+            previewedSteamAppIdRef.current = null;
+            steamPreviewedFieldsRef.current.clear();
+            if (formRevisionRef.current === requestedRevision) {
+                setFormMetadata(saved);
+                setSteamAppIdInput("");
+            }
+            else {
+                const hydrated = mergeHydratedMetadata(saved, baselineMetadata, metadataRef.current);
+                metadataRef.current = hydrated;
+                setMetadata(hydrated);
+            }
+            setMetadataHydratedEntry(requestedEntry);
+            return;
+        }
         void loadShortcutManagement();
         let metadata;
         try {
@@ -32536,6 +34653,7 @@ const MetadataPage = () => {
         appId,
         editorEntryToken,
         isCurrentEditorEntry,
+        nonSteam,
         setFormMetadata,
         loadShortcutManagement,
         setSteamAppIdInput,
@@ -32560,14 +34678,15 @@ const MetadataPage = () => {
         setResults(null);
         // An unsaved HLTB draft belongs to the game it was typed on.
         setHltbIdDraft(null);
-        setPage("details");
-    }, [appId]);
+        setPage(nonSteam ? "details" : "hltb");
+    }, [appId, nonSteam]);
     SP_REACT.useEffect(() => {
         const steamAppId = normalizedSteamAppId(metadata.steam_appid);
         const storedRecord = savedRecordRef.current;
         // This backfill writes to the store, so it may only run for the stored
         // match: never while the form holds an unsaved preview of another one.
-        if (metadataHydratedEntry !== editorEntryToken ||
+        if (!nonSteam ||
+            metadataHydratedEntry !== editorEntryToken ||
             steamNameBackfillEntryRef.current === editorEntryToken ||
             steamAppId === null ||
             Boolean(metadata.steam_store_name) ||
@@ -32640,12 +34759,13 @@ const MetadataPage = () => {
         const root = editorRootRef.current;
         if (!root)
             return;
-        // Wait for Details to mount again when a new entry resets the selected page.
+        // Wait for the initial page to mount again when a new entry resets the selected page.
+        const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
         const frame = requestAnimationFrame(() => {
-            root.querySelector("[data-editor-title] input")?.focus();
+            root.querySelector(selector)?.focus();
         });
         return () => cancelAnimationFrame(frame);
-    }, [editorEntryToken]);
+    }, [editorEntryToken, nonSteam]);
     SP_REACT.useEffect(() => {
         void ensureCompatibilityDefault()
             .then((value) => {
@@ -32682,7 +34802,8 @@ const MetadataPage = () => {
     // The Steam client language for Steam-sourced text; null until the mount probe resolves.
     const [steamLanguage, setSteamLanguage] = SP_REACT.useState(null);
     // The HLTB game the game page shows, chosen or found automatically.
-    const hltbMatch = useHltbMatch(appId, useHltbSnapshot().effectiveEnabled).entry;
+    const hltbSnapshot = useHltbSnapshot();
+    const hltbMatch = useHltbMatch(appId, hltbSnapshot.effectiveEnabled).entry;
     // Declared after the other hooks so their slots stay unchanged.
     const mountedRef = SP_REACT.useRef(true);
     // The form revision this entry began with: an edit typed before the record
@@ -32699,7 +34820,7 @@ const MetadataPage = () => {
             mountedRef.current = false;
         };
     }, []);
-    const [page, setPage] = SP_REACT.useState("details");
+    const [page, setPage] = SP_REACT.useState(nonSteam ? "details" : "hltb");
     // Steam search results outlive the Game Match page, as IGN results do.
     const steamSearchRef = SP_REACT.useRef(null);
     // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -32831,7 +34952,7 @@ const MetadataPage = () => {
     });
     const dirty = dirtyPages(changed);
     const saveLabel = saveButtonLabel(t, changed.length);
-    const saveDisabled = !nonSteam || changed.length === 0 || steamNameLoading;
+    const saveDisabled = changed.length === 0 || (nonSteam && steamNameLoading);
     const fieldMarker = (key) => {
         const edited = changed.includes(key);
         const fromSteam = edited && steamPreviewedFieldsRef.current.has(key);
@@ -32946,14 +35067,10 @@ const MetadataPage = () => {
         }
     };
     const saveCurrent = async () => {
-        if (!nonSteam) {
-            toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return false;
-        }
         const requestedEntry = editorEntryToken;
         // Until this entry's record loads, the form holds defaults that would overwrite it.
         // The Steam-name backfill is still writing the stored record, so a save now would race it.
-        if (metadataHydratedEntry !== requestedEntry || steamNameLoading) {
+        if (metadataHydratedEntry !== requestedEntry || (nonSteam && steamNameLoading)) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
             return false;
         }
@@ -32968,6 +35085,28 @@ const MetadataPage = () => {
             // A field edited while the check was pending makes this record stale.
             if (formRevisionRef.current !== requestedRevision)
                 return false;
+            if (!nonSteam) {
+                const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
+                const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return false;
+                setSteamOverrideCached(appId, savedOverride);
+                hltbStore.forget(appId);
+                const saved = {
+                    ...metadataTemplate(appName(appId)),
+                    hltb_game_id: savedOverride?.hltb_game_id ?? null,
+                };
+                savedRecordRef.current = saved;
+                previewedSteamAppIdRef.current = null;
+                if (formRevisionRef.current !== requestedRevision)
+                    return false;
+                steamPreviewedFieldsRef.current.clear();
+                setFormMetadata(saved);
+                if (hltb)
+                    setHltbIdDraft(null);
+                toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
+                return true;
+            }
             const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
             const steamAppId = normalizedSteamAppId(record.steam_appid);
             // Only a trusted save may store the provider fields a preview fetched.
@@ -33136,10 +35275,6 @@ const MetadataPage = () => {
     };
     /** Check the HLTB field, or a game picked from HLTB search, and keep it as the draft. */
     const applyHltbGameId = async (picked) => {
-        if (!nonSteam) {
-            toastWarn(t("editor.toast.notApplicableTitle"), t("editor.nonSteamOnly"));
-            return;
-        }
         const requestedEntry = editorEntryToken;
         if (metadataHydratedEntry !== requestedEntry) {
             toastWarn(t("editor.toast.notLoadedTitle"), t("editor.toast.notLoadedBody"));
@@ -33503,13 +35638,13 @@ const MetadataPage = () => {
                                 SP_JSX.jsx("div", { children: SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.title, description: result.description, icon: result.cover_url ? SP_JSX.jsx("img", { src: result.cover_url, alt: "", style: editorIgnResultImageStyle }) : undefined, focusable: true, highlightOnFocus: true, disabled: entryBusy || !nonSteam, bottomSeparator: "standard", onActivate: () => void applyResult(result), onClick: () => void applyResult(result) }) }, result.slug || result.url)))] })] })] }));
     }
     function renderHltbPage() {
-        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
+        return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs("div", { className: "DialogControlsSection DialogLabelledControlsSection DialogSettingsSection", "data-editor-hltb-search": "", children: [SP_JSX.jsx("div", { className: "SettingsDialogSubHeader", children: t("editor.hltbSearchTitle") }), !nonSteam && !hltbSnapshot.effectiveEnabled ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.hltbDisabledNotice"), bottomSeparator: "none" })) : null, hltbMatch?.game_name ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: hltbMatch.pinned_id_used
                                 ? t("editor.hltbCurrentChosen", { name: hltbMatch.game_name })
-                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }), bottomSeparator: "none" })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy || !nonSteam, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { label: markedLabel("hltb", "editor.hltbGame"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbGame"), value: hltbIdText, disabled: !nonSteam, onChange: (e) => {
+                                : t("editor.hltbCurrentAutomatic", { name: hltbMatch.game_name }), bottomSeparator: "none" })) : null, SP_JSX.jsx(HltbGameSearch, { initialQuery: appName(appId), disabled: entryBusy, onApply: (picked) => applyHltbGameId(picked) }, editorEntryToken)] }), SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.Field, { label: markedLabel("hltb", "editor.hltbGame"), description: t("editor.hltbHelp"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbGame"), value: hltbIdText, onChange: (e) => {
                                             markFormEdited();
                                             clearPreviewMarker("hltb");
                                             setHltbIdDraft(e.target.value);
-                                        }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy || !nonSteam, onClick: () => applyHltbGameId(), style: editorSearchButtonStyle, children: t("editor.hltbApply") })] }) }) })] }));
+                                        }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: editorFocusTargetClassName, disabled: entryBusy, onClick: () => applyHltbGameId(), style: editorSearchButtonStyle, children: t("editor.hltbApply") })] }) }) })] }));
     }
     function renderCompatibilityPage() {
         return (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.DropdownItem, { label: markedLabel("compatibility", "editor.compat.statusLabel"), description: SP_JSX.jsxs(SP_JSX.Fragment, { children: [t("editor.compatibilityHelp"), SP_JSX.jsx("br", {}), t("editor.compatibilityChoices")] }), bottomSeparator: "standard", rgOptions: compatibilityStatusOptions.map((data) => ({
@@ -33556,26 +35691,27 @@ const MetadataPage = () => {
         advanced: renderAdvancedPage,
     };
     const pages = EDITOR_PAGE_ORDER.map((id) => {
-        const visible = nonSteam || (id !== "hltb" && id !== "compatibility" && id !== "shortcut-name");
+        const visible = nonSteam ? true : id === "hltb";
         return {
             id,
             label: t(PAGE_LABEL_KEYS[id]),
             icon: PAGE_ICONS[id],
             dirty: dirty.has(id),
             visible,
-            separatorBefore: id === "advanced",
+            separatorBefore: nonSteam && id === "advanced",
             content: visible ? renderPageContent[id]() : null,
         };
     });
+    const activePage = nonSteam ? page : "hltb";
     return (SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, onSecondaryButton: () => {
             if (!saveDisabled)
                 void saveCurrent();
-        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: normalizedSteamAppId(metadata.steam_appid), pages: pages, page: page, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
+        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
 };
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
 const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
-const dropdownValueStyle$1 = { whiteSpace: "normal" };
+const dropdownValueStyle$2 = { whiteSpace: "normal" };
 function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, compatibilityDefaultBusy, compatibilityDefaultError, compatibilityDefaultScope, compatibilityDefaultScopeBusy, onCompatibilityDefaultChange, onCompatibilityDefaultScopeChange, }) {
     const t = useT();
     const categoryLabel = (category) => {
@@ -33625,10 +35761,10 @@ function CompatibilityBody({ compatibilityDefault, compatibilityDefaultLoaded, c
         label: scopeLabel(data),
     }));
     const scopeHelpDescription = `${scopeDescription(compatibilityDefaultScope)} ${t("qam.compat.perGameNote")}`;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
+    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.defaultStatus"), rgOptions: compatibilityDefaultOptions, selectedOption: compatibilityDefault, disabled: !compatibilityDefaultLoaded || compatibilityDefaultBusy || compatibilityDefaultScopeBusy, onChange: (option) => onCompatibilityDefaultChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultOptions.find((option) => option.data === compatibilityDefault)?.label })) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.compat.applyDefaultTo"), description: scopeHelpDescription, rgOptions: compatibilityDefaultScopeOptions, selectedOption: compatibilityDefaultScope, disabled: !compatibilityDefaultLoaded ||
                     compatibilityDefaultBusy ||
                     compatibilityDefaultScopeBusy ||
-                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
+                    compatibilityDefault === null, onChange: (option) => onCompatibilityDefaultScopeChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$2, children: compatibilityDefaultScopeOptions.find((option) => option.data === compatibilityDefaultScope)?.label })) }), compatibilityDefaultError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: translateBackendError(compatibilityDefaultError) }) })) : null] }));
 }
 
 /** Options for the Edit Metadata page that the game context menu opens. */
@@ -33648,12 +35784,24 @@ function GameTrailersBody({ state, onEnabledChange, onDetailEnabledChange, onHom
     ];
     const disabled = !state.settingsLoaded || state.busy;
     const dependentDisabled = disabled || !state.settings.enabled;
+    const detailDependentDisabled = dependentDisabled || !state.settings.detailEnabled;
+    const homeDependentDisabled = dependentDisabled || !state.settings.homeEnabled;
     const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
     const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
     const display = state.displayWidth && state.displayHeight
         ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
         : t("qam.trailers.displayUnavailable");
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }), conflictNotice ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.detailHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onDetailFadeInDelayChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: dependentDisabled, onChange: onAudioChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: dependentDisabled, onChange: onHideLogoChange })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.homeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: dependentDisabled, onChange: onHomeFadeInDelayChange }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: state.status, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }), state.settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) })) : null] })] }));
+    const actionableStatuses = new Set([
+        t("trailers.otherPluginActive"),
+        t("trailers.steamUiUnavailable"),
+        t("trailers.runtimeConflict"),
+        t("trailers.mediaSourceUnavailable"),
+        t("trailers.autoplayBlocked"),
+        t("trailers.settingsUnavailable"),
+        t("trailers.matchesUnavailable"),
+    ]);
+    const displayStatus = actionableStatuses.has(state.status) ? state.status : undefined;
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.enableLabel"), description: `${t("qam.trailers.enableDescription")} ${t("qam.trailers.footnote")}`, checked: state.settings.enabled, disabled: enableDisabled, onChange: onEnabledChange }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.trailers.qualityLabel"), rgOptions: qualityOptions, selectedOption: state.settings.quality, disabled: dependentDisabled, onChange: (option) => { void onQualityChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: { whiteSpace: "normal" }, children: qualityOptions.find((option) => option.data === state.settings.quality)?.label })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.trailers.displayLabel"), childrenLayout: "below", description: displayStatus, padding: "standard", focusable: true, highlightOnFocus: true, children: SP_JSX.jsx("div", { style: { color: colors.textSecondary }, children: t("qam.trailers.displayTarget", { display, height: state.targetHeight }) }) }), conflictNotice || state.settingsError ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }) : null, state.settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError }) : null] })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.detailHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.detailLabel"), description: t("qam.trailers.detailDescription"), checked: state.settings.detailEnabled, disabled: dependentDisabled, onChange: onDetailEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.detailDelayLabel"), description: t("qam.trailers.detailDelayDescription"), value: state.settings.detailFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: detailDependentDisabled, onChange: onDetailFadeInDelayChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.audioLabel"), description: t("qam.trailers.audioDescription"), checked: state.settings.audioEnabled, disabled: detailDependentDisabled, onChange: onAudioChange }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.hideLogoLabel"), description: t("qam.trailers.hideLogoDescription"), checked: state.settings.hideLogoDuringTrailer, disabled: detailDependentDisabled, onChange: onHideLogoChange })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.trailers.homeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.trailers.homeLabel"), description: t("qam.trailers.homeDescription"), checked: state.settings.homeEnabled, disabled: dependentDisabled, onChange: onHomeEnabledChange }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.trailers.homeDelayLabel"), description: t("qam.trailers.homeDelayDescription"), value: state.settings.homeFadeInDelaySeconds, min: 0, max: 10, step: 1, showValue: true, valueSuffix: "s", disabled: homeDependentDisabled, onChange: onHomeFadeInDelayChange })] })] }));
 }
 
 function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStatus = "idle", onSettingsChange, onClearCache, onStyleChange, onBlurChange, }) {
@@ -33684,7 +35832,7 @@ function HltbBody({ settings, settingsLoaded, conflict, settingsError, cacheStat
     const updateAppearance = (key, value) => {
         void onSettingsChange(current => ({ ...current, appearance: { ...current.appearance, [key]: value } }));
     };
-    return SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }, key)), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.clearCacheButton"), disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: t("settings.action.clear") }), cacheStatus !== "idle" ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }), settings.style === "default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") })] }) : null, !settingsLoaded || notice || settingsError ? SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", children: [!settingsLoaded ? SP_JSX.jsx("div", { children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) : null] });
+    return SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.showTimesLabel"), description: t("qam.hltb.showTimesDescription"), checked: settings.enabled, disabled: controlsDisabled || (Boolean(conflict.pluginName) && !settings.enabled), onChange: value => update("enabled", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.storeLabel"), description: t("qam.hltb.storeDescription"), checked: settings.store, disabled: disabled, onChange: value => update("store", value) }), !settingsLoaded || notice || settingsError ? SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", children: [!settingsLoaded ? SP_JSX.jsx("div", { children: t("qam.hltb.loadingPreferences") }) : null, notice ? SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: notice }) : null, settingsError ? SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) : null] }) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.statsHeading") }), statControls.map(([key, label, description]) => SP_JSX.jsx(DFL.ToggleField, { label: label, description: description, checked: settings[key], disabled: disabled, onChange: value => update(key, value) }, key)), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.hideDetailsLabel"), description: t("qam.hltb.hideDetailsDescription"), checked: settings.hideViewDetails, disabled: disabled, onChange: value => update("hideViewDetails", value) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.nativeCornersLabel"), description: t("qam.hltb.nativeCornersDescription"), checked: settings.nativeDetailsCorners, disabled: disabled, onChange: value => update("nativeDetailsCorners", value) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.styleHeading") }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.styleLabel"), description: t("qam.hltb.styleDescription"), rgOptions: styles, selectedOption: settings.style, disabled: disabled, onChange: option => { void (onStyleChange ? onStyleChange(option.data) : update("style", option.data)); } }), settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.pushPlayLabel"), description: t("qam.hltb.pushPlayDescription"), checked: settings.pushPlayDown, disabled: disabled, onChange: value => update("pushPlayDown", value) }) : null, settings.style === "default" || settings.style === "clean-default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.respectMenuBarLabel"), description: t("qam.hltb.respectMenuBarDescription"), checked: settings.respectMenuBar, disabled: disabled || !settings.pushPlayDown, onChange: value => update("respectMenuBar", value) }) : null, settings.style === "default" ? null : SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.hltb.blurLabel"), description: t("qam.hltb.blurDescription"), rgOptions: blurOptions, selectedOption: appearance.blur, disabled: disabled, onChange: option => { void (onBlurChange ? onBlurChange(option.data) : updateAppearance("blur", option.data)); } })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.customizeHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), checked: appearance.custom, disabled: disabled, onChange: value => updateAppearance("custom", value) }), appearance.custom ? SP_JSX.jsxs(SP_JSX.Fragment, { children: [settings.style === "default" ? SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.opacityLabel"), description: t("qam.hltb.opacityDescription"), value: appearance.barAlpha, min: 0, max: 100, step: 5, showValue: true, valueSuffix: "%", resetValue: 25, disabled: disabled, onChange: value => updateAppearance("barAlpha", value) }) : null, SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.textShadowLabel"), description: t("qam.hltb.textShadowDescription"), checked: appearance.textShadow, disabled: disabled, onChange: value => updateAppearance("textShadow", value) }), SP_JSX.jsx(DFL.SliderField, { label: t("qam.hltb.textSizeLabel"), description: t("qam.hltb.textSizeDescription"), value: appearance.textScale, min: 75, max: 150, step: 5, showValue: true, valueSuffix: "%", resetValue: 100, disabled: disabled, onChange: value => updateAppearance("textScale", value) }), settings.style === "default" ? SP_JSX.jsx(DFL.ToggleField, { label: t("qam.hltb.bottomBorderLabel"), description: t("qam.hltb.bottomBorderDescription"), checked: appearance.border, disabled: disabled, onChange: value => updateAppearance("border", value) }) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.customizeLabel"), description: t("qam.hltb.customizeDescription"), disabled: disabled, onClick: () => update("appearance", { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true }), children: t("qam.hltb.resetAppearance") })] }) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.hltb.cacheHeading") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.hltb.clearCacheButton"), disabled: controlsDisabled || cacheStatus === "clearing", onClick: () => { void onClearCache(); }, children: t("settings.action.clear") }), cacheStatus !== "idle" ? SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsx("div", { style: inlineStatusStyle(cacheStatusText[cacheStatus][0]), children: cacheStatusText[cacheStatus][1] }) }) : null] })] });
 }
 
 function LogsBody({ logsBusy, debugLogging, debugLoggingLoaded, debugLoggingBusy, onViewLogs, onToggleDebugLogging, }) {
@@ -33700,46 +35848,126 @@ function MiniAchievementsBody({ state, onEnabledChange }) {
     return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.miniAchievements.enableLabel"), description: `${t("qam.miniAchievements.enableDescription")} ${t("qam.miniAchievements.footnote")}`, checked: state.enabled, disabled: enableDisabled, onChange: onEnabledChange }), (conflictNotice || state.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [conflictNotice && SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice }), state.settingsError && SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: state.settingsError })] })) : null] }));
 }
 
+// Matches SteamOS Settings -> System -> Software Updates: briefly show "Up-to-date"
+// disabled right after a clean check before returning the button to "Check For Updates".
+const UP_TO_DATE_COOLDOWN_MS = 4000;
+const dropdownValueStyle$1 = { whiteSpace: "normal" };
 function PluginUpdateBody() {
     const t = useT();
-    const { pluginVersion, updateChannel, automaticUpdateChecks, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, installedReleasePublishedAt, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, } = usePluginUpdateController();
+    const { pluginVersion, updateChannel, automaticUpdateChecks, testingTabEnabled, settingsLoaded, candidate, checkResult, errorMessage, checkTimedOut, isChecking, isInstalling, isHandoffPending, checkNow, install, setUpdateChannel, setAutomaticUpdateChecks, setTestingTabEnabled, } = usePluginUpdateController();
+    const [upToDateCooldown, setUpToDateCooldown] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (isChecking || errorMessage || checkResult?.status !== "current" || !checkResult.checked_at) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        const checkedMs = Date.parse(checkResult.checked_at);
+        const remaining = Number.isFinite(checkedMs) ? UP_TO_DATE_COOLDOWN_MS - (Date.now() - checkedMs) : 0;
+        if (remaining <= 0) {
+            setUpToDateCooldown(false);
+            return;
+        }
+        setUpToDateCooldown(true);
+        const timer = globalThis.setTimeout(() => setUpToDateCooldown(false), remaining);
+        return () => globalThis.clearTimeout(timer);
+    }, [isChecking, errorMessage, checkResult?.status, checkResult?.checked_at]);
     const isLocalBuild = pluginVersion.includes("+");
-    const handleToggleChannel = (checked) => {
-        if (checked) {
+    const canInstall = candidate !== null && canInstallCandidate(candidate, pluginVersion);
+    const installedLabel = pluginVersion
+        ? `v${pluginVersion}${isLocalBuild ? ` ${t("qam.update.localBuild")}` : ""}`
+        : "";
+    const handleChannelChange = (next) => {
+        if (next === updateChannel)
+            return;
+        if (next === "development") {
             DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.enableDevelopmentTitle"), strDescription: t("qam.update.receiveDevelopmentDescription"), onOK: () => void setUpdateChannel(true) }));
         }
         else {
             void setUpdateChannel(false);
         }
     };
-    const getStatusContent = () => {
-        if (isChecking) {
-            return SP_JSX.jsxs("span", { style: statusValueStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), t("qam.update.checking")] });
+    const handleApplyClick = () => {
+        if (!candidate)
+            return;
+        if (candidate.action === "downgrade_to_stable") {
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.update.confirmRevertTitle"), strDescription: t("qam.update.confirmRevertBody", { version: candidate.version }), onOK: () => install(candidate) }));
         }
-        if (errorMessage) {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("error"), children: checkResult?.status === "failed"
-                    ? checkTimedOut
-                        ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
-                        : t("qam.update.checkFailed")
-                    : t("updater.installation.failedTitle") }));
+        else {
+            void install(candidate);
         }
-        if (checkResult?.status === "current") {
-            return SP_JSX.jsx("span", { style: statusValueStyle("success"), children: t("qam.update.upToDate") });
-        }
-        if (checkResult?.status === "available") {
-            return (SP_JSX.jsx("span", { style: statusValueStyle("active"), children: candidate?.channel === "development" && pluginVersion.includes("dev") && !installedReleasePublishedAt
-                    ? t("qam.update.latestDevelopment")
-                    : t("qam.update.updateAvailable") }));
-        }
-        return SP_JSX.jsx("span", { style: statusValueStyle("idle"), children: t("qam.update.neverChecked") });
     };
-    const lastCheckedText = checkResult?.checked_at
-        ? t("qam.update.lastChecked", { date: formatDateTime(new Date(checkResult.checked_at)) })
-        : undefined;
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsxs(DFL.Field, { label: t("qam.update.installedVersion"), children: [pluginVersion, " ", isLocalBuild ? t("qam.update.localBuild") : ""] }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.receiveDevelopment"), description: t("qam.update.receiveDevelopmentDescription"), checked: updateChannel === "development", disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: handleToggleChannel }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) }), SP_JSX.jsx(DFL.Field, { label: t("qam.update.status"), description: lastCheckedText, children: getStatusContent() }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(PluginInstallAction, { candidate: candidate, currentVersion: pluginVersion, isChecking: isChecking, isInstalling: isInstalling, isHandoffPending: isHandoffPending, onInstall: install, inline: true, label: t("qam.update.newVersion", {
-                    version: candidate.version,
-                    channel: candidate.channel === "development" ? t("qam.update.channelDevelopment") : t("qam.update.channelStable"),
-                }), description: candidate.action === "downgrade_to_stable" ? (SP_JSX.jsx("span", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })) : undefined })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.checkNow"), onClick: () => void checkNow(), disabled: isChecking || isInstalling || isHandoffPending, children: t("settings.action.check") })] }));
+    const primaryBusy = isChecking || isInstalling || isHandoffPending;
+    const primaryDisabled = primaryBusy || upToDateCooldown;
+    const getPrimaryButtonText = () => {
+        if (isHandoffPending)
+            return t("qam.update.waitingForDecky");
+        if (isInstalling)
+            return t("qam.update.applying");
+        if (isChecking)
+            return t("qam.update.checking");
+        if (candidate && canInstall) {
+            switch (candidate.action) {
+                case "move_to_stable":
+                    return t("qam.update.moveToStableShort");
+                case "downgrade_to_stable":
+                    return t("qam.update.revertToStableShort");
+                default:
+                    return t("qam.update.apply");
+            }
+        }
+        if (upToDateCooldown)
+            return t("qam.update.upToDateButton");
+        return t("qam.update.checkForUpdates");
+    };
+    const onPrimaryAction = () => {
+        if (candidate && canInstall) {
+            handleApplyClick();
+        }
+        else {
+            void checkNow();
+        }
+    };
+    const unavailableText = candidate && !canInstall
+        ? (isLocalBuild && candidate.channel !== "stable"
+            ? t("qam.update.localBuildOnlyStable")
+            : t("qam.update.manualInstallUnavailable"))
+        : null;
+    const getSoftwareUpdatesDescription = () => {
+        if (candidate) {
+            const channelName = candidate.channel === "development"
+                ? t("qam.update.channelDevelopment")
+                : t("qam.update.channelStable");
+            const versionLine = pluginVersion
+                ? t("qam.update.versionArrow", { current: pluginVersion, next: candidate.version, channel: channelName })
+                : t("qam.update.newVersion", { version: candidate.version, channel: channelName });
+            return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("div", { children: versionLine }), candidate.action === "downgrade_to_stable" && (SP_JSX.jsx("div", { style: { color: statusColor("warning") }, children: t("qam.update.downgradeWarning") })), unavailableText && (SP_JSX.jsx("div", { style: { color: statusColor("error") }, children: unavailableText }))] }));
+        }
+        if (checkResult?.status === "current" && checkResult.checked_at) {
+            const upToDateLine = t("qam.update.upToDateLastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${upToDateLine}` : upToDateLine;
+        }
+        if (checkResult?.checked_at) {
+            const checkedLine = t("qam.update.lastChecked", {
+                date: formatDateTime(new Date(checkResult.checked_at)),
+            });
+            return installedLabel ? `${installedLabel} · ${checkedLine}` : checkedLine;
+        }
+        return installedLabel || t("qam.update.neverChecked");
+    };
+    const errorHeading = checkResult?.status === "failed"
+        ? (checkTimedOut
+            ? t("qam.update.checkInterrupted", { seconds: UPDATE_CHECK_UI_TIMEOUT_MS / 1000 })
+            : t("qam.update.checkFailed"))
+        : t("updater.installation.failedTitle");
+    const channelOptions = [
+        { data: "stable", label: t("qam.update.channelOptionStable") },
+        { data: "development", label: t("qam.update.channelOptionDevelopment") },
+    ];
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.update.softwareUpdates"), description: getSoftwareUpdatesDescription(), icon: candidate ? SP_JSX.jsx(FaExclamationTriangle, { style: { color: statusColor("warning") } }) : undefined, childrenContainerWidth: "fixed", children: SP_JSX.jsx(DFL.DialogButton, { onClick: onPrimaryAction, disabled: primaryDisabled, children: SP_JSX.jsx(ButtonLabel, { busy: primaryBusy, children: getPrimaryButtonText() }) }) }), errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorHeading }), SP_JSX.jsx("div", { children: translateBackendError(errorMessage) }), checkResult?.status === "failed" && checkResult.retry_after && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(checkResult.retry_after)) }) }))] })] }) })), candidate && (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.update.viewReleaseNotes"), onClick: () => DFL.Navigation.NavigateToExternalWeb(candidate.release_url), children: t("settings.action.view") })), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.update.channelLabel"), description: updateChannel === "development"
+                            ? t("qam.update.receiveDevelopmentDescription")
+                            : t("qam.update.channelStableDescription"), rgOptions: channelOptions, selectedOption: updateChannel, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (option) => handleChannelChange(option.data), renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle$1, children: channelOptions.find((option) => option.data === updateChannel)?.label })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.autoCheck"), description: t("qam.update.autoCheckDescription"), checked: automaticUpdateChecks, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setAutomaticUpdateChecks(enabled) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.update.developerHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.update.enableTestingTab"), description: t("qam.update.enableTestingTabDescription"), checked: testingTabEnabled, disabled: !settingsLoaded || isInstalling || isHandoffPending, onChange: (enabled) => void setTestingTabEnabled(enabled) })] })] }));
 }
 
 const dropdownValueStyle = { whiteSpace: "normal" };
@@ -33753,12 +35981,279 @@ function ProtonDbBadgesBody({ snapshot, onSettingsChange, onCoverPositionChange,
     const { settings } = snapshot;
     const controlsDisabled = !snapshot.settingsLoaded;
     const dependentControlsDisabled = controlsDisabled || !settings.enabled;
+    const coverOptionsDisabled = dependentControlsDisabled || (!settings.home && !settings.library);
     const enableDisabled = controlsDisabled || (Boolean(snapshot.conflict.pluginName) && !settings.enabled);
     const conflictNotice = featureConflictNotice(snapshot.conflict, t("qam.protondb.conflictFeature"), settings.enabled);
     const updateSetting = (key, value) => {
         void onSettingsChange(current => ({ ...current, [key]: value }));
     };
-    return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: dependentControlsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.enableLabel"), description: `${t("qam.protondb.enableDescription")} ${t("qam.protondb.footnote")}`, checked: settings.enabled, disabled: enableDisabled, onChange: (enabled) => updateSetting("enabled", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.gameViewLabel"), description: t("qam.protondb.gameViewDescription"), checked: settings.gameView, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("gameView", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.storeLabel"), description: t("qam.protondb.storeDescription"), checked: settings.store, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("store", enabled) }), (!snapshot.settingsLoaded || conflictNotice || snapshot.settingsError) ? (SP_JSX.jsxs(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: [!snapshot.settingsLoaded ? (SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.protondb.loadingPreferences") })) : null, conflictNotice ? (SP_JSX.jsx("div", { style: inlineStatusStyle("warning"), children: conflictNotice })) : null, snapshot.settingsError ? (SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: snapshot.settingsError })) : null] })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.protondb.gameCoversHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.homeLabel"), description: t("qam.protondb.homeDescription"), checked: settings.home, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("home", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.libraryLabel"), description: t("qam.protondb.libraryDescription"), checked: settings.library, disabled: dependentControlsDisabled, onChange: (enabled) => updateSetting("library", enabled) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.protondb.focusOnlyLabel"), description: t("qam.protondb.focusOnlyDescription"), checked: settings.focusOnly, disabled: coverOptionsDisabled, onChange: (enabled) => updateSetting("focusOnly", enabled) }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.protondb.positionLabel"), rgOptions: coverPositionOptions, selectedOption: settings.coverPosition, disabled: coverOptionsDisabled, onChange: (option) => { void onCoverPositionChange(option.data); }, renderButtonValue: () => (SP_JSX.jsx("span", { style: dropdownValueStyle, children: coverPositionOptions.find((option) => option.data === settings.coverPosition)?.label })) })] })] }));
+}
+
+const iconButtonStyle = {
+    height: "40px",
+    width: "40px",
+    minWidth: "40px",
+    padding: "10px 12px",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+};
+const testingCss = `
+.decky-metadata-testing-focus {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+.decky-metadata-testing-meta-icon {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: ${colors.textSecondary};
+}
+`;
+function sortTestingPullRequests(items, sortField, sortDescending) {
+    const primaryValue = (pr) => {
+        switch (sortField) {
+            case "opened":
+                return new Date(pr.created_at).getTime();
+            case "number":
+                return pr.id;
+            case "author":
+                return (pr.author ?? "").toLowerCase();
+            case "title":
+                return pr.name.toLowerCase();
+            case "updated":
+            default:
+                return new Date(pr.updated_at).getTime();
+        }
+    };
+    return [...items].sort((a, b) => {
+        const aValue = primaryValue(a);
+        const bValue = primaryValue(b);
+        const comparison = typeof aValue === "number" && typeof bValue === "number"
+            ? aValue - bValue
+            : String(aValue).localeCompare(String(bValue));
+        if (comparison !== 0) {
+            return sortDescending ? -comparison : comparison;
+        }
+        return b.id - a.id;
+    });
+}
+function generateTestingTraceId(prId) {
+    return `pr-${prId}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+}
+function TestingInstallModal({ pr, closeModal }) {
+    const t = useT();
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [error, setError] = SP_REACT.useState(null);
+    const [retryAfter, setRetryAfter] = SP_REACT.useState(null);
+    const handleConfirm = async () => {
+        if (busy)
+            return;
+        if (!isDeckyInstallerAvailable()) {
+            setError(t("qam.update.manualInstallUnavailable"));
+            return;
+        }
+        setBusy(true);
+        setError(null);
+        setRetryAfter(null);
+        let recordedVersion = null;
+        try {
+            const prepared = await prepareTestingVersion(pr.id, pr.head_sha);
+            if (prepared.status !== "ready") {
+                const message = prepared.message
+                    ? translateBackendError(prepared.message)
+                    : t("qam.testing.prepareFailed");
+                setError(message);
+                setRetryAfter(prepared.retry_after ?? null);
+                setBusy(false);
+                return;
+            }
+            const traceId = generateTestingTraceId(pr.id);
+            recordedVersion = prepared.version;
+            await recordUpdateInstallRequested({
+                version: prepared.version,
+                tag: prepared.tag,
+                channel: prepared.channel,
+                artifact_url: prepared.artifact_url,
+                sha256: prepared.sha256,
+                release_url: pr.link,
+                published_at: prepared.published_at,
+                action: "update",
+                updateTraceId: traceId,
+            }).catch(() => undefined);
+            // Close our verification dialog before invoking Decky Loader's own install
+            // confirmation modal so the two dialogs never stack or block each other.
+            closeModal?.();
+            void invokeDeckyInstaller(prepared.artifact_url, prepared.version, prepared.sha256, INSTALL_TYPE_UPDATE, traceId).then(async () => {
+                await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.startedTitle"),
+                    body: t("updater.installation.startedBody", { version: prepared.version }),
+                    duration: 3000,
+                });
+            }, async (caught) => {
+                await clearPendingUpdateInstall(prepared.version).catch(() => undefined);
+                toaster.toast({
+                    title: t("updater.installation.failedTitle"),
+                    body: translateBackendError(caught),
+                    duration: 5000,
+                });
+            });
+        }
+        catch (caught) {
+            if (recordedVersion) {
+                await clearPendingUpdateInstall(recordedVersion).catch(() => undefined);
+            }
+            setError(translateBackendError(caught));
+            setBusy(false);
+        }
+    };
+    return (SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.testing.installModalTitle", { id: pr.id }), strOKButtonText: busy
+            ? t("qam.testing.installing")
+            : error
+                ? t("qam.testing.retry")
+                : t("qam.testing.install"), strCancelButtonText: t("editor.unsaved.cancel"), bOKDisabled: busy, bCancelDisabled: busy, bDisableBackgroundDismiss: busy, bHideCloseIcon: busy, onOK: () => handleConfirm(), onCancel: () => {
+            if (!busy)
+                closeModal?.();
+        }, onEscKeypress: () => {
+            if (!busy)
+                closeModal?.();
+        }, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: space.sm }, children: [SP_JSX.jsx("div", { style: { color: colors.text, fontWeight: fontWeight.medium }, children: pr.name }), SP_JSX.jsx("div", { style: { color: colors.textSecondary, fontSize: fontSize.sm }, children: t("qam.testing.modalDetails", {
+                        author: pr.author || t("common.unknown"),
+                        sha: pr.head_sha.slice(0, 7),
+                    }) }), SP_JSX.jsx("div", { style: { color: colors.textSecondary, fontSize: fontSize.sm }, children: t("qam.testing.installModalDescription") }), busy && (SP_JSX.jsxs("div", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), SP_JSX.jsx("span", { children: t("qam.testing.downloadingArtifact", { id: pr.id }) })] })), error && (SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: error }), retryAfter && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(retryAfter)) }) }))] })] }))] }) }));
+}
+function TestingBody() {
+    const t = useT();
+    const [items, setItems] = SP_REACT.useState([]);
+    const [loading, setLoading] = SP_REACT.useState(true);
+    const [errorMessage, setErrorMessage] = SP_REACT.useState(null);
+    const [retryAfter, setRetryAfter] = SP_REACT.useState(null);
+    const [sortField, setSortField] = SP_REACT.useState("updated");
+    const [sortDescending, setSortDescending] = SP_REACT.useState(true);
+    const loadPullRequests = SP_REACT.useCallback(async () => {
+        setLoading(true);
+        setErrorMessage(null);
+        setRetryAfter(null);
+        try {
+            const result = await getTestingVersions();
+            if (result.status === "ok") {
+                setItems(result.items);
+            }
+            else {
+                setErrorMessage(result.message
+                    ? translateBackendError(result.message)
+                    : t("qam.testing.loadError"));
+                setRetryAfter(result.retry_after ?? null);
+            }
+        }
+        catch (error) {
+            setErrorMessage(translateBackendError(error));
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [t]);
+    SP_REACT.useEffect(() => {
+        void loadPullRequests();
+    }, [loadPullRequests]);
+    const sortedItems = SP_REACT.useMemo(() => sortTestingPullRequests(items, sortField, sortDescending), [items, sortField, sortDescending]);
+    const sortOptions = [
+        { label: t("qam.testing.sort.updated"), data: "updated" },
+        { label: t("qam.testing.sort.opened"), data: "opened" },
+        { label: t("qam.testing.sort.number"), data: "number" },
+        { label: t("qam.testing.sort.author"), data: "author" },
+        { label: t("qam.testing.sort.title"), data: "title" },
+    ];
+    const sortLabel = sortOptions.find((option) => option.data === sortField)?.label ?? sortOptions[0].label;
+    const sortValue = (pr) => {
+        switch (sortField) {
+            case "opened":
+                return formatDate(new Date(pr.created_at));
+            case "updated":
+                return formatDate(new Date(pr.updated_at));
+            case "author":
+                return pr.author || t("common.unknown");
+            case "number":
+            case "title":
+            default:
+                return `#${pr.id}`;
+        }
+    };
+    const openSortMenu = (target) => {
+        DFL.showContextMenu(SP_JSX.jsx(DFL.Menu, { label: t("qam.testing.items"), children: sortOptions.map((option) => (SP_JSX.jsx(DFL.MenuItem, { selected: option.data === sortField, onSelected: () => setSortField(option.data), children: option.label }, option.data))) }), target ?? window);
+    };
+    const openInstallModal = (pr) => {
+        DFL.showModal(SP_JSX.jsx(TestingInstallModal, { pr: pr }));
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx("style", { children: testingCss }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.testing.header") }), SP_JSX.jsx(DFL.Field, { focusable: false, description: t("qam.testing.eligibilityNote") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.testing.refreshLabel"), onClick: () => void loadPullRequests(), disabled: loading, children: t("settings.action.refresh") }), loading && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("active"), children: [SP_JSX.jsx(BusySpinner, {}), SP_JSX.jsx("span", { children: t("qam.testing.loading") })] }) })), !loading && errorMessage && (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", children: SP_JSX.jsxs("div", { style: inlineStatusStyle("error"), children: [SP_JSX.jsx("span", { style: { flexShrink: 0, marginTop: "2px", display: "inline-flex" }, children: SP_JSX.jsx(FaExclamationTriangle, {}) }), SP_JSX.jsxs("div", { children: [SP_JSX.jsx("div", { children: errorMessage }), retryAfter && (SP_JSX.jsx("div", { children: t("qam.update.tryAgainAfter", { date: formatDateTime(new Date(retryAfter)) }) }))] })] }) })), !loading && !errorMessage && sortedItems.length === 0 && (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("qam.testing.noPrs") })), !loading && !errorMessage && sortedItems.length > 0 && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.Focusable, { style: { display: "flex", alignItems: "center", padding: "8px 8px 0" }, children: [SP_JSX.jsx("span", { style: {
+                                            color: colors.text,
+                                            fontSize: `${fontSize.lg}px`,
+                                            fontWeight: fontWeight.medium,
+                                            lineHeight: "20px",
+                                            whiteSpace: "nowrap",
+                                        }, children: t("qam.testing.items") }), SP_JSX.jsx("span", { style: {
+                                            color: colors.textSecondary,
+                                            fontSize: `${fontSize.lg}px`,
+                                            fontWeight: fontWeight.medium,
+                                            lineHeight: "20px",
+                                            marginLeft: "8px",
+                                        }, children: sortedItems.length }), SP_JSX.jsx("div", { "aria-hidden": "true", style: {
+                                            flexGrow: 1,
+                                            height: "2px",
+                                            margin: "0 10px",
+                                            backgroundColor: "rgba(103, 112, 123, 0.3)",
+                                        } }), SP_JSX.jsxs(DFL.Focusable, { role: "button", "aria-label": sortLabel, "aria-haspopup": "menu", onActivate: (event) => openSortMenu(event.currentTarget), focusClassName: "decky-metadata-testing-focus", style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            height: "28px",
+                                            padding: "4px 0",
+                                            marginTop: "1px",
+                                            cursor: "pointer",
+                                        }, children: [SP_JSX.jsx(FaCaretDown, { size: 16, style: { margin: "2px 8px 2px 0", flexShrink: 0 } }), SP_JSX.jsx("span", { style: { fontSize: `${fontSize.lg}px`, lineHeight: "20px", whiteSpace: "nowrap" }, children: sortLabel })] }), SP_JSX.jsx(DFL.Focusable, { role: "button", "aria-label": sortDescending ? t("qam.testing.sortAscending") : t("qam.testing.sortDescending"), onActivate: () => setSortDescending((descending) => !descending), focusClassName: "decky-metadata-testing-focus", style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            width: "28px",
+                                            height: "28px",
+                                            marginLeft: "13px",
+                                            flexShrink: 0,
+                                            cursor: "pointer",
+                                        }, children: sortDescending ? (SP_JSX.jsx(FaSortAmountDownAlt, { "aria-hidden": "true", size: 16 })) : (SP_JSX.jsx(FaSortAmountUpAlt, { "aria-hidden": "true", size: 16 })) })] }), SP_JSX.jsx("ul", { style: { listStyleType: "none", padding: 0, margin: 0 }, children: sortedItems.map((pr) => (SP_JSX.jsx("li", { children: SP_JSX.jsxs("div", { style: {
+                                            display: "flex",
+                                            alignItems: "center",
+                                            minHeight: "58px",
+                                            padding: "6px 8px",
+                                        }, children: [SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", flexGrow: 1, minWidth: 0 }, children: [SP_JSX.jsx("div", { style: {
+                                                            color: colors.text,
+                                                            fontSize: `${fontSize.lg}px`,
+                                                            fontWeight: fontWeight.medium,
+                                                            lineHeight: "20px",
+                                                            marginBottom: "4px",
+                                                        }, children: pr.name }), SP_JSX.jsxs("div", { style: {
+                                                            color: colors.textSecondary,
+                                                            fontSize: `${fontSize.xs}px`,
+                                                            fontWeight: fontWeight.bold,
+                                                            lineHeight: "20px",
+                                                            letterSpacing: "0.4px",
+                                                            textTransform: "uppercase",
+                                                        }, children: [SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaUser, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.author", { author: pr.author || t("common.unknown") }), " · ", SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaClock, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.opened", { date: formatDate(new Date(pr.created_at)) }), " · ", SP_JSX.jsx("span", { className: "decky-metadata-testing-meta-icon", children: SP_JSX.jsx(FaSyncAlt, { size: 12, "aria-hidden": "true" }) }), t("qam.testing.updated", { date: formatDate(new Date(pr.updated_at)) }), pr.is_fork ? ` · ${t("qam.testing.forkBadge")}` : "", pr.draft ? ` · ${t("qam.testing.draftBadge")}` : ""] })] }), SP_JSX.jsx("span", { style: {
+                                                    color: colors.text,
+                                                    fontSize: `${fontSize.xs}px`,
+                                                    fontWeight: fontWeight.bold,
+                                                    lineHeight: "20px",
+                                                    letterSpacing: "0.4px",
+                                                    textTransform: "uppercase",
+                                                    whiteSpace: "nowrap",
+                                                    maxWidth: "30%",
+                                                    overflow: "hidden",
+                                                    textOverflow: "ellipsis",
+                                                    margin: "0 8px",
+                                                    flexShrink: 0,
+                                                }, children: sortValue(pr) }), SP_JSX.jsxs(DFL.Focusable, { style: { display: "flex", gap: "8px", height: "40px", flexShrink: 0 }, navEntryPreferPosition: DFL.NavEntryPositionPreferences.MAINTAIN_X, children: [SP_JSX.jsx(DFL.DialogButton, { style: iconButtonStyle, "aria-label": t("qam.testing.install"), onClick: () => openInstallModal(pr), children: SP_JSX.jsx(FaDownload, { "aria-hidden": "true", style: { display: "block" } }) }), SP_JSX.jsx(DFL.DialogButton, { style: iconButtonStyle, "aria-label": t("qam.testing.info"), onClick: () => DFL.Navigation.NavigateToExternalWeb(pr.link), children: SP_JSX.jsx(FaInfo, { "aria-hidden": "true", style: { display: "block" } }) })] })] }) }, `${pr.id}_${pr.head_sha}`))) })] }))] })] }));
 }
 
 function VersionsBody({ pluginVersion, deckyVersion, steamosVersion, controllerTypes, }) {
@@ -39523,6 +42018,7 @@ const icons = {
     contextMenu: SP_JSX.jsx(FaBars, {}),
     logs: SP_JSX.jsx(FaFileAlt, {}),
     updates: SP_JSX.jsx(FaSyncAlt, {}),
+    testing: SP_JSX.jsx(FaFlask, {}),
     versions: SP_JSX.jsx(FaInfoCircle, {}),
 };
 /** Subscribe in the tab that shows the snapshot: a change re-renders that tab, not the whole page. */
@@ -39568,7 +42064,7 @@ function VersionsTab(props) {
 }
 function SettingsPage() {
     const t = useT();
-    const [page, setPage] = SP_REACT.useState("metadata");
+    const [page, setPage] = SP_REACT.useState(() => consumeReloadSettingsTab() ?? "metadata");
     // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
     // so state kept in a page body would reset on a tab switch.
     const { games, loaded, scan } = useScanGames();
@@ -39577,9 +42073,14 @@ function SettingsPage() {
     const logs = useLogsSettings();
     const versions = useVersions();
     const contextMenu = useContextMenuSettings();
+    const { testingTabEnabled } = usePluginUpdateController();
     SP_REACT.useEffect(() => {
         void refreshLanguage();
     }, []);
+    SP_REACT.useEffect(() => {
+        setActiveSettingsTab(page);
+        return () => setActiveSettingsTab(null);
+    }, [page]);
     // Each body renders its own Steam settings sections.
     const pages = [
         {
@@ -39601,9 +42102,13 @@ function SettingsPage() {
         { id: "contextMenu", label: t("qam.contextMenu.title"), icon: icons.contextMenu, content: SP_JSX.jsx(ContextMenuBody, { ...contextMenu }) },
         { id: "logs", label: t("qam.logs.title"), icon: icons.logs, separatorBefore: true, content: SP_JSX.jsx(LogsBody, { ...logs }) },
         { id: "updates", label: t("qam.update.title"), icon: icons.updates, content: SP_JSX.jsx(PluginUpdateBody, {}) },
+        ...(testingTabEnabled
+            ? [{ id: "testing", label: t("qam.testing.title"), icon: icons.testing, content: SP_JSX.jsx(TestingBody, {}) }]
+            : []),
         { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
-    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: page, onPageRequested: setPage })] }));
+    const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
+    return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: activePage, onPageRequested: setPage })] }));
 }
 
 const protonDbCoverSurface = (path) => {
@@ -40218,6 +42723,7 @@ function installProtonDbGameView() {
 
 const LOCAL_CDP_TARGETS_URL = "http://localhost:8080/json";
 const STEAM_STORE_ROUTE = "/steamweb";
+const TARGET_DISCOVERY_FAST_INTERVAL_MS = 250;
 const TARGET_DISCOVERY_INTERVAL_MS = 1500;
 const MAX_STEAM_APP_ID = 0x80000000;
 const MAX_STORE_TITLE_LENGTH = 512;
@@ -40298,6 +42804,7 @@ const storeRowScript = (payload, revision) => {
     // Injected scripts cannot import i18n, so their labels are resolved here and embedded as data.
     const serializedHltbAriaLabel = JSON.stringify(t("storeRow.hltbAriaLabel"));
     const serializedProtonDbRatingAriaLabel = JSON.stringify(t("storeRow.protondbRating", { tier: "__TIER__" }));
+    const serializedViewDetailsLabel = JSON.stringify(t("storeRow.viewDetails"));
     return `(function () {
   "use strict";
   const requestedPayload = ${serializedPayload};
@@ -40305,6 +42812,7 @@ const storeRowScript = (payload, revision) => {
   const requestedRevision = ${serializedRevision};
   const hltbAriaLabel = ${serializedHltbAriaLabel};
   const protonDbRatingAriaLabelTemplate = ${serializedProtonDbRatingAriaLabel};
+  const viewDetailsLabel = ${serializedViewDetailsLabel};
   const ownerKey = "__deckyMetadataStoreInfoRowV1";
   const revisionKey = "__deckyMetadataStoreInfoRowRevisionV1";
   const rowId = "${ROW_ID}";
@@ -40317,8 +42825,10 @@ const storeRowScript = (payload, revision) => {
   const valueClass = "decky-metadata-store-row-value";
   const labelClass = "decky-metadata-store-row-label";
   const tierClass = "decky-metadata-store-row-tier";
+  const tierInfoClass = "decky-metadata-store-row-tier-info";
   const tierLabelClass = "decky-metadata-store-row-tier-label";
   const atomClass = "decky-metadata-store-row-atom";
+  const buttonClass = "decky-metadata-store-row-button";
   const validTiers = Object.freeze({ platinum: true, gold: true, silver: true, bronze: true, borked: true });
   const css = "#" + rowId + "{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:0}" +
     "#" + rowId + ">:only-child{grid-column:1 / -1}" +
@@ -40326,11 +42836,15 @@ const storeRowScript = (payload, revision) => {
     "." + headingClass + "{font:700 13px/17px 'Motiva Sans',Arial,sans-serif;color:var(--color-text-body-title,#f1f2f3);border-bottom:.67px solid rgb(49,69,96);padding-bottom:3px;margin-bottom:4px;text-transform:uppercase}" +
     "." + statsClass + "{display:flex;justify-content:space-between;list-style:none;margin:0;padding:0}" +
     "." + statsClass + " li{display:flex;flex-direction:column}" +
-    "." + valueClass + "{color:#fff;font-weight:700}" +
+    "." + valueClass + "{color:var(--color-blue-8,#1a9fff);font-weight:700}" +
     "." + labelClass + "{font-size:12px;opacity:.8}" +
-    "." + tierClass + "{display:flex;align-items:center;gap:8px}" +
-    "." + atomClass + "{width:24px;height:24px;flex:0 0 24px;fill:none;stroke:currentColor;stroke-width:1.7}" +
-    "." + tierLabelClass + "{color:#fff;font-weight:700}";
+    "." + tierClass + "{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;padding:5px 0}" +
+    "." + tierInfoClass + "{display:inline-flex;align-items:center;gap:8px}" +
+    "." + atomClass + "{width:20px;height:20px;flex:0 0 20px;fill:none;stroke:currentColor;stroke-width:1.7}" +
+    "." + tierLabelClass + "{font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;color:#ccd8e3;vertical-align:middle}" +
+    "." + buttonClass + "{display:inline-flex;align-items:center;color:#fff;background-color:var(--color-blue-8,#1a9fff);border-radius:2px;padding:6px 12px;font:400 13px/18.2px 'Motiva Sans',Arial,sans-serif;text-decoration:none;white-space:nowrap;box-shadow:rgba(0,0,0,.32) 0 3px 6px;transition:color .1s ease,background-color .1s ease,border-radius .1s ease}" +
+    "." + buttonClass + ":hover{color:#fff;cursor:pointer;background-color:#00bbff}" +
+    "." + buttonClass + ".gpfocus,." + buttonClass + ":focus-visible{color:#000;background-color:#fff;border-radius:0;outline:none}";
   const isAppId = function (value) {
     return Number.isSafeInteger(value) && value > 0 && value < 2147483648;
   };
@@ -40396,8 +42910,7 @@ const storeRowScript = (payload, revision) => {
     return requestedPayload === null;
   }
   if (existing && typeof existing.update === "function") {
-    existing.update(requestedPayload, requestedSignature, revision);
-    return true;
+    return existing.update(requestedPayload, requestedSignature, revision);
   }
 
   let disposed = false;
@@ -40462,13 +42975,16 @@ const storeRowScript = (payload, revision) => {
         bodyObserver = new MutationObserver(function (records) {
           if (disposed) return;
           const externalChange = records.some(function (record) {
+            if (row && (record.target === row || (typeof row.contains === "function" && row.contains(record.target)))) {
+              return false;
+            }
             const added = Array.from(record.addedNodes || []);
             const removed = Array.from(record.removedNodes || []);
             return added.some(function (node) { return node !== row; }) || removed.length > 0;
           });
           if (externalChange) render();
         });
-        bodyObserver.observe(body, { childList: true });
+        bodyObserver.observe(body, { childList: true, subtree: true });
       }
     }
   }
@@ -40548,55 +43064,64 @@ const storeRowScript = (payload, revision) => {
   function protonDbCard(payload) {
     const data = payload.protondb;
     if (!data) return null;
-    const card = document.createElement("a");
+    const card = document.createElement("div");
     card.className = cardClass;
     card.setAttribute("data-card", "protondb");
     card.setAttribute("aria-label", protonDbRatingAriaLabelTemplate.split("__TIER__").join(data.label));
-    card.href = "https://www.protondb.com/app/" + payload.steamAppId;
-    card.target = "_blank";
-    card.rel = "noopener noreferrer";
     card.appendChild(createHeading("ProtonDB"));
     const body = document.createElement("div");
     body.className = tierClass;
+    const info = document.createElement("div");
+    info.className = tierInfoClass;
     const atom = createAtom();
     atom.style.setProperty("color", data.color);
-    body.appendChild(atom);
+    info.appendChild(atom);
     const label = document.createElement("span");
     label.className = tierLabelClass;
     label.textContent = data.label;
-    body.appendChild(label);
+    info.appendChild(label);
+    body.appendChild(info);
+    const detailsButton = document.createElement("a");
+    detailsButton.className = buttonClass;
+    detailsButton.setAttribute("role", "button");
+    detailsButton.setAttribute("data-role", "details");
+    detailsButton.href = "https://www.protondb.com/app/" + payload.steamAppId;
+    detailsButton.target = "_blank";
+    detailsButton.rel = "noopener noreferrer";
+    detailsButton.textContent = viewDetailsLabel;
+    body.appendChild(detailsButton);
     card.appendChild(body);
     return card;
   }
 
   function render() {
-    if (disposed) return;
+    if (disposed) return false;
     if (!pageStillMatches()) {
       dispose();
-      return;
+      return false;
     }
     observeDocument();
     const body = document.body;
     const styleHost = document.head || document.documentElement;
-    if (!body || !styleHost) return;
+    if (!body || !styleHost) return false;
 
     const existingRow = ownedNode(rowId, "row");
-    if (existingRow === false) return;
+    if (existingRow === false) return false;
     const existingStyle = ownedNode(styleId, "style");
-    if (existingStyle === false) return;
+    if (existingStyle === false) return false;
     const anchor = document.getElementById(anchorId);
     const parent = anchor && anchor.parentNode;
     if (!anchor || !parent) {
       if (existingRow && typeof existingRow.remove === "function") existingRow.remove();
-      return;
+      return false;
     }
 
     style = existingStyle || document.createElement("style");
     if (!existingStyle) {
       style.id = styleId;
       style.setAttribute(ownerAttribute, "style");
-      style.textContent = css;
     }
+    if (style.textContent !== css) style.textContent = css;
     if (style.parentNode !== styleHost) styleHost.appendChild(style);
 
     const appIdText = String(statePayload.steamAppId);
@@ -40610,7 +43135,7 @@ const storeRowScript = (payload, revision) => {
         existingRow.parentNode === parent && anchor.previousElementSibling === existingRow) {
       row = existingRow;
       if (marginTop) row.style.marginTop = marginTop;
-      return;
+      return true;
     }
     // Rebuild instead of patching in place: one fresh, attached registration per change keeps the nav tree simple.
     row = document.createElement("div");
@@ -40631,19 +43156,20 @@ const storeRowScript = (payload, revision) => {
     try {
       if (typeof window.ForceUpdateFocusElements === "function") window.ForceUpdateFocusElements(row);
     } catch {}
+    return true;
   }
 
   function update(nextPayload, nextSignature, nextRevision) {
-    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return;
+    if (disposed || !Number.isSafeInteger(nextRevision) || nextRevision < stateRevision) return false;
     stateRevision = nextRevision;
     if (!isPayload(nextPayload) || !isText(nextSignature, 2048) ||
         appIdOnCurrentStorePage() !== nextPayload.steamAppId) {
       dispose();
-      return;
+      return false;
     }
     statePayload = nextPayload;
     stateSignature = nextSignature;
-    render();
+    return render();
   }
 
   function dispose() {
@@ -40671,8 +43197,7 @@ const storeRowScript = (payload, revision) => {
   document.addEventListener("pageleave", dispose);
   addHistoryObserver("pushState");
   addHistoryObserver("replaceState");
-  render();
-  return true;
+  return render();
 })();`;
 };
 const isSafeTargetId = (value) => validTargetText(value, 256);
@@ -40727,7 +43252,7 @@ const findSteamHistory = () => {
 };
 const routePath = (history) => {
     const pathname = history.location?.pathname;
-    return typeof pathname === "string" ? pathname : "";
+    return typeof pathname === "string" ? pathname.replace(/^\/routes(?=\/)/, "") : "";
 };
 const isDisposer = (value) => typeof value === "function";
 const listStoreCefTargets = async () => {
@@ -40838,7 +43363,7 @@ const installStoreInfoRow = () => {
         const inputs = { steam: target.steamAppId, title, pinned: null };
         const view = hltbStore.view(target.steamAppId, inputs);
         if (view.needsFetch)
-            hltbStore.request(target.steamAppId, false, inputs);
+            hltbStore.request(target.steamAppId, false, inputs, Date.now(), false);
         const entry = view.entry;
         if (!entry || entry.status !== "matched")
             return null;
@@ -40957,10 +43482,11 @@ const installStoreInfoRow = () => {
     const scheduleDiscovery = () => {
         if (!isEligible() || discoveryTimer !== undefined || discoveryRunning)
             return;
+        const delay = currentSignature === undefined ? TARGET_DISCOVERY_FAST_INTERVAL_MS : TARGET_DISCOVERY_INTERVAL_MS;
         discoveryTimer = globalThis.setTimeout(() => {
             discoveryTimer = undefined;
             void discoverTarget();
-        }, TARGET_DISCOVERY_INTERVAL_MS);
+        }, delay);
     };
     const discoverTarget = async () => {
         if (!isEligible() || discoveryRunning)
@@ -41124,6 +43650,7 @@ var index = DFL.definePlugin(() => {
     const menuPatch = contextMenuPatch(LibraryContextMenu);
     routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
     routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
+    const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and
@@ -41134,6 +43661,8 @@ var index = DFL.definePlugin(() => {
         content: SP_JSX.jsx(Content, {}),
         icon: SP_JSX.jsx(FaTags, {}),
         onDismount() {
+            cancelSettingsRefresh();
+            rememberSettingsTabForReload();
             stopTrailerController();
             stopMiniAchievementsController();
             stopProtonDbCovers();

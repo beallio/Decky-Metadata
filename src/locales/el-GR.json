@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Άνοιγμα ρυθμίσεων", "action": { "refresh": "Ανανέωση", "clear": "Εκκαθάριση", "view": "Προβολή", "check": "Έλεγχος" } },
+  "settings": {
+    "open": "Άνοιγμα ρυθμίσεων",
+    "action": {
+      "refresh": "Ανανέωση",
+      "clear": "Εκκαθάριση",
+      "view": "Προβολή",
+      "check": "Έλεγχος"
+    }
+  },
   "common": {
     "hours_one": "{{value}} ώρα",
     "hours_other": "{{value}} ώρες",
@@ -52,7 +60,21 @@
     "shortcut_name_changed": "Το όνομα της συντόμευσης άλλαξε πριν από τη μετονομασία.",
     "shortcut_name_api_unavailable": "Το API ονομάτων συντομεύσεων του Steam δεν είναι διαθέσιμο",
     "shortcut_name_api_failed": "Το API ονομάτων συντομεύσεων του Steam απέτυχε",
-    "shortcut_name_timeout": "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως."
+    "shortcut_name_timeout": "Το Steam δεν επιβεβαίωσε το νέο όνομα της συντόμευσης εγκαίρως.",
+    "invalid_steam_app_id": "Αυτό το παιχνίδι δεν είναι έγκυρο παιχνίδι Steam.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -113,7 +135,11 @@
       "showTimesLabel": "Εμφάνιση χρόνων HowLongToBeat",
       "showTimesDescription": "Εμφάνιση χρόνων HowLongToBeat στις σελίδες παιχνιδιών Steam και εκτός Steam.",
       "storeLabel": "Κατάστημα",
-      "storeDescription": "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam.",
+      "storeDescription": "Εμφάνιση χρόνων HowLongToBeat σε γραμμή πληροφοριών στις σελίδες παιχνιδιών του Καταστήματος Steam. Χρησιμοποιεί πάντα αυτόματη αντιστοίχιση· οι επιλογές HLTB ανά παιχνίδι ισχύουν μόνο στις σελίδες παιχνιδιών της Βιβλιοθήκης.",
+      "statsHeading": "Στατιστικά",
+      "styleHeading": "Στυλ",
+      "customizeHeading": "Προσαρμογή",
+      "cacheHeading": "Προσωρινή μνήμη",
       "styleLabel": "Στυλ HLTB",
       "styleDescription": "Τα στυλ «Clean» προορίζονται για το θέμα «Clean Gameview» του CSS Loader",
       "styleDefault": "Προεπιλογή",
@@ -206,7 +232,8 @@
       "positionTopLeft": "Πάνω αριστερά",
       "positionTopRight": "Πάνω δεξιά",
       "loadingPreferences": "Φόρτωση προτιμήσεων σημάτων ProtonDB...",
-      "footnote": "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται."
+      "footnote": "Οι αξιολογήσεις προέρχονται απευθείας από το ProtonDB. Περιγράφουν την εμπειρία της κοινότητας, όχι την αξιολόγηση συμβατότητας της Valve· τα παιχνίδια χωρίς αντιστοίχιση και όσα δεν έχουν βαθμίδα ProtonDB κρύβονται.",
+      "gameCoversHeading": "Εξώφυλλα παιχνιδιών"
     },
     "miniAchievements": {
       "title": "Μίνι επιτεύγματα",
@@ -294,7 +321,23 @@
       "checkNow": "Έλεγχος τώρα",
       "enableDevelopmentTitle": "Ενεργοποίηση εκδόσεων ανάπτυξης;",
       "confirmRevertTitle": "Επιστροφή στο σταθερό κανάλι;",
-      "confirmRevertBody": "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης."
+      "confirmRevertBody": "Είστε βέβαιοι ότι θέλετε να επιστρέψετε στη σταθερή v{{version}}; Αυτή είναι υποβάθμιση και μπορεί να προκαλέσει απώλεια δεδομένων ή προβλήματα διαμόρφωσης.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ενημερώσεις λογισμικού",
+      "checkForUpdates": "Έλεγχος για ενημερώσεις",
+      "upToDateButton": "Ενημερωμένο",
+      "apply": "Εφαρμογή",
+      "applying": "Εφαρμογή...",
+      "moveToStableShort": "Μετάβαση σε σταθερή",
+      "revertToStableShort": "Επαναφορά σε σταθερή",
+      "upToDateLastChecked": "Ενημερωμένο: τελευταίος έλεγχος {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Κανάλι ενημερώσεων",
+      "channelOptionStable": "Σταθερό",
+      "channelOptionDevelopment": "Ανάπτυξης",
+      "channelStableDescription": "Λαμβάνει δοκιμασμένες σταθερές εκδόσεις."
     },
     "versions": {
       "title": "Εκδόσεις",
@@ -312,6 +355,39 @@
       "modalTitle": "Αρχεία καταγραφής πρόσθετου",
       "modalEmpty": "Δεν υπάρχουν πρόσφατες καταγραφές",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Δοκιμή ξανά",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -320,7 +396,8 @@
     "statMain": "Κύρια ιστορία",
     "statMainPlus": "Κύρια + επιπλέον",
     "statComplete": "Πλήρης ολοκλήρωση",
-    "statAllStyles": "Όλα τα στυλ"
+    "statAllStyles": "Όλα τα στυλ",
+    "viewDetails": "Προβολή λεπτομερειών"
   },
   "trailers": {
     "audio": "Ήχος τρέιλερ",
@@ -419,7 +496,8 @@
       "cacheClearFailed": "Η εκκαθάριση προσωρινής μνήμης απέτυχε",
       "delisted": "Καταργημένα παιχνίδια Steam",
       "logs": "Αρχεία καταγραφής"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Επεξεργασία μεταδεδομένων..."
@@ -582,7 +660,8 @@
     },
     "steamTextLanguage": "Γλώσσα κειμένου Steam: {{language}}",
     "fetchSteamText": "Φόρτωση κειμένου από το Steam στα {{language}}",
-    "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι."
+    "steamTextUnavailable": "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι.",
+    "hltbDisabledNotice": "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις."
   },
   "matchPicker": {
     "help": "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",

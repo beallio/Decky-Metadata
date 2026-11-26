@@ -1,9 +1,11 @@
-import { clearHltbCache, getHltbSettings, setHltbSettings, type ProviderCacheSnapshot } from "../backend";
+import { clearHltbCache, getAllSteamOverrides, getHltbSettings, setHltbSettings, type ProviderCacheSnapshot } from "../backend";
 import { t } from "../i18n";
 import * as log from "../log";
 import { pluginConflicts, type FeatureConflict, type PluginConflictSource } from "../pluginConflicts";
 import { loadProviderCache } from "../providerCache";
+import type { SteamOverride } from "../types";
 import { DEFAULT_HLTB_SETTINGS, normalizeHltbSettings, type HltbSettings } from "./settings";
+import { clearSteamOverrideCache, replaceSteamOverrides } from "./steamOverrides";
 import { hltbStore, type HltbStore } from "./store";
 
 export type HltbSnapshot = Readonly<{
@@ -39,6 +41,8 @@ export class HltbController {
     private readonly conflicts: PluginConflictSource = pluginConflicts,
     private readonly loadCache: () => Promise<ProviderCacheSnapshot> = loadProviderCache,
     private readonly settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache },
+    private readonly loadSteamOverrides: () => Promise<Record<string, SteamOverride>> = () =>
+      typeof getAllSteamOverrides === "function" ? getAllSteamOverrides() : Promise.resolve({}),
   ) {
     this.snapshot = this.initialSnapshot();
   }
@@ -62,8 +66,12 @@ export class HltbController {
       (cache) => { if (this.isCurrent(generation)) this.store.seed(cache.hltb.entries); },
       () => undefined, // Without the saved cache, times are looked up when pages open.
     );
-    void this.settingsStore.get().then(
-      (settings) => {
+    const overridesReady = this.loadSteamOverrides().then(
+      (entries) => { if (this.isCurrent(generation)) replaceSteamOverrides(entries); },
+      () => undefined, // Without saved overrides, automatic Steam matching still works.
+    );
+    void Promise.all([this.settingsStore.get(), overridesReady]).then(
+      ([settings]) => {
         if (!this.isCurrent(generation)) return;
         const saved = normalizeHltbSettings(settings);
         this.confirmed = saved;
@@ -88,6 +96,7 @@ export class HltbController {
     this.unsubscribeConflicts = undefined;
     this.publish({ settingsLoaded: false, busy: false });
     this.store.reset();
+    clearSteamOverrideCache();
     this.listeners.clear();
   }
 

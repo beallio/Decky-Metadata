@@ -24,7 +24,9 @@ unless **Hide "Details"** is on.
 
 The **Store** switch in the **HLTB times** tab turns the
 **How Long To Beat** box on. It is on by default, and you can change it only
-while **Show HowLongToBeat times** is on. The row also holds a ProtonDB box,
+while **Show HowLongToBeat times** is on. Store pages always use automatic
+matching; per-game HLTB choices saved in **Edit Metadata...** apply only on
+Library game pages. The row also holds a ProtonDB box,
 which the ProtonDB **Store** switch controls. If only one box has data, it
 fills the row. If both switches are off, no row appears.
 
@@ -33,23 +35,27 @@ row](protondb-badges.md#enable-the-store-row).
 
 ## Choose how the times look
 
-| Setting | What it does |
-| --- | --- |
-| **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. **"Clean" Left** puts the times on the left side of the header image instead of the right. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
-| **Push Play button down** | **Default** and **"Clean" Default** styles only. Puts the times in their own row below the header image and moves the Play button down, like HLTB for Deck. While a Steam Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image, the times stay on the image and the Play button does not move, so the status bar keeps its artwork background. The times return to their own row when that bar goes away. With themes where the Play button already sits below the header image, the times always get their own row. Off by default, so the times stay at the bottom of the header image just above Play. |
-| **Keep Play above the footer** | **Default** and **"Clean" Default** styles only, and only while **Push Play button down** is on. Moves the Play button down only as far as its bottom stays a few pixels above Big Picture's footer (Menu, Options, Select, Back). Themes can make the footer taller, shorter, or hide it; the push follows the footer's current size, so Play never ends up behind it. When no room is left, the times stay on the header image instead. On by default. |
-| **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the HLTB background. **None** removes its blur. In **"Clean" Default**, when the Play bar is blurred and this setting is not **None**, the times sit on the Play bar's own blur, so both rows look like one panel unless **Push Play button down** is on. This setting never changes the Play bar's blur. |
-| **Use Steam button corners** | The switch shows in every style, but changes only the **"Clean"** styles' **Details** button. Keeps its corners as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
-| **Hide "Details"** | Removes the button that opens the HowLongToBeat page. It also removes the link from the **How Long To Beat** box on Store pages. |
-| **Toggle … stat** | Show or hide each of the four times. |
-| **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. Background opacity and the bottom border apply to the **Default** style only, because the **"Clean"** styles match the Play bar. **Reset appearance** returns these to their defaults. |
-| **Clear HLTB cache** | Forgets saved times. Each game looks up its times again the next time you open it. |
+Below **Show HowLongToBeat times** and **Store**, the remaining settings are grouped into **Stats**, **Style**, **Customize**, and **Cache** subsections:
+
+| Section | Setting | What it does |
+| --- | --- | --- |
+| **Stats** | **Toggle … stat** | Show or hide each of the four times. |
+| **Stats** | **Hide "Details"** | Removes the button that opens the HowLongToBeat page. It also removes the link from the **How Long To Beat** box on Store pages. |
+| **Stats** | **Use Steam button corners** | The switch shows in every style, but changes only the **"Clean"** styles' **Details** button. Keeps its corners as Steam draws them, so the CSS Loader theme "Round" does not round them. Off by default. |
+| **Style** | **HLTB Style** | **Default** puts a row of times at the bottom of the game's header image, just above the Play button. The **"Clean"** styles place the times over the header image, with a **Details** button that looks like the buttons beside Play. **"Clean" Left** puts the times on the left side of the header image instead of the right. They are meant for the CSS Loader theme "Clean Gameview". The times always use the same background as the Play bar. |
+| **Style** | **Push Play button down** | **Default** and **"Clean" Default** styles only. Puts the times in their own row below the header image and moves the Play button down, like HLTB for Deck. While a Steam Cloud or SDH-Ludusavi save status bar shows at the bottom of the header image, the times stay on the image and the Play button does not move, so the status bar keeps its artwork background. The times return to their own row when that bar goes away. With themes where the Play button already sits below the header image, the times always get their own row. Off by default, so the times stay at the bottom of the header image just above Play. |
+| **Style** | **Keep Play above the footer** | **Default** and **"Clean" Default** styles only, and only while **Push Play button down** is on. Moves the Play button down only as far as its bottom stays a few pixels above Big Picture's footer (Menu, Options, Select, Back). Themes can make the footer taller, shorter, or hide it; the push follows the footer's current size, so Play never ends up behind it. When no room is left, the times stay on the header image instead. On by default. |
+| **Style** | **Background blur** | **"Clean"** styles only. **Match Play bar** (the default) copies the Play bar's blur, including the Clean Gameview **Blur** style. **Blur** always blurs the HLTB background. **None** removes its blur. In **"Clean" Default**, when the Play bar is blurred and this setting is not **None**, the times sit on the Play bar's own blur, so both rows look like one panel unless **Push Play button down** is on. This setting never changes the Play bar's blur. |
+| **Customize** | **Customize appearance** | Change the background opacity, a text shadow, the text size, and (Default style only) the bottom border. Background opacity and the bottom border apply to the **Default** style only, because the **"Clean"** styles match the Play bar. **Reset appearance** returns these to their defaults. |
+| **Cache** | **Clear HLTB cache** | Forgets saved times. Each game looks up its times again the next time you open it. |
 
 ## How a game is matched
 
-- **Steam games** are matched by their Steam App ID. HowLongToBeat lists the
-  Steam game on its own page, so a different edition is not used by mistake.
-  If HowLongToBeat does not list the Steam App ID, no times appear.
+- **Steam games** are matched by their Steam App ID by default. HowLongToBeat
+  lists the Steam game on its own page, so a different edition is not used by
+  mistake. If HowLongToBeat does not list the Steam App ID or matches the wrong
+  entry, you can choose the game manually from **Edit Metadata...** while
+  **Show HowLongToBeat times** is enabled.
 - **Non-Steam games** use the Steam match saved on **Game Match**. If there
   is no Steam match, HowLongToBeat searches for the game's name. If it finds
   only one game, Decky Metadata uses that game. HowLongToBeat also searches
@@ -59,9 +65,11 @@ row](protondb-badges.md#enable-the-store-row).
   when you save a Steam match or an IGN result, or select **Clear cache**.
   You can also choose a HowLongToBeat game after you remove the metadata.
 
-### Choose the HLTB game for a non-Steam game
+### Choose the HLTB game for a game
 
-1. Open the game's menu and select **Edit Metadata...**.
+1. Open the game's menu and select **Edit Metadata...**. For Steam games, this
+   menu entry appears when **Show HowLongToBeat times** is on and opens directly
+   to **HowLongToBeat**.
 2. On **HowLongToBeat**, the number field and **Current game** show the
    game whose times the game page shows, and whether you chose it or it was
    found automatically. To choose another game, either:
@@ -74,6 +82,9 @@ row](protondb-badges.md#enable-the-store-row).
 3. Select **Save** to store the chosen game. Nothing is saved until then.
 4. To go back to automatic matching, empty the number field, select
    **Apply HLTB game**, then select **Save**.
+
+Per-game HLTB choices apply on Library game pages. Steam Store pages always use
+automatic matching.
 
 ## How fresh the times are
 

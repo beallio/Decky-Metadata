@@ -30,12 +30,14 @@ describe("HLTB controls", () => {
     expect(toggle().props.disabled).toBe(true);
     expect(toggle({ ...base.settings, enabled: true }).props.disabled).toBe(false);
   });
-  it("wires the Store info row toggle to the setting", () => {
+  it("wires the Store info row toggle to the setting and notes automatic matching", () => {
     const change = vi.fn();
     const settings = { ...DEFAULT_HLTB_SETTINGS, enabled: true, store: false };
     const tree = nodes(HltbBody({ settings, settingsLoaded: true, conflict: { pluginName: null, detectionAvailable: true }, onSettingsChange: change, onClearCache: vi.fn() }));
     const toggle = tree.find(node => node.props.label === "Store")!;
     expect(toggle.props.checked).toBe(false);
+    expect(toggle.props.description).toContain("automatic matching");
+    expect(toggle.props.description).toContain("Library game pages");
     toggle.props.onChange(true);
     expect(applied(change, settings)).toEqual({ ...settings, store: true });
   });
@@ -116,5 +118,53 @@ describe("HLTB controls", () => {
       onSettingsChange: vi.fn(), onClearCache: vi.fn(),
     }));
     expect(tree.some(node => node.type === "Field")).toBe(false);
+  });
+  it("groups controls into top, Stats, Style, Customize, and Cache subsections in order", () => {
+    const settings: HltbSettings = {
+      ...DEFAULT_HLTB_SETTINGS,
+      enabled: true,
+      style: "clean-default",
+      appearance: { ...DEFAULT_HLTB_SETTINGS.appearance, custom: true },
+    };
+    const tree = nodes(HltbBody({
+      settings,
+      settingsLoaded: true,
+      conflict: { pluginName: null, detectionAvailable: true },
+      onSettingsChange: vi.fn(),
+      onClearCache: vi.fn(),
+    }));
+    const sections = tree.filter(node => node.type === "DialogControlsSection");
+    expect(sections).toHaveLength(5);
+
+    const headerOf = (section: React.ReactElement<any>) =>
+      nodes(section).find(node => node.type === "DialogControlsSectionHeader")?.props.children ?? null;
+    const labelsOf = (section: React.ReactElement<any>) =>
+      nodes(section)
+        .filter(node => ["ToggleField", "DropdownItem", "SliderField", "ButtonItem"].includes(String(node.type)))
+        .map(node => node.type === "ButtonItem" && node.props.children === "Reset appearance" ? "Reset appearance" : node.props.label);
+
+    expect(sections.map(headerOf)).toEqual([null, "Stats", "Style", "Customize", "Cache"]);
+    expect(labelsOf(sections[0])).toEqual(["Show HowLongToBeat times", "Store"]);
+    expect(labelsOf(sections[1])).toEqual([
+      "Toggle main stat",
+      "Toggle main+ stat",
+      "Toggle completionist stat",
+      "Toggle \"all play styles\" stat",
+      "Hide \"Details\"",
+      "Use Steam button corners",
+    ]);
+    expect(labelsOf(sections[2])).toEqual([
+      "HLTB Style",
+      "Push Play button down",
+      "Keep Play above the footer",
+      "Background blur",
+    ]);
+    expect(labelsOf(sections[3])).toEqual([
+      "Customize appearance",
+      "Text shadow",
+      "Text size",
+      "Reset appearance",
+    ]);
+    expect(labelsOf(sections[4])).toEqual(["Clear HLTB cache"]);
   });
 });

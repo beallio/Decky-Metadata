@@ -1,5 +1,13 @@
 {
-  "settings": { "open": "Otwórz ustawienia", "action": { "refresh": "Odśwież", "clear": "Wyczyść", "view": "Wyświetl", "check": "Sprawdź" } },
+  "settings": {
+    "open": "Otwórz ustawienia",
+    "action": {
+      "refresh": "Odśwież",
+      "clear": "Wyczyść",
+      "view": "Wyświetl",
+      "check": "Sprawdź"
+    }
+  },
   "common": {
     "hours_one": "{{value}} godzina",
     "hours_few": "{{value}} godziny",
@@ -54,7 +62,21 @@
     "shortcut_name_changed": "Nazwa skrótu zmieniła się przed aktualizacją.",
     "shortcut_name_api_unavailable": "Interfejs API nazw skrótów Steam jest niedostępny",
     "shortcut_name_api_failed": "Błąd interfejsu API nazw skrótów Steam",
-    "shortcut_name_timeout": "Steam nie potwierdził na czas nowej nazwy skrótu."
+    "shortcut_name_timeout": "Steam nie potwierdził na czas nowej nazwy skrótu.",
+    "invalid_steam_app_id": "Ta gra nie jest prawidłową grą Steam.",
+    "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
+    "testing_invalid_request": "Invalid pull request build request",
+    "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
+    "testing_pr_outdated": "This pull request has new commits. Refresh the list and try again.",
+    "testing_build_not_found": "No CI build was found for this pull request commit yet.",
+    "testing_build_in_progress": "The CI build for this pull request is still running. Try again once it finishes.",
+    "testing_build_failed": "The latest CI build for this pull request failed.",
+    "testing_artifact_not_found": "No downloadable test build artifact was found for this pull request.",
+    "testing_artifact_expired": "The CI build artifact for this pull request has expired.",
+    "testing_download_failed": "Failed to download the pull request build artifact.",
+    "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
+    "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
   },
   "updater": {
     "check": {
@@ -115,7 +137,11 @@
       "showTimesLabel": "Pokazuj czasy HowLongToBeat",
       "showTimesDescription": "Pokazuj czasy HowLongToBeat na stronach gier Steam i gier spoza Steam.",
       "storeLabel": "Sklep",
-      "storeDescription": "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam.",
+      "storeDescription": "Pokazuj czasy HowLongToBeat w wierszu informacji na stronach gier w sklepie Steam. Zawsze używa automatycznego dopasowania; wybory HLTB dla poszczególnych gier działają tylko na stronach gier w Bibliotece.",
+      "statsHeading": "Statystyki",
+      "styleHeading": "Styl",
+      "customizeHeading": "Dostosuj",
+      "cacheHeading": "Pamięć podręczna",
       "styleLabel": "Styl HLTB",
       "styleDescription": "Style „Clean” są przeznaczone do współpracy z motywem CSS Loader „Clean Gameview”",
       "styleDefault": "Domyślny",
@@ -208,7 +234,8 @@
       "positionTopLeft": "Lewy górny róg",
       "positionTopRight": "Prawy górny róg",
       "loadingPreferences": "Wczytywanie ustawień odznak ProtonDB...",
-      "footnote": "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane."
+      "footnote": "Oceny pochodzą bezpośrednio z ProtonDB. Opisują doświadczenia społeczności, a nie ocenę kompatybilności Valve; niedopasowane gry i gry bez poziomu ProtonDB są ukrywane.",
+      "gameCoversHeading": "Okładki gier"
     },
     "miniAchievements": {
       "title": "Mini osiągnięcia",
@@ -296,7 +323,23 @@
       "checkNow": "Sprawdź teraz",
       "enableDevelopmentTitle": "Włączyć wydania deweloperskie?",
       "confirmRevertTitle": "Wrócić do stabilnej wersji?",
-      "confirmRevertBody": "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją."
+      "confirmRevertBody": "Czy na pewno chcesz wrócić do stabilnej v{{version}}? To obniżenie wersji, które może spowodować utratę danych lub problemy z konfiguracją.",
+      "developerHeading": "Developer",
+      "enableTestingTab": "Enable Testing tab",
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Aktualizacje oprogramowania",
+      "checkForUpdates": "Sprawdź aktualizacje",
+      "upToDateButton": "Aktualne",
+      "apply": "Zastosuj",
+      "applying": "Stosowanie...",
+      "moveToStableShort": "Przejdź na stabilną",
+      "revertToStableShort": "Wróć do stabilnej",
+      "upToDateLastChecked": "Aktualne: ostatnie sprawdzenie {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Kanał aktualizacji",
+      "channelOptionStable": "Stabilny",
+      "channelOptionDevelopment": "Rozwojowy",
+      "channelStableDescription": "Otrzymuje przetestowane wydania stabilne."
     },
     "versions": {
       "title": "Wersje",
@@ -314,6 +357,39 @@
       "modalTitle": "Dzienniki wtyczki",
       "modalEmpty": "Brak ostatnich wpisów",
       "ok": "OK"
+    },
+    "testing": {
+      "title": "Testing",
+      "header": "Pull request builds",
+      "eligibilityNote": "Lists open pull requests from this repository and fork pull requests with the test-build label.",
+      "refreshLabel": "Refresh pull requests",
+      "loading": "Loading pull requests...",
+      "loadError": "Failed to load pull requests",
+      "noPrs": "No eligible open pull requests found.",
+      "items": "Items",
+      "sort": {
+        "updated": "Updated",
+        "opened": "Opened",
+        "number": "PR #",
+        "author": "Author",
+        "title": "Title"
+      },
+      "sortAscending": "Sort ascending",
+      "sortDescending": "Sort descending",
+      "author": "By {{author}}",
+      "opened": "Opened {{date}}",
+      "updated": "Updated {{date}}",
+      "forkBadge": "Fork · test-build",
+      "draftBadge": "Draft",
+      "install": "Install",
+      "installing": "Preparing...",
+      "retry": "Spróbuj ponownie",
+      "info": "View on GitHub",
+      "installModalTitle": "Install PR #{{id}}?",
+      "modalDetails": "By {{author}} · Commit {{sha}}",
+      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "prepareFailed": "Failed to prepare pull request build."
     }
   },
   "storeRow": {
@@ -322,7 +398,8 @@
     "statMain": "Główny wątek",
     "statMainPlus": "Główny wątek + dodatki",
     "statComplete": "Pełne ukończenie",
-    "statAllStyles": "Wszystkie style"
+    "statAllStyles": "Wszystkie style",
+    "viewDetails": "Zobacz szczegóły"
   },
   "trailers": {
     "audio": "Dźwięk zwiastuna",
@@ -421,7 +498,8 @@
       "cacheClearFailed": "Czyszczenie pamięci podręcznej nie powiodło się",
       "delisted": "Gry usunięte ze Steam",
       "logs": "Dzienniki"
-    }
+    },
+    "testingTabSaveError": "Testing tab setting could not be saved"
   },
   "contextMenu": {
     "editMetadata": "Edytuj metadane..."
@@ -584,7 +662,8 @@
     },
     "steamTextLanguage": "Język tekstu Steam: {{language}}",
     "fetchSteamText": "Wczytaj tekst ze Steam w języku: {{language}}",
-    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry."
+    "steamTextUnavailable": "Steam nie zwrócił tekstu dla tej gry.",
+    "hltbDisabledNotice": "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach."
   },
   "matchPicker": {
     "help": "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",

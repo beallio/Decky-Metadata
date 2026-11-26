@@ -1,9 +1,13 @@
 # Edit a game's metadata
 
-For a non-Steam game, select **Edit Metadata...** from either of these menus:
+For a non-Steam game—or a Steam game while **Show HowLongToBeat times** is
+enabled—select **Edit Metadata...** from either of these menus:
 
 - On the Library card, open **Options** or right-click the card.
 - On the game page, select the gear icon.
+
+For Steam games, **Edit Metadata...** opens only the **HowLongToBeat** page so
+you can choose or clear the HLTB game shown on that game's Library page.
 
 **Edit Metadata...** is near the bottom of the menu, close to **Properties...**.
 If SteamGridDB is installed, it is next to SteamGridDB's **Change Artwork...**.
@@ -28,7 +32,8 @@ Pages in the sidebar:
   until you select **Save**.
 - **Game Match**: Find a Steam game, load details for the current match, enter
   a Steam App ID, load Steam text in your language, or search IGN for details.
-- **HowLongToBeat**: Choose which game's times to show for a non-Steam game.
+- **HowLongToBeat**: Choose which game's times to show on the Library game page
+  for a non-Steam or Steam game.
 - **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)
   for a non-Steam game.
 - **Shortcut Name**: Use the Steam name, restore the original name, or forget
@@ -106,7 +111,7 @@ your language.
 
 Steam, IGN, and HowLongToBeat results only fill the form. Select **Save** to
 store them. **Apply HLTB game** checks the game number or link you enter and
-shows the game it finds. See [Choose the HLTB game for a non-Steam game](hltb.md#choose-the-hltb-game-for-a-non-steam-game).
+shows the game it finds. See [Choose the HLTB game for a game](hltb.md#choose-the-hltb-game-for-a-game).
 
 Fields you change are marked **Edited** in blue. Fields filled from Steam that
 are not saved yet are marked **From Steam, not saved** in amber. Steam data the
