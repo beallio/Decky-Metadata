@@ -209,6 +209,24 @@ describe("getNativeOverview", () => {
   });
 });
 
+describe("isNativeSteamGame", () => {
+  it("matches native Steam games, demos, and betas while excluding shortcuts and non-game app types", () => {
+    expect(core.isNativeSteamGame({ appid: 65540, app_type: 1 })).toBe(true);
+    expect(core.isNativeSteamGame({ appid: 65540, app_type: 8 })).toBe(true);
+    expect(core.isNativeSteamGame({ appid: 65540, app_type: 65536 })).toBe(true);
+
+    // Non-game Steam app types: Invalid (0), Application (2), Tool/Proton (4), Video (2048), MusicAlbum (8192).
+    for (const appType of [0, 2, 4, 2048, 8192]) {
+      expect(core.isNativeSteamGame({ appid: 228980, app_type: appType })).toBe(false);
+    }
+    // Shortcuts and out-of-range AppIDs never qualify as native Steam games.
+    expect(core.isNativeSteamGame({ appid: 3_000_000_000, app_type: 1073741824, BIsShortcut: () => true })).toBe(false);
+    expect(core.isNativeSteamGame({ appid: 0x80000000, app_type: 1 })).toBe(false);
+    expect(core.isNativeSteamGame({ appid: 0, app_type: 1 })).toBe(false);
+    expect(core.isNativeSteamGame(null)).toBe(false);
+  });
+});
+
 describe("in-place reload compatibility runtime", () => {
   it("keeps a retained editor callback on the current cache and scope after a reload", async () => {
     const host = globalThis as Record<string, unknown>;

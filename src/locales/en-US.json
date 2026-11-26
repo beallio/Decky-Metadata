@@ -61,6 +61,7 @@
     "shortcut_name_api_unavailable": "Steam shortcut name API is unavailable",
     "shortcut_name_api_failed": "Steam shortcut name API failed",
     "shortcut_name_timeout": "Steam did not confirm the new shortcut name in time.",
+    "invalid_steam_app_id": "This game is not a valid Steam game.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -134,7 +135,11 @@
       "showTimesLabel": "Show HowLongToBeat times",
       "showTimesDescription": "Show HowLongToBeat times on game pages for Steam and non-Steam games.",
       "storeLabel": "Store",
-      "storeDescription": "Show HowLongToBeat times in an info row on Steam Store game pages.",
+      "storeDescription": "Show HowLongToBeat times in an info row on Steam Store game pages. Always uses automatic matching; per-game HLTB choices apply only on Library game pages.",
+      "statsHeading": "Stats",
+      "styleHeading": "Style",
+      "customizeHeading": "Customize",
+      "cacheHeading": "Cache",
       "styleLabel": "HLTB Style",
       "styleDescription": "The \"Clean\" styles are intended to work with the CSS Loader Theme \"Clean Gameview\"",
       "styleDefault": "Default",
@@ -227,7 +232,8 @@
       "positionTopLeft": "Top left",
       "positionTopRight": "Top right",
       "loadingPreferences": "Loading ProtonDB badge preferences...",
-      "footnote": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden."
+      "footnote": "Ratings come directly from ProtonDB. They describe community experience, not Valve's compatibility rating; unmatched games and games without a ProtonDB tier are hidden.",
+      "gameCoversHeading": "Game covers"
     },
     "miniAchievements": {
       "title": "Mini achievements",
@@ -318,7 +324,20 @@
       "confirmRevertBody": "Are you sure you want to revert to stable v{{version}}? This is a downgrade and could result in data loss or configuration issues.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Software Updates",
+      "checkForUpdates": "Check For Updates",
+      "upToDateButton": "Up-to-date",
+      "apply": "Apply",
+      "applying": "Applying...",
+      "moveToStableShort": "Move to Stable",
+      "revertToStableShort": "Revert to Stable",
+      "upToDateLastChecked": "Up to date: last checked {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Update Channel",
+      "channelOptionStable": "Stable",
+      "channelOptionDevelopment": "Development",
+      "channelStableDescription": "Receives tested stable releases."
     },
     "versions": {
       "title": "Versions",
@@ -362,11 +381,12 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Retry",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
-      "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
-      "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
+      "installModalDescription": "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
+      "downloadingArtifact": "Verifying build for PR #{{id}}...",
       "prepareFailed": "Failed to prepare pull request build."
     }
   },
@@ -376,7 +396,8 @@
     "statMain": "Main Story",
     "statMainPlus": "Main + Extras",
     "statComplete": "Completionist",
-    "statAllStyles": "All Styles"
+    "statAllStyles": "All Styles",
+    "viewDetails": "View details"
   },
   "trailers": {
     "audio": "Trailer audio",
@@ -639,7 +660,8 @@
     },
     "steamTextLanguage": "Steam text language: {{language}}",
     "fetchSteamText": "Load Steam text in {{language}}",
-    "steamTextUnavailable": "Steam did not return text for this game."
+    "steamTextUnavailable": "Steam did not return text for this game.",
+    "hltbDisabledNotice": "HowLongToBeat times are currently turned off in Settings."
   },
   "matchPicker": {
     "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",

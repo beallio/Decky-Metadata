@@ -7,6 +7,7 @@ import {
   MetadataData,
   MetadataSearchResult,
   SteamMatchSearchResponse,
+  SteamOverride,
   PluginUpdateCandidate,
   PreparedTestingVersion,
   RevalidateResult,
@@ -272,10 +273,20 @@ export const putProtonDbCache = callable<
   [ratings: Record<string, ProtonDbRatingRecord>, nameIds: Record<string, ProtonDbNameRecord>],
   { ok: boolean }
 >("put_protondb_cache");
+export const getAllSteamOverrides = callable<[], Record<string, SteamOverride>>(
+  "get_all_steam_overrides"
+);
+export const getSteamOverride = callable<[appId: number], SteamOverride | null>(
+  "get_steam_override"
+);
+export const saveSteamOverride = callable<
+  [appId: number, override: SteamOverride],
+  SteamOverride | null
+>("save_steam_override");
 export const getHltbSettings = callable<[], HltbSettings>("get_hltb_settings");
 export const setHltbSettings = callable<[settings: HltbSettings], HltbSettings>("set_hltb_settings");
 export const getHltbStats = callable<
-  [appId: number, isShortcut: boolean, title: string],
+  [appId: number, isShortcut: boolean, title: string, usePinned?: boolean],
   HltbStatsResult
 >("get_hltb_stats");
 export const checkHltbGameId = callable<

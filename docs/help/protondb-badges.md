@@ -19,14 +19,14 @@ Turning the main switch off keeps your choices for each view.
 
 | Setting | Where the rating appears |
 | --- | --- |
-| **Home game covers** | On game covers in Home. |
-| **Library game covers** | On game covers in the Library, including the Non-Steam tab. |
 | **Game view** | As a Steam-styled button before the controller button on the game's details page. |
 | **Store** | In a box in the info row on the Steam Store page, below the trailers and screenshots. |
+| **Home game covers** | On game covers in Home (under **Game covers**). |
+| **Library game covers** | On game covers in the Library, including the Non-Steam tab (under **Game covers**). |
 
 The four switches are independent. For example, you can keep game-page ratings on while hiding cover badges. On a Store page the ProtonDB box shares one row with the **How Long To Beat** box. If only one of them has data, its box fills the row.
 
-**Cover badge position** offers **Bottom left**, **Top left**, and **Top right**. **Covers only on focus or hover** limits Home and Library badges to the cover selected with your controller or under the pointer. It does not limit game-page badges or the Store row.
+Under **Game covers**, **Covers only on focus or hover** and **Cover badge position** are enabled when **Home game covers** or **Library game covers** is turned on. **Covers only on focus or hover** limits Home and Library badges to the cover selected with your controller or under the pointer (it does not limit game-page badges or the Store row). **Cover badge position** offers **Bottom left**, **Top left**, and **Top right**.
 
 Cover badges are not separate controller buttons. They do not change how you select or launch a game. Select the game-page button or the Store box to open that game's ProtonDB page and read its reports. On a Store page you can move to the boxes with the D-pad.
 

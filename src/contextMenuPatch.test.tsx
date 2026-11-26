@@ -66,12 +66,21 @@ const decky = vi.hoisted(() => {
 });
 
 const steam = vi.hoisted(() => ({
-  getOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true })),
-  getNativeOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true })),
+  getOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: (): boolean => true })),
+  getNativeOverview: vi.fn((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: (): boolean => true })),
   isNonSteamApp: vi.fn((overview: any) => Number(overview?.app_type) === 1073741824),
   isNativeNonSteamShortcut: vi.fn((overview: any) => Number(overview?.app_type) === 1073741824),
+  isNativeSteamGame: vi.fn((overview: any) => {
+    const appId = Number(overview?.appid);
+    const appType = Number(overview?.app_type);
+    return Number.isSafeInteger(appId) && appId > 0 && appId < 0x80000000 && (appType & (1 | 8 | 65536)) !== 0;
+  }),
   hasSteamInternals: vi.fn(() => true),
   patchInstallStatus: { contextMenu: "pending" },
+}));
+
+const hltb = vi.hoisted(() => ({
+  effectiveEnabled: false,
 }));
 
 vi.mock("@decky/ui", () => ({
@@ -90,8 +99,15 @@ vi.mock("./steam/core", () => ({
   getNativeOverview: steam.getNativeOverview,
   isNonSteamApp: steam.isNonSteamApp,
   isNativeNonSteamShortcut: steam.isNativeNonSteamShortcut,
+  isNativeSteamGame: steam.isNativeSteamGame,
   hasSteamInternals: steam.hasSteamInternals,
   patchInstallStatus: steam.patchInstallStatus,
+}));
+
+vi.mock("./hltb/gameView", () => ({
+  hltbController: {
+    getSnapshot: () => ({ effectiveEnabled: hltb.effectiveEnabled }),
+  },
 }));
 
 vi.mock("./log", () => ({ info: vi.fn(), warn: vi.fn() }));
@@ -168,6 +184,7 @@ describe("contextMenuPatch", () => {
   beforeEach(() => {
     decky.navigate.mockClear();
     vi.mocked(frontendLog).mockClear();
+    hltb.effectiveEnabled = false;
     steam.getOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
     steam.getNativeOverview.mockImplementation((appId: number) => ({ appid: appId, app_type: 1073741824, BIsShortcut: () => true }));
     steam.isNonSteamApp.mockImplementation((overview: any) => Number(overview?.app_type) === 1073741824);
@@ -285,10 +302,10 @@ describe("contextMenuPatch", () => {
     expect(items.map((item) => item.key)).toEqual(["launch", "properties"]);
   });
 
-  it("does not add the Decky Metadata editor entry for official Steam games", () => {
+  it("does not add the Decky Metadata editor entry for official Steam games when HLTB is off", () => {
     const officialAppId = 55150;
     const shortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
-    const official = { appid: officialAppId, app_type: 0, BIsShortcut: () => false };
+    const official = { appid: officialAppId, app_type: 1, BIsShortcut: () => false };
     steam.getOverview.mockReturnValue(shortcut as any);
     steam.getNativeOverview.mockReturnValue(official as any);
     const { LibraryContextMenu, MenuBody } = makeMenuStack();
@@ -300,6 +317,27 @@ describe("contextMenuPatch", () => {
 
     expect(items.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
     expect(steam.getNativeOverview).toHaveBeenCalledWith(officialAppId);
+  });
+
+  it("adds the Decky Metadata editor entry for official Steam games when HLTB is enabled, but never for tools", () => {
+    hltb.effectiveEnabled = true;
+    const steamGameId = 65540;
+    const protonToolId = 1493710;
+    steam.getNativeOverview.mockImplementation((appId: number) =>
+      appId === steamGameId
+        ? { appid: steamGameId, app_type: 1, BIsShortcut: () => false }
+        : { appid: protonToolId, app_type: 4, BIsShortcut: () => false },
+    );
+    const { LibraryContextMenu, MenuBody } = makeMenuStack();
+    contextMenuPatch(LibraryContextMenu);
+
+    new LibraryContextMenu(steamGameId).render().type();
+    const gameItems = new MenuBody().render().props.children[0];
+    expect(injectedTarget(gameItems)).toBe(`/decky-metadata/${steamGameId}`);
+
+    new LibraryContextMenu(protonToolId).render();
+    const toolItems = new MenuBody().render().props.children[0];
+    expect(toolItems.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
   });
 
   it("purges a legacy compatibility entry from a reused menu while keeping one editor entry", () => {

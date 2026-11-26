@@ -42,6 +42,9 @@ pub const METHODS: &[&str] = &[
     "clear_hltb_cache",
     "get_metadata",
     "get_all_metadata",
+    "get_all_steam_overrides",
+    "get_steam_override",
+    "save_steam_override",
     "remove_metadata",
     "clear_metadata_cache",
     "get_shortcut_name_management",
@@ -202,8 +205,41 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             state.set_setting("hltb", storage::validate_hltb_settings(&args[0])?).await
         }
         "get_hltb_stats" => {
-            arity(&args, 3, 3)?;
-            crate::hltb::stats(&state, &args[0], &args[1], &args[2]).await
+            arity(&args, 3, 4)?;
+            crate::hltb::stats(&state, &args[0], &args[1], &args[2], args.get(3)).await
+        }
+        "get_all_steam_overrides" => {
+            arity(&args, 0, 0)?;
+            Ok(state.store().await?.data()["steam_overrides"].clone())
+        }
+        "get_steam_override" => {
+            arity(&args, 1, 1)?;
+            let Some(app_id) = storage::positive_steam_app_id(&args[0]) else {
+                return Ok(Value::Null);
+            };
+            Ok(state.store().await?.data()["steam_overrides"][app_id.to_string()].clone())
+        }
+        "save_steam_override" => {
+            arity(&args, 2, 2)?;
+            let app_id = storage::positive_steam_app_id(&args[0])
+                .ok_or("invalid_steam_app_id")?;
+            let normalized = storage::validate_steam_override(&args[1])?;
+            let key = app_id.to_string();
+            let saved = state
+                .change(|transaction| {
+                    match &normalized {
+                        Some(entry) => {
+                            transaction.set(&["steam_overrides", &key], entry.clone())?;
+                        }
+                        None => {
+                            transaction.remove(&["steam_overrides", &key])?;
+                        }
+                    }
+                    Ok(normalized.clone().unwrap_or(Value::Null))
+                })
+                .await?;
+            crate::hltb::forget(&state, &json!(app_id)).await;
+            Ok(saved)
         }
         "check_hltb_game_id" => {
             arity(&args, 1, 1)?;
@@ -999,6 +1035,54 @@ mod tests {
                 .unwrap(),
             json!(true)
         );
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_overrides_stay_isolated_from_metadata_and_clear_cache() {
+        let (root, state) = test_state(None).await;
+        let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
+
+        assert_eq!(call("get_all_steam_overrides", Vec::new()).await.unwrap(), json!({}));
+        assert_eq!(call("get_steam_override", vec![json!(65540)]).await.unwrap(), Value::Null);
+
+        // Shortcut app IDs and invalid HLTB IDs are rejected.
+        assert!(call("save_steam_override", vec![json!(0x8000_0001u32), json!({"hltb_game_id": 4031})]).await.is_err());
+        assert!(call("save_steam_override", vec![json!(65540), json!({"hltb_game_id": 0})]).await.is_err());
+
+        // Valid Steam override persists, does not appear in metadata, and survives clear_metadata_cache.
+        assert_eq!(
+            call("save_steam_override", vec![json!(65540), json!({"hltb_game_id": 4031})]).await.unwrap(),
+            json!({"hltb_game_id": 4031})
+        );
+        assert_eq!(
+            call("get_steam_override", vec![json!(65540)]).await.unwrap(),
+            json!({"hltb_game_id": 4031})
+        );
+        assert_eq!(
+            call("get_all_steam_overrides", Vec::new()).await.unwrap(),
+            json!({"65540": {"hltb_game_id": 4031}})
+        );
+        let all_metadata = serde_json::from_str::<Value>(
+            dispatch_raw(&state, "get_all_metadata", &[]).await.unwrap().get(),
+        )
+        .unwrap();
+        assert_eq!(all_metadata, json!({}));
+
+        call("clear_metadata_cache", Vec::new()).await.unwrap();
+        assert_eq!(
+            call("get_steam_override", vec![json!(65540)]).await.unwrap(),
+            json!({"hltb_game_id": 4031})
+        );
+
+        // Clearing hltb_game_id removes the override entry completely.
+        assert_eq!(
+            call("save_steam_override", vec![json!(65540), json!({"hltb_game_id": null})]).await.unwrap(),
+            Value::Null
+        );
+        assert_eq!(call("get_all_steam_overrides", Vec::new()).await.unwrap(), json!({}));
+
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

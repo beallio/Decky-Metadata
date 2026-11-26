@@ -40,11 +40,23 @@ export function GameTrailersBody({
   ];
   const disabled = !state.settingsLoaded || state.busy;
   const dependentDisabled = disabled || !state.settings.enabled;
+  const detailDependentDisabled = dependentDisabled || !state.settings.detailEnabled;
+  const homeDependentDisabled = dependentDisabled || !state.settings.homeEnabled;
   const enableDisabled = disabled || (Boolean(state.conflict.pluginName) && !state.settings.enabled);
   const conflictNotice = featureConflictNotice(state.conflict, t("qam.trailers.conflictFeature"), state.settings.enabled);
   const display = state.displayWidth && state.displayHeight
     ? t("qam.trailers.displayPixels", { width: state.displayWidth, height: state.displayHeight })
     : t("qam.trailers.displayUnavailable");
+  const actionableStatuses = new Set([
+    t("trailers.otherPluginActive"),
+    t("trailers.steamUiUnavailable"),
+    t("trailers.runtimeConflict"),
+    t("trailers.mediaSourceUnavailable"),
+    t("trailers.autoplayBlocked"),
+    t("trailers.settingsUnavailable"),
+    t("trailers.matchesUnavailable"),
+  ]);
+  const displayStatus = actionableStatuses.has(state.status) ? state.status : undefined;
 
   return (
     <>
@@ -56,9 +68,34 @@ export function GameTrailersBody({
           disabled={enableDisabled}
           onChange={onEnabledChange}
         />
-        {conflictNotice ? (
+        <DropdownItem
+          label={t("qam.trailers.qualityLabel")}
+          rgOptions={qualityOptions}
+          selectedOption={state.settings.quality}
+          disabled={dependentDisabled}
+          onChange={(option) => { void onQualityChange(option.data); }}
+          renderButtonValue={() => (
+            <span style={{ whiteSpace: "normal" }}>
+              {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
+            </span>
+          )}
+        />
+        <Field
+          label={t("qam.trailers.displayLabel")}
+          childrenLayout="below"
+          description={displayStatus}
+          padding="standard"
+          focusable={true}
+          highlightOnFocus={true}
+        >
+          <div style={{ color: colors.textSecondary }}>
+            {t("qam.trailers.displayTarget", { display, height: state.targetHeight })}
+          </div>
+        </Field>
+        {conflictNotice || state.settingsError ? (
           <Field focusable={false} childrenLayout="below" padding="none">
-            <div style={inlineStatusStyle("warning")}>{conflictNotice}</div>
+            {conflictNotice ? <div style={inlineStatusStyle("warning")}>{conflictNotice}</div> : null}
+            {state.settingsError ? <div style={inlineStatusStyle("error")}>{state.settingsError}</div> : null}
           </Field>
         ) : null}
       </DialogControlsSection>
@@ -80,21 +117,21 @@ export function GameTrailersBody({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={dependentDisabled}
+          disabled={detailDependentDisabled}
           onChange={onDetailFadeInDelayChange}
         />
         <ToggleField
           label={t("qam.trailers.audioLabel")}
           description={t("qam.trailers.audioDescription")}
           checked={state.settings.audioEnabled}
-          disabled={dependentDisabled}
+          disabled={detailDependentDisabled}
           onChange={onAudioChange}
         />
         <ToggleField
           label={t("qam.trailers.hideLogoLabel")}
           description={t("qam.trailers.hideLogoDescription")}
           checked={state.settings.hideLogoDuringTrailer}
-          disabled={dependentDisabled}
+          disabled={detailDependentDisabled}
           onChange={onHideLogoChange}
         />
       </DialogControlsSection>
@@ -116,38 +153,9 @@ export function GameTrailersBody({
           step={1}
           showValue
           valueSuffix="s"
-          disabled={dependentDisabled}
+          disabled={homeDependentDisabled}
           onChange={onHomeFadeInDelayChange}
         />
-        <DropdownItem
-          label={t("qam.trailers.qualityLabel")}
-          rgOptions={qualityOptions}
-          selectedOption={state.settings.quality}
-          disabled={dependentDisabled}
-          onChange={(option) => { void onQualityChange(option.data); }}
-          renderButtonValue={() => (
-            <span style={{ whiteSpace: "normal" }}>
-              {qualityOptions.find((option) => option.data === state.settings.quality)?.label}
-            </span>
-          )}
-        />
-        <Field
-          label={t("qam.trailers.displayLabel")}
-          childrenLayout="below"
-          description={state.status}
-          padding="standard"
-          focusable={true}
-          highlightOnFocus={true}
-        >
-          <div style={{ color: colors.textSecondary }}>
-            {t("qam.trailers.displayTarget", { display, height: state.targetHeight })}
-          </div>
-        </Field>
-        {state.settingsError ? (
-          <Field focusable={false} childrenLayout="below" padding="none">
-            <div style={inlineStatusStyle("error")}>{state.settingsError}</div>
-          </Field>
-        ) : null}
       </DialogControlsSection>
     </>
   );

@@ -40,7 +40,9 @@ const navigation = vi.hoisted(() => ({ NavigateBack: vi.fn() }));
 vi.mock("react", () => ({
   useState: (initial: unknown) => {
     const index = harness.cursor++;
-    if (index >= harness.slots.length) harness.slots.push(initial);
+    if (index >= harness.slots.length) {
+      harness.slots.push(typeof initial === "function" ? (initial as () => unknown)() : initial);
+    }
     return [harness.slots[index], (value: unknown) => { harness.slots[index] = value; }];
   },
   useEffect: (effect: () => void | (() => void)) => harness.effects.push(effect),
@@ -72,6 +74,10 @@ vi.mock("./components/qam/ProtonDbBadgesSection", () => ({ ProtonDbBadgesBody: "
 vi.mock("./components/qam/TestingSection", () => ({ TestingBody: "TestingBody" }));
 vi.mock("./components/qam/VersionsSection", () => ({ VersionsBody: "VersionsBody" }));
 vi.mock("./settingsLayout", () => ({ SettingsLayout: "SettingsLayout" }));
+vi.mock("./settingsRoute", () => ({
+  consumeReloadSettingsTab: vi.fn(() => null),
+  setActiveSettingsTab: vi.fn(),
+}));
 vi.mock("./i18n", () => ({
   currentSteamLanguage: vi.fn(),
   refreshLanguage: vi.fn(() => Promise.resolve("en-US")),

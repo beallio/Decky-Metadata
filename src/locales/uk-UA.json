@@ -63,6 +63,7 @@
     "shortcut_name_api_unavailable": "API назв ярликів Steam недоступний",
     "shortcut_name_api_failed": "Збій API назв ярликів Steam",
     "shortcut_name_timeout": "Steam не підтвердив нову назву ярлика вчасно.",
+    "invalid_steam_app_id": "Ця гра не є дійсною грою Steam.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -136,7 +137,11 @@
       "showTimesLabel": "Показувати час HowLongToBeat",
       "showTimesDescription": "Показувати час HowLongToBeat на сторінках ігор Steam та ігор поза Steam.",
       "storeLabel": "Крамниця",
-      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam.",
+      "storeDescription": "Показувати час HowLongToBeat у рядку відомостей на сторінках ігор у крамниці Steam. Завжди використовується автоматичний підбір; вибір HLTB для окремої гри діє лише на сторінках ігор у бібліотеці.",
+      "statsHeading": "Статистика",
+      "styleHeading": "Стиль",
+      "customizeHeading": "Налаштування",
+      "cacheHeading": "Кеш",
       "styleLabel": "Стиль HLTB",
       "styleDescription": "Стилі «Clean» призначені для роботи з темою CSS Loader «Clean Gameview»",
       "styleDefault": "За замовчуванням",
@@ -229,7 +234,8 @@
       "positionTopLeft": "Зверху ліворуч",
       "positionTopRight": "Зверху праворуч",
       "loadingPreferences": "Завантаження налаштувань значків ProtonDB...",
-      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються."
+      "footnote": "Оцінки надходять безпосередньо з ProtonDB. Вони описують досвід спільноти, а не оцінку сумісності Valve; ігри без збігу та ігри без рівня ProtonDB приховуються.",
+      "gameCoversHeading": "Обкладинки ігор"
     },
     "miniAchievements": {
       "title": "Мінідосягнення",
@@ -320,7 +326,20 @@
       "confirmRevertBody": "Ви впевнені, що хочете повернутися до стабільної v{{version}}? Це відкат, який може призвести до втрати даних або проблем із конфігурацією.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Оновлення ПЗ",
+      "checkForUpdates": "Перевірити оновлення",
+      "upToDateButton": "Актуально",
+      "apply": "Застосувати",
+      "applying": "Застосування...",
+      "moveToStableShort": "Перейти на стабільну",
+      "revertToStableShort": "Повернутися до стабільної",
+      "upToDateLastChecked": "Актуально: остання перевірка {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Канал оновлень",
+      "channelOptionStable": "Стабільний",
+      "channelOptionDevelopment": "Розробка",
+      "channelStableDescription": "Отримує перевірені стабільні релізи."
     },
     "versions": {
       "title": "Версії",
@@ -364,6 +383,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Повторити",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -378,7 +398,8 @@
     "statMain": "Основний сюжет",
     "statMainPlus": "Основний сюжет + додатково",
     "statComplete": "Повне проходження",
-    "statAllStyles": "Усі стилі"
+    "statAllStyles": "Усі стилі",
+    "viewDetails": "Переглянути деталі"
   },
   "trailers": {
     "audio": "Звук трейлера",
@@ -641,7 +662,8 @@
     },
     "steamTextLanguage": "Мова тексту Steam: {{language}}",
     "fetchSteamText": "Завантажити текст Steam мовою {{language}}",
-    "steamTextUnavailable": "Steam не повернув текст для цієї гри."
+    "steamTextUnavailable": "Steam не повернув текст для цієї гри.",
+    "hltbDisabledNotice": "Час HowLongToBeat зараз вимкнено в налаштуваннях."
   },
   "matchPicker": {
     "help": "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",

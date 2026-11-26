@@ -77,16 +77,28 @@ fn reply(entry: &HltbEntry) -> Result<Value, String> {
 
 /// HLTB times for one library entry, fetching only when the cached entry is missing,
 /// expired, or was found with different inputs.
-pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, title: &Value) -> Result<Value, String> {
+/// `use_pinned` defaults to `true`; Steam Store pages pass `false` so they always
+/// use automatic matching without disturbing a user's Library pin.
+pub async fn stats(
+    state: &Arc<AppState>,
+    app_id: &Value,
+    is_shortcut: &Value,
+    title: &Value,
+    use_pinned: Option<&Value>,
+) -> Result<Value, String> {
     let app_id = storage::positive_shortcut_app_id(app_id).ok_or("invalid app id")?;
     let is_shortcut = is_shortcut.as_bool().ok_or("is_shortcut must be a boolean")?;
+    let use_pinned = match use_pinned {
+        None => true,
+        Some(value) => value.as_bool().ok_or("use_pinned must be a boolean")?,
+    };
     let title = title.as_str().ok_or("title must be a string")?.trim();
     if title.contains('\0') || title.chars().count() > MAX_TITLE_CHARS {
         return Err("invalid_title".into());
     }
     // Remove metadata or Clear cache after this point makes the lookup's result stale.
     let epoch = state.hltb_epoch.load(Ordering::SeqCst);
-    let (enabled, steam, pinned, removed) = {
+    let (enabled, steam, pinned, removed, skip_disk_cache) = {
         let store = state.store().await?;
         let data = store.data();
         let key = app_id.to_string();
@@ -94,9 +106,13 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
         if is_shortcut {
             let record = &data["metadata"][&key];
             let pinned = steam_app_id(&record["hltb_game_id"]);
-            (enabled, steam_app_id(&record["steam_appid"]), pinned, metadata::removed_by_user(data, &key))
+            (enabled, steam_app_id(&record["steam_appid"]), pinned, metadata::removed_by_user(data, &key), false)
         } else {
-            (enabled, steam_app_id(&json!(app_id)), None, false)
+            let stored_pinned = steam_app_id(&data["steam_overrides"][&key]["hltb_game_id"]);
+            let pinned = if use_pinned { stored_pinned } else { None };
+            // Store page automatic lookup must not overwrite a Library pin cached on disk.
+            let skip_disk_cache = !use_pinned && stored_pinned.is_some();
+            (enabled, steam_app_id(&json!(app_id)), pinned, false, skip_disk_cache)
         }
     };
     if !enabled {
@@ -107,7 +123,11 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
     }
     let inputs = Inputs { steam, title: title.to_owned(), pinned };
     let now = now_ms();
-    let cached = state.provider_cache.lock().await.hltb.get(&app_id).cloned().filter(|cached| same_inputs(cached, &inputs));
+    let cached = if skip_disk_cache {
+        None
+    } else {
+        state.provider_cache.lock().await.hltb.get(&app_id).cloned().filter(|cached| same_inputs(cached, &inputs))
+    };
     if let Some(cached) = cached.as_ref().filter(|cached| fresh(cached, now)) {
         return reply(cached);
     }
@@ -137,17 +157,21 @@ pub async fn stats(state: &Arc<AppState>, app_id: &Value, is_shortcut: &Value, t
     match result {
         Ok(page) => {
             let entry = entry(page.as_ref(), &inputs, now_ms());
-            {
-                let mut cache = state.provider_cache.lock().await;
-                if state.hltb_epoch.load(Ordering::SeqCst) != epoch {
-                    // Ask again: the next call sees the removal marker or the cleared cache.
-                    return Ok(retry_error(Duration::ZERO));
+            if !skip_disk_cache {
+                {
+                    let mut cache = state.provider_cache.lock().await;
+                    if state.hltb_epoch.load(Ordering::SeqCst) != epoch {
+                        // Ask again: the next call sees the removal marker or the cleared cache.
+                        return Ok(retry_error(Duration::ZERO));
+                    }
+                    cache.hltb.insert(app_id, entry.clone());
+                    cache.cap_all();
                 }
-                cache.hltb.insert(app_id, entry.clone());
-                cache.cap_all();
+                state.hltb_retry.lock().await.remove(&app_id);
+                provider_cache::schedule_save(state);
+            } else {
+                state.hltb_retry.lock().await.remove(&app_id);
             }
-            state.hltb_retry.lock().await.remove(&app_id);
-            provider_cache::schedule_save(state);
             reply(&entry)
         }
         Err(error) => {
@@ -311,12 +335,12 @@ mod tests {
         #[tokio::test]
         async fn fresh_entries_need_no_request_and_expired_ones_one_page() {
             let (_root, state) = state(vec![init(), search(7231, "Portal 2"), page(7231, 620, 3600), page(7231, 620, 7200)], true).await;
-            let first = stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap();
+            let first = stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap();
             assert_eq!((first["status"].as_str(), first["hltb_id"].as_i64()), (Some("matched"), Some(7231)));
             // Fresh: a further request would hit an empty fixture queue and fail the lookup.
-            assert_eq!(stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap(), first);
+            assert_eq!(stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap(), first);
             age(&state, 620, 15).await;
-            let refreshed = stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap();
+            let refreshed = stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap();
             assert_eq!(refreshed["stats"]["main"], 7200);
             state.http.assert_drained();
             provider_cache::flush(&state).await.unwrap();
@@ -334,12 +358,12 @@ mod tests {
             let shortcut = json!(3_000_000_000u32);
             for (steam, expected) in [(10, 1), (20, 2)] {
                 crate::metadata::save(&state, &shortcut, json!({"title":"Game","steam_appid":steam}), false, None).await.unwrap();
-                let found = stats(&state, &shortcut, &json!(true), &json!("Game")).await.unwrap();
+                let found = stats(&state, &shortcut, &json!(true), &json!("Game"), None).await.unwrap();
                 assert_eq!(found["hltb_id"], expected, "Steam match {steam}");
             }
             // Expired, and HLTB now lists another Steam app on that page: search again.
             age(&state, 3_000_000_000, 15).await;
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game")).await.unwrap()["hltb_id"], 3);
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game"), None).await.unwrap()["hltb_id"], 3);
             state.http.assert_drained();
         }
 
@@ -348,10 +372,10 @@ mod tests {
             let (_root, state) = state(vec![init(), search(62941, "Hades")], true).await;
             let shortcut = json!(3_000_000_002u32);
             crate::metadata::save(&state, &shortcut, json!({"title":"Hades","description":"x"}), false, None).await.unwrap();
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["hltb_id"], 62941);
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades"), None).await.unwrap()["hltb_id"], 62941);
             provider_cache::flush(&state).await.unwrap();
             crate::rpc::dispatch(Arc::clone(&state), "remove_metadata", vec![shortcut.clone()]).await.unwrap();
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["status"], "blocked");
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades"), None).await.unwrap()["status"], "blocked");
             provider_cache::flush(&state).await.unwrap();
             let saved = provider_cache::load(&state.env.plugin_settings_dir.join(provider_cache::FILENAME)).await;
             assert!(!saved.hltb.contains_key(&3_000_000_002));
@@ -367,38 +391,87 @@ mod tests {
             crate::metadata::save(&state, &shortcut, json!({"title":"Hades","description":"x"}), false, None).await.unwrap();
             let pending = {
                 let (state, shortcut) = (Arc::clone(&state), shortcut.clone());
-                tokio::spawn(async move { stats(&state, &shortcut, &json!(true), &json!("Hades")).await })
+                tokio::spawn(async move { stats(&state, &shortcut, &json!(true), &json!("Hades"), None).await })
             };
             tokio::time::timeout(Duration::from_secs(2), gate.started.notified()).await.unwrap();
             crate::rpc::dispatch(Arc::clone(&state), "remove_metadata", vec![shortcut.clone()]).await.unwrap();
             gate.resume.notify_one();
             assert_eq!(pending.await.unwrap().unwrap()["status"], "error");
             assert!(!state.provider_cache.lock().await.hltb.contains_key(&3_000_000_003));
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades")).await.unwrap()["status"], "blocked");
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Hades"), None).await.unwrap()["status"], "blocked");
         }
 
         #[tokio::test]
         async fn disabled_removed_and_pinned_games() {
             let (_root, off) = state(vec![], false).await;
-            assert_eq!(stats(&off, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap()["status"], "disabled");
+            assert_eq!(stats(&off, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap()["status"], "disabled");
 
             let (_root, state) = state(vec![page(42, 0, 1)], true).await;
             let shortcut = json!(3_000_000_001u32);
             crate::metadata::save(&state, &shortcut, json!({"title":"Game"}), false, None).await.unwrap();
             crate::metadata::remove(&state, &shortcut).await.unwrap();
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game")).await.unwrap()["status"], "blocked");
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game"), None).await.unwrap()["status"], "blocked");
             crate::metadata::save(&state, &shortcut, json!({"title":"Game","hltb_game_id":42}), false, None).await.unwrap();
-            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game")).await.unwrap()["hltb_id"], 42);
+            assert_eq!(stats(&state, &shortcut, &json!(true), &json!("Game"), None).await.unwrap()["hltb_id"], 42);
+            state.http.assert_drained();
+        }
+
+        #[tokio::test]
+        async fn native_steam_override_pins_library_but_store_uses_automatic_without_clobbering_cache() {
+            let (_root, state) = state(
+                vec![
+                    page(4031, 0, 10800),
+                    init(),
+                    search(7231, "Gothic 1 - classic"),
+                    page(7231, 65540, 3600),
+                ],
+                true,
+            )
+            .await;
+            let saved = crate::rpc::dispatch(
+                Arc::clone(&state),
+                "save_steam_override",
+                vec![json!(65540), json!({"hltb_game_id": 4031})],
+            )
+            .await
+            .unwrap();
+            assert_eq!(saved, json!({"hltb_game_id": 4031}));
+
+            // Library lookup uses the pinned override and caches it on disk.
+            let pinned = stats(&state, &json!(65540), &json!(false), &json!("Gothic 1 - classic"), None)
+                .await
+                .unwrap();
+            assert_eq!(pinned["hltb_id"], 4031);
+            assert_eq!(pinned["pinned_id_used"], 4031);
+
+            // Store lookup passes use_pinned=false: uses automatic matching and keeps the pinned cache entry.
+            let store = stats(
+                &state,
+                &json!(65540),
+                &json!(false),
+                &json!("Gothic 1 - classic"),
+                Some(&json!(false)),
+            )
+            .await
+            .unwrap();
+            assert_eq!(store["hltb_id"], 7231);
+            assert!(store["pinned_id_used"].is_null());
+
+            // Library still gets its cached pinned entry without another HTTP request.
+            let cached_pinned = stats(&state, &json!(65540), &json!(false), &json!("Gothic 1 - classic"), None)
+                .await
+                .unwrap();
+            assert_eq!(cached_pinned["hltb_id"], 4031);
             state.http.assert_drained();
         }
 
         #[tokio::test]
         async fn failures_are_not_cached_and_wait_before_retrying() {
             let (_root, state) = state(vec![init(), reply(Method::POST, "https://howlongtobeat.com/api/search/site", 500, b"".to_vec())], true).await;
-            let failed = stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap();
+            let failed = stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap();
             assert_eq!(failed["status"], "error");
             assert!(failed["retry_after_ms"].as_u64().unwrap() > 0);
-            assert!(stats(&state, &json!(620), &json!(false), &json!("Portal 2")).await.unwrap()["status"] == "error");
+            assert!(stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap()["status"] == "error");
             assert!(!state.provider_cache.lock().await.hltb.contains_key(&620));
         }
     }

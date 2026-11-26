@@ -26,6 +26,7 @@ const hooks = vi.hoisted(() => ({
   pendingEffects: [] as number[],
 }));
 const backend = vi.hoisted(() => ({
+  getAllSteamOverrides: vi.fn(async () => ({})),
   getHltbSettings: vi.fn(),
   setHltbSettings: vi.fn(),
   clearHltbCache: vi.fn(),
@@ -101,7 +102,8 @@ vi.mock("../steam/core", () => ({
 }));
 
 import { releaseProviderCache } from "../providerCache";
-import { hltbController } from "./gameView";
+import { hltbController, hltbInputs } from "./gameView";
+import { clearSteamOverrideCache, setSteamOverrideCached } from "./steamOverrides";
 import { DEFAULT_HLTB_SETTINGS } from "./settings";
 
 function text(node: React.ReactNode): string {
@@ -933,5 +935,29 @@ describe("HLTB game-page native surface", () => {
     for (const observer of page.resizers) expect(observer.disconnect).toHaveBeenCalledTimes(1);
     expect(page.observers.filter((observer) => observer.connected)).toHaveLength(0);
     expect(page.resizers.filter((observer) => observer.connected)).toHaveLength(0);
+  });
+
+  it("reads a saved Steam HLTB override for native Steam games", () => {
+    try {
+      expect(hltbInputs(65540, false, "Gothic 1 - classic")).toEqual({
+        steam: 65540,
+        title: "Gothic 1 - classic",
+        pinned: null,
+      });
+      setSteamOverrideCached(65540, { hltb_game_id: 4031 });
+      expect(hltbInputs(65540, false, "Gothic 1 - classic")).toEqual({
+        steam: 65540,
+        title: "Gothic 1 - classic",
+        pinned: 4031,
+      });
+      setSteamOverrideCached(65540, null);
+      expect(hltbInputs(65540, false, "Gothic 1 - classic")).toEqual({
+        steam: 65540,
+        title: "Gothic 1 - classic",
+        pinned: null,
+      });
+    } finally {
+      clearSteamOverrideCache();
+    }
   });
 });

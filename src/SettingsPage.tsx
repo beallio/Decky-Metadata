@@ -27,6 +27,7 @@ import { useVersions } from "./settings/useVersions";
 import { useScanGames } from "./settings/useScanGames";
 import { scanView } from "./settings/scanView";
 import { SettingsLayout, type SettingsLayoutPage } from "./settingsLayout";
+import { consumeReloadSettingsTab, setActiveSettingsTab } from "./settingsRoute";
 import { miniAchievementsController } from "./steam/miniAchievementsController";
 import { trailerController } from "./trailers/controller";
 import { usePluginUpdateController } from "./updater/pluginUpdateController";
@@ -136,7 +137,7 @@ function VersionsTab(props: Omit<ComponentProps<typeof VersionsBody>, "pluginVer
 
 export function SettingsPage() {
   const t = useT();
-  const [page, setPage] = useState("metadata");
+  const [page, setPage] = useState(() => consumeReloadSettingsTab() ?? "metadata");
 
   // Hooks with page-local state run here, above the layout: the native layout mounts only the active page,
   // so state kept in a page body would reset on a tab switch.
@@ -151,6 +152,11 @@ export function SettingsPage() {
   useEffect(() => {
     void refreshLanguage();
   }, []);
+
+  useEffect(() => {
+    setActiveSettingsTab(page);
+    return () => setActiveSettingsTab(null);
+  }, [page]);
 
   // Each body renders its own Steam settings sections.
   const pages: SettingsLayoutPage[] = [

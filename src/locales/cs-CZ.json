@@ -63,6 +63,7 @@
     "shortcut_name_api_unavailable": "API názvů zástupců Steam není dostupné",
     "shortcut_name_api_failed": "API názvů zástupců Steam selhalo",
     "shortcut_name_timeout": "Steam včas nepotvrdil nový název zástupce.",
+    "invalid_steam_app_id": "Tato hra není platná hra ze služby Steam.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -136,7 +137,11 @@
       "showTimesLabel": "Zobrazovat časy HowLongToBeat",
       "showTimesDescription": "Zobrazovat časy HowLongToBeat na stránkách her Steam i her mimo Steam.",
       "storeLabel": "Obchod",
-      "storeDescription": "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam.",
+      "storeDescription": "Zobrazovat časy HowLongToBeat v informačním řádku na stránkách her v obchodě Steam. Vždy používá automatické párování; volby HLTB pro jednotlivé hry platí jen na stránkách her v knihovně.",
+      "statsHeading": "Statistiky",
+      "styleHeading": "Styl",
+      "customizeHeading": "Přizpůsobení",
+      "cacheHeading": "Mezipaměť",
       "styleLabel": "Styl HLTB",
       "styleDescription": "Styly „Clean“ jsou určeny pro téma CSS Loaderu „Clean Gameview“",
       "styleDefault": "Výchozí",
@@ -229,7 +234,8 @@
       "positionTopLeft": "Vlevo nahoře",
       "positionTopRight": "Vpravo nahoře",
       "loadingPreferences": "Načítání předvoleb odznaků ProtonDB...",
-      "footnote": "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají."
+      "footnote": "Hodnocení pocházejí přímo z ProtonDB. Popisují zkušenosti komunity, nikoli hodnocení kompatibility od Valve; nespárované hry a hry bez úrovně ProtonDB se skrývají.",
+      "gameCoversHeading": "Obaly her"
     },
     "miniAchievements": {
       "title": "Mini achievementy",
@@ -320,7 +326,20 @@
       "confirmRevertBody": "Opravdu se chcete vrátit na stabilní v{{version}}? Jde o downgrade, který může způsobit ztrátu dat nebo problémy s konfigurací.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Aktualizace softwaru",
+      "checkForUpdates": "Zkontrolovat aktualizace",
+      "upToDateButton": "Aktuální",
+      "apply": "Použít",
+      "applying": "Používání...",
+      "moveToStableShort": "Přejít na stabilní",
+      "revertToStableShort": "Vrátit na stabilní",
+      "upToDateLastChecked": "Aktuální: naposledy zkontrolováno {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Kanál aktualizací",
+      "channelOptionStable": "Stabilní",
+      "channelOptionDevelopment": "Vývojový",
+      "channelStableDescription": "Dostává otestovaná stabilní vydání."
     },
     "versions": {
       "title": "Verze",
@@ -364,6 +383,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Zkusit znovu",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -378,7 +398,8 @@
     "statMain": "Hlavní příběh",
     "statMainPlus": "Hlavní příběh + vedlejší",
     "statComplete": "Kompletace",
-    "statAllStyles": "Všechny styly"
+    "statAllStyles": "Všechny styly",
+    "viewDetails": "Zobrazit podrobnosti"
   },
   "trailers": {
     "audio": "Zvuk traileru",
@@ -641,7 +662,8 @@
     },
     "steamTextLanguage": "Jazyk textu ve Steamu: {{language}}",
     "fetchSteamText": "Načíst text ze Steamu v jazyce {{language}}",
-    "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text."
+    "steamTextUnavailable": "Steam pro tuto hru nevrátil žádný text.",
+    "hltbDisabledNotice": "Časy HowLongToBeat jsou v nastavení momentálně vypnuté."
   },
   "matchPicker": {
     "help": "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",

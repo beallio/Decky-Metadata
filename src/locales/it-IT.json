@@ -62,6 +62,7 @@
     "shortcut_name_api_unavailable": "L'API di Steam per il nome dei collegamenti non è disponibile",
     "shortcut_name_api_failed": "L'API di Steam per il nome dei collegamenti ha restituito un errore",
     "shortcut_name_timeout": "Steam non ha confermato in tempo il nuovo nome del collegamento.",
+    "invalid_steam_app_id": "Questo gioco non è un gioco Steam valido.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -135,7 +136,11 @@
       "showTimesLabel": "Mostra i tempi di HowLongToBeat",
       "showTimesDescription": "Mostra i tempi di HowLongToBeat nelle pagine dei giochi, sia Steam che non Steam.",
       "storeLabel": "Negozio",
-      "storeDescription": "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam.",
+      "storeDescription": "Mostra i tempi di HowLongToBeat in una riga informativa nelle pagine dei giochi del negozio Steam. Usa sempre la corrispondenza automatica; le scelte HLTB per singolo gioco si applicano solo alle pagine dei giochi nella Libreria.",
+      "statsHeading": "Statistiche",
+      "styleHeading": "Stile",
+      "customizeHeading": "Personalizza",
+      "cacheHeading": "Cache",
       "styleLabel": "Stile HLTB",
       "styleDescription": "Gli stili “Clean” sono pensati per funzionare con il tema CSS Loader “Clean Gameview”",
       "styleDefault": "Predefinito",
@@ -228,7 +233,8 @@
       "positionTopLeft": "In alto a sinistra",
       "positionTopRight": "In alto a destra",
       "loadingPreferences": "Caricamento delle preferenze dei badge ProtonDB...",
-      "footnote": "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti."
+      "footnote": "Le valutazioni provengono direttamente da ProtonDB. Descrivono l'esperienza della community, non il giudizio di compatibilità di Valve; i giochi senza corrispondenza e quelli senza livello ProtonDB vengono nascosti.",
+      "gameCoversHeading": "Copertine dei giochi"
     },
     "miniAchievements": {
       "title": "Mini obiettivi",
@@ -319,7 +325,20 @@
       "confirmRevertBody": "Vuoi davvero tornare alla versione stabile v{{version}}? Si tratta di un downgrade e potrebbe causare perdita di dati o problemi di configurazione.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Aggiornamenti software",
+      "checkForUpdates": "Cerca aggiornamenti",
+      "upToDateButton": "Aggiornato",
+      "apply": "Applica",
+      "applying": "Applicazione...",
+      "moveToStableShort": "Passa a stabile",
+      "revertToStableShort": "Torna a stabile",
+      "upToDateLastChecked": "Aggiornato: ultimo controllo {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canale di aggiornamento",
+      "channelOptionStable": "Stabile",
+      "channelOptionDevelopment": "Sviluppo",
+      "channelStableDescription": "Riceve rilasci stabili testati."
     },
     "versions": {
       "title": "Versioni",
@@ -363,6 +382,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Riprova",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +397,8 @@
     "statMain": "Storia principale",
     "statMainPlus": "Principale + extra",
     "statComplete": "Completista",
-    "statAllStyles": "Tutti gli stili"
+    "statAllStyles": "Tutti gli stili",
+    "viewDetails": "Visualizza dettagli"
   },
   "trailers": {
     "audio": "Audio del trailer",
@@ -640,7 +661,8 @@
     },
     "steamTextLanguage": "Lingua del testo Steam: {{language}}",
     "fetchSteamText": "Carica il testo di Steam in {{language}}",
-    "steamTextUnavailable": "Steam non ha restituito testo per questo gioco."
+    "steamTextUnavailable": "Steam non ha restituito testo per questo gioco.",
+    "hltbDisabledNotice": "I tempi di HowLongToBeat sono attualmente disattivati nelle Impostazioni."
   },
   "matchPicker": {
     "help": "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",

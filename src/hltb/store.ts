@@ -7,18 +7,20 @@ export const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
 /** What a lookup is based on; a saved entry for other inputs is never shown. */
 export type HltbInputs = { steam: number | null; title: string; pinned: number | null };
 export type HltbView = { entry: HltbEntry | null; needsFetch: boolean };
-type Fetch = (appId: number, isShortcut: boolean, title: string) => Promise<HltbStatsResult>;
+type Fetch = (appId: number, isShortcut: boolean, title: string, usePinned?: boolean) => Promise<HltbStatsResult>;
 
 const isEntry = (value: HltbStatsResult): value is HltbEntry =>
   value.status === "matched" || value.status === "no_match";
 const inputsKey = (inputs: HltbInputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Isolates pinned Library lookups from automatic Store lookups for the same Steam app. */
+const slotKey = (appId: number, pinned: number | null) => `${appId}:${pinned ?? ""}`;
 
 /** Saved HLTB results by app ID, available synchronously while a game page renders. */
 export class HltbStore {
-  private readonly entries = new Map<number, HltbEntry>();
-  private readonly blocked = new Map<number, string>();
-  private readonly inFlight = new Map<number, object>();
-  private readonly retryAt = new Map<number, number>();
+  private readonly entries = new Map<string, HltbEntry>();
+  private readonly blocked = new Map<string, string>();
+  private readonly inFlight = new Map<string, object>();
+  private readonly retryAt = new Map<string, number>();
   private readonly listeners = new Map<number, Set<() => void>>();
 
   constructor(private readonly fetchStats: Fetch = getHltbStats) {}
@@ -27,44 +29,53 @@ export class HltbStore {
   seed(entries: Record<string, HltbEntry>): void {
     for (const [id, entry] of Object.entries(entries)) {
       const appId = Number(id);
-      if (Number.isSafeInteger(appId) && appId > 0 && !this.entries.has(appId)) this.entries.set(appId, entry);
+      if (Number.isSafeInteger(appId) && appId > 0) {
+        const key = slotKey(appId, entry.pinned_id_used ?? null);
+        if (!this.entries.has(key)) this.entries.set(key, entry);
+      }
     }
   }
 
   /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
   view(appId: number, inputs: HltbInputs, now = Date.now()): HltbView {
-    if (this.blocked.get(appId) === inputsKey(inputs)) return { entry: null, needsFetch: false };
-    const entry = this.entries.get(appId);
+    const key = slotKey(appId, inputs.pinned);
+    if (this.blocked.get(key) === inputsKey(inputs)) return { entry: null, needsFetch: false };
+    const entry = this.entries.get(key);
     if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
         entry.pinned_id_used !== inputs.pinned) return { entry: null, needsFetch: true };
     const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
     return { entry, needsFetch: now - entry.fetched_at >= ttl };
   }
 
-  /** At most one lookup per game at a time, and none while a failed lookup is waiting. */
-  request(appId: number, isShortcut: boolean, inputs: HltbInputs, now = Date.now()): void {
-    if (this.inFlight.has(appId) || (this.retryAt.get(appId) ?? 0) > now) return;
+  /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
+  request(appId: number, isShortcut: boolean, inputs: HltbInputs, now = Date.now(), usePinned = true): void {
+    const key = slotKey(appId, inputs.pinned);
+    if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now) return;
     const request = {};
-    this.inFlight.set(appId, request);
-    const ownsRequest = () => this.inFlight.get(appId) === request;
-    void this.fetchStats(appId, isShortcut, inputs.title).then(
+    this.inFlight.set(key, request);
+    const ownsRequest = () => this.inFlight.get(key) === request;
+    const call = usePinned
+      ? this.fetchStats(appId, isShortcut, inputs.title)
+      : this.fetchStats(appId, isShortcut, inputs.title, false);
+    void call.then(
       (result) => {
         if (!ownsRequest()) return;
         if (isEntry(result)) {
-          this.entries.set(appId, result);
-          this.blocked.delete(appId);
+          const resultKey = slotKey(appId, result.pinned_id_used ?? null);
+          this.entries.set(resultKey, result);
+          this.blocked.delete(resultKey);
         } else if (result.status === "error") {
-          this.retryAt.set(appId, Date.now() + Math.max(1_000, result.retry_after_ms));
+          this.retryAt.set(key, Date.now() + Math.max(1_000, result.retry_after_ms));
         } else {
-          this.blocked.set(appId, inputsKey(inputs));
+          this.blocked.set(key, inputsKey(inputs));
         }
         this.notify(appId);
       },
       () => {
-        if (ownsRequest()) this.retryAt.set(appId, Date.now() + 30_000);
+        if (ownsRequest()) this.retryAt.set(key, Date.now() + 30_000);
       },
     ).finally(() => {
-      if (ownsRequest()) this.inFlight.delete(appId);
+      if (ownsRequest()) this.inFlight.delete(key);
     });
   }
 
@@ -78,12 +89,14 @@ export class HltbStore {
     };
   }
 
-  /** Forget one game after Remove metadata; its next view asks the backend again. */
+  /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
   forget(appId: number): void {
-    this.entries.delete(appId);
-    this.blocked.delete(appId);
-    this.retryAt.delete(appId);
-    this.inFlight.delete(appId);
+    const prefix = `${appId}:`;
+    for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
+      for (const key of [...map.keys()]) {
+        if (key.startsWith(prefix)) map.delete(key);
+      }
+    }
     this.notify(appId);
   }
 

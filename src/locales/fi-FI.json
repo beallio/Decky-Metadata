@@ -61,6 +61,7 @@
     "shortcut_name_api_unavailable": "Steamin pikakuvakkeiden nimirajapinta ei ole käytettävissä",
     "shortcut_name_api_failed": "Steamin pikakuvakkeiden nimirajapinta epäonnistui",
     "shortcut_name_timeout": "Steam ei vahvistanut uutta pikakuvakkeen nimeä ajoissa.",
+    "invalid_steam_app_id": "Tämä peli ei ole kelvollinen Steam-peli.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -134,7 +135,11 @@
       "showTimesLabel": "Näytä HowLongToBeat-ajat",
       "showTimesDescription": "Näyttää HowLongToBeat-ajat Steam-pelien ja Steamin ulkopuolisten pelien sivuilla.",
       "storeLabel": "Kauppa",
-      "storeDescription": "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla.",
+      "storeDescription": "Näyttää HowLongToBeat-ajat tietorivillä Steam-kaupan pelisivuilla. Käyttää aina automaattista tunnistusta; pelikohtaiset HLTB-valinnat koskevat vain kirjaston pelisivuja.",
+      "statsHeading": "Tilastot",
+      "styleHeading": "Tyyli",
+      "customizeHeading": "Mukauta",
+      "cacheHeading": "Välimuisti",
       "styleLabel": "HLTB-tyyli",
       "styleDescription": "\"Clean\"-tyylit on tarkoitettu CSS Loader -teeman \"Clean Gameview\" kanssa käytettäviksi",
       "styleDefault": "Oletus",
@@ -227,7 +232,8 @@
       "positionTopLeft": "Vasemmassa yläkulmassa",
       "positionTopRight": "Oikeassa yläkulmassa",
       "loadingPreferences": "Ladataan ProtonDB-tunnusten asetuksia...",
-      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan."
+      "footnote": "Arviot tulevat suoraan ProtonDB:stä. Ne kuvaavat yhteisön kokemusta, eivät Valven yhteensopivuusarvioita; pelit, joita ei ole sovitettu, ja pelit, joilla ei ole ProtonDB-tasoa, piilotetaan.",
+      "gameCoversHeading": "Pelien kannet"
     },
     "miniAchievements": {
       "title": "Minisaavutukset",
@@ -318,7 +324,20 @@
       "confirmRevertBody": "Haluatko varmasti palata vakaaseen versioon v{{version}}? Tämä on alaspäin päivitys ja voi johtaa tietojen menetykseen tai määritysongelmiin.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Ohjelmistopäivitykset",
+      "checkForUpdates": "Tarkista päivitykset",
+      "upToDateButton": "Ajan tasalla",
+      "apply": "Käytä",
+      "applying": "Otetaan käyttöön...",
+      "moveToStableShort": "Siirry vakaaseen",
+      "revertToStableShort": "Palaa vakaaseen",
+      "upToDateLastChecked": "Ajan tasalla: tarkistettu viimeksi {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Päivityskanava",
+      "channelOptionStable": "Vakaa",
+      "channelOptionDevelopment": "Kehitys",
+      "channelStableDescription": "Vastaanottaa testattuja vakaita julkaisuja."
     },
     "versions": {
       "title": "Versiot",
@@ -362,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Yritä uudelleen",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -376,7 +396,8 @@
     "statMain": "Pääjuoni",
     "statMainPlus": "Pääjuoni + lisät",
     "statComplete": "Kaikki suoritettuna",
-    "statAllStyles": "Kaikki tyylit"
+    "statAllStyles": "Kaikki tyylit",
+    "viewDetails": "Näytä tiedot"
   },
   "trailers": {
     "audio": "Trailerin ääni",
@@ -639,7 +660,8 @@
     },
     "steamTextLanguage": "Steamin tekstin kieli: {{language}}",
     "fetchSteamText": "Lataa Steamin teksti kielellä {{language}}",
-    "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille."
+    "steamTextUnavailable": "Steam ei palauttanut tekstiä tälle pelille.",
+    "hltbDisabledNotice": "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa."
   },
   "matchPicker": {
     "help": "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",

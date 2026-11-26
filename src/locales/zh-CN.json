@@ -60,6 +60,7 @@
     "shortcut_name_api_unavailable": "Steam 快捷方式名称 API 不可用",
     "shortcut_name_api_failed": "Steam 快捷方式名称 API 调用失败",
     "shortcut_name_timeout": "Steam 未能及时确认新的快捷方式名称。",
+    "invalid_steam_app_id": "此游戏不是有效的 Steam 游戏。",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -133,7 +134,11 @@
       "showTimesLabel": "显示 HowLongToBeat 时长",
       "showTimesDescription": "在 Steam 游戏和非 Steam 游戏页面显示 HowLongToBeat 时长。",
       "storeLabel": "商店",
-      "storeDescription": "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。",
+      "storeDescription": "在 Steam 商店游戏页面的信息行中显示 HowLongToBeat 时长。始终使用自动匹配；按游戏指定的 HLTB 匹配仅适用于库中的游戏页面。",
+      "statsHeading": "统计",
+      "styleHeading": "样式",
+      "customizeHeading": "自定义",
+      "cacheHeading": "缓存",
       "styleLabel": "HLTB 样式",
       "styleDescription": "“Clean” 样式旨在与 CSS Loader 主题 “Clean Gameview” 搭配使用",
       "styleDefault": "默认",
@@ -226,7 +231,8 @@
       "positionTopLeft": "左上",
       "positionTopRight": "右上",
       "loadingPreferences": "正在加载 ProtonDB 徽章偏好设置...",
-      "footnote": "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。"
+      "footnote": "评分直接来自 ProtonDB。它们反映社区体验，而非 Valve 的兼容性评级；未匹配或没有 ProtonDB 分级的游戏不会显示徽章。",
+      "gameCoversHeading": "游戏封面"
     },
     "miniAchievements": {
       "title": "迷你成就",
@@ -317,7 +323,20 @@
       "confirmRevertBody": "确定要回退到稳定版 v{{version}} 吗？这是一次降级，可能导致数据丢失或配置问题。",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "软件更新",
+      "checkForUpdates": "检查更新",
+      "upToDateButton": "已是最新",
+      "apply": "应用",
+      "applying": "正在应用...",
+      "moveToStableShort": "切换到稳定版",
+      "revertToStableShort": "回退到稳定版",
+      "upToDateLastChecked": "已是最新：上次检查 {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "更新通道",
+      "channelOptionStable": "稳定版",
+      "channelOptionDevelopment": "开发版",
+      "channelStableDescription": "接收经过测试的稳定版本。"
     },
     "versions": {
       "title": "版本",
@@ -361,6 +380,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "重试",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -375,7 +395,8 @@
     "statMain": "主线故事",
     "statMainPlus": "主线 + 额外内容",
     "statComplete": "完美通关",
-    "statAllStyles": "所有游玩方式"
+    "statAllStyles": "所有游玩方式",
+    "viewDetails": "查看详情"
   },
   "trailers": {
     "audio": "预告片音频",
@@ -638,7 +659,8 @@
     },
     "steamTextLanguage": "Steam 文本语言：{{language}}",
     "fetchSteamText": "加载 Steam 文本（{{language}}）",
-    "steamTextUnavailable": "Steam 未返回此游戏的文本。"
+    "steamTextUnavailable": "Steam 未返回此游戏的文本。",
+    "hltbDisabledNotice": "HowLongToBeat 时长目前已在设置中关闭。"
   },
   "matchPicker": {
     "help": "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",

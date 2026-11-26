@@ -62,6 +62,7 @@
     "shortcut_name_api_unavailable": "API-ul Steam pentru numele scurtăturilor nu este disponibil",
     "shortcut_name_api_failed": "API-ul Steam pentru numele scurtăturilor a eșuat",
     "shortcut_name_timeout": "Steam nu a confirmat la timp noul nume al scurtăturii.",
+    "invalid_steam_app_id": "Acest joc nu este un joc Steam valid.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -135,7 +136,11 @@
       "showTimesLabel": "Afișează timpii HowLongToBeat",
       "showTimesDescription": "Afișează timpii HowLongToBeat pe paginile jocurilor Steam și non-Steam.",
       "storeLabel": "Magazin",
-      "storeDescription": "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam.",
+      "storeDescription": "Afișează timpii HowLongToBeat într-un rând de informații pe paginile de joc din magazinul Steam. Folosește întotdeauna potrivirea automată; alegerile HLTB per joc se aplică doar paginilor de joc din Bibliotecă.",
+      "statsHeading": "Statistici",
+      "styleHeading": "Stil",
+      "customizeHeading": "Personalizare",
+      "cacheHeading": "Cache",
       "styleLabel": "Stil HLTB",
       "styleDescription": "Stilurile „Clean” sunt concepute pentru a funcționa cu tema CSS Loader „Clean Gameview”",
       "styleDefault": "Implicit",
@@ -228,7 +233,8 @@
       "positionTopLeft": "Sus stânga",
       "positionTopRight": "Sus dreapta",
       "loadingPreferences": "Se încarcă preferințele pentru insignele ProtonDB...",
-      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse."
+      "footnote": "Evaluările provin direct de la ProtonDB. Ele descriu experiența comunității, nu ratingul de compatibilitate al Valve; jocurile fără potrivire și cele fără nivel ProtonDB sunt ascunse.",
+      "gameCoversHeading": "Coperți de jocuri"
     },
     "miniAchievements": {
       "title": "Realizări mini",
@@ -319,7 +325,20 @@
       "confirmRevertBody": "Sigur vrei să revii la versiunea stabilă v{{version}}? Aceasta este o retrogradare și poate duce la pierderea datelor sau la probleme de configurare.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Actualizări de software",
+      "checkForUpdates": "Verifică actualizările",
+      "upToDateButton": "La zi",
+      "apply": "Aplică",
+      "applying": "Se aplică...",
+      "moveToStableShort": "Treci la stabil",
+      "revertToStableShort": "Revino la stabil",
+      "upToDateLastChecked": "La zi: ultima verificare {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Canal de actualizare",
+      "channelOptionStable": "Stabil",
+      "channelOptionDevelopment": "Dezvoltare",
+      "channelStableDescription": "Primește versiuni stabile testate."
     },
     "versions": {
       "title": "Versiuni",
@@ -363,6 +382,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Încearcă din nou",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -377,7 +397,8 @@
     "statMain": "Povestea principală",
     "statMainPlus": "Principal + extra",
     "statComplete": "Completist",
-    "statAllStyles": "Toate stilurile"
+    "statAllStyles": "Toate stilurile",
+    "viewDetails": "Vezi detalii"
   },
   "trailers": {
     "audio": "Sunetul trailerului",
@@ -640,7 +661,8 @@
     },
     "steamTextLanguage": "Limba textului Steam: {{language}}",
     "fetchSteamText": "Încarcă textul Steam în {{language}}",
-    "steamTextUnavailable": "Steam nu a returnat text pentru acest joc."
+    "steamTextUnavailable": "Steam nu a returnat text pentru acest joc.",
+    "hltbDisabledNotice": "Timpii HowLongToBeat sunt dezactivați în prezent în Setări."
   },
   "matchPicker": {
     "help": "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",

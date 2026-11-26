@@ -61,6 +61,7 @@
     "shortcut_name_api_unavailable": "Steam kısayol adı API'si kullanılamıyor",
     "shortcut_name_api_failed": "Steam kısayol adı API'si başarısız oldu",
     "shortcut_name_timeout": "Steam yeni kısayol adını zamanında onaylamadı.",
+    "invalid_steam_app_id": "Bu oyun geçerli bir Steam oyunu değil.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -134,7 +135,11 @@
       "showTimesLabel": "HowLongToBeat sürelerini göster",
       "showTimesDescription": "Steam ve Steam dışı oyunların oyun sayfalarında HowLongToBeat sürelerini gösterir.",
       "storeLabel": "Mağaza",
-      "storeDescription": "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir.",
+      "storeDescription": "Steam Mağazası oyun sayfalarında bilgi satırında HowLongToBeat sürelerini gösterir. Her zaman otomatik eşleştirme kullanır; oyun bazlı HLTB seçimleri yalnızca Kütüphane oyun sayfalarında geçerlidir.",
+      "statsHeading": "İstatistikler",
+      "styleHeading": "Stil",
+      "customizeHeading": "Özelleştir",
+      "cacheHeading": "Önbellek",
       "styleLabel": "HLTB tarzı",
       "styleDescription": "\"Clean\" tarzları, CSS Loader teması \"Clean Gameview\" ile kullanılmak üzere tasarlanmıştır",
       "styleDefault": "Varsayılan",
@@ -227,7 +232,8 @@
       "positionTopLeft": "Sol üst",
       "positionTopRight": "Sağ üst",
       "loadingPreferences": "ProtonDB rozet tercihleri yükleniyor...",
-      "footnote": "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir."
+      "footnote": "Derecelendirmeler doğrudan ProtonDB'den gelir. Valve'ın uyumluluk derecelendirmesini değil, topluluk deneyimini yansıtırlar; eşleşmeyen oyunlar ve ProtonDB kademesi olmayan oyunlar gizlenir.",
+      "gameCoversHeading": "Oyun kapakları"
     },
     "miniAchievements": {
       "title": "Mini başarımlar",
@@ -318,7 +324,20 @@
       "confirmRevertBody": "Kararlı v{{version}} sürümüne dönmek istediğinizden emin misiniz? Bu bir sürüm düşürmesidir ve veri kaybına veya yapılandırma sorunlarına yol açabilir.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "Yazılım Güncellemeleri",
+      "checkForUpdates": "Güncellemeleri Denetle",
+      "upToDateButton": "Güncel",
+      "apply": "Uygula",
+      "applying": "Uygulanıyor...",
+      "moveToStableShort": "Kararlı sürüme geç",
+      "revertToStableShort": "Kararlı sürüme dön",
+      "upToDateLastChecked": "Güncel: son denetim {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "Güncelleme Kanalı",
+      "channelOptionStable": "Kararlı",
+      "channelOptionDevelopment": "Geliştirme",
+      "channelStableDescription": "Test edilmiş kararlı sürümleri alır."
     },
     "versions": {
       "title": "Sürümler",
@@ -362,6 +381,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "Tekrar dene",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -376,7 +396,8 @@
     "statMain": "Ana Hikâye",
     "statMainPlus": "Ana + Ekstralar",
     "statComplete": "Tamamlayıcı",
-    "statAllStyles": "Tüm Tarzlar"
+    "statAllStyles": "Tüm Tarzlar",
+    "viewDetails": "Ayrıntıları görüntüle"
   },
   "trailers": {
     "audio": "Fragman sesi",
@@ -639,7 +660,8 @@
     },
     "steamTextLanguage": "Steam metin dili: {{language}}",
     "fetchSteamText": "Steam metnini {{language}} dilinde yükle",
-    "steamTextUnavailable": "Steam bu oyun için metin döndürmedi."
+    "steamTextUnavailable": "Steam bu oyun için metin döndürmedi.",
+    "hltbDisabledNotice": "HowLongToBeat süreleri şu anda Ayarlar'da kapalı."
   },
   "matchPicker": {
     "help": "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",

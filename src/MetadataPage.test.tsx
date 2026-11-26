@@ -22,8 +22,10 @@ const backend = vi.hoisted(() => ({
   enrichSteamApp: vi.fn(),
   getShortcutNameManagement: vi.fn(),
   getMetadata: vi.fn(),
+  getSteamOverride: vi.fn(),
   removeMetadata: vi.fn(),
   saveMetadata: vi.fn(),
+  saveSteamOverride: vi.fn(),
   saveShortcutNameState: vi.fn(),
   searchMetadata: vi.fn(),
   searchSteamMatches: vi.fn(),
@@ -76,7 +78,7 @@ const toast = vi.hoisted(() => ({
 }));
 
 // What the game page shows for this game; tests set it per case.
-const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null }));
+const hltbMatch = vi.hoisted(() => ({ entry: null as HltbEntry | null, effectiveEnabled: true }));
 const state = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 const refs = vi.hoisted(() => ({ values: [] as any[], cursor: 0 }));
 type MockEffect = (() => unknown) & { deps: readonly unknown[] | undefined };
@@ -132,8 +134,8 @@ vi.mock("./i18n", async (importOriginal) => {
   };
 });
 vi.mock("./hltb/gameView", () => ({
-  useHltbSnapshot: () => ({ effectiveEnabled: true }),
-  useHltbMatch: () => ({ active: true, entry: hltbMatch.entry }),
+  useHltbSnapshot: () => ({ effectiveEnabled: hltbMatch.effectiveEnabled }),
+  useHltbMatch: () => ({ active: hltbMatch.effectiveEnabled, entry: hltbMatch.effectiveEnabled ? hltbMatch.entry : null }),
 }));
 vi.mock("react", () => ({
   createContext: () => ({}),
@@ -527,19 +529,20 @@ describe("MetadataPage compatibility status", () => {
     expect(layoutProps(page).pages.find(({ id }) => id === "compatibility")?.content).toBeNull();
   });
 
-  it.each([true, false])("passes ordered pages with shortcut-only visibility (non-Steam: %s)", (nonSteam) => {
+  it.each([true, false])("passes ordered pages with Steam-game HLTB-only visibility (non-Steam: %s)", (nonSteam) => {
     steam.isNonSteamApp.mockReturnValue(nonSteam);
     const layout = layoutProps(renderPage());
-    const shortcutOnly: EditorPageId[] = ["hltb", "compatibility", "shortcut-name"];
 
     expect(layout.title).toBe("Shortcut");
-    expect(layout.page).toBe("details");
+    expect(layout.page).toBe(nonSteam ? "details" : "hltb");
     expect(layout.pages.map(({ id }) => id)).toEqual(EDITOR_PAGE_ORDER);
     expect(layout.pages.every(({ icon }) => icon !== undefined)).toBe(true);
     expect(layout.pages.map(({ visible }) => visible)).toEqual(
-      EDITOR_PAGE_ORDER.map((id) => nonSteam || !shortcutOnly.includes(id)),
+      EDITOR_PAGE_ORDER.map((id) => (nonSteam ? true : id === "hltb")),
     );
-    expect(layout.pages.filter(({ separatorBefore }) => separatorBefore === true).map(({ id }) => id)).toEqual(["advanced"]);
+    expect(layout.pages.filter(({ separatorBefore }) => separatorBefore === true).map(({ id }) => id)).toEqual(
+      nonSteam ? ["advanced"] : [],
+    );
   });
 
   it("puts Steam App ID and shortcut-name actions on their own pages", () => {
@@ -1127,25 +1130,62 @@ describe("MetadataPage compatibility status", () => {
     expect(state.values[0]).toEqual(expect.objectContaining({ title: "New editor", steam_store_name: "" }));
   });
 
-  it.each([null, "GamepadTextArea"])("disables metadata controls for Steam games (%s)", (component) => {
-    textarea.component = component;
+  it("shows only an enabled HowLongToBeat page for Steam games and saves via saveSteamOverride", async () => {
+    route.appid = "65540";
     steam.isNonSteamApp.mockReturnValue(false);
+    steam.getOverview.mockReturnValue({ app_type: 1, BIsShortcut: () => false });
+    steam.appName.mockReturnValue("Gothic 1 - classic");
+    backend.getSteamOverride.mockResolvedValue({ hltb_game_id: 4031 });
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 4032, game_name: "Gothic II" });
+    backend.saveSteamOverride.mockResolvedValue({ hltb_game_id: 4032 });
 
-    const details = openPage("Details");
-    for (const label of ["Title", "Developers", "Publishers", "Release date", "Rating"]) {
-      expect(textField(details, label).props.disabled).toBe(true);
+    effects.enabled = true;
+    renderPage();
+    for (const effect of effects.callbacks.splice(0)) effect();
+    await flushAsyncWork();
+    effects.enabled = false;
+
+    expect(backend.getSteamOverride).toHaveBeenCalledWith(65540);
+    expect(backend.getMetadata).not.toHaveBeenCalled();
+    expect(backend.getShortcutNameManagement).not.toHaveBeenCalled();
+
+    const page = renderPage();
+    const layout = layoutProps(page);
+    expect(layout.page).toBe("hltb");
+    expect(layout.pages.filter(({ visible }) => visible).map(({ id }) => id)).toEqual(["hltb"]);
+    expect(walk(page, (node) => node.type === HltbGameSearch)[0].props.disabled).toBe(false);
+    expect(textField(page, "HowLongToBeat game").props.disabled).toBeUndefined();
+    expect(textField(page, "HowLongToBeat game").props.value).toBe("4031");
+    expect(layout.saveDisabled).toBe(true);
+
+    // Edit HLTB ID and save: routes through saveSteamOverride, never saveMetadata or metadataCache.
+    textField(page, "HowLongToBeat game").props.onChange({ target: { value: "4032" } });
+    const edited = renderPage();
+    expect(layoutProps(edited).saveDisabled).toBe(false);
+    saveButton(edited).props.onClick();
+    await flushAsyncWork();
+
+    expect(backend.saveSteamOverride).toHaveBeenCalledWith(65540, { hltb_game_id: 4032 });
+    expect(backend.saveMetadata).not.toHaveBeenCalled();
+    expect(steam.setMetadataCacheEntry).not.toHaveBeenCalled();
+    expect(steam.metadataCache["65540"]).toBeUndefined();
+
+    // Clearing the field saves null to return to automatic matching.
+    backend.saveSteamOverride.mockResolvedValueOnce(null);
+    textField(renderPage(), "HowLongToBeat game").props.onChange({ target: { value: "" } });
+    saveButton(renderPage()).props.onClick();
+    await flushAsyncWork();
+    expect(backend.saveSteamOverride).toHaveBeenLastCalledWith(65540, { hltb_game_id: null });
+  });
+
+  it("shows a notice on the Steam game HLTB page when HLTB times are off", () => {
+    steam.isNonSteamApp.mockReturnValue(false);
+    hltbMatch.effectiveEnabled = false;
+    try {
+      expect(text(renderPage())).toContain("HowLongToBeat times are currently turned off in Settings.");
+    } finally {
+      hltbMatch.effectiveEnabled = true;
     }
-    expect(walk(details, (node) => node.type === (component ?? "textarea"))[0].props.disabled).toBe(true);
-    const categories = walk(details, (node) => node.type === "ToggleField");
-    expect(categories.length).toBeGreaterThan(0);
-    expect(categories.every((category) => category.props.disabled)).toBe(true);
-
-    const match = openPage("Game Match");
-    expect(action(match, "Enter ID...").props.disabled).toBe(true);
-    expect(action(match, "Load from Steam").props.disabled).toBe(true);
-    expect(ignSearchInput(match).props.disabled).toBe(true);
-    expect(ignSearchButton(match).props.disabled).toBe(true);
-    expect(walk(match, (node) => node.type === SteamMatchPicker)[0].props.disabled).toBe(true);
   });
 
   it("keeps IGN Search disabled for blank queries and while busy", async () => {
@@ -2545,17 +2585,13 @@ describe("Draft field markers and editor actions", () => {
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
   });
 
-  it.each([
-    { nonSteam: true, match: null, reason: "No Steam match" },
-    { nonSteam: false, match: 15100, reason: "Not available for Steam games" },
-  ])("disables Load from Steam and names $reason on the match row", async ({ nonSteam, match, reason }) => {
-    steam.isNonSteamApp.mockReturnValue(nonSteam);
-    configureShortcutPanel({ metadata: { steam_appid: match } });
+  it("disables Load from Steam and names No Steam match when unmatched", async () => {
+    steam.isNonSteamApp.mockReturnValue(true);
+    configureShortcutPanel({ metadata: { steam_appid: null } });
 
     const load = action(openPage("Game Match"), "Load from Steam");
     expect(load.props.disabled).toBe(true);
-    expect(text(load.props.label)).toContain(reason);
-    // Neither state shows art or an App ID line for a match it cannot use.
+    expect(text(load.props.label)).toContain("No Steam match");
     expect(load.props.icon).toBeUndefined();
     expect(load.props.description).toBeUndefined();
     load.props.onClick();
@@ -2563,6 +2599,15 @@ describe("Draft field markers and editor actions", () => {
     expect(backend.previewSteamMetadata).not.toHaveBeenCalled();
     expect(backend.saveMetadata).not.toHaveBeenCalled();
     expect(backend.savePreviewedMetadata).not.toHaveBeenCalled();
+  });
+
+  it("hides Game Match for Steam games", () => {
+    steam.isNonSteamApp.mockReturnValue(false);
+    configureShortcutPanel({ metadata: { steam_appid: 15100 } });
+
+    const page = renderPage();
+    expect(navButton(page, "Game Match")).toBeUndefined();
+    expect(layoutProps(page).pages.find(({ id }) => id === "steam-match")?.content).toBeNull();
   });
 
   it("resets the selected page to Details when the app ID changes", () => {
@@ -2599,17 +2644,24 @@ describe("Draft field markers and editor actions", () => {
     await flushAsyncWork();
     expect(backend.saveMetadata).toHaveBeenCalledWith(100, expect.any(Object));
   });
-  it("keeps Steam games unsavable after editing Title, including the controller X shortcut", async () => {
+  it("saves a Steam game HLTB draft with the controller X shortcut via saveSteamOverride", async () => {
+    route.appid = "65540";
     steam.isNonSteamApp.mockReturnValue(false);
     steam.getOverview.mockReturnValue({ app_type: 1, BIsShortcut: () => false });
-    configureShortcutPanel();
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 4031, game_name: "Gothic" });
+    backend.saveSteamOverride.mockResolvedValue({ hltb_game_id: 4031 });
+    hydrateMetadata(makeMetadata({ hltb_game_id: null }));
 
-    editTitle(renderPage(), "Edited title");
+    const initial = renderPage();
+    expect(layoutProps(initial).saveDisabled).toBe(true);
+
+    textField(initial, "HowLongToBeat game").props.onChange({ target: { value: "4031" } });
     const edited = renderPage();
-    expect(layoutProps(edited).saveDisabled).toBe(true);
+    expect(layoutProps(edited).saveDisabled).toBe(false);
 
     edited.props.onSecondaryButton();
     await flushAsyncWork();
+    expect(backend.saveSteamOverride).toHaveBeenCalledWith(65540, { hltb_game_id: 4031 });
     expect(backend.saveMetadata).not.toHaveBeenCalled();
   });
 });

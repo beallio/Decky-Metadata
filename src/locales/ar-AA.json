@@ -65,6 +65,7 @@
     "shortcut_name_api_unavailable": "واجهة أسماء اختصارات Steam غير متاحة",
     "shortcut_name_api_failed": "فشلت واجهة أسماء اختصارات Steam",
     "shortcut_name_timeout": "لم يؤكد Steam اسم الاختصار الجديد في الوقت المناسب.",
+    "invalid_steam_app_id": "هذه اللعبة ليست لعبة Steam صالحة.",
     "testing_pulls_fetch_failed": "Failed to load pull requests from GitHub",
     "testing_invalid_request": "Invalid pull request build request",
     "testing_pr_not_eligible": "This pull request is not eligible for test builds (must be from this repository or labeled test-build).",
@@ -138,7 +139,11 @@
       "showTimesLabel": "إظهار أوقات HowLongToBeat",
       "showTimesDescription": "إظهار أوقات HowLongToBeat في صفحات الألعاب لألعاب Steam والألعاب غير التابعة لـ Steam.",
       "storeLabel": "المتجر",
-      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam.",
+      "storeDescription": "إظهار أوقات HowLongToBeat في صف معلومات في صفحات الألعاب في متجر Steam. يستخدم المطابقة التلقائية دائماً؛ خيارات HLTB لكل لعبة تنطبق على صفحات ألعاب المكتبة فقط.",
+      "statsHeading": "الإحصائيات",
+      "styleHeading": "النمط",
+      "customizeHeading": "التخصيص",
+      "cacheHeading": "ذاكرة التخزين المؤقت",
       "styleLabel": "نمط HLTB",
       "styleDescription": "أنماط «Clean» مخصصة للعمل مع سمة «Clean Gameview» في CSS Loader",
       "styleDefault": "افتراضي",
@@ -231,7 +236,8 @@
       "positionTopLeft": "أعلى اليسار",
       "positionTopRight": "أعلى اليمين",
       "loadingPreferences": "جارٍ تحميل تفضيلات شارات ProtonDB...",
-      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB."
+      "footnote": "التقييمات تأتي مباشرة من ProtonDB. وهي تصف تجربة المجتمع، لا تقييم التوافق من Valve؛ تُخفى الألعاب غير المطابقة والألعاب التي ليس لها تصنيف ProtonDB.",
+      "gameCoversHeading": "أغلفة الألعاب"
     },
     "miniAchievements": {
       "title": "الإنجازات المصغّرة",
@@ -322,7 +328,20 @@
       "confirmRevertBody": "هل أنت متأكد من رغبتك في العودة إلى الإصدار المستقر v{{version}}؟ هذا تخفيض للإصدار وقد يؤدي إلى فقدان البيانات أو مشكلات في الإعدادات.",
       "developerHeading": "Developer",
       "enableTestingTab": "Enable Testing tab",
-      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub."
+      "enableTestingTabDescription": "Shows the Testing tab in Settings to install pull request test builds from GitHub.",
+      "softwareUpdates": "تحديثات البرنامج",
+      "checkForUpdates": "التحقق من وجود تحديثات",
+      "upToDateButton": "محدّث",
+      "apply": "تطبيق",
+      "applying": "جارٍ التطبيق...",
+      "moveToStableShort": "الانتقال إلى المستقر",
+      "revertToStableShort": "الرجوع إلى المستقر",
+      "upToDateLastChecked": "محدّث: آخر تحقق {{date}}",
+      "versionArrow": "v{{current}} → v{{next}} ({{channel}})",
+      "channelLabel": "قناة التحديث",
+      "channelOptionStable": "مستقر",
+      "channelOptionDevelopment": "تطوير",
+      "channelStableDescription": "يتلقى الإصدارات المستقرة المختبرة."
     },
     "versions": {
       "title": "الإصدارات",
@@ -366,6 +385,7 @@
       "draftBadge": "Draft",
       "install": "Install",
       "installing": "Preparing...",
+      "retry": "إعادة المحاولة",
       "info": "View on GitHub",
       "installModalTitle": "Install PR #{{id}}?",
       "modalDetails": "By {{author}} · Commit {{sha}}",
@@ -380,7 +400,8 @@
     "statMain": "القصة الرئيسية",
     "statMainPlus": "الرئيسية + الإضافات",
     "statComplete": "الإكمال الكامل",
-    "statAllStyles": "كل الأنماط"
+    "statAllStyles": "كل الأنماط",
+    "viewDetails": "عرض التفاصيل"
   },
   "trailers": {
     "audio": "صوت المقطع الدعائي",
@@ -643,7 +664,8 @@
     },
     "steamTextLanguage": "لغة نص Steam: {{language}}",
     "fetchSteamText": "تحميل نص Steam باللغة {{language}}",
-    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة."
+    "steamTextUnavailable": "لم يُرجع Steam أي نص لهذه اللعبة.",
+    "hltbDisabledNotice": "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
   },
   "matchPicker": {
     "help": "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",

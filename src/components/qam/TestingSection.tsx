@@ -157,20 +157,33 @@ function TestingInstallModal({ pr, closeModal }: TestingInstallModalProps) {
         updateTraceId: traceId,
       }).catch(() => undefined);
 
-      await invokeDeckyInstaller(
+      // Close our verification dialog before invoking Decky Loader's own install
+      // confirmation modal so the two dialogs never stack or block each other.
+      closeModal?.();
+      void invokeDeckyInstaller(
         prepared.artifact_url,
         prepared.version,
         prepared.sha256,
         INSTALL_TYPE_UPDATE,
         traceId,
+      ).then(
+        async () => {
+          await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
+          toaster.toast({
+            title: t("updater.installation.startedTitle"),
+            body: t("updater.installation.startedBody", { version: prepared.version }),
+            duration: 3000,
+          });
+        },
+        async (caught) => {
+          await clearPendingUpdateInstall(prepared.version).catch(() => undefined);
+          toaster.toast({
+            title: t("updater.installation.failedTitle"),
+            body: translateBackendError(caught),
+            duration: 5000,
+          });
+        },
       );
-      await confirmUpdateInstallHandoff(prepared.version).catch(() => undefined);
-      toaster.toast({
-        title: t("updater.installation.startedTitle"),
-        body: t("updater.installation.startedBody", { version: prepared.version }),
-        duration: 3000,
-      });
-      closeModal?.();
     } catch (caught) {
       if (recordedVersion) {
         await clearPendingUpdateInstall(recordedVersion).catch(() => undefined);
@@ -183,12 +196,19 @@ function TestingInstallModal({ pr, closeModal }: TestingInstallModalProps) {
   return (
     <ConfirmModal
       strTitle={t("qam.testing.installModalTitle", { id: pr.id })}
-      strOKButtonText={busy ? t("qam.testing.installing") : t("qam.testing.install")}
+      strOKButtonText={
+        busy
+          ? t("qam.testing.installing")
+          : error
+            ? t("qam.testing.retry")
+            : t("qam.testing.install")
+      }
       strCancelButtonText={t("editor.unsaved.cancel")}
       bOKDisabled={busy}
       bCancelDisabled={busy}
       bDisableBackgroundDismiss={busy}
-      onOK={() => void handleConfirm()}
+      bHideCloseIcon={busy}
+      onOK={() => handleConfirm()}
       onCancel={() => {
         if (!busy) closeModal?.();
       }}
