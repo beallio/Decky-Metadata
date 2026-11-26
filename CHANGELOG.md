@@ -28,14 +28,16 @@ All notable changes to this project are documented here in Keep a Changelog form
   installed version and last-checked status with one morphing button (**Check For
   Updates** → **Checking...** → **Up-to-date** / **Apply** → **Applying...**),
   paired with an **Update Channel** dropdown (**Stable** / **Development**).
-- **Focusable Metadata stats and grouped ProtonDB Game covers settings.** In
-  **Settings → Metadata**, **Detected non-Steam games**, **Metadata saved**, and
-  **Missing metadata** are now selectable and focusable like **Versions**. In
-  **Settings → ProtonDB badges**, **Game view** and **Store** sit directly below
-  **Enable ProtonDB badges**, followed by a **Game covers** subsection for
-  **Home game covers**, **Library game covers**, **Covers only on focus or
-  hover**, and **Cover badge position** (the last two are enabled only when
-  **Home game covers** or **Library game covers** is on).
+- **Focusable Metadata stats, grouped ProtonDB Game covers, and organized HLTB
+  subsections.** In **Settings → Metadata**, **Detected non-Steam games**,
+  **Metadata saved**, and **Missing metadata** are now selectable and focusable
+  like **Versions**. In **Settings → ProtonDB badges**, **Game view** and
+  **Store** sit directly below **Enable ProtonDB badges**, followed by a **Game
+  covers** subsection for **Home game covers**, **Library game covers**,
+  **Covers only on focus or hover**, and **Cover badge position** (the last two
+  are enabled only when **Home game covers** or **Library game covers** is on).
+  In **Settings → HLTB times**, controls below **Store** are now grouped into
+  **Stats**, **Style**, **Customize**, and **Cache** subsections.
 
 ### Fixed
 
