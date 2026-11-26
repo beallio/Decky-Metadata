@@ -4,6 +4,10 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+## [0.6.8] - 2026-11-25
+
+Add Steam HLTB overrides, PR Testing tab, and Settings UI polish
+
 ### Added
 
 - **Choose a HowLongToBeat game for Steam games.** When **Show HowLongToBeat
