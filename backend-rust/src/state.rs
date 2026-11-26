@@ -26,6 +26,7 @@ pub struct AppState {
     /// Per-app time before another HLTB lookup after a failure.
     pub hltb_retry: Mutex<std::collections::HashMap<u32, tokio::time::Instant>>,
     pub jobs: crate::scan_runner::Jobs,
+    pub artwork_asset_cache: Mutex<crate::artwork::AssetCache>,
     updater_rate_limit: Mutex<Option<chrono::DateTime<chrono::Utc>>>,
 }
 
@@ -47,6 +48,7 @@ impl AppState {
             hltb: crate::providers::hltb::HltbClient::default(),
             hltb_retry: Mutex::new(std::collections::HashMap::new()),
             jobs: crate::scan_runner::Jobs::new(),
+            artwork_asset_cache: Mutex::new(crate::artwork::AssetCache::default()),
             updater_rate_limit: Mutex::new(None),
         }))
     }

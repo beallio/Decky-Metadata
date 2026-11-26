@@ -390,6 +390,7 @@ pub fn default_data() -> Value {
         "metadata": {},
         "steam_overrides": {},
         "shortcut_names": {},
+        "artwork_locks": {},
         "settings": default_settings(),
         "update_settings": {},
         "update_check_cache": {},
@@ -404,6 +405,7 @@ pub fn default_settings() -> Value {
         "mini_achievements_enabled": false,
         "protondb_badges": default_protondb_badge_settings(),
         "editor_header": default_editor_header_settings(),
+        "steam_artwork": default_artwork_settings(),
     })
 }
 
@@ -439,6 +441,20 @@ pub fn default_editor_header_settings() -> Value {
     })
 }
 
+pub fn default_artwork_settings() -> Value {
+    json!({
+        "autoApply": false,
+        "preserveExisting": true,
+        "slots": {
+            "cover": true,
+            "wide": true,
+            "hero": true,
+            "logo": true,
+            "icon": true,
+        }
+    })
+}
+
 pub fn normalize_settings(saved: Option<&Value>) -> Value {
     normalize_settings_owned(saved.cloned())
 }
@@ -456,6 +472,7 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
     let mini_achievements = saved.remove("mini_achievements_enabled");
     let protondb = saved.remove("protondb_badges");
     let editor_header = saved.remove("editor_header");
+    let steam_artwork = saved.remove("steam_artwork");
     let hltb = saved.remove("hltb");
     let has_scope = saved.contains_key("deck_compat_default_scope");
     let scope = saved.remove("deck_compat_default_scope");
@@ -504,6 +521,14 @@ fn normalize_settings_owned(saved: Option<Value>) -> Value {
         );
     } else {
         normalized.remove("editor_header");
+    }
+    if let Some(value) = steam_artwork {
+        normalized.insert(
+            "steam_artwork".to_owned(),
+            normalize_artwork_settings(&value),
+        );
+    } else {
+        normalized.remove("steam_artwork");
     }
     if let Some(value) = hltb {
         normalized.insert("hltb".to_owned(), normalize_hltb_settings(&value));
@@ -608,6 +633,34 @@ pub fn normalize_editor_header_settings(value: &Value) -> Value {
     for (key, setting) in normalized.iter_mut() {
         if let Some(saved) = value.get(key).filter(|saved| saved.is_boolean()) {
             *setting = saved.clone();
+        }
+    }
+    Value::Object(normalized)
+}
+
+pub fn normalize_artwork_settings(value: &Value) -> Value {
+    let mut normalized = default_artwork_settings()
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if let Some(source) = value.as_object() {
+        for key in ["autoApply", "preserveExisting"] {
+            if let Some(flag) = source.get(key).and_then(Value::as_bool) {
+                normalized.insert(key.to_owned(), Value::Bool(flag));
+            }
+        }
+        if let Some(saved_slots) = source.get("slots").and_then(Value::as_object) {
+            let mut slots = normalized
+                .get("slots")
+                .and_then(Value::as_object)
+                .cloned()
+                .unwrap_or_default();
+            for (key, setting) in slots.iter_mut() {
+                if let Some(flag) = saved_slots.get(key).and_then(Value::as_bool) {
+                    *setting = Value::Bool(flag);
+                }
+            }
+            normalized.insert("slots".to_owned(), Value::Object(slots));
         }
     }
     Value::Object(normalized)
@@ -807,6 +860,35 @@ pub fn validate_editor_header_settings(value: &Value) -> Result<Value, String> {
         return Err("invalid editor header settings".to_owned());
     }
     Ok(value.clone())
+}
+
+pub fn validate_artwork_settings(value: &Value) -> Result<Value, String> {
+    let source = value
+        .as_object()
+        .ok_or_else(|| "invalid artwork settings".to_owned())?;
+    let expected = default_artwork_settings()
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if source.len() != expected.len()
+        || !source.get("autoApply").is_some_and(Value::is_boolean)
+        || !source.get("preserveExisting").is_some_and(Value::is_boolean)
+    {
+        return Err("invalid artwork settings".to_owned());
+    }
+    let slots = source
+        .get("slots")
+        .and_then(Value::as_object)
+        .ok_or_else(|| "invalid artwork settings".to_owned())?;
+    let expected_slots = expected["slots"].as_object().cloned().unwrap_or_default();
+    if slots.len() != expected_slots.len()
+        || expected_slots
+            .keys()
+            .any(|key| !slots.get(key).is_some_and(Value::is_boolean))
+    {
+        return Err("invalid artwork settings".to_owned());
+    }
+    Ok(normalize_artwork_settings(value))
 }
 
 pub fn validate_shortcut_name(value: &Value) -> Option<&str> {
@@ -1012,6 +1094,18 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
         Some(Value::Object(shortcut_names)) => Value::Object(shortcut_names),
         _ => Value::Object(Map::new()),
     };
+    let artwork_locks = match source.remove("artwork_locks") {
+        Some(Value::Object(locks)) => Value::Object(
+            locks
+                .into_iter()
+                .filter(|(key, value)| {
+                    positive_shortcut_app_id(&Value::String(key.clone())).is_some()
+                        && value.as_bool() == Some(true)
+                })
+                .collect(),
+        ),
+        _ => Value::Object(Map::new()),
+    };
     let settings = normalize_settings_owned(source.remove("settings"));
     let update_settings = truthy_object(source.remove("update_settings"), "update_settings")?;
     let update_check_cache =
@@ -1021,6 +1115,7 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     merged.insert("metadata".to_owned(), metadata);
     merged.insert("steam_overrides".to_owned(), steam_overrides);
     merged.insert("shortcut_names".to_owned(), shortcut_names);
+    merged.insert("artwork_locks".to_owned(), artwork_locks);
     merged.insert("settings".to_owned(), settings);
     merged.insert("update_settings".to_owned(), update_settings);
     merged.insert("update_check_cache".to_owned(), update_check_cache);
@@ -1595,6 +1690,23 @@ mod tests {
             validate_editor_header_settings(&json!({"gameIcon": true, "steamIconFallback": true, "x": true}))
                 .is_err()
         );
+
+        let artwork = normalize_artwork_settings(&json!({
+            "autoApply": true,
+            "preserveExisting": "yes",
+            "slots": {"cover": false, "logo": "no"}
+        }));
+        assert_eq!(artwork["autoApply"], true);
+        assert_eq!(artwork["preserveExisting"], true);
+        assert_eq!(artwork["slots"]["cover"], false);
+        assert_eq!(artwork["slots"]["logo"], true);
+        assert_eq!(validate_artwork_settings(&artwork).unwrap(), artwork);
+        assert!(validate_artwork_settings(&json!({"autoApply": true})).is_err());
+        assert!(validate_artwork_settings(&json!({
+            "autoApply": true,
+            "preserveExisting": true,
+            "slots": {"cover": true, "wide": true, "hero": true, "logo": true, "icon": true, "extra": true}
+        })).is_err());
     }
 
     #[test]

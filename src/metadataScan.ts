@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { artworkController } from "./artwork/controller";
 import { getMissingMetadataCount, getScanProgress, startScanMissing } from "./backend";
 import { t, translateBackendError } from "./i18n";
 import * as log from "./log";
@@ -24,6 +25,7 @@ export type MetadataScanDeps = {
   toastError: (title: string, body: string) => void;
   setTimeout: (fn: () => void, ms: number) => number;
   clearTimeout: (id: number) => void;
+  onScanComplete?: (games: GameOption[]) => void;
 };
 
 // Consecutive getScanProgress failures before the store reports the scan as failed.
@@ -179,6 +181,7 @@ export class MetadataScanStore {
     this.pollInFlight = false;
     this.publish({ busy: false, completedRevision: this.snapshot.completedRevision + 1 });
     this.deps.toastSuccess(t("panel.toast.metadata"), scanCompleteMessage(progress));
+    this.deps.onScanComplete?.(this.scanGames);
   }
 
   private fail(error: unknown): void {
@@ -201,6 +204,7 @@ export const metadataScanStore = new MetadataScanStore({
   toastError,
   setTimeout: (fn, ms) => window.setTimeout(fn, ms),
   clearTimeout: (id) => window.clearTimeout(id),
+  onScanComplete: (games) => void artworkController.runBulk(games, "auto"),
 });
 
 export function useMetadataScan(): MetadataScanSnapshot {

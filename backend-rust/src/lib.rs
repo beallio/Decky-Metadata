@@ -1,3 +1,4 @@
+pub mod artwork;
 pub mod cef_bridge;
 pub mod css_classes;
 pub mod hltb;

@@ -13,8 +13,10 @@ import {
 } from "@decky/ui";
 import type { ComponentProps, ComponentType, CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FaClock, FaCog, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
+import { FaClock, FaCog, FaImage, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
 import { SiSteamdeck } from "react-icons/si";
+import { artworkController } from "./artwork/controller";
+import { ArtworkEditorPage } from "./components/editor/ArtworkEditorPage";
 import {
   frontendLog,
   clearShortcutNameState,
@@ -143,6 +145,7 @@ type BusyOperation = "steam" | "ign" | "other";
 const PAGE_LABEL_KEYS: Record<EditorPageId, string> = {
   details: "editor.page.details",
   "steam-match": "editor.page.steamMatch",
+  artwork: "editor.page.artwork",
   hltb: "editor.page.hltb",
   compatibility: "editor.page.compatibility",
   "shortcut-name": "editor.page.shortcutName",
@@ -151,6 +154,7 @@ const PAGE_LABEL_KEYS: Record<EditorPageId, string> = {
 const PAGE_ICONS: Record<EditorPageId, ReactNode> = {
   details: <FaInfoCircle size={20} />,
   "steam-match": <FaSteam size={20} />,
+  artwork: <FaImage size={20} />,
   hltb: <FaClock size={20} />,
   compatibility: <SiSteamdeck size={20} />,
   "shortcut-name": <FaPencilAlt size={20} />,
@@ -1214,6 +1218,7 @@ export const MetadataPage = () => {
         return true;
       }
       const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
+      const previousSteamAppId = normalizedSteamAppId(savedRecordRef.current?.steam_appid);
       const steamAppId = normalizedSteamAppId(record.steam_appid);
       // Only a trusted save may store the provider fields a preview fetched.
       const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
@@ -1231,6 +1236,10 @@ export const MetadataPage = () => {
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
+      const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
+      if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
+        void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
+      }
       return true;
     } catch (error) {
       toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));
@@ -2233,9 +2242,25 @@ export const MetadataPage = () => {
     );
   }
 
+  function renderArtworkPage() {
+    return (
+      <ArtworkEditorPage
+        appId={appId}
+        gameName={appName(appId)}
+        savedSteamAppId={savedSteamAppId}
+        savedSteamName={savedSteamStoreName}
+        unsavedSteamAppId={formSteamAppId}
+        entryBusy={entryBusy}
+        onGoToSteamMatch={() => setPage("steam-match")}
+        onSaveMatch={() => void saveCurrent()}
+      />
+    );
+  }
+
   const renderPageContent = {
     details: renderDetailsPage,
     "steam-match": renderSteamMatchPage,
+    artwork: renderArtworkPage,
     hltb: renderHltbPage,
     compatibility: renderCompatibilityPage,
     "shortcut-name": renderShortcutNamePage,

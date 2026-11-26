@@ -75,7 +75,17 @@
     "testing_download_failed": "Failed to download the pull request build artifact.",
     "testing_artifact_invalid": "The pull request build artifact is invalid or incomplete.",
     "testing_artifact_sha_mismatch": "SHA-256 verification failed for the pull request build artifact.",
-    "testing_staging_failed": "Failed to stage the verified pull request build on disk."
+    "testing_staging_failed": "Failed to stage the verified pull request build on disk.",
+    "artwork_settings_unavailable": "artwork settings could not be loaded",
+    "artwork_invalid_slot": "Invalid artwork slot.",
+    "artwork_asset_unavailable": "Steam does not publish official artwork for this slot.",
+    "artwork_invalid_url": "Blocked non-Steam artwork URL.",
+    "artwork_download_failed": "Failed to download Steam artwork.",
+    "artwork_invalid_image": "Downloaded Steam artwork was not a valid image.",
+    "artwork_write_failed": "Failed to save Steam icon file.",
+    "artwork_api_unavailable": "Steam custom artwork API is unavailable.",
+    "artwork_apply_failed": "Steam could not apply this artwork.",
+    "artwork_clear_failed": "Steam could not clear this artwork."
   },
   "updater": {
     "check": {
@@ -389,6 +399,56 @@
       "installModalDescription": "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
       "downloadingArtifact": "Downloading and verifying build for PR #{{id}}...",
       "prepareFailed": "Failed to prepare pull request build."
+    },
+    "artwork": {
+      "title": "Artwork",
+      "matchedGames": "Matched non-Steam games",
+      "completeArtwork": "Complete artwork",
+      "missingGames": "Games missing artwork",
+      "sgdbNotice": "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+      "automaticHeading": "Automatic artwork",
+      "autoApplyLabel": "Automatically apply Steam artwork",
+      "autoApplyDescription": "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+      "preserveExistingLabel": "Preserve existing artwork",
+      "preserveExistingOnDescription": "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+      "preserveExistingOffDescription": "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+      "slotsHeading": "Artwork slots",
+      "slotsScopeNote": "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+      "bulkHeading": "Bulk actions",
+      "progressStatus": "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+      "fillMissingLabel": "Fill missing artwork",
+      "fillMissingDescription": "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+      "fillMissingAction": "Fill missing",
+      "replaceAllLabel": "Replace all artwork",
+      "replaceAllDescription": "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+      "replaceAllAction": "Replace all",
+      "working": "Working...",
+      "replaceConfirm": {
+        "title": "Replace all artwork from Steam?",
+        "body": "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+      },
+      "slot": {
+        "cover": {
+          "label": "Cover",
+          "description": "Vertical library capsule (600x900) used in Library grids and Collections."
+        },
+        "wide": {
+          "label": "Wide cover",
+          "description": "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+        },
+        "hero": {
+          "label": "Hero background",
+          "description": "Wide banner artwork (3840x1240) across the top of the game details page."
+        },
+        "logo": {
+          "label": "Game logo",
+          "description": "Transparent title logo overlaid on the Hero background."
+        },
+        "icon": {
+          "label": "Game icon",
+          "description": "Square icon (184x184) used in lists, shortcuts, and the editor header."
+        }
+      }
     }
   },
   "storeRow": {
@@ -520,7 +580,8 @@
       "compatibility": "Compatibilidade",
       "storeCategories": "Categorias da loja",
       "shortcutName": "Nome do atalho",
-      "advanced": "Avançado"
+      "advanced": "Avançado",
+      "artwork": "Artwork"
     },
     "currentMatch": "Correspondência atual",
     "loadFromSteam": "Carregar da Steam",
@@ -662,7 +723,51 @@
     "steamTextLanguage": "Idioma do texto da Steam: {{language}}",
     "fetchSteamText": "Carregar texto da Steam em {{language}}",
     "steamTextUnavailable": "A Steam não retornou texto para este jogo.",
-    "hltbDisabledNotice": "Os tempos do HowLongToBeat estão desativados nas Configurações."
+    "hltbDisabledNotice": "Os tempos do HowLongToBeat estão desativados nas Configurações.",
+    "artwork": {
+      "immediateNotice": "Changes on this page apply immediately to Steam's artwork cache.",
+      "unsavedMatchNotice": "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+      "pendingMatchLabel": "Pending Steam match",
+      "pendingMatchDescription": "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+      "saveMatchAction": "Save match",
+      "noMatchLabel": "No Steam match",
+      "noMatchDescription": "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+      "openSteamMatchAction": "Open Steam Match",
+      "matchedLabel": "Matched Steam game",
+      "lockLabel": "Lock artwork",
+      "lockDescription": "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+      "quickActionsHeading": "Quick actions",
+      "fillMissingDescription": "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+      "replaceAllDescription": "Replace all globally enabled slots with official Steam artwork for this game.",
+      "loading": "Loading Steam artwork...",
+      "statusPresent": "Artwork set",
+      "statusMissing": "Missing",
+      "statusUnavailable": "Unavailable on Steam",
+      "emptyThumb": "Empty",
+      "naThumb": "N/A",
+      "applyAction": "Apply",
+      "replaceAction": "Replace",
+      "dims": {
+        "cover": "600x900 portrait",
+        "wide": "920x430 landscape",
+        "hero": "3840x1240 banner",
+        "logo": "Transparent PNG",
+        "icon": "184x184 square"
+      },
+      "replaceConfirm": {
+        "title": "Replace artwork for {{game}}?",
+        "body": "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+      },
+      "toast": {
+        "lockedTitle": "Artwork locked",
+        "lockedBody": "{{game}} will be skipped during automatic artwork and bulk actions.",
+        "unlockedTitle": "Artwork unlocked",
+        "unlockedBody": "{{game}} will follow global artwork actions.",
+        "slotAppliedBody": "Applied {{slot}} from Steam for {{game}}.",
+        "clearedTitle": "Artwork cleared",
+        "slotClearedBody": "Cleared {{slot}} for {{game}}."
+      }
+    }
   },
   "matchPicker": {
     "help": "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
@@ -690,5 +795,17 @@
   "controllerLayouts": {
     "disabledHeading": "Layouts de controle desativados",
     "disabledBody": "Usando a interface padrão de layouts de controle da Steam até o Decky Metadata ser recarregado."
+  },
+  "artwork": {
+    "toast": {
+      "appliedTitle": "Steam artwork applied",
+      "appliedGameBody": "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+      "bulkCompleteBody": "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+      "bulkPartialBody": "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+      "bulkFailedBody": "Could not apply Steam artwork ({{failed}} failed).",
+      "upToDateTitle": "Artwork already up to date",
+      "upToDateBody": "No matching Steam artwork slots needed updating.",
+      "failedTitle": "Artwork update failed"
+    }
   }
 }

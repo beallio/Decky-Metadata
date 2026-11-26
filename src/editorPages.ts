@@ -4,6 +4,7 @@ import type { DraftFieldKey } from "./metadataDraft";
 export type EditorPageId =
   | "details"
   | "steam-match"
+  | "artwork"
   | "hltb"
   | "compatibility"
   | "shortcut-name"
@@ -12,6 +13,7 @@ export type EditorPageId =
 export const EDITOR_PAGE_ORDER: readonly EditorPageId[] = [
   "details",
   "steam-match",
+  "artwork",
   "hltb",
   "compatibility",
   "shortcut-name",

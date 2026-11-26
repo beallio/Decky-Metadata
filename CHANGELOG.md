@@ -4,6 +4,17 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Official Steam artwork for matched non-Steam games.** Added an **Artwork**
+  tab to both **Settings** and **Edit Metadata** so you can apply official Steam
+  **Cover**, **Wide cover**, **Hero background**, **Game logo**, and **Game
+  icon** artwork whenever a non-Steam shortcut is matched to a Steam App ID.
+  Supports opt-in automatic application on metadata scans and saved Steam
+  matches, a **Preserve existing artwork** toggle, per-slot toggles, global
+  **Fill missing** / **Replace all** bulk actions (with confirmation), per-game
+  **Lock artwork**, and non-blocking SteamGridDB coexistence.
+
 ## [0.6.8] - 2026-11-25
 
 Add Steam HLTB overrides, PR Testing tab, and Settings UI polish

@@ -160,6 +160,47 @@ export type EditorHeaderSettings = {
   steamIconFallback: boolean;
 };
 
+export type ArtworkSlot = "cover" | "wide" | "hero" | "logo" | "icon";
+
+export type ArtworkSlotFlags = Record<ArtworkSlot, boolean>;
+
+export type ArtworkSettings = {
+  autoApply: boolean;
+  preserveExisting: boolean;
+  slots: ArtworkSlotFlags;
+};
+
+export type ArtworkSummary = {
+  matched: number;
+  complete: number;
+  missing_games: number;
+  missing_slots: number;
+  existing_enabled_slots: number;
+  locked_games: number;
+};
+
+export type GameArtworkSlotState = {
+  present: boolean;
+  preview_data_url: string | null;
+  steam_url: string | null;
+  available: boolean;
+};
+
+export type GameArtworkState = {
+  app_id: number;
+  steam_appid: number | null;
+  locked: boolean;
+  slots: Record<ArtworkSlot, GameArtworkSlotState>;
+};
+
+export type FetchedArtworkAsset = {
+  slot: ArtworkSlot;
+  base64: string;
+  ext: string;
+  mime: string;
+  file_path: string | null;
+};
+
 export type UpdateRpcStatus = {
   status: "failed" | "skipped";
   message?: string;
@@ -338,9 +379,17 @@ export type SteamInputBoundary = {
   QueryControllerConfigsForApp?: (...args: unknown[]) => unknown;
 };
 
-/** Minimal native shortcut-name write surface exposed by Steam Client. */
+/** Minimal native shortcut write surface exposed by Steam Client. */
 export type SteamAppsBoundary = {
   SetShortcutName?: (appId: number, name: string) => void;
+  SetCustomArtworkForApp?: (
+    appId: number,
+    base64: string,
+    ext: string,
+    assetType: number,
+  ) => Promise<unknown> | void;
+  ClearCustomArtworkForApp?: (appId: number, assetType: number) => Promise<unknown> | void;
+  SetShortcutIcon?: (appId: number, iconPath: string) => Promise<unknown> | void;
 };
 
 export type ShortcutNameState = {

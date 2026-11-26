@@ -104,6 +104,14 @@ vi.mock("@decky/ui", () => ({
 }));
 
 vi.mock("./backend", () => backend);
+vi.mock("./artwork/controller", () => ({
+  artworkController: {
+    autoApplyForMatchedGame: vi.fn(),
+  },
+}));
+vi.mock("./components/editor/ArtworkEditorPage", () => ({
+  ArtworkEditorPage: "ArtworkEditorPage",
+}));
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
 vi.mock("./toast", () => toast);
