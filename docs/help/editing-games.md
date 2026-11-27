@@ -38,14 +38,14 @@ Pages in the sidebar:
   artwork across **Cover**, **Wide cover**, **Hero background**, **Game logo**,
   and **Game icon** slots (`L1`/`R1` or moving focus along the tabs switches
   tabs, **Y** opens Filter & Change Game, **Menu** opens Asset Details). For a
-  Steam game, the editor opens on
-  Artwork with focus on the first artwork. The **Manage** tab shows the current
-  artwork for each slot (Steam's official art when no custom art is set) and
-  lets you pick local image files, apply a transparent placeholder, clear
-  slots, lock artwork from automatic updates, and adjust the **Logo position**
-  over the hero banner. While browsing Artwork, the editor sidebar collapses
-  into a compact icon rail that shows the game icon, and expands when focus
-  returns to it.
+  Steam game, the editor opens on Artwork; when the default tab has artwork,
+  focus starts on the first one. The **Manage** tab shows the current artwork
+  for each slot (for a Steam game, Steam's official art when no custom art is
+  set) and lets you pick local image files, apply a transparent placeholder,
+  clear slots, lock artwork from automatic updates, and adjust the **Logo
+  position** over the hero banner. While browsing Artwork, the editor sidebar
+  collapses into a compact icon rail that shows the game icon, and expands when
+  focus returns to it.
 - **HowLongToBeat**: Choose which game's times to show on the Library game page
   for a non-Steam or Steam game.
 - **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)

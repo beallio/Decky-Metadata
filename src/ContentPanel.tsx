@@ -1,7 +1,5 @@
 import {
   Focusable,
-  getFocusNavController,
-  getGamepadNavigationTrees,
   NavEntryPositionPreferences,
   PanelSection,
 } from "@decky/ui";
@@ -10,59 +8,12 @@ import { useCallback, useEffect, useRef } from "react";
 import { MetadataScanBody } from "./components/qam/MetadataSection";
 import { QamInstallRow } from "./components/qam/QamActions";
 import { currentSteamLanguage, refreshLanguage } from "./i18n";
-import * as log from "./log";
 import { metadataScanStore } from "./metadataScan";
 import { scanView } from "./settings/scanView";
 import { useScanGames } from "./settings/useScanGames";
 import { SETTINGS_BUTTON_CLASS } from "./settingsRoute";
+import { takeNativeFocus } from "./steam/nativeFocus";
 import { qamPanelStyle } from "./styles";
-
-type NativeFocusNode = {
-  Element?: Element;
-  m_rgChildren?: NativeFocusNode[];
-  BTakeFocus?: () => boolean;
-};
-
-type NativeNavigationTree = {
-  Root?: NativeFocusNode;
-};
-
-export const takeNativeFocus = (element: Element | null): boolean => {
-  if (!element) return false;
-  try {
-    const ownerDocument = element.ownerDocument;
-    const ownerWindow = ownerDocument.defaultView;
-    if (
-      !ownerWindow
-      || ownerWindow.closed
-      || ownerWindow.document !== ownerDocument
-      || ownerDocument.visibilityState !== "visible"
-    ) return false;
-    // Steam can leave the QAM context inactive while the panel is closed.
-    // A focus node can then report success without painting gamepad focus.
-    const focusNav = getFocusNavController();
-    if (!focusNav?.m_ActiveContext && focusNav?.m_LastActiveContext) {
-      focusNav.FindAnActiveContext?.();
-    }
-    const trees = (getGamepadNavigationTrees() || []) as NativeNavigationTree[];
-    for (const tree of trees) {
-      const pending = tree.Root ? [tree.Root] : [];
-      while (pending.length) {
-        const node = pending.pop();
-        if (!node) continue;
-        if (node.Element === element && typeof node.BTakeFocus === "function") {
-          return Boolean(node.BTakeFocus());
-        }
-        if (Array.isArray(node.m_rgChildren)) {
-          pending.push(...node.m_rgChildren);
-        }
-      }
-    }
-  } catch (error) {
-    log.warn("qam", "preferred metadata focus unavailable", error);
-  }
-  return false;
-};
 
 const findScrollViewport = (element: HTMLElement): HTMLElement | null => {
   let node: HTMLElement | null = element.parentElement;

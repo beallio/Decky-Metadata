@@ -132,14 +132,6 @@ export function ArtworkBody({
       [order[a], order[b]] = [order[b], order[a]];
       return { ...current, tabOrder: order };
     });
-    // React may move the focused row's DOM node, which drops gamepad focus; put it back on the moved row.
-    requestAnimationFrame(() => {
-      const buttons = document.querySelectorAll<HTMLButtonElement>(
-        `[data-artwork-tab-row="${tab}"] .DialogButton`,
-      );
-      const preferred = buttons[delta < 0 ? 0 : 1];
-      (preferred && !preferred.disabled ? preferred : buttons[delta < 0 ? 1 : 0])?.focus();
-    });
   };
 
   const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
@@ -233,31 +225,29 @@ export function ArtworkBody({
           bottomSeparator="none"
         />
         {tabOrder.map((tab, index) => (
-          <div key={tab} data-artwork-tab-row={tab}>
-            <Field label={t(tabLabelKey(tab))}>
-              <Focusable flow-children="horizontal" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <DialogButton
-                  style={moveButtonStyle}
-                  disabled={controlsDisabled || index === 0}
-                  onClick={() => moveTab(tab, -1)}
-                >
-                  <FaChevronUp />
-                </DialogButton>
-                <DialogButton
-                  style={moveButtonStyle}
-                  disabled={controlsDisabled || index === tabOrder.length - 1}
-                  onClick={() => moveTab(tab, 1)}
-                >
-                  <FaChevronDown />
-                </DialogButton>
-                <Toggle
-                  value={tab === "manage" || !hiddenTabs.has(tab)}
-                  disabled={controlsDisabled || tab === "manage"}
-                  onChange={() => toggleTabHidden(tab)}
-                />
-              </Focusable>
-            </Field>
-          </div>
+          <Field key={tab} label={t(tabLabelKey(tab))}>
+            <Focusable flow-children="horizontal" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <DialogButton
+                style={moveButtonStyle}
+                disabled={controlsDisabled || index === 0}
+                onClick={() => moveTab(tab, -1)}
+              >
+                <FaChevronUp />
+              </DialogButton>
+              <DialogButton
+                style={moveButtonStyle}
+                disabled={controlsDisabled || index === tabOrder.length - 1}
+                onClick={() => moveTab(tab, 1)}
+              >
+                <FaChevronDown />
+              </DialogButton>
+              <Toggle
+                value={tab === "manage" || !hiddenTabs.has(tab)}
+                disabled={controlsDisabled || tab === "manage"}
+                onChange={() => toggleTabHidden(tab)}
+              />
+            </Focusable>
+          </Field>
         ))}
 
         <ButtonItem

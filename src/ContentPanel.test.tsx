@@ -66,7 +66,8 @@ vi.mock("./settings/useScanGames", () => ({
 }));
 
 vi.mock("./settingsRoute", () => ({ SETTINGS_BUTTON_CLASS: "settings-button" }));
-import { Content, takeNativeFocus } from "./ContentPanel";
+import { Content } from "./ContentPanel";
+import { takeNativeFocus } from "./steam/nativeFocus";
 
 const render = (): ReactElement<Record<string, unknown>> => {
   harness.hookIndex = 0;

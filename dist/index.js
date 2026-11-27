@@ -38624,6 +38624,18 @@ const takeNativeFocus = (element) => {
     }
     return false;
 };
+/** The element Steam's gamepad focus is on, or null when no navigation context is active. */
+const nativeFocusedElement = () => {
+    try {
+        const element = DFL.getFocusNavController()?.m_ActiveContext?.m_LastActiveFocusNavTree?.GetLastFocusedNode?.()?.m_element;
+        // The element lives in Big Picture's window, so `instanceof Element` from this context would be false.
+        return typeof element?.closest === "function" ? element : null;
+    }
+    catch {
+        return null;
+    }
+};
+
 const findScrollViewport = (element) => {
     let node = element.parentElement;
     while (node) {
@@ -39361,7 +39373,8 @@ function ArtworkManageTab({ appId, gameName, isSteamGame, savedSteamAppId, unsav
                                 }), disabled: busy, onClick: () => handleOfficialBulk("fill-missing"), children: t("editor.artwork.fillMissingAction") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.replaceAllLabel"), description: t("editor.artwork.replaceAllDescription"), disabled: busy, onClick: () => handleOfficialBulk("replace-all"), children: t("editor.artwork.replaceAllAction") })] })) : !isSteamGame ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.noMatchLabel"), description: t("editor.artwork.noMatchManageDescription"), disabled: busy, onClick: onGoToSteamMatch, children: t("editor.artwork.goToSteamMatchAction") })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.slotsHeading") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__manage-grid`, children: ARTWORK_SLOT_ORDER.map((slot) => {
                             const slotState = state?.slots[slot];
                             // A Steam game with no custom file shows Steam's official art, so preview that.
-                            const previewUrl = slotState?.preview_data_url ?? (isSteamGame && slotState?.available ? slotState.steam_url : null);
+                            // A custom file without a preview (too large or unknown format) must not fall back to official art.
+                            const previewUrl = slotState?.preview_data_url ?? (isSteamGame && !slotState?.present ? slotState?.steam_url ?? null : null);
                             const statusText = slotState?.present
                                 ? t("editor.artwork.statusPresent")
                                 : slotState?.available
@@ -39630,6 +39643,9 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
     // The editor's entry focus targets this marker: the first artwork card, or the active tab until cards exist.
     const cardsFocusTarget = showOfficialCard || showAssetCards;
+    // Where the user is: Steam's gamepad focus, else DOM focus in the editor's own window.
+    // Plugin code runs in another window, so the global `document` never holds the editor's focus.
+    const focusedElement = (root) => nativeFocusedElement() ?? root.ownerDocument.activeElement;
     SP_REACT.useEffect(() => {
         if (!cardFocusPendingRef.current)
             return;
@@ -39637,21 +39653,26 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
             cardFocusPendingRef.current = false;
             return;
         }
-        if (!cardsFocusTarget)
+        const browser = browserRef.current;
+        if (!cardsFocusTarget || !browser)
             return;
         cardFocusPendingRef.current = false;
-        const active = document.activeElement;
+        const focused = focusedElement(browser);
         // Never take focus the user already moved off the tab strip.
-        if (active && active !== document.body && !active.closest(`.${artworkBrowserClass}__tabs`))
+        if (focused && focused !== browser.ownerDocument.body && !focused.closest(`.${artworkBrowserClass}__tabs`))
             return;
-        browserRef.current?.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
+        takeNativeFocus(browser.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`));
     }, [activeSlot, cardsFocusTarget]);
     // One highlight: when L1/R1 changes the tab while focus is on the tab strip, focus follows it.
     SP_REACT.useEffect(() => {
         const strip = browserRef.current?.querySelector(`.${artworkBrowserClass}__tabs`);
-        if (!strip?.contains(document.activeElement))
+        if (!strip)
             return;
-        strip.querySelector(`[data-artwork-tab="${activeTab}"]`)?.focus();
+        const focused = focusedElement(strip);
+        const tab = strip.querySelector(`[data-artwork-tab="${activeTab}"]`);
+        if (!focused || focused === tab || !strip.contains(focused))
+            return;
+        takeNativeFocus(tab);
     }, [activeTab]);
     return (SP_JSX.jsxs(DFL.Focusable, { ref: browserRef, className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__tabs`, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab, idx) => {
                             const active = tab === activeTab;
@@ -43517,12 +43538,6 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
             [order[a], order[b]] = [order[b], order[a]];
             return { ...current, tabOrder: order };
         });
-        // React may move the focused row's DOM node, which drops gamepad focus; put it back on the moved row.
-        requestAnimationFrame(() => {
-            const buttons = document.querySelectorAll(`[data-artwork-tab-row="${tab}"] .DialogButton`);
-            const preferred = buttons[delta < 0 ? 0 : 1];
-            (preferred && !preferred.disabled ? preferred : buttons[delta < 0 ? 1 : 0])?.focus();
-        });
     };
     const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
@@ -43533,7 +43548,7 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
                             .map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
                             ...current,
                             defaultTab: option.data,
-                        })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.tabOrderLabel"), description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), tabOrder.map((tab, index) => (SP_JSX.jsx("div", { "data-artwork-tab-row": tab, children: SP_JSX.jsx(DFL.Field, { label: t(tabLabelKey(tab)), children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === 0, onClick: () => moveTab(tab, -1), children: SP_JSX.jsx(FaChevronUp, {}) }), SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === tabOrder.length - 1, onClick: () => moveTab(tab, 1), children: SP_JSX.jsx(FaChevronDown, {}) }), SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hiddenTabs.has(tab), disabled: controlsDisabled || tab === "manage", onChange: () => toggleTabHidden(tab) })] }) }) }, tab))), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({
+                        })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.tabOrderLabel"), description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), tabOrder.map((tab, index) => (SP_JSX.jsx(DFL.Field, { label: t(tabLabelKey(tab)), children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === 0, onClick: () => moveTab(tab, -1), children: SP_JSX.jsx(FaChevronUp, {}) }), SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === tabOrder.length - 1, onClick: () => moveTab(tab, 1), children: SP_JSX.jsx(FaChevronDown, {}) }), SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hiddenTabs.has(tab), disabled: controlsDisabled || tab === "manage", onChange: () => toggleTabHidden(tab) })] }) }, tab))), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({
                             ...current,
                             filters: defaultArtworkFilters(),
                         })), children: t("qam.artwork.resetFiltersAction") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting

@@ -49,7 +49,13 @@ const ctrl = vi.hoisted(() => ({
   applyForGame: vi.fn(),
   updateSlotFilter: vi.fn(),
 }));
-const hookState = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[], refs: [] as { current: unknown }[] }));
+const hookState = vi.hoisted(() => ({
+  cursor: 0,
+  slots: [] as unknown[],
+  refs: [] as { current: unknown }[],
+  effects: [] as (() => void)[],
+}));
+const nav = vi.hoisted(() => ({ nativeFocusedElement: vi.fn(), takeNativeFocus: vi.fn() }));
 
 vi.mock("react", () => ({
   useState: (initial: unknown) => {
@@ -68,7 +74,10 @@ vi.mock("react", () => ({
     hookState.refs.push(ref);
     return ref;
   },
-  useEffect: vi.fn(),
+  // Recorded, not run: tests call only the focus effects (the others need live backend promises).
+  useEffect: (effect: () => void) => {
+    hookState.effects.push(effect);
+  },
 }));
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
 vi.mock("@decky/ui", () => ({
@@ -105,6 +114,7 @@ vi.mock("../../i18n", () => ({
   translateBackendError: (e: unknown) => String(e),
 }));
 vi.mock("../../toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
+vi.mock("../../steam/nativeFocus", () => nav);
 
 import { DEFAULT_ARTWORK_SETTINGS, defaultSlotFilter } from "../../artwork/controller";
 
@@ -128,6 +138,7 @@ const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   hookState.cursor = 0;
   hookState.slots = [];
   hookState.refs = [];
+  hookState.effects = [];
   return ArtworkEditorPage(props) as ReactElement;
 };
 
@@ -237,6 +248,94 @@ describe("ArtworkEditorPage", () => {
     root.props.onButtonDown({ detail: { button: 6 } });
     expect(hookState.slots[1]).toBe("wide");
     expect(hookState.refs[2].current).toBe(false);
+  });
+
+  describe("focus effects", () => {
+    const props = {
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      savedSteamName: "Cyberpunk 2077",
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    };
+    // Minimal stand-ins for Big Picture's DOM: a tab strip with two tabs, a grid card, and the sidebar.
+    const makeDom = () => {
+      const body = { id: "body" };
+      const doc = { activeElement: body as unknown, body };
+      const strip: Record<string, unknown> = { ownerDocument: doc };
+      const tab = (id: string) => ({ id, closest: (s: string) => (s.includes("__tabs") ? strip : null) });
+      const cover = tab("cover");
+      const wide = tab("wide");
+      const card = { id: "card", closest: () => null };
+      const sidebar = { id: "sidebar", closest: () => null };
+      strip.contains = (el: unknown) => el === cover || el === wide;
+      strip.querySelector = (s: string) => (s.includes('"wide"') ? wide : cover);
+      const browser = {
+        ownerDocument: doc,
+        querySelector: (s: string) => (s.includes("__grid") ? card : s.includes("__tabs") ? strip : null),
+      };
+      return { doc, cover, wide, card, sidebar, browser };
+    };
+    // Render with artwork cards present, attach the fake DOM, and return [entryJump, tabSync].
+    const renderWithCards = (browser: unknown, activeTab = "cover") => {
+      renderPage(props);
+      hookState.slots[1] = activeTab;
+      hookState.slots[7] = [{ id: 1, url: "u", thumb: "t", animated: false, author: { name: "a" }, width: 1, height: 1 }];
+      hookState.cursor = 0;
+      hookState.refs = [];
+      hookState.effects = [];
+      ArtworkEditorPage(props);
+      hookState.refs[1].current = browser;
+      return hookState.effects.slice(-2);
+    };
+
+    it("moves Steam focus to the first card when the user is still on the tab strip", () => {
+      nav.takeNativeFocus.mockClear();
+      const dom = makeDom();
+      nav.nativeFocusedElement.mockReturnValue(dom.cover);
+      const [entryJump] = renderWithCards(dom.browser);
+      entryJump();
+      expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.card);
+    });
+
+    it("leaves Steam focus in the sidebar even when DOM focus is still on a tab", () => {
+      nav.takeNativeFocus.mockClear();
+      const dom = makeDom();
+      dom.doc.activeElement = dom.cover;
+      nav.nativeFocusedElement.mockReturnValue(dom.sidebar);
+      const [entryJump] = renderWithCards(dom.browser);
+      entryJump();
+      expect(nav.takeNativeFocus).not.toHaveBeenCalled();
+    });
+
+    it("falls back to the editor window's DOM focus without an active Steam context", () => {
+      nav.takeNativeFocus.mockClear();
+      const dom = makeDom();
+      nav.nativeFocusedElement.mockReturnValue(null);
+      dom.doc.activeElement = dom.sidebar;
+      renderWithCards(dom.browser)[0]();
+      expect(nav.takeNativeFocus).not.toHaveBeenCalled();
+      dom.doc.activeElement = dom.doc.body;
+      renderWithCards(dom.browser)[0]();
+      expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.card);
+    });
+
+    it("moves Steam focus to the new tab after L1/R1 only while focus is on the strip", () => {
+      nav.takeNativeFocus.mockClear();
+      const dom = makeDom();
+      nav.nativeFocusedElement.mockReturnValue(dom.cover);
+      renderWithCards(dom.browser, "wide")[1]();
+      expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.wide);
+
+      nav.takeNativeFocus.mockClear();
+      nav.nativeFocusedElement.mockReturnValue(dom.card);
+      renderWithCards(dom.browser, "wide")[1]();
+      expect(nav.takeNativeFocus).not.toHaveBeenCalled();
+    });
   });
 
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {

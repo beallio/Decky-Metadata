@@ -19,6 +19,7 @@ import {
 } from "../../backend";
 import { translateBackendError, useT } from "../../i18n";
 import { toastError, toastSuccess } from "../../toast";
+import { nativeFocusedElement, takeNativeFocus } from "../../steam/nativeFocus";
 import { colors } from "../../tokens";
 import type {
   ArtworkSettings,
@@ -354,25 +355,33 @@ export function ArtworkEditorPage({
   // The editor's entry focus targets this marker: the first artwork card, or the active tab until cards exist.
   const cardsFocusTarget = showOfficialCard || showAssetCards;
 
+  // Where the user is: Steam's gamepad focus, else DOM focus in the editor's own window.
+  // Plugin code runs in another window, so the global `document` never holds the editor's focus.
+  const focusedElement = (root: Element) => nativeFocusedElement() ?? root.ownerDocument.activeElement;
+
   useEffect(() => {
     if (!cardFocusPendingRef.current) return;
     if (activeSlot === null) {
       cardFocusPendingRef.current = false;
       return;
     }
-    if (!cardsFocusTarget) return;
+    const browser = browserRef.current;
+    if (!cardsFocusTarget || !browser) return;
     cardFocusPendingRef.current = false;
-    const active = document.activeElement;
+    const focused = focusedElement(browser);
     // Never take focus the user already moved off the tab strip.
-    if (active && active !== document.body && !active.closest(`.${artworkBrowserClass}__tabs`)) return;
-    browserRef.current?.querySelector<HTMLElement>(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
+    if (focused && focused !== browser.ownerDocument.body && !focused.closest(`.${artworkBrowserClass}__tabs`)) return;
+    takeNativeFocus(browser.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`));
   }, [activeSlot, cardsFocusTarget]);
 
   // One highlight: when L1/R1 changes the tab while focus is on the tab strip, focus follows it.
   useEffect(() => {
     const strip = browserRef.current?.querySelector(`.${artworkBrowserClass}__tabs`);
-    if (!strip?.contains(document.activeElement)) return;
-    strip.querySelector<HTMLElement>(`[data-artwork-tab="${activeTab}"]`)?.focus();
+    if (!strip) return;
+    const focused = focusedElement(strip);
+    const tab = strip.querySelector(`[data-artwork-tab="${activeTab}"]`);
+    if (!focused || focused === tab || !strip.contains(focused)) return;
+    takeNativeFocus(tab);
   }, [activeTab]);
 
   return (

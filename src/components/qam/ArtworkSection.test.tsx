@@ -131,7 +131,6 @@ describe("ArtworkBody", () => {
   });
 
   it("moves tabs with the arrow buttons and shows or hides them with toggles", () => {
-    vi.stubGlobal("requestAnimationFrame", () => 0);
     const onSettingsChange = vi.fn();
     const settings = { ...structuredClone(DEFAULT_ARTWORK_SETTINGS), hiddenTabs: ["hero" as const] };
     const tree = nodes(renderBody({
@@ -142,26 +141,27 @@ describe("ArtworkBody", () => {
       onReplaceAll: vi.fn(),
     }));
     const order = settings.tabOrder;
-    const rows = tree.filter((n) => n.props?.["data-artwork-tab-row"]);
-    expect(rows.map((n) => n.props!["data-artwork-tab-row"])).toEqual(order);
+    const labelOf = (tab: string) => (tab === "manage" ? "editor.artwork.tab.manage" : `qam.artwork.slot.${tab}.label`);
+    const rows = tree.filter((n) => n.type === "Field" && order.some((tab) => labelOf(tab) === n.props?.label));
+    expect(rows.map((n) => n.props!.label)).toEqual(order.map(labelOf));
 
-    const rowParts = (tab: string) => nodes(rows.find((n) => n.props!["data-artwork-tab-row"] === tab));
-    const [firstUp] = rowParts(order[0]).filter((n) => n.type === "DialogButton");
-    expect(firstUp.props!.disabled).toBe(true);
+    const rowParts = (tab: string) => nodes(rows.find((n) => n.props!.label === labelOf(tab)));
+    const buttons = (tab: string) => rowParts(tab).filter((n) => n.type === "DialogButton");
+    expect(buttons(order[0])[0].props!.disabled).toBe(true);
+    expect(buttons(order[order.length - 1])[1].props!.disabled).toBe(true);
 
-    const [, secondDown] = rowParts(order[1]).filter((n) => n.type === "DialogButton");
-    secondDown.props!.onClick();
-    const moved = onSettingsChange.mock.calls[0][0](settings).tabOrder;
-    expect(moved).toEqual([order[0], order[2], order[1], ...order.slice(3)]);
+    buttons(order[1])[1].props!.onClick(); // Down on row 2
+    expect(onSettingsChange.mock.calls[0][0](settings).tabOrder).toEqual([order[0], order[2], order[1], ...order.slice(3)]);
+    buttons(order[1])[0].props!.onClick(); // Up on row 2
+    expect(onSettingsChange.mock.calls[1][0](settings).tabOrder).toEqual([order[1], order[0], ...order.slice(2)]);
 
     const heroToggle = rowParts("hero").find((n) => n.type === "Toggle")!;
     expect(heroToggle.props!.value).toBe(false);
     heroToggle.props!.onChange(true);
-    expect(onSettingsChange.mock.calls[1][0](settings).hiddenTabs).toEqual([]);
+    expect(onSettingsChange.mock.calls[2][0](settings).hiddenTabs).toEqual([]);
 
     const manageToggle = rowParts("manage").find((n) => n.type === "Toggle")!;
     expect(manageToggle.props!).toMatchObject({ value: true, disabled: true });
-    vi.unstubAllGlobals();
   });
 
   it("shows SteamGridDB coexistence notice when installed and opens ConfirmModal for Replace all", () => {
