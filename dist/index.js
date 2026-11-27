@@ -39639,9 +39639,18 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
             return;
         browserRef.current?.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
     }, [activeSlot, cardsFocusTarget]);
-    return (SP_JSX.jsxs(DFL.Focusable, { ref: browserRef, className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__tabs`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab, idx) => {
+    // One highlight: when L1/R1 changes the tab while focus is on the tab strip, focus follows it.
+    SP_REACT.useEffect(() => {
+        const strip = browserRef.current?.querySelector(`.${artworkBrowserClass}__tabs`);
+        if (!strip?.contains(document.activeElement))
+            return;
+        strip.querySelector(`[data-artwork-tab="${activeTab}"]`)?.focus();
+    }, [activeTab]);
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: browserRef, className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__tabs`, navEntryPreferPosition: DFL.NavEntryPositionPreferences.PREFERRED_CHILD, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab, idx) => {
                             const active = tab === activeTab;
-                            return (SP_JSX.jsx(DFL.Focusable, { "data-artwork-initial-focus": active && !cardsFocusTarget ? "" : undefined, className: `${artworkBrowserClass}__tab${active ? " is-active" : ""}`, onActivate: () => setActiveTab(tab), onClick: () => setActiveTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
+                            return (SP_JSX.jsx(DFL.Focusable, { "data-artwork-tab": tab, "data-artwork-initial-focus": active && !cardsFocusTarget ? "" : undefined, className: `${artworkBrowserClass}__tab${active ? " is-active" : ""}`, preferredFocus: active, 
+                                // Moving focus across tabs selects them, like Steam's own tab bars.
+                                onGamepadFocus: () => setActiveTab(tab), onActivate: () => setActiveTab(tab), onClick: () => setActiveTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
                         }) }), SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperRight") })] }), activeSlot !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.text }, children: t("editor.artwork.pendingMatchDescription") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })] })) : null, SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__toolbar`, children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__game-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__game-title`, children: resolvingGame
                                             ? t("editor.artwork.resolvingGame")
                                             : sgdbGame
@@ -41591,6 +41600,10 @@ function CurrentPageContent$1({ id }) {
     const pages = SP_REACT.useContext(PageContentContext$1);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
+/** Whether a resolved icon may show with the sidebar expanded; the collapsed rail always shows it. */
+function headerIconShowsExpanded(settings, ownIcon) {
+    return settings?.gameIcon === true && (ownIcon || settings.steamIconFallback);
+}
 function EditorTitle({ title, appId, steamAppId, collapsible, }) {
     const [settings, setSettings] = SP_REACT.useState(null);
     const [icon, setIcon] = SP_REACT.useState(null);
@@ -41609,13 +41622,19 @@ function EditorTitle({ title, appId, steamAppId, collapsible, }) {
         if (!resolveIcon)
             return;
         let current = true;
-        void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current)
-            setIcon(url); });
+        // Start the Steam request early; the own icon can take up to a second to appear.
+        const steamIcon = fallbackAppId ? steamIconUrl(fallbackAppId) : null;
+        void resolveEditorIcon(appId, null, () => current).then(async (own) => {
+            const url = own ?? (steamIcon ? await steamIcon : null);
+            if (current)
+                setIcon(url ? { url, own: own !== null } : null);
+        });
         return () => { current = false; };
     }, [appId, fallbackAppId, resolveIcon]);
     if (!resolveIcon)
         return SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title });
-    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? (SP_JSX.jsx("img", { className: `${layout}__header-icon${showIcon ? "" : " is-collapsed-only"}`, src: icon, alt: "" })) : null, showIcon && DFL.Marquee ? SP_JSX.jsx(DFL.Marquee, { children: title }) : SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title })] }));
+    const iconClass = icon && headerIconShowsExpanded(settings, icon.own) ? "" : " is-collapsed-only";
+    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon${iconClass}`, src: icon.url, alt: "" }) : null, showIcon && DFL.Marquee ? SP_JSX.jsx(DFL.Marquee, { children: title }) : SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title })] }));
 }
 function evaluateSidebarCollapseState(currentlyCollapsed, sidebarHasFocus, contentHasFocus) {
     if (sidebarHasFocus)

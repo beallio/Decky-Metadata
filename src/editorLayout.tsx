@@ -1,7 +1,7 @@
 import { DialogBody, DialogButton, DialogHeader, Focusable, Marquee } from "@decky/ui";
 import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getEditorHeaderSettings } from "./backend";
-import { resolveEditorIcon } from "./editorHeaderIcon";
+import { resolveEditorIcon, steamIconUrl } from "./editorHeaderIcon";
 import type { EditorPageId } from "./editorPages";
 import { translateBackendError, useT } from "./i18n";
 import * as log from "./log";
@@ -197,6 +197,11 @@ function CurrentPageContent({ id }: { id: EditorPageId }): JSX.Element {
   return <>{pages.find((page) => page.id === id)?.content ?? null}</>;
 }
 
+/** Whether a resolved icon may show with the sidebar expanded; the collapsed rail always shows it. */
+export function headerIconShowsExpanded(settings: EditorHeaderSettings | null, ownIcon: boolean): boolean {
+  return settings?.gameIcon === true && (ownIcon || settings.steamIconFallback);
+}
+
 function EditorTitle({
   title,
   appId,
@@ -204,7 +209,7 @@ function EditorTitle({
   collapsible,
 }: Pick<EditorLayoutProps, "title" | "appId" | "steamAppId"> & { collapsible: boolean }) {
   const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
-  const [icon, setIcon] = useState<string | null>(null);
+  const [icon, setIcon] = useState<{ url: string; own: boolean } | null>(null);
   useEffect(() => {
     let current = true;
     getEditorHeaderSettings().then(
@@ -221,16 +226,20 @@ function EditorTitle({
     setIcon(null);
     if (!resolveIcon) return;
     let current = true;
-    void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current) setIcon(url); });
+    // Start the Steam request early; the own icon can take up to a second to appear.
+    const steamIcon = fallbackAppId ? steamIconUrl(fallbackAppId) : null;
+    void resolveEditorIcon(appId, null, () => current).then(async (own) => {
+      const url = own ?? (steamIcon ? await steamIcon : null);
+      if (current) setIcon(url ? { url, own: own !== null } : null);
+    });
     return () => { current = false; };
   }, [appId, fallbackAppId, resolveIcon]);
 
   if (!resolveIcon) return <span className={`${layout}__header-title`}>{title}</span>;
+  const iconClass = icon && headerIconShowsExpanded(settings, icon.own) ? "" : " is-collapsed-only";
   return (
     <div className={`${layout}__header`}>
-      {icon ? (
-        <img className={`${layout}__header-icon${showIcon ? "" : " is-collapsed-only"}`} src={icon} alt="" />
-      ) : null}
+      {icon ? <img className={`${layout}__header-icon${iconClass}`} src={icon.url} alt="" /> : null}
       {showIcon && Marquee ? <Marquee>{title}</Marquee> : <span className={`${layout}__header-title`}>{title}</span>}
     </div>
   );

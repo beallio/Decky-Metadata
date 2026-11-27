@@ -3,6 +3,7 @@ import {
   Field,
   Focusable,
   GamepadButton,
+  NavEntryPositionPreferences,
   showModal,
 } from "@decky/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -360,6 +361,13 @@ export function ArtworkEditorPage({
     browserRef.current?.querySelector<HTMLElement>(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
   }, [activeSlot, cardsFocusTarget]);
 
+  // One highlight: when L1/R1 changes the tab while focus is on the tab strip, focus follows it.
+  useEffect(() => {
+    const strip = browserRef.current?.querySelector(`.${artworkBrowserClass}__tabs`);
+    if (!strip?.contains(document.activeElement)) return;
+    strip.querySelector<HTMLElement>(`[data-artwork-tab="${activeTab}"]`)?.focus();
+  }, [activeTab]);
+
   return (
     <Focusable
       ref={browserRef}
@@ -370,10 +378,11 @@ export function ArtworkEditorPage({
     >
       <style>{artworkBrowserCss}</style>
 
-      {/* Top slot tabs with L1/R1 bumper hints */}
+      {/* Top slot tabs with L1/R1 bumper hints; entering the strip lands on the active tab. */}
       <Focusable
         flow-children="horizontal"
         className={`${artworkBrowserClass}__tabs`}
+        navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
       >
         <span className={`${artworkBrowserClass}__bumper`} aria-hidden="true">
           {t("editor.artwork.bumperLeft")}
@@ -384,8 +393,12 @@ export function ArtworkEditorPage({
             return (
               <Focusable
                 key={tab}
+                data-artwork-tab={tab}
                 data-artwork-initial-focus={active && !cardsFocusTarget ? "" : undefined}
                 className={`${artworkBrowserClass}__tab${active ? " is-active" : ""}`}
+                preferredFocus={active}
+                // Moving focus across tabs selects them, like Steam's own tab bars.
+                onGamepadFocus={() => setActiveTab(tab)}
                 onActivate={() => setActiveTab(tab)}
                 onClick={() => setActiveTab(tab)}
               >

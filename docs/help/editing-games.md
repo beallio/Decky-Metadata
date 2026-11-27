@@ -36,8 +36,9 @@ Pages in the sidebar:
   a Steam App ID, load Steam text in your language, or search IGN for details.
 - **Artwork**: Browse community artwork from SteamGridDB or apply official Steam
   artwork across **Cover**, **Wide cover**, **Hero background**, **Game logo**,
-  and **Game icon** slots (`L1`/`R1` switches tabs, **Y** opens Filter & Change
-  Game, **Menu** opens Asset Details). For a Steam game, the editor opens on
+  and **Game icon** slots (`L1`/`R1` or moving focus along the tabs switches
+  tabs, **Y** opens Filter & Change Game, **Menu** opens Asset Details). For a
+  Steam game, the editor opens on
   Artwork with focus on the first artwork. The **Manage** tab shows the current
   artwork for each slot (Steam's official art when no custom art is set) and
   lets you pick local image files, apply a transparent placeholder, clear

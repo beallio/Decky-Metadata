@@ -77,6 +77,7 @@ vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   GamepadButton: { BUMPER_LEFT: 5, BUMPER_RIGHT: 6 },
   ModalRoot: "ModalRoot",
+  NavEntryPositionPreferences: { PREFERRED_CHILD: 4 },
   SliderField: "SliderField",
   TextField: "TextField",
   ToggleField: "ToggleField",
