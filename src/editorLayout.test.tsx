@@ -153,7 +153,7 @@ describe("EditorLayout", () => {
       typeof entry !== "string" && entry.identifier === "advanced") as Exclude<NativePageEntry, "separator">;
     expect(text(nodes(advancedPage.content).find((node) => node.type === "DialogHeader"))).toBe("Advanced");
     expect(received.page).toBe("advanced");
-    expect(received.title.props).toEqual({ title: "Deadpool", appId: 4107143310, steamAppId: 224060 });
+    expect(received.title.props).toEqual({ title: "Deadpool", appId: 4107143310, steamAppId: 224060, collapsible: false });
     expect(received.showTitle).toBe(true);
     received.onPageRequested("advanced");
     expect(onPageRequested).toHaveBeenCalledExactlyOnceWith("advanced");

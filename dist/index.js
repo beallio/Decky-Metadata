@@ -3321,7 +3321,6 @@ var qam$o = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -3329,10 +3328,7 @@ var qam$o = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -4272,7 +4268,6 @@ var qam$n = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -4280,10 +4275,7 @@ var qam$n = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -5225,7 +5217,6 @@ var qam$m = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -5233,10 +5224,7 @@ var qam$m = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -6176,7 +6164,6 @@ var qam$l = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -6184,10 +6171,7 @@ var qam$l = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -7127,7 +7111,6 @@ var qam$k = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -7135,10 +7118,7 @@ var qam$k = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -8078,7 +8058,6 @@ var qam$j = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -8086,10 +8065,7 @@ var qam$j = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -9030,7 +9006,6 @@ var qam$i = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -9038,10 +9013,7 @@ var qam$i = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -9981,7 +9953,6 @@ var qam$h = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -9989,10 +9960,7 @@ var qam$h = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -10933,7 +10901,6 @@ var qam$g = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -10941,10 +10908,7 @@ var qam$g = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -11885,7 +11849,6 @@ var qam$f = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -11893,10 +11856,7 @@ var qam$f = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -12835,7 +12795,6 @@ var qam$e = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -12843,10 +12802,7 @@ var qam$e = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -13786,7 +13742,6 @@ var qam$d = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -13794,10 +13749,7 @@ var qam$d = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -14736,7 +14688,6 @@ var qam$c = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -14744,10 +14695,7 @@ var qam$c = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -15687,7 +15635,6 @@ var qam$b = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -15695,10 +15642,7 @@ var qam$b = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -16640,7 +16584,6 @@ var qam$a = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -16648,10 +16591,7 @@ var qam$a = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -17592,7 +17532,6 @@ var qam$9 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -17600,10 +17539,7 @@ var qam$9 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -18544,7 +18480,6 @@ var qam$8 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -18552,10 +18487,7 @@ var qam$8 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -19496,7 +19428,6 @@ var qam$7 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -19504,10 +19435,7 @@ var qam$7 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -20449,7 +20377,6 @@ var qam$6 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -20457,10 +20384,7 @@ var qam$6 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -21400,7 +21324,6 @@ var qam$5 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -21408,10 +21331,7 @@ var qam$5 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -22351,7 +22271,6 @@ var qam$4 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -22359,10 +22278,7 @@ var qam$4 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -23302,7 +23218,6 @@ var qam$3 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -23310,10 +23225,7 @@ var qam$3 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -24255,7 +24167,6 @@ var qam$2 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -24263,10 +24174,7 @@ var qam$2 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -25205,7 +25113,6 @@ var qam$1 = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -25213,10 +25120,7 @@ var qam$1 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -26155,7 +26059,6 @@ var qam = {
 		browserHeading: "SteamGridDB browser",
 		sgdbApiKeyLabel: "SteamGridDB API key",
 		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
-		saveApiKeyAction: "Save key",
 		clearApiKeyAction: "Clear",
 		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
 		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
@@ -26163,10 +26066,7 @@ var qam = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Reorder artwork slot tabs or hide unused slots. Manage is always shown.",
-		hiddenTag: "Hidden",
-		showTabAction: "Show",
-		hideTabAction: "Hide",
+		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -27256,6 +27156,10 @@ function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
 }function FaClock (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
+}function FaChevronUp (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M240.971 130.524l194.343 194.343c9.373 9.373 9.373 24.569 0 33.941l-22.667 22.667c-9.357 9.357-24.522 9.375-33.901.04L224 227.495 69.255 381.516c-9.379 9.335-24.544 9.317-33.901-.04l-22.667-22.667c-9.373-9.373-9.373-24.569 0-33.941L207.03 130.525c9.372-9.373 24.568-9.373 33.941-.001z"},"child":[]}]})(props);
+}function FaChevronDown (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"},"child":[]}]})(props);
 }function FaCheckCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
 }function FaCaretDown (props) {
@@ -39456,7 +39360,8 @@ function ArtworkManageTab({ appId, gameName, isSteamGame, savedSteamAppId, unsav
                                     missing: ARTWORK_SLOT_ORDER.filter((slot) => state?.slots[slot]?.available && !state?.slots[slot]?.present).length,
                                 }), disabled: busy, onClick: () => handleOfficialBulk("fill-missing"), children: t("editor.artwork.fillMissingAction") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.replaceAllLabel"), description: t("editor.artwork.replaceAllDescription"), disabled: busy, onClick: () => handleOfficialBulk("replace-all"), children: t("editor.artwork.replaceAllAction") })] })) : !isSteamGame ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.noMatchLabel"), description: t("editor.artwork.noMatchManageDescription"), disabled: busy, onClick: onGoToSteamMatch, children: t("editor.artwork.goToSteamMatchAction") })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.slotsHeading") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__manage-grid`, children: ARTWORK_SLOT_ORDER.map((slot) => {
                             const slotState = state?.slots[slot];
-                            const previewUrl = slotState?.preview_data_url ?? null;
+                            // A Steam game with no custom file shows Steam's official art, so preview that.
+                            const previewUrl = slotState?.preview_data_url ?? (isSteamGame && slotState?.available ? slotState.steam_url : null);
                             const statusText = slotState?.present
                                 ? t("editor.artwork.statusPresent")
                                 : slotState?.available
@@ -39520,6 +39425,9 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const [actionBusy, setActionBusy] = SP_REACT.useState(false);
     const [gameReloadTick, setGameReloadTick] = SP_REACT.useState(0);
     const requestSeqRef = SP_REACT.useRef(0);
+    const browserRef = SP_REACT.useRef(null);
+    // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
+    const cardFocusPendingRef = SP_REACT.useRef(true);
     SP_REACT.useEffect(() => {
         const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
         void artworkController.ensureSettingsLoaded();
@@ -39534,6 +39442,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     // Reset to user's configured default tab when switching games.
     SP_REACT.useEffect(() => {
         setActiveTab(resolveInitialArtworkTab(artworkController.getSnapshot().settings));
+        cardFocusPendingRef.current = true;
         setSgdbGame(null);
         setSgdbIsOverride(false);
         setAssets([]);
@@ -39711,9 +39620,28 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         savedSteamAppId !== null &&
         Boolean(officialSlotState?.available && officialSlotState?.steam_url);
     const activeFilterCount = activeSlot && activeFilter ? countActiveSlotFilters(activeSlot, activeFilter) : 0;
-    return (SP_JSX.jsxs(DFL.Focusable, { className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__tabs`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab, idx) => {
+    const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
+    // The editor's entry focus targets this marker: the first artwork card, or the active tab until cards exist.
+    const cardsFocusTarget = showOfficialCard || showAssetCards;
+    SP_REACT.useEffect(() => {
+        if (!cardFocusPendingRef.current)
+            return;
+        if (activeSlot === null) {
+            cardFocusPendingRef.current = false;
+            return;
+        }
+        if (!cardsFocusTarget)
+            return;
+        cardFocusPendingRef.current = false;
+        const active = document.activeElement;
+        // Never take focus the user already moved off the tab strip.
+        if (active && active !== document.body && !active.closest(`.${artworkBrowserClass}__tabs`))
+            return;
+        browserRef.current?.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
+    }, [activeSlot, cardsFocusTarget]);
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: browserRef, className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__tabs`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab, idx) => {
                             const active = tab === activeTab;
-                            return (SP_JSX.jsx(DFL.Focusable, { "data-artwork-initial-focus": idx === 0 ? "" : undefined, className: `${artworkBrowserClass}__tab${active ? " is-active" : ""}`, onActivate: () => setActiveTab(tab), onClick: () => setActiveTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
+                            return (SP_JSX.jsx(DFL.Focusable, { "data-artwork-initial-focus": active && !cardsFocusTarget ? "" : undefined, className: `${artworkBrowserClass}__tab${active ? " is-active" : ""}`, onActivate: () => setActiveTab(tab), onClick: () => setActiveTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
                         }) }), SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperRight") })] }), activeSlot !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.text }, children: t("editor.artwork.pendingMatchDescription") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })] })) : null, SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__toolbar`, children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__game-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__game-title`, children: resolvingGame
                                             ? t("editor.artwork.resolvingGame")
                                             : sgdbGame
@@ -39722,10 +39650,10 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
                                             ? t("editor.artwork.showAllSources")
                                             : t("editor.artwork.officialOnlyButton") })) : null] })] }), missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 14, fontWeight: 600, color: colors.text }, children: t("editor.artwork.missingKeyTitle") }), SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: t("editor.artwork.missingKeyDescription") }), onOpenArtworkSettings ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, onClick: onOpenArtworkSettings, children: t("editor.artwork.openSettingsAction") }) })) : null] })) : null, assetError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: assetError }), bottomSeparator: "none" })) : null, showOfficialCard || assets.length > 0 ? (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__grid`, style: {
                             gridTemplateColumns: `repeat(auto-fill, minmax(${SLOT_GRID_MIN_WIDTH[activeSlot]}px, 1fr))`,
-                        }, children: [showOfficialCard && officialSlotState?.steam_url ? (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__card`, onActivate: () => void applyOfficial(activeSlot), onClick: () => void applyOfficial(activeSlot), onOKActionDescription: t("editor.artwork.applyAction"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: officialSlotState.steam_url, alt: "", style: {
+                        }, children: [showOfficialCard && officialSlotState?.steam_url ? (SP_JSX.jsxs(DFL.Focusable, { "data-artwork-initial-focus": "", className: `${artworkBrowserClass}__card`, onActivate: () => void applyOfficial(activeSlot), onClick: () => void applyOfficial(activeSlot), onOKActionDescription: t("editor.artwork.applyAction"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: officialSlotState.steam_url, alt: "", style: {
                                                     objectFit: activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
                                                 } }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__badges`, children: SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--official`, children: t("editor.artwork.badgeOfficial") }) })] }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__card-meta`, children: SP_JSX.jsx("span", { className: `${artworkBrowserClass}__card-author`, children: t("editor.artwork.officialSourceLabel") }) })] }, "official-steam")) : null, !officialOnly && !missingKey
-                                ? assets.map((asset) => (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__card`, onActivate: () => void applySgdb(activeSlot, asset), onClick: () => void applySgdb(activeSlot, asset), onOKActionDescription: t("editor.artwork.applyAction"), onSecondaryButton: openFilterModal, onSecondaryActionDescription: t("editor.artwork.filterActionHint"), onOptionsButton: () => openDetailsModal(activeSlot, asset), onOptionsActionDescription: t("editor.artwork.detailsActionHint"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: asset.thumb, alt: "", loading: "lazy", style: {
+                                ? assets.map((asset, idx) => (SP_JSX.jsxs(DFL.Focusable, { "data-artwork-initial-focus": idx === 0 && !showOfficialCard ? "" : undefined, className: `${artworkBrowserClass}__card`, onActivate: () => void applySgdb(activeSlot, asset), onClick: () => void applySgdb(activeSlot, asset), onOKActionDescription: t("editor.artwork.applyAction"), onSecondaryButton: openFilterModal, onSecondaryActionDescription: t("editor.artwork.filterActionHint"), onOptionsButton: () => openDetailsModal(activeSlot, asset), onOptionsActionDescription: t("editor.artwork.detailsActionHint"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: asset.thumb, alt: "", loading: "lazy", style: {
                                                         objectFit: activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
                                                     } }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__badges`, children: asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null })] }), SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__card-author`, children: asset.author.name || t("editor.artwork.unknownAuthor") }), asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { children: `${asset.width}x${asset.height}` })) : null] })] }, asset.id)))
                                 : null] })) : !resolvingGame && !loadingAssets && !missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: !sgdbGame
@@ -41553,6 +41481,10 @@ const css$1 = `
   object-fit: cover;
 }
 
+.${layout}__header-icon.is-collapsed-only {
+  display: none;
+}
+
 /* Marquee wraps its root in an unstyled div; let that wrapper shrink so long names scroll inside the rail. */
 .${layout}__header > :last-child {
   flex: 1 1 0;
@@ -41632,6 +41564,10 @@ const css$1 = `
   gap: 0;
 }
 
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-icon.is-collapsed-only {
+  display: block;
+}
+
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
   width: 48px !important;
   min-width: 48px !important;
@@ -41655,7 +41591,7 @@ function CurrentPageContent$1({ id }) {
     const pages = SP_REACT.useContext(PageContentContext$1);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
-function EditorTitle({ title, appId, steamAppId }) {
+function EditorTitle({ title, appId, steamAppId, collapsible, }) {
     const [settings, setSettings] = SP_REACT.useState(null);
     const [icon, setIcon] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
@@ -41665,19 +41601,21 @@ function EditorTitle({ title, appId, steamAppId }) {
         return () => { current = false; };
     }, []);
     const showIcon = settings?.gameIcon === true;
-    const fallbackAppId = settings?.steamIconFallback ? steamAppId : null;
+    // The collapsed rail has no room for the title, so it always shows the icon instead.
+    const resolveIcon = showIcon || collapsible;
+    const fallbackAppId = settings?.steamIconFallback || collapsible ? steamAppId : null;
     SP_REACT.useEffect(() => {
         setIcon(null);
-        if (!showIcon)
+        if (!resolveIcon)
             return;
         let current = true;
         void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current)
             setIcon(url); });
         return () => { current = false; };
-    }, [appId, fallbackAppId, showIcon]);
-    if (!showIcon || !DFL.Marquee)
+    }, [appId, fallbackAppId, resolveIcon]);
+    if (!resolveIcon)
         return SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title });
-    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon`, src: icon, alt: "" }) : null, SP_JSX.jsx(DFL.Marquee, { children: title })] }));
+    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? (SP_JSX.jsx("img", { className: `${layout}__header-icon${showIcon ? "" : " is-collapsed-only"}`, src: icon, alt: "" })) : null, showIcon && DFL.Marquee ? SP_JSX.jsx(DFL.Marquee, { children: title }) : SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title })] }));
 }
 function evaluateSidebarCollapseState(currentlyCollapsed, sidebarHasFocus, contentHasFocus) {
     if (sidebarHasFocus)
@@ -41688,7 +41626,8 @@ function evaluateSidebarCollapseState(currentlyCollapsed, sidebarHasFocus, conte
 }
 function CollapsibleSidebarShell({ collapsible, children, }) {
     const shellRef = SP_REACT.useRef(null);
-    const [collapsed, setCollapsed] = SP_REACT.useState(false);
+    // Collapsible pages open with focus in their content, so start collapsed instead of animating closed.
+    const [collapsed, setCollapsed] = SP_REACT.useState(collapsible);
     SP_REACT.useEffect(() => {
         if (!collapsible) {
             setCollapsed(false);
@@ -41746,7 +41685,7 @@ function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageReque
         }
         return mapped;
     }, pageDependencies);
-    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(CollapsibleSidebarShell, { collapsible: collapsibleSidebar, children: SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) }) })] }));
+    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(CollapsibleSidebarShell, { collapsible: collapsibleSidebar, children: SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId, collapsible: collapsibleSidebar }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) }) })] }));
 }
 function EditorLayout(props) {
     const t = useT();
@@ -43502,7 +43441,12 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
     }, [settings.sgdbApiKey]);
     const tabOrder = settings.tabOrder?.length ? settings.tabOrder : [...ARTWORK_TAB_ORDER];
     const hiddenTabs = new Set(settings.hiddenTabs ?? []);
-    const keyDirty = apiKeyDraft.trim() !== (settings.sgdbApiKey ?? "").trim();
+    const saveApiKey = () => {
+        const next = apiKeyDraft.trim();
+        if (next === (settings.sgdbApiKey ?? "").trim())
+            return;
+        onSettingsChange((current) => ({ ...current, sgdbApiKey: next }));
+    };
     const keyStatusMessage = sgdbKeyStatus?.hasUserKey
         ? t("qam.artwork.sgdbKeyStatusUser")
         : sgdbKeyStatus?.hasBuiltInKey
@@ -43533,17 +43477,29 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
             return { ...current, hiddenTabs: [...nextHidden] };
         });
     };
-    const TabVisibilityControl = ({ entry }) => {
-        const tab = entry.data;
-        if (!tab || tab === "manage")
-            return null;
-        const isHidden = hiddenTabs.has(tab);
-        return (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "4px 10px", fontSize: 12 }, disabled: controlsDisabled, onClick: () => toggleTabHidden(tab), children: isHidden ? t("qam.artwork.showTabAction") : t("qam.artwork.hideTabAction") }));
+    const moveTab = (tab, delta) => {
+        const from = tabOrder.indexOf(tab);
+        const to = from + delta;
+        if (from < 0 || to < 0 || to >= tabOrder.length)
+            return;
+        onSettingsChange((current) => {
+            const order = current.tabOrder?.length ? [...current.tabOrder] : [...ARTWORK_TAB_ORDER];
+            const a = order.indexOf(tab);
+            const b = a + delta;
+            if (a < 0 || b < 0 || b >= order.length)
+                return current;
+            [order[a], order[b]] = [order[b], order[a]];
+            return { ...current, tabOrder: order };
+        });
+        // React may move the focused row's DOM node, which drops gamepad focus; put it back on the moved row.
+        requestAnimationFrame(() => {
+            const buttons = document.querySelectorAll(`[data-artwork-tab-row="${tab}"] .DialogButton`);
+            const preferred = buttons[delta < 0 ? 0 : 1];
+            (preferred && !preferred.disabled ? preferred : buttons[delta < 0 ? 1 : 0])?.focus();
+        });
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value) }) }), SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled || !keyDirty, onClick: () => onSettingsChange((current) => ({
-                                        ...current,
-                                        sgdbApiKey: apiKeyDraft.trim(),
-                                    })), children: t("qam.artwork.saveApiKeyAction") }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
+    const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
                                         setApiKeyDraft("");
                                         onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
                                     }, children: t("qam.artwork.clearApiKeyAction") })) : null] }) }), SP_JSX.jsx(DFL.Field, { focusable: false, description: keyStatusMessage, bottomSeparator: "standard" }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: settings.defaultTab ?? "cover", rgOptions: tabOrder
@@ -43551,21 +43507,7 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
                             .map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
                             ...current,
                             defaultTab: option.data,
-                        })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.tabOrderLabel"), description: t("qam.artwork.tabOrderDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.ReorderableList, { entries: tabOrder.map((tab, index) => ({
-                                label: tab !== "manage" && hiddenTabs.has(tab)
-                                    ? `${t(tabLabelKey(tab))} (${t("qam.artwork.hiddenTag")})`
-                                    : t(tabLabelKey(tab)),
-                                data: tab,
-                                position: index,
-                            })), interactables: TabVisibilityControl, onSave: (entries) => {
-                                const ordered = [...entries]
-                                    .sort((a, b) => a.position - b.position)
-                                    .map((entry) => entry.data)
-                                    .filter((tab) => Boolean(tab));
-                                if (ordered.length > 0) {
-                                    onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
-                                }
-                            } }) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({
+                        })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.tabOrderLabel"), description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), tabOrder.map((tab, index) => (SP_JSX.jsx("div", { "data-artwork-tab-row": tab, children: SP_JSX.jsx(DFL.Field, { label: t(tabLabelKey(tab)), children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === 0, onClick: () => moveTab(tab, -1), children: SP_JSX.jsx(FaChevronUp, {}) }), SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === tabOrder.length - 1, onClick: () => moveTab(tab, 1), children: SP_JSX.jsx(FaChevronDown, {}) }), SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hiddenTabs.has(tab), disabled: controlsDisabled || tab === "manage", onChange: () => toggleTabHidden(tab) })] }) }) }, tab))), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({
                             ...current,
                             filters: defaultArtworkFilters(),
                         })), children: t("qam.artwork.resetFiltersAction") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting

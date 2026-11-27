@@ -84,6 +84,10 @@ const css = `
   object-fit: cover;
 }
 
+.${layout}__header-icon.is-collapsed-only {
+  display: none;
+}
+
 /* Marquee wraps its root in an unstyled div; let that wrapper shrink so long names scroll inside the rail. */
 .${layout}__header > :last-child {
   flex: 1 1 0;
@@ -163,6 +167,10 @@ const css = `
   gap: 0;
 }
 
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-icon.is-collapsed-only {
+  display: block;
+}
+
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
   width: 48px !important;
   min-width: 48px !important;
@@ -189,7 +197,12 @@ function CurrentPageContent({ id }: { id: EditorPageId }): JSX.Element {
   return <>{pages.find((page) => page.id === id)?.content ?? null}</>;
 }
 
-function EditorTitle({ title, appId, steamAppId }: Pick<EditorLayoutProps, "title" | "appId" | "steamAppId">) {
+function EditorTitle({
+  title,
+  appId,
+  steamAppId,
+  collapsible,
+}: Pick<EditorLayoutProps, "title" | "appId" | "steamAppId"> & { collapsible: boolean }) {
   const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
   const [icon, setIcon] = useState<string | null>(null);
   useEffect(() => {
@@ -201,20 +214,24 @@ function EditorTitle({ title, appId, steamAppId }: Pick<EditorLayoutProps, "titl
     return () => { current = false; };
   }, []);
   const showIcon = settings?.gameIcon === true;
-  const fallbackAppId = settings?.steamIconFallback ? steamAppId : null;
+  // The collapsed rail has no room for the title, so it always shows the icon instead.
+  const resolveIcon = showIcon || collapsible;
+  const fallbackAppId = settings?.steamIconFallback || collapsible ? steamAppId : null;
   useEffect(() => {
     setIcon(null);
-    if (!showIcon) return;
+    if (!resolveIcon) return;
     let current = true;
     void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current) setIcon(url); });
     return () => { current = false; };
-  }, [appId, fallbackAppId, showIcon]);
+  }, [appId, fallbackAppId, resolveIcon]);
 
-  if (!showIcon || !Marquee) return <span className={`${layout}__header-title`}>{title}</span>;
+  if (!resolveIcon) return <span className={`${layout}__header-title`}>{title}</span>;
   return (
     <div className={`${layout}__header`}>
-      {icon ? <img className={`${layout}__header-icon`} src={icon} alt="" /> : null}
-      <Marquee>{title}</Marquee>
+      {icon ? (
+        <img className={`${layout}__header-icon${showIcon ? "" : " is-collapsed-only"}`} src={icon} alt="" />
+      ) : null}
+      {showIcon && Marquee ? <Marquee>{title}</Marquee> : <span className={`${layout}__header-title`}>{title}</span>}
     </div>
   );
 }
@@ -237,7 +254,8 @@ function CollapsibleSidebarShell({
   children: ReactNode;
 }): JSX.Element {
   const shellRef = useRef<HTMLDivElement | null>(null);
-  const [collapsed, setCollapsed] = useState(false);
+  // Collapsible pages open with focus in their content, so start collapsed instead of animating closed.
+  const [collapsed, setCollapsed] = useState(collapsible);
 
   useEffect(() => {
     if (!collapsible) {
@@ -342,7 +360,7 @@ function NativeEditorLayout({
           pages={nativePages}
           page={page}
           onPageRequested={(id) => onPageRequested(id as EditorPageId)}
-          title={<EditorTitle title={title} appId={appId} steamAppId={steamAppId} />}
+          title={<EditorTitle title={title} appId={appId} steamAppId={steamAppId} collapsible={collapsibleSidebar} />}
           showTitle={true}
           bottomControls={
             <DialogButton

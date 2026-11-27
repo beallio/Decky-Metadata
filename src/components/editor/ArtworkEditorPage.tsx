@@ -120,6 +120,9 @@ export function ArtworkEditorPage({
   const [actionBusy, setActionBusy] = useState(false);
   const [gameReloadTick, setGameReloadTick] = useState(0);
   const requestSeqRef = useRef(0);
+  const browserRef = useRef<HTMLDivElement | null>(null);
+  // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
+  const cardFocusPendingRef = useRef(true);
 
   useEffect(() => {
     const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
@@ -137,6 +140,7 @@ export function ArtworkEditorPage({
   // Reset to user's configured default tab when switching games.
   useEffect(() => {
     setActiveTab(resolveInitialArtworkTab(artworkController.getSnapshot().settings));
+    cardFocusPendingRef.current = true;
     setSgdbGame(null);
     setSgdbIsOverride(false);
     setAssets([]);
@@ -338,9 +342,27 @@ export function ArtworkEditorPage({
     Boolean(officialSlotState?.available && officialSlotState?.steam_url);
   const activeFilterCount =
     activeSlot && activeFilter ? countActiveSlotFilters(activeSlot, activeFilter) : 0;
+  const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
+  // The editor's entry focus targets this marker: the first artwork card, or the active tab until cards exist.
+  const cardsFocusTarget = showOfficialCard || showAssetCards;
+
+  useEffect(() => {
+    if (!cardFocusPendingRef.current) return;
+    if (activeSlot === null) {
+      cardFocusPendingRef.current = false;
+      return;
+    }
+    if (!cardsFocusTarget) return;
+    cardFocusPendingRef.current = false;
+    const active = document.activeElement;
+    // Never take focus the user already moved off the tab strip.
+    if (active && active !== document.body && !active.closest(`.${artworkBrowserClass}__tabs`)) return;
+    browserRef.current?.querySelector<HTMLElement>(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`)?.focus();
+  }, [activeSlot, cardsFocusTarget]);
 
   return (
     <Focusable
+      ref={browserRef}
       className={artworkBrowserClass}
       onButtonDown={handleBrowserButtonDown as never}
       onSecondaryButton={activeSlot ? openFilterModal : undefined}
@@ -362,7 +384,7 @@ export function ArtworkEditorPage({
             return (
               <Focusable
                 key={tab}
-                data-artwork-initial-focus={idx === 0 ? "" : undefined}
+                data-artwork-initial-focus={active && !cardsFocusTarget ? "" : undefined}
                 className={`${artworkBrowserClass}__tab${active ? " is-active" : ""}`}
                 onActivate={() => setActiveTab(tab)}
                 onClick={() => setActiveTab(tab)}
@@ -482,6 +504,7 @@ export function ArtworkEditorPage({
               {showOfficialCard && officialSlotState?.steam_url ? (
                 <Focusable
                   key="official-steam"
+                  data-artwork-initial-focus=""
                   className={`${artworkBrowserClass}__card`}
                   onActivate={() => void applyOfficial(activeSlot)}
                   onClick={() => void applyOfficial(activeSlot)}
@@ -519,9 +542,10 @@ export function ArtworkEditorPage({
               ) : null}
 
               {!officialOnly && !missingKey
-                ? assets.map((asset) => (
+                ? assets.map((asset, idx) => (
                     <Focusable
                       key={asset.id}
+                      data-artwork-initial-focus={idx === 0 && !showOfficialCard ? "" : undefined}
                       className={`${artworkBrowserClass}__card`}
                       onActivate={() => void applySgdb(activeSlot, asset)}
                       onClick={() => void applySgdb(activeSlot, asset)}

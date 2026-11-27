@@ -95,9 +95,9 @@ across **Cover**, **Wide cover**, **Hero background**, **Game logo**, and
 **Game icon** slots. Use **L1**/**R1** to switch tabs, **Y** for filters and
 game search, **Menu** for asset details, and **Manage** for local files,
 transparent placeholders, per-game artwork locks, and **Logo position**
-adjustment. Configure your optional SteamGridDB API key, default tab, tab
-order/visibility, and automatic Official Steam artwork under **Settings →
-Artwork**.
+adjustment. Configure your optional SteamGridDB API key (it saves when you
+leave the field), default tab, tab order (arrow buttons) and visibility
+(toggles), and automatic Official Steam artwork under **Settings → Artwork**.
 
 ### Compatibility status
 

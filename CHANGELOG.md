@@ -15,12 +15,14 @@ All notable changes to this project are documented here in Keep a Changelog form
   `ANIMATED` badges, **Y** Filter & Change Game modal (global per-slot filter
   defaults + per-game SteamGridDB override), **Menu** Asset Details modal,
   native **Logo Positioner**, local file picker, transparent placeholder, and
-  an Artwork-only auto-collapsing editor sidebar (`240px → 64px` icon rail).
+  an Artwork-only auto-collapsing editor sidebar (`240px → 64px` icon rail
+  that shows the game icon).
   Also supports Official Steam automatic artwork on metadata scans and saved
   Steam matches, **Preserve existing artwork**, per-slot toggles, global **Fill
   missing** / **Replace all** bulk actions, manual per-game **Lock artwork**,
-  tab reorder/visibility settings, an unmasked custom SteamGridDB API key input
-  (redacted in logs) with optional build-time fallback, and non-blocking
+  tab order (arrow buttons) and visibility (toggles) settings, an unmasked
+  custom SteamGridDB API key input that saves when you leave it (redacted in
+  logs) with optional build-time fallback, and non-blocking
   coexistence with the standalone SteamGridDB plugin.
 
 ## [0.6.8] - 2026-11-25

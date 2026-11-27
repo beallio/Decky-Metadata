@@ -10,11 +10,12 @@ import {
   Field,
   Focusable,
   ProgressBarWithInfo,
-  ReorderableList,
   showModal,
   TextField,
+  Toggle,
   ToggleField,
 } from "@decky/ui";
+import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 import {
   ARTWORK_TAB_ORDER,
@@ -74,7 +75,12 @@ export function ArtworkBody({
 
   const tabOrder = settings.tabOrder?.length ? settings.tabOrder : [...ARTWORK_TAB_ORDER];
   const hiddenTabs = new Set<ArtworkSlot>(settings.hiddenTabs ?? []);
-  const keyDirty = apiKeyDraft.trim() !== (settings.sgdbApiKey ?? "").trim();
+
+  const saveApiKey = () => {
+    const next = apiKeyDraft.trim();
+    if (next === (settings.sgdbApiKey ?? "").trim()) return;
+    onSettingsChange((current) => ({ ...current, sgdbApiKey: next }));
+  };
 
   const keyStatusMessage = sgdbKeyStatus?.hasUserKey
     ? t("qam.artwork.sgdbKeyStatusUser")
@@ -114,20 +120,29 @@ export function ArtworkBody({
     });
   };
 
-  const TabVisibilityControl = ({ entry }: { entry: { data?: ArtworkTabId } }) => {
-    const tab = entry.data;
-    if (!tab || tab === "manage") return null;
-    const isHidden = hiddenTabs.has(tab);
-    return (
-      <DialogButton
-        style={{ minWidth: 0, width: "auto", padding: "4px 10px", fontSize: 12 }}
-        disabled={controlsDisabled}
-        onClick={() => toggleTabHidden(tab)}
-      >
-        {isHidden ? t("qam.artwork.showTabAction") : t("qam.artwork.hideTabAction")}
-      </DialogButton>
-    );
+  const moveTab = (tab: ArtworkTabId, delta: -1 | 1) => {
+    const from = tabOrder.indexOf(tab);
+    const to = from + delta;
+    if (from < 0 || to < 0 || to >= tabOrder.length) return;
+    onSettingsChange((current) => {
+      const order = current.tabOrder?.length ? [...current.tabOrder] : [...ARTWORK_TAB_ORDER];
+      const a = order.indexOf(tab);
+      const b = a + delta;
+      if (a < 0 || b < 0 || b >= order.length) return current;
+      [order[a], order[b]] = [order[b], order[a]];
+      return { ...current, tabOrder: order };
+    });
+    // React may move the focused row's DOM node, which drops gamepad focus; put it back on the moved row.
+    requestAnimationFrame(() => {
+      const buttons = document.querySelectorAll<HTMLButtonElement>(
+        `[data-artwork-tab-row="${tab}"] .DialogButton`,
+      );
+      const preferred = buttons[delta < 0 ? 0 : 1];
+      (preferred && !preferred.disabled ? preferred : buttons[delta < 0 ? 1 : 0])?.focus();
+    });
   };
+
+  const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
 
   return (
     <>
@@ -161,30 +176,20 @@ export function ArtworkBody({
           childrenLayout="below"
           childrenContainerWidth="max"
         >
+          {/* Unmasked text field per user requirement; key is still redacted in logs/diagnostics. */}
+          {/* Saves whatever the field holds when focus leaves it. */}
           <Focusable
             flow-children="horizontal"
             style={{ display: "flex", alignItems: "center", gap: 8, width: "100%" }}
           >
             <div style={{ flex: "1 1 auto" }}>
-              {/* Unmasked text field per user requirement; key is still redacted in logs/diagnostics. */}
               <TextField
                 value={apiKeyDraft}
                 disabled={controlsDisabled}
                 onChange={(e) => setApiKeyDraft(e.target.value)}
+                onBlur={saveApiKey}
               />
             </div>
-            <DialogButton
-              style={{ minWidth: 0, width: "auto", padding: "6px 12px" }}
-              disabled={controlsDisabled || !keyDirty}
-              onClick={() =>
-                onSettingsChange((current) => ({
-                  ...current,
-                  sgdbApiKey: apiKeyDraft.trim(),
-                }))
-              }
-            >
-              {t("qam.artwork.saveApiKeyAction")}
-            </DialogButton>
             {settings.sgdbApiKey ? (
               <DialogButton
                 style={{ minWidth: 0, width: "auto", padding: "6px 12px" }}
@@ -224,30 +229,36 @@ export function ArtworkBody({
         <Field
           label={t("qam.artwork.tabOrderLabel")}
           description={t("qam.artwork.tabOrderDescription")}
-          childrenLayout="below"
-          childrenContainerWidth="max"
-        >
-          <ReorderableList<ArtworkTabId>
-            entries={tabOrder.map((tab, index) => ({
-              label:
-                tab !== "manage" && hiddenTabs.has(tab)
-                  ? `${t(tabLabelKey(tab))} (${t("qam.artwork.hiddenTag")})`
-                  : t(tabLabelKey(tab)),
-              data: tab,
-              position: index,
-            }))}
-            interactables={TabVisibilityControl}
-            onSave={(entries) => {
-              const ordered = [...entries]
-                .sort((a, b) => a.position - b.position)
-                .map((entry) => entry.data)
-                .filter((tab): tab is ArtworkTabId => Boolean(tab));
-              if (ordered.length > 0) {
-                onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
-              }
-            }}
-          />
-        </Field>
+          focusable={false}
+          bottomSeparator="none"
+        />
+        {tabOrder.map((tab, index) => (
+          <div key={tab} data-artwork-tab-row={tab}>
+            <Field label={t(tabLabelKey(tab))}>
+              <Focusable flow-children="horizontal" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <DialogButton
+                  style={moveButtonStyle}
+                  disabled={controlsDisabled || index === 0}
+                  onClick={() => moveTab(tab, -1)}
+                >
+                  <FaChevronUp />
+                </DialogButton>
+                <DialogButton
+                  style={moveButtonStyle}
+                  disabled={controlsDisabled || index === tabOrder.length - 1}
+                  onClick={() => moveTab(tab, 1)}
+                >
+                  <FaChevronDown />
+                </DialogButton>
+                <Toggle
+                  value={tab === "manage" || !hiddenTabs.has(tab)}
+                  disabled={controlsDisabled || tab === "manage"}
+                  onChange={() => toggleTabHidden(tab)}
+                />
+              </Focusable>
+            </Field>
+          </div>
+        ))}
 
         <ButtonItem
           layout="inline"

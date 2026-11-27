@@ -25,8 +25,8 @@ vi.mock("@decky/ui", () => ({
   Field: "Field",
   Focusable: "Focusable",
   ProgressBarWithInfo: "ProgressBarWithInfo",
-  ReorderableList: "ReorderableList",
   TextField: "TextField",
+  Toggle: "Toggle",
   ToggleField: "ToggleField",
   showModal: ui.showModal,
 }));
@@ -103,10 +103,65 @@ describe("ArtworkBody", () => {
     expect(keyField.props?.bIsPassword).toBeUndefined();
     expect(keyField.props?.type).toBeUndefined();
 
-    // Default tab dropdown and ReorderableList are rendered.
+    // Default tab dropdown and one order row per artwork tab are rendered.
     const dropdown = tree.find((n) => n.type === "DropdownItem")!;
     expect(dropdown.props?.label).toBe("qam.artwork.defaultTabLabel");
-    expect(tree.some((n) => n.type === "ReorderableList")).toBe(true);
+    expect(tree.filter((n) => n.type === "Toggle")).toHaveLength(DEFAULT_ARTWORK_SETTINGS.tabOrder.length);
+  });
+
+  it("saves the trimmed API key on blur, only when it changed", () => {
+    const onSettingsChange = vi.fn();
+    const props = {
+      snapshot: makeSnapshot(),
+      listReady: true,
+      onSettingsChange,
+      onFillMissing: vi.fn(),
+      onReplaceAll: vi.fn(),
+    };
+    let keyField = nodes(renderBody(props)).find((n) => n.type === "TextField")!;
+    keyField.props!.onBlur();
+    expect(onSettingsChange).not.toHaveBeenCalled();
+
+    hookState.slots[0] = "  new-key  ";
+    hookState.cursor = 0;
+    keyField = nodes(ArtworkBody(props) as ReactElement).find((n) => n.type === "TextField")!;
+    keyField.props!.onBlur();
+    const update = onSettingsChange.mock.calls[0][0];
+    expect(update(DEFAULT_ARTWORK_SETTINGS).sgdbApiKey).toBe("new-key");
+  });
+
+  it("moves tabs with the arrow buttons and shows or hides them with toggles", () => {
+    vi.stubGlobal("requestAnimationFrame", () => 0);
+    const onSettingsChange = vi.fn();
+    const settings = { ...structuredClone(DEFAULT_ARTWORK_SETTINGS), hiddenTabs: ["hero" as const] };
+    const tree = nodes(renderBody({
+      snapshot: makeSnapshot({ settings }),
+      listReady: true,
+      onSettingsChange,
+      onFillMissing: vi.fn(),
+      onReplaceAll: vi.fn(),
+    }));
+    const order = settings.tabOrder;
+    const rows = tree.filter((n) => n.props?.["data-artwork-tab-row"]);
+    expect(rows.map((n) => n.props!["data-artwork-tab-row"])).toEqual(order);
+
+    const rowParts = (tab: string) => nodes(rows.find((n) => n.props!["data-artwork-tab-row"] === tab));
+    const [firstUp] = rowParts(order[0]).filter((n) => n.type === "DialogButton");
+    expect(firstUp.props!.disabled).toBe(true);
+
+    const [, secondDown] = rowParts(order[1]).filter((n) => n.type === "DialogButton");
+    secondDown.props!.onClick();
+    const moved = onSettingsChange.mock.calls[0][0](settings).tabOrder;
+    expect(moved).toEqual([order[0], order[2], order[1], ...order.slice(3)]);
+
+    const heroToggle = rowParts("hero").find((n) => n.type === "Toggle")!;
+    expect(heroToggle.props!.value).toBe(false);
+    heroToggle.props!.onChange(true);
+    expect(onSettingsChange.mock.calls[1][0](settings).hiddenTabs).toEqual([]);
+
+    const manageToggle = rowParts("manage").find((n) => n.type === "Toggle")!;
+    expect(manageToggle.props!).toMatchObject({ value: true, disabled: true });
+    vi.unstubAllGlobals();
   });
 
   it("shows SteamGridDB coexistence notice when installed and opens ConfirmModal for Replace all", () => {

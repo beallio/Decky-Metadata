@@ -262,7 +262,9 @@ export function ArtworkManageTab({
         <div className={`${artworkBrowserClass}__manage-grid`}>
           {ARTWORK_SLOT_ORDER.map((slot) => {
             const slotState = state?.slots[slot];
-            const previewUrl = slotState?.preview_data_url ?? null;
+            // A Steam game with no custom file shows Steam's official art, so preview that.
+            const previewUrl =
+              slotState?.preview_data_url ?? (isSteamGame && slotState?.available ? slotState.steam_url : null);
             const statusText = slotState?.present
               ? t("editor.artwork.statusPresent")
               : slotState?.available
