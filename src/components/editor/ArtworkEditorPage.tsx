@@ -244,6 +244,7 @@ export function ArtworkEditorPage({
   const cycleTab = useCallback(
     (delta: number) => {
       if (visibleTabs.length <= 1) return;
+      cardFocusPendingRef.current = false;
       setActiveTab((current) => {
         const idx = visibleTabs.indexOf(current);
         const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
@@ -252,6 +253,12 @@ export function ArtworkEditorPage({
     },
     [visibleTabs],
   );
+
+  // A manual tab change cancels the entry jump into the first artwork card.
+  const selectTab = (tab: ArtworkTabId) => {
+    if (tab !== activeTab) cardFocusPendingRef.current = false;
+    setActiveTab(tab);
+  };
 
   const busy = entryBusy || snapshot.busy || actionBusy;
   const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
@@ -398,9 +405,9 @@ export function ArtworkEditorPage({
                 className={`${artworkBrowserClass}__tab${active ? " is-active" : ""}`}
                 preferredFocus={active}
                 // Moving focus across tabs selects them, like Steam's own tab bars.
-                onGamepadFocus={() => setActiveTab(tab)}
-                onActivate={() => setActiveTab(tab)}
-                onClick={() => setActiveTab(tab)}
+                onGamepadFocus={() => selectTab(tab)}
+                onActivate={() => selectTab(tab)}
+                onClick={() => selectTab(tab)}
               >
                 {t(tabLabelKey(tab))}
               </Focusable>

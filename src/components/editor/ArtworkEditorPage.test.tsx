@@ -49,7 +49,7 @@ const ctrl = vi.hoisted(() => ({
   applyForGame: vi.fn(),
   updateSlotFilter: vi.fn(),
 }));
-const hookState = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[] }));
+const hookState = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[], refs: [] as { current: unknown }[] }));
 
 vi.mock("react", () => ({
   useState: (initial: unknown) => {
@@ -63,7 +63,11 @@ vi.mock("react", () => ({
   },
   useCallback: <T,>(fn: T) => fn,
   useMemo: <T,>(fn: () => T) => fn(),
-  useRef: <T,>(initial: T) => ({ current: initial }),
+  useRef: <T,>(initial: T) => {
+    const ref = { current: initial };
+    hookState.refs.push(ref);
+    return ref;
+  },
   useEffect: vi.fn(),
 }));
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
@@ -123,6 +127,7 @@ const nodes = (node: unknown): Node[] => {
 const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   hookState.cursor = 0;
   hookState.slots = [];
+  hookState.refs = [];
   return ArtworkEditorPage(props) as ReactElement;
 };
 
@@ -184,7 +189,7 @@ describe("ArtworkEditorPage", () => {
     expect(tabLabels).toHaveLength(6);
   });
 
-  it("switches tabs on L1/R1 bumper presses", () => {
+  it("keeps joystick and L1/R1 on one tab and cancels the entry card jump on a manual change", () => {
     const root = renderPage({
       appId: 1091500,
       gameName: "Cyberpunk 2077",
@@ -196,12 +201,42 @@ describe("ArtworkEditorPage", () => {
       onGoToSteamMatch: vi.fn(),
       onSaveMatch: vi.fn(),
     });
+    // Refs in order: requestSeq, browser, cardFocusPending.
+    const cardFocusPending = hookState.refs[2];
+    const tab = (id: string) => nodes(root).find((n) => n.props?.["data-artwork-tab"] === id)!;
     // Initial tab is "cover" (slot 1 of hookState is activeTab).
     expect(hookState.slots[1]).toBe("cover");
-    root.props.onButtonDown({ detail: { button: 6 } }); // R1 -> wide
+    expect(tab("cover").props!.preferredFocus).toBe(true);
+
+    // Entry focus landing on the active tab keeps the jump armed.
+    tab("cover").props!.onGamepadFocus();
+    expect(cardFocusPending.current).toBe(true);
+
+    tab("wide").props!.onGamepadFocus(); // joystick -> wide
     expect(hookState.slots[1]).toBe("wide");
-    root.props.onButtonDown({ detail: { button: 5 } }); // L1 -> back to cover
-    expect(hookState.slots[1]).toBe("cover");
+    expect(cardFocusPending.current).toBe(false);
+
+    root.props.onButtonDown({ detail: { button: 6 } }); // R1 -> hero
+    expect(hookState.slots[1]).toBe("hero");
+    root.props.onButtonDown({ detail: { button: 5 } }); // L1 -> back to wide
+    expect(hookState.slots[1]).toBe("wide");
+  });
+
+  it("cancels the entry card jump when L1/R1 changes the tab", () => {
+    const root = renderPage({
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      savedSteamName: "Cyberpunk 2077",
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    });
+    root.props.onButtonDown({ detail: { button: 6 } });
+    expect(hookState.slots[1]).toBe("wide");
+    expect(hookState.refs[2].current).toBe(false);
   });
 
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {

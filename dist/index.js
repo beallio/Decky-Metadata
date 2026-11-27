@@ -39547,12 +39547,19 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const cycleTab = SP_REACT.useCallback((delta) => {
         if (visibleTabs.length <= 1)
             return;
+        cardFocusPendingRef.current = false;
         setActiveTab((current) => {
             const idx = visibleTabs.indexOf(current);
             const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
             return visibleTabs[nextIdx];
         });
     }, [visibleTabs]);
+    // A manual tab change cancels the entry jump into the first artwork card.
+    const selectTab = (tab) => {
+        if (tab !== activeTab)
+            cardFocusPendingRef.current = false;
+        setActiveTab(tab);
+    };
     const busy = entryBusy || snapshot.busy || actionBusy;
     const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
     const applySgdb = async (slot, asset) => {
@@ -39650,7 +39657,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
                             const active = tab === activeTab;
                             return (SP_JSX.jsx(DFL.Focusable, { "data-artwork-tab": tab, "data-artwork-initial-focus": active && !cardsFocusTarget ? "" : undefined, className: `${artworkBrowserClass}__tab${active ? " is-active" : ""}`, preferredFocus: active, 
                                 // Moving focus across tabs selects them, like Steam's own tab bars.
-                                onGamepadFocus: () => setActiveTab(tab), onActivate: () => setActiveTab(tab), onClick: () => setActiveTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
+                                onGamepadFocus: () => selectTab(tab), onActivate: () => selectTab(tab), onClick: () => selectTab(tab), children: t(tabLabelKey$1(tab)) }, tab));
                         }) }), SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperRight") })] }), activeSlot !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.text }, children: t("editor.artwork.pendingMatchDescription") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })] })) : null, SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__toolbar`, children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__game-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__game-title`, children: resolvingGame
                                             ? t("editor.artwork.resolvingGame")
                                             : sgdbGame
