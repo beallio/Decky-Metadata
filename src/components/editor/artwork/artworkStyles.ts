@@ -61,9 +61,9 @@ export const artworkBrowserCss = `
 }
 
 .${artworkBrowserClass}__tab {
-  padding: 6px 12px;
+  padding: 5px 9px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: ${colors.textSecondary};
   background: transparent;

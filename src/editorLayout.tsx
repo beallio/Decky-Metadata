@@ -101,18 +101,59 @@ const css = `
 }
 
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn {
+  box-sizing: border-box !important;
   width: 64px !important;
   min-width: 64px !important;
   max-width: 64px !important;
   flex: 0 0 64px !important;
   overflow: hidden !important;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > :first-child {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  display: flex !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :first-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 24px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :last-child {
+  display: none !important;
 }
 
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-title,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-label,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__dirty-dot,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-title,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header > :last-child {
   display: none !important;
 }
@@ -125,7 +166,7 @@ const css = `
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
   width: 48px !important;
   min-width: 48px !important;
-  margin: auto 4px 22px !important;
+  margin: auto 8px 22px !important;
   padding: 0 4px !important;
   overflow: hidden;
   text-overflow: clip;
@@ -169,7 +210,7 @@ function EditorTitle({ title, appId, steamAppId }: Pick<EditorLayoutProps, "titl
     return () => { current = false; };
   }, [appId, fallbackAppId, showIcon]);
 
-  if (!showIcon || !Marquee) return <>{title}</>;
+  if (!showIcon || !Marquee) return <span className={`${layout}__header-title`}>{title}</span>;
   return (
     <div className={`${layout}__header`}>
       {icon ? <img className={`${layout}__header-icon`} src={icon} alt="" /> : null}

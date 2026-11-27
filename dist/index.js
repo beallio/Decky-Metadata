@@ -3663,7 +3663,7 @@ var editor$o = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -3682,7 +3682,7 @@ var editor$o = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -4614,7 +4614,7 @@ var editor$n = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -4633,7 +4633,7 @@ var editor$n = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -5567,7 +5567,7 @@ var editor$m = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -5586,7 +5586,7 @@ var editor$m = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -6518,7 +6518,7 @@ var editor$l = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -6537,7 +6537,7 @@ var editor$l = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -7469,7 +7469,7 @@ var editor$k = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -7488,7 +7488,7 @@ var editor$k = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -8420,7 +8420,7 @@ var editor$j = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -8439,7 +8439,7 @@ var editor$j = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -9372,7 +9372,7 @@ var editor$i = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -9391,7 +9391,7 @@ var editor$i = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -10323,7 +10323,7 @@ var editor$h = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -10342,7 +10342,7 @@ var editor$h = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -11275,7 +11275,7 @@ var editor$g = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -11294,7 +11294,7 @@ var editor$g = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -12227,7 +12227,7 @@ var editor$f = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -12246,7 +12246,7 @@ var editor$f = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -13177,7 +13177,7 @@ var editor$e = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -13196,7 +13196,7 @@ var editor$e = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -14128,7 +14128,7 @@ var editor$d = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -14147,7 +14147,7 @@ var editor$d = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -15078,7 +15078,7 @@ var editor$c = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -15097,7 +15097,7 @@ var editor$c = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -16029,7 +16029,7 @@ var editor$b = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -16048,7 +16048,7 @@ var editor$b = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -16982,7 +16982,7 @@ var editor$a = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -17001,7 +17001,7 @@ var editor$a = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -17934,7 +17934,7 @@ var editor$9 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -17953,7 +17953,7 @@ var editor$9 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -18886,7 +18886,7 @@ var editor$8 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -18905,7 +18905,7 @@ var editor$8 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -19838,7 +19838,7 @@ var editor$7 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -19857,7 +19857,7 @@ var editor$7 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -20791,7 +20791,7 @@ var editor$6 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -20810,7 +20810,7 @@ var editor$6 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -21742,7 +21742,7 @@ var editor$5 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -21761,7 +21761,7 @@ var editor$5 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -22693,7 +22693,7 @@ var editor$4 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -22712,7 +22712,7 @@ var editor$4 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -23644,7 +23644,7 @@ var editor$3 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -23663,7 +23663,7 @@ var editor$3 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -24597,7 +24597,7 @@ var editor$2 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -24616,7 +24616,7 @@ var editor$2 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -25547,7 +25547,7 @@ var editor$1 = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -25566,7 +25566,7 @@ var editor$1 = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -26497,7 +26497,7 @@ var editor = {
 		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
 		sourceOverride: "Custom",
 		sourceAuto: "Auto",
-		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game (Y) to search.",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
 		resetGameButton: "Reset to Auto",
 		noSearchResults: "No SteamGridDB games matched your search.",
 		gameChangedBody: "Switched artwork source to {{game}}.",
@@ -26516,7 +26516,7 @@ var editor = {
 		resetFilters: "Reset defaults",
 		applyFilters: "Apply filters",
 		filterActionHint: "Filter / Game",
-		filterButton: "Filter / Game (Y)",
+		filterButton: "Filter / Game",
 		filtersActiveCount: "{{count}} filter(s)",
 		detailsTitle: "Artwork details",
 		detailsAuthor: "Author",
@@ -38840,9 +38840,9 @@ const artworkBrowserCss = `
 }
 
 .${artworkBrowserClass}__tab {
-  padding: 6px 12px;
+  padding: 5px 9px;
   border-radius: 4px;
-  font-size: 13px;
+  font-size: 12px;
   font-weight: 600;
   color: ${colors.textSecondary};
   background: transparent;
@@ -41570,18 +41570,59 @@ const css$1 = `
 }
 
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn {
+  box-sizing: border-box !important;
   width: 64px !important;
   min-width: 64px !important;
   max-width: 64px !important;
   flex: 0 0 64px !important;
   overflow: hidden !important;
-  padding-left: 4px !important;
-  padding-right: 4px !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > :first-child {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  display: flex !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :first-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 24px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :last-child {
+  display: none !important;
 }
 
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-title,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-label,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__dirty-dot,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-title,
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header > :last-child {
   display: none !important;
 }
@@ -41594,7 +41635,7 @@ const css$1 = `
 .${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
   width: 48px !important;
   min-width: 48px !important;
-  margin: auto 4px 22px !important;
+  margin: auto 8px 22px !important;
   padding: 0 4px !important;
   overflow: hidden;
   text-overflow: clip;
@@ -41635,7 +41676,7 @@ function EditorTitle({ title, appId, steamAppId }) {
         return () => { current = false; };
     }, [appId, fallbackAppId, showIcon]);
     if (!showIcon || !DFL.Marquee)
-        return SP_JSX.jsx(SP_JSX.Fragment, { children: title });
+        return SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title });
     return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon`, src: icon, alt: "" }) : null, SP_JSX.jsx(DFL.Marquee, { children: title })] }));
 }
 function evaluateSidebarCollapseState(currentlyCollapsed, sidebarHasFocus, contentHasFocus) {

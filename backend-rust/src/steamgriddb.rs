@@ -10,13 +10,17 @@ use serde_json::{Map, Value, json};
 use std::{fs, path::Path, time::Duration};
 
 const SGDB_API_BASE: &str = "https://www.steamgriddb.com/api/v2";
+/// SteamGridDB's WAF answers 401 "Invalid API key" to any client whose
+/// User-Agent is not Decky's, even when the key itself is valid. Requests that
+/// go through the Loader proxy carry `Decky/<version> (https://decky.xyz)`;
+/// the version is cosmetic but the trailing URL is required.
+const SGDB_USER_AGENT: &str = "Decky/3 (https://decky.xyz)";
 const SGDB_API_TIMEOUT: Duration = Duration::from_secs(15);
 const SGDB_ASSET_TIMEOUT: Duration = Duration::from_secs(20);
 const MAX_API_BYTES: usize = 2 * 1024 * 1024;
 const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 
 /// Optional compile-time API key injected by CI (`DECKY_SGDB_API_KEY`).
-/// Never hardcode any third-party plugin's private key here.
 pub const BUILT_IN_API_KEY: Option<&str> = option_env!("DECKY_SGDB_API_KEY");
 
 /// Valid 1x1 RGBA transparent PNG (67 bytes).
@@ -174,12 +178,17 @@ async fn sgdb_get_json(state: &AppState, url: &str, api_key: &str) -> Result<Val
         return Err("sgdb_invalid_url".to_owned());
     }
     let auth_header = format!("Bearer {api_key}");
+    let headers = [
+        ("Authorization", auth_header.as_str()),
+        ("Accept", "application/json"),
+        ("User-Agent", SGDB_USER_AGENT),
+    ];
     let response = state
         .http
         .request(
             Method::GET,
             url,
-            &[("Authorization", auth_header.as_str())],
+            &headers,
             None,
             SGDB_API_TIMEOUT,
             MAX_API_BYTES,
@@ -666,6 +675,13 @@ mod tests {
             key_status_with_builtin(None, None),
             json!({ "hasUserKey": false, "hasBuiltInKey": false, "configured": false })
         );
+    }
+
+    #[test]
+    fn sgdb_user_agent_matches_the_waf_accepted_shape() {
+        // SteamGridDB 401s any other User-Agent; see SGDB_USER_AGENT.
+        assert!(SGDB_USER_AGENT.starts_with("Decky/"));
+        assert!(SGDB_USER_AGENT.ends_with("(https://decky.xyz)"));
     }
 
     #[test]
