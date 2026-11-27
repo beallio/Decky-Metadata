@@ -268,4 +268,29 @@ describe("ArtworkController", () => {
     expect(saves[saves.length - 1][0].sgdbApiKey).toBe("");
     expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
   });
+
+  it("still saves a newer change when the save before it fails, and rolls back only the last failure", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+    await ctrl.ensureSettingsLoaded();
+    const first = Promise.withResolvers<ArtworkSettings>();
+    vi.mocked(deps.setArtworkSettings)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementation(async (next) => next);
+
+    const typed = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "typed" });
+    const cleared = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "" });
+    first.reject(new Error("disk full"));
+
+    await expect(Promise.all([typed, cleared])).resolves.toEqual([false, true]);
+    expect(deps.setArtworkSettings).toHaveBeenCalledTimes(2);
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settingsError).toBe("");
+
+    // With nothing newer queued, a failure restores the last confirmed settings.
+    vi.mocked(deps.setArtworkSettings).mockRejectedValueOnce(new Error("disk full"));
+    await expect(ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "lost" })).resolves.toBe(false);
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settingsError).not.toBe("");
+  });
 });

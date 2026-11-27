@@ -29651,9 +29651,10 @@ class ArtworkController {
             }
             catch (error) {
                 warn("artwork", "artwork settings save failed", error);
-                this.queued?.settles.forEach((settle) => settle(false));
-                this.queued = undefined;
-                this.publish({ settings: this.confirmed ?? this.snapshot.settings, settingsError: translateBackendError(error) });
+                // A newer queued change carries the full settings and supersedes this one; save it instead of rolling back.
+                if (!this.queued) {
+                    this.publish({ settings: this.confirmed ?? this.snapshot.settings, settingsError: translateBackendError(error) });
+                }
             }
             for (const settle of settles)
                 settle(saved);
