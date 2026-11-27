@@ -117,6 +117,7 @@ vi.mock("../../toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
 vi.mock("../../steam/nativeFocus", () => nav);
 
 import { DEFAULT_ARTWORK_SETTINGS, defaultSlotFilter } from "../../artwork/controller";
+import { toastError } from "../../toast";
 
 import {
   ArtworkEditorPage,
@@ -179,7 +180,6 @@ describe("ArtworkEditorPage", () => {
       gameName: "Hades II",
       isSteamGame: false,
       savedSteamAppId: null,
-      savedSteamName: "",
       unsavedSteamAppId: 1145350,
       entryBusy: false,
       onGoToSteamMatch: vi.fn(),
@@ -206,7 +206,6 @@ describe("ArtworkEditorPage", () => {
       gameName: "Cyberpunk 2077",
       isSteamGame: true,
       savedSteamAppId: 1091500,
-      savedSteamName: "Cyberpunk 2077",
       unsavedSteamAppId: 1091500,
       entryBusy: false,
       onGoToSteamMatch: vi.fn(),
@@ -239,7 +238,6 @@ describe("ArtworkEditorPage", () => {
       gameName: "Cyberpunk 2077",
       isSteamGame: true,
       savedSteamAppId: 1091500,
-      savedSteamName: "Cyberpunk 2077",
       unsavedSteamAppId: 1091500,
       entryBusy: false,
       onGoToSteamMatch: vi.fn(),
@@ -256,7 +254,6 @@ describe("ArtworkEditorPage", () => {
       gameName: "Cyberpunk 2077",
       isSteamGame: true,
       savedSteamAppId: 1091500,
-      savedSteamName: "Cyberpunk 2077",
       unsavedSteamAppId: 1091500,
       entryBusy: false,
       onGoToSteamMatch: vi.fn(),
@@ -338,6 +335,26 @@ describe("ArtworkEditorPage", () => {
     });
   });
 
+  it("keeps the filter modal open and shows an error when saving the filter fails", async () => {
+    ui.showModal.mockClear();
+    vi.mocked(toastError).mockClear();
+    ctrl.updateSlotFilter.mockResolvedValueOnce(false);
+    const root = renderPage({
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    });
+    root.props.onSecondaryButton(); // Y opens Filter & Change Game
+    const modal = ui.showModal.mock.calls[0][0] as ReactElement<{ onApplyFilter: (f: unknown) => Promise<boolean> }>;
+    await expect(modal.props.onApplyFilter(defaultSlotFilter("cover"))).resolves.toBe(false);
+    expect(toastError).toHaveBeenCalledTimes(1);
+  });
+
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {
     expect(
       logoPreviewBoxStyle({ pinnedPosition: "UpperLeft", nWidthPct: 40, nHeightPct: 30 }),
@@ -346,7 +363,7 @@ describe("ArtworkEditorPage", () => {
       logoPreviewBoxStyle({ pinnedPosition: "CenterCenter", nWidthPct: 50, nHeightPct: 50 }),
     ).toMatchObject({ top: "50%", left: "50%", transform: "translate(-50%, -50%)" });
     expect(
-      logoPreviewBoxStyle({ pinnedPosition: "BottomRight", nWidthPct: 60, nHeightPct: 25 }),
-    ).toMatchObject({ bottom: 0, right: 0, width: "60%", height: "25%" });
+      logoPreviewBoxStyle({ pinnedPosition: "BottomCenter", nWidthPct: 60, nHeightPct: 25 }),
+    ).toMatchObject({ bottom: 0, left: "50%", width: "60%", height: "25%" });
   });
 });

@@ -138,14 +138,10 @@ export async function clearSteamArtworkSlot(appId: number, slot: ArtworkSlot): P
 
 export const STEAM_LOGO_ANCHORS: readonly SteamLogoAnchor[] = [
   "UpperLeft",
-  "UpperCenter",
-  "UpperRight",
-  "CenterLeft",
-  "CenterCenter",
-  "CenterRight",
   "BottomLeft",
+  "UpperCenter",
+  "CenterCenter",
   "BottomCenter",
-  "BottomRight",
 ];
 
 export const DEFAULT_LOGO_POSITION: SteamLogoPosition = {
@@ -162,7 +158,12 @@ export function getCustomLogoPosition(appId: number): SteamLogoPosition {
   const normalizedId = validAppId(appId);
   if (!normalizedId) return { ...DEFAULT_LOGO_POSITION };
   try {
-    const raw = steamInternals().appDetailsStore?.GetAppData?.(normalizedId)?.libraryAssets?.logoPosition;
+    const internals = steamInternals();
+    const overview = internals.appStore?.GetAppOverviewByAppID?.(normalizedId);
+    const raw =
+      (overview && internals.appDetailsStore?.GetCustomLogoPosition?.(overview)) ??
+      internals.appDetailsStore?.GetAppData?.(normalizedId)?.customImageInfo?.logoPosition ??
+      internals.appDetailsStore?.GetAppDetails?.(normalizedId)?.libraryAssets?.logoPosition;
     if (!raw || typeof raw !== "object") return { ...DEFAULT_LOGO_POSITION };
     const anchor = STEAM_LOGO_ANCHORS.includes(raw.pinnedPosition as SteamLogoAnchor)
       ? (raw.pinnedPosition as SteamLogoAnchor)

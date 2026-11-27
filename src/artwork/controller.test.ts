@@ -248,4 +248,24 @@ describe("ArtworkController", () => {
     expect(ok).toBe(true);
     expect(ctrl.getSnapshot().settings.filters.cover.nsfw).toBe(true);
   });
+
+  it("saves overlapping settings changes in order so the newest change wins", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+    await ctrl.ensureSettingsLoaded();
+    const first = Promise.withResolvers<ArtworkSettings>();
+    vi.mocked(deps.setArtworkSettings)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementation(async (next) => next);
+
+    const typed = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "typed" });
+    const cleared = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "" });
+    expect(deps.setArtworkSettings).toHaveBeenCalledTimes(1); // the second save waits for the first
+    first.resolve({ ...DEFAULT_ARTWORK_SETTINGS, sgdbApiKey: "typed" });
+
+    await expect(Promise.all([typed, cleared])).resolves.toEqual([true, true]);
+    const saves = vi.mocked(deps.setArtworkSettings).mock.calls;
+    expect(saves[saves.length - 1][0].sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+  });
 });

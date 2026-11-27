@@ -19,6 +19,14 @@ export const SLOT_GRID_MIN_WIDTH: Record<ArtworkSlot, number> = {
   icon: 108,
 };
 
+export const mimeLabel = (mime: string): string => {
+  if (mime === "image/png") return "PNG";
+  if (mime === "image/jpeg") return "JPEG";
+  if (mime === "image/webp") return "WebP";
+  if (mime === "image/vnd.microsoft.icon") return "ICO";
+  return mime;
+};
+
 export const artworkBrowserCss = `
 .${artworkBrowserClass} {
   display: flex;
@@ -337,7 +345,7 @@ export const artworkBrowserCss = `
 
 .${artworkBrowserClass}__anchor-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 }
 `;

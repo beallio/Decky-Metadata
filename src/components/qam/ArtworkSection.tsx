@@ -75,6 +75,8 @@ export function ArtworkBody({
 
   const tabOrder = settings.tabOrder?.length ? settings.tabOrder : [...ARTWORK_TAB_ORDER];
   const hiddenTabs = new Set<ArtworkSlot>(settings.hiddenTabs ?? []);
+  const visibleTabs = tabOrder.filter((tab) => tab === "manage" || !hiddenTabs.has(tab));
+  const defaultTab = settings.defaultTab ?? "cover";
 
   const saveApiKey = () => {
     const next = apiKeyDraft.trim();
@@ -113,10 +115,15 @@ export function ArtworkBody({
       const nextHidden = new Set(current.hiddenTabs ?? []);
       if (nextHidden.has(tab)) {
         nextHidden.delete(tab);
-      } else {
-        nextHidden.add(tab);
+        return { ...current, hiddenTabs: [...nextHidden] };
       }
-      return { ...current, hiddenTabs: [...nextHidden] };
+      nextHidden.add(tab);
+      // A hidden tab cannot stay the default; fall back to the first tab still shown.
+      const order = current.tabOrder?.length ? current.tabOrder : [...ARTWORK_TAB_ORDER];
+      const defaultTab = current.defaultTab === tab
+        ? order.find((other) => other === "manage" || !nextHidden.has(other)) ?? "manage"
+        : current.defaultTab;
+      return { ...current, hiddenTabs: [...nextHidden], defaultTab };
     });
   };
 
@@ -206,10 +213,8 @@ export function ArtworkBody({
           label={t("qam.artwork.defaultTabLabel")}
           description={t("qam.artwork.defaultTabDescription")}
           disabled={controlsDisabled}
-          selectedOption={settings.defaultTab ?? "cover"}
-          rgOptions={tabOrder
-            .filter((tab) => tab === "manage" || !hiddenTabs.has(tab))
-            .map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) }))}
+          selectedOption={visibleTabs.includes(defaultTab) ? defaultTab : visibleTabs[0]}
+          rgOptions={visibleTabs.map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) }))}
           onChange={(option) =>
             onSettingsChange((current) => ({
               ...current,

@@ -5,6 +5,7 @@ import { resolveEditorIcon, steamIconUrl } from "./editorHeaderIcon";
 import type { EditorPageId } from "./editorPages";
 import { translateBackendError, useT } from "./i18n";
 import * as log from "./log";
+import { nativeFocusedElement } from "./steam/nativeFocus";
 import { colors } from "./tokens";
 import type { EditorHeaderSettings } from "./types";
 import { resolveNativePagedSettings, type NativePagedSettingsPageEntry } from "./nativePagedSettings";
@@ -277,7 +278,8 @@ function CollapsibleSidebarShell({
     const syncFromDom = () => {
       const sidebar = shell.querySelector<HTMLElement>(".PageListColumn");
       const content = shell.querySelector<HTMLElement>(".DialogContentTransition");
-      const active = typeof document !== "undefined" ? document.activeElement : null;
+      // Plugin code runs in another window; read Steam's gamepad focus, else this window's DOM focus.
+      const active = nativeFocusedElement() ?? shell.ownerDocument.activeElement;
       const sidebarFocused = Boolean(
         sidebar && (sidebar.classList.contains("gpfocuswithin") || (active && sidebar.contains(active))),
       );

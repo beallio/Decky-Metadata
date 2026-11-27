@@ -85,7 +85,20 @@
     "artwork_write_failed": "Failed to save Steam icon file.",
     "artwork_api_unavailable": "Steam custom artwork API is unavailable.",
     "artwork_apply_failed": "Steam could not apply this artwork.",
-    "artwork_clear_failed": "Steam could not clear this artwork."
+    "artwork_clear_failed": "Steam could not clear this artwork.",
+    "sgdb_missing_api_key": "SteamGridDB API key is not configured.",
+    "sgdb_invalid_api_key": "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+    "sgdb_rate_limited": "SteamGridDB rate limit reached. Try again in a moment.",
+    "sgdb_request_failed": "Could not reach SteamGridDB.",
+    "sgdb_invalid_response": "SteamGridDB returned an unexpected response.",
+    "sgdb_invalid_url": "Blocked non-SteamGridDB artwork URL.",
+    "sgdb_empty_query": "Enter a game name to search SteamGridDB.",
+    "sgdb_invalid_game_id": "Invalid SteamGridDB game ID.",
+    "sgdb_invalid_game_name": "Invalid SteamGridDB game name.",
+    "artwork_invalid_file": "Selected artwork file is invalid.",
+    "artwork_file_unreadable": "Could not read the selected artwork file.",
+    "artwork_file_too_large": "Selected artwork file exceeds the 10 MB size limit.",
+    "artwork_logo_position_unavailable": "Steam's custom logo position API is unavailable."
   },
   "updater": {
     "check": {
@@ -905,20 +918,5 @@
       "failedTitle": "Artwork update failed",
       "clearedTitle": "Artwork cleared"
     }
-  },
-  "backendError": {
-    "sgdb_missing_api_key": "SteamGridDB API key is not configured.",
-    "sgdb_invalid_api_key": "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-    "sgdb_rate_limited": "SteamGridDB rate limit reached. Try again in a moment.",
-    "sgdb_request_failed": "Could not reach SteamGridDB.",
-    "sgdb_invalid_response": "SteamGridDB returned an unexpected response.",
-    "sgdb_invalid_url": "Blocked non-SteamGridDB artwork URL.",
-    "sgdb_empty_query": "Enter a game name to search SteamGridDB.",
-    "sgdb_invalid_game_id": "Invalid SteamGridDB game ID.",
-    "sgdb_invalid_game_name": "Invalid SteamGridDB game name.",
-    "artwork_invalid_file": "Selected artwork file is invalid.",
-    "artwork_file_unreadable": "Could not read the selected artwork file.",
-    "artwork_file_too_large": "Selected artwork file exceeds the 10 MB size limit.",
-    "artwork_logo_position_unavailable": "Steam's custom logo position API is unavailable."
   }
 }

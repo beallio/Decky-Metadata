@@ -56,6 +56,7 @@ import {
   subscribeCompatibilityRevision,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
+import { takeNativeFocus } from "./steam/nativeFocus";
 import {
   CATEGORY_LABELS,
   categoryLabel,
@@ -809,7 +810,10 @@ export const MetadataPage = () => {
       ? "[data-editor-title] input"
       : "[data-artwork-initial-focus], [data-editor-hltb-search] input";
     const frame = requestAnimationFrame(() => {
-      root.querySelector<HTMLInputElement>(selector)?.focus();
+      const target = root.querySelector<HTMLElement>(selector);
+      // The artwork marker is a Steam Focusable; DOM focus() from this window does not move gamepad focus.
+      if (target?.matches("[data-artwork-initial-focus]")) takeNativeFocus(target);
+      else target?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, [editorEntryToken, nonSteam]);
@@ -2254,7 +2258,6 @@ export const MetadataPage = () => {
         gameName={appName(appId)}
         isSteamGame={!nonSteam}
         savedSteamAppId={effectiveSteamAppId}
-        savedSteamName={nonSteam ? savedSteamStoreName : appName(appId)}
         unsavedSteamAppId={nonSteam ? formSteamAppId : effectiveSteamAppId}
         entryBusy={entryBusy}
         onGoToSteamMatch={() => setPage("steam-match")}

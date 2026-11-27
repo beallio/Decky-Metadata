@@ -114,6 +114,7 @@ vi.mock("./components/editor/ArtworkEditorPage", () => ({
 }));
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
+vi.mock("./steam/nativeFocus", () => ({ takeNativeFocus: vi.fn(), nativeFocusedElement: vi.fn(() => null) }));
 vi.mock("./toast", () => toast);
 vi.mock("./editorLayout", () => ({
   EditorLayout: ({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }: LayoutProps) => (

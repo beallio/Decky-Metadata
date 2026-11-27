@@ -27,6 +27,7 @@ vi.mock("./i18n", () => ({
 }));
 vi.mock("./backend", () => ({ getEditorHeaderSettings: vi.fn() }));
 vi.mock("./editorHeaderIcon", () => ({ resolveEditorIcon: vi.fn(), steamIconUrl: vi.fn() }));
+vi.mock("./steam/nativeFocus", () => ({ nativeFocusedElement: vi.fn(() => null) }));
 // Cache like React does so the test can assert that page descriptors stay stable across edits.
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),

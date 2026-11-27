@@ -2954,7 +2954,20 @@ var backend$p = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$o = {
 	check: {
@@ -3775,21 +3788,6 @@ var artwork$o = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$o = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var arAA = {
 	settings: settings$o,
 	common: common$o,
@@ -3812,8 +3810,7 @@ var arAA = {
 	matchPicker: matchPicker$o,
 	categories: categories$o,
 	controllerLayouts: controllerLayouts$o,
-	artwork: artwork$o,
-	backendError: backendError$o
+	artwork: artwork$o
 };
 
 var settings$n = {
@@ -3901,7 +3898,20 @@ var backend$o = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$n = {
 	check: {
@@ -4722,21 +4732,6 @@ var artwork$n = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$n = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var bgBG = {
 	settings: settings$n,
 	common: common$n,
@@ -4759,8 +4754,7 @@ var bgBG = {
 	matchPicker: matchPicker$n,
 	categories: categories$n,
 	controllerLayouts: controllerLayouts$n,
-	artwork: artwork$n,
-	backendError: backendError$n
+	artwork: artwork$n
 };
 
 var settings$m = {
@@ -4850,7 +4844,20 @@ var backend$n = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$m = {
 	check: {
@@ -5671,21 +5678,6 @@ var artwork$m = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$m = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var csCZ = {
 	settings: settings$m,
 	common: common$m,
@@ -5708,8 +5700,7 @@ var csCZ = {
 	matchPicker: matchPicker$m,
 	categories: categories$m,
 	controllerLayouts: controllerLayouts$m,
-	artwork: artwork$m,
-	backendError: backendError$m
+	artwork: artwork$m
 };
 
 var settings$l = {
@@ -5797,7 +5788,20 @@ var backend$m = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$l = {
 	check: {
@@ -6618,21 +6622,6 @@ var artwork$l = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$l = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var deDE = {
 	settings: settings$l,
 	common: common$l,
@@ -6655,8 +6644,7 @@ var deDE = {
 	matchPicker: matchPicker$l,
 	categories: categories$l,
 	controllerLayouts: controllerLayouts$l,
-	artwork: artwork$l,
-	backendError: backendError$l
+	artwork: artwork$l
 };
 
 var settings$k = {
@@ -6744,7 +6732,20 @@ var backend$l = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$k = {
 	check: {
@@ -7565,21 +7566,6 @@ var artwork$k = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$k = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var elGR = {
 	settings: settings$k,
 	common: common$k,
@@ -7602,8 +7588,7 @@ var elGR = {
 	matchPicker: matchPicker$k,
 	categories: categories$k,
 	controllerLayouts: controllerLayouts$k,
-	artwork: artwork$k,
-	backendError: backendError$k
+	artwork: artwork$k
 };
 
 var settings$j = {
@@ -7691,7 +7676,20 @@ var backend$k = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$j = {
 	check: {
@@ -8512,21 +8510,6 @@ var artwork$j = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$j = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var enUS = {
 	settings: settings$j,
 	common: common$j,
@@ -8549,8 +8532,7 @@ var enUS = {
 	matchPicker: matchPicker$j,
 	categories: categories$j,
 	controllerLayouts: controllerLayouts$j,
-	artwork: artwork$j,
-	backendError: backendError$j
+	artwork: artwork$j
 };
 
 var settings$i = {
@@ -8639,7 +8621,20 @@ var backend$j = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$i = {
 	check: {
@@ -9460,21 +9455,6 @@ var artwork$i = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$i = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var esES = {
 	settings: settings$i,
 	common: common$i,
@@ -9497,8 +9477,7 @@ var esES = {
 	matchPicker: matchPicker$i,
 	categories: categories$i,
 	controllerLayouts: controllerLayouts$i,
-	artwork: artwork$i,
-	backendError: backendError$i
+	artwork: artwork$i
 };
 
 var settings$h = {
@@ -9586,7 +9565,20 @@ var backend$i = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$h = {
 	check: {
@@ -10407,21 +10399,6 @@ var artwork$h = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$h = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var fiFI = {
 	settings: settings$h,
 	common: common$h,
@@ -10444,8 +10421,7 @@ var fiFI = {
 	matchPicker: matchPicker$h,
 	categories: categories$h,
 	controllerLayouts: controllerLayouts$h,
-	artwork: artwork$h,
-	backendError: backendError$h
+	artwork: artwork$h
 };
 
 var settings$g = {
@@ -10534,7 +10510,20 @@ var backend$h = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$g = {
 	check: {
@@ -11355,21 +11344,6 @@ var artwork$g = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$g = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var frFR = {
 	settings: settings$g,
 	common: common$g,
@@ -11392,8 +11366,7 @@ var frFR = {
 	matchPicker: matchPicker$g,
 	categories: categories$g,
 	controllerLayouts: controllerLayouts$g,
-	artwork: artwork$g,
-	backendError: backendError$g
+	artwork: artwork$g
 };
 
 var settings$f = {
@@ -11482,7 +11455,20 @@ var backend$g = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$f = {
 	check: {
@@ -12303,21 +12289,6 @@ var artwork$f = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$f = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var itIT = {
 	settings: settings$f,
 	common: common$f,
@@ -12340,8 +12311,7 @@ var itIT = {
 	matchPicker: matchPicker$f,
 	categories: categories$f,
 	controllerLayouts: controllerLayouts$f,
-	artwork: artwork$f,
-	backendError: backendError$f
+	artwork: artwork$f
 };
 
 var settings$e = {
@@ -12428,7 +12398,20 @@ var backend$f = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$e = {
 	check: {
@@ -13249,21 +13232,6 @@ var artwork$e = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$e = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var jaJP = {
 	settings: settings$e,
 	common: common$e,
@@ -13286,8 +13254,7 @@ var jaJP = {
 	matchPicker: matchPicker$e,
 	categories: categories$e,
 	controllerLayouts: controllerLayouts$e,
-	artwork: artwork$e,
-	backendError: backendError$e
+	artwork: artwork$e
 };
 
 var settings$d = {
@@ -13375,7 +13342,20 @@ var backend$e = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$d = {
 	check: {
@@ -14196,21 +14176,6 @@ var artwork$d = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$d = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var kaDZ = {
 	settings: settings$d,
 	common: common$d,
@@ -14233,8 +14198,7 @@ var kaDZ = {
 	matchPicker: matchPicker$d,
 	categories: categories$d,
 	controllerLayouts: controllerLayouts$d,
-	artwork: artwork$d,
-	backendError: backendError$d
+	artwork: artwork$d
 };
 
 var settings$c = {
@@ -14321,7 +14285,20 @@ var backend$d = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$c = {
 	check: {
@@ -15142,21 +15119,6 @@ var artwork$c = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$c = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var koKR = {
 	settings: settings$c,
 	common: common$c,
@@ -15179,8 +15141,7 @@ var koKR = {
 	matchPicker: matchPicker$c,
 	categories: categories$c,
 	controllerLayouts: controllerLayouts$c,
-	artwork: artwork$c,
-	backendError: backendError$c
+	artwork: artwork$c
 };
 
 var settings$b = {
@@ -15268,7 +15229,20 @@ var backend$c = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$b = {
 	check: {
@@ -16089,21 +16063,6 @@ var artwork$b = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$b = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var nlNL = {
 	settings: settings$b,
 	common: common$b,
@@ -16126,8 +16085,7 @@ var nlNL = {
 	matchPicker: matchPicker$b,
 	categories: categories$b,
 	controllerLayouts: controllerLayouts$b,
-	artwork: artwork$b,
-	backendError: backendError$b
+	artwork: artwork$b
 };
 
 var settings$a = {
@@ -16217,7 +16175,20 @@ var backend$b = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$a = {
 	check: {
@@ -17038,21 +17009,6 @@ var artwork$a = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$a = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var plPL = {
 	settings: settings$a,
 	common: common$a,
@@ -17075,8 +17031,7 @@ var plPL = {
 	matchPicker: matchPicker$a,
 	categories: categories$a,
 	controllerLayouts: controllerLayouts$a,
-	artwork: artwork$a,
-	backendError: backendError$a
+	artwork: artwork$a
 };
 
 var settings$9 = {
@@ -17165,7 +17120,20 @@ var backend$a = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$9 = {
 	check: {
@@ -17986,21 +17954,6 @@ var artwork$9 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$9 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var ptBR = {
 	settings: settings$9,
 	common: common$9,
@@ -18023,8 +17976,7 @@ var ptBR = {
 	matchPicker: matchPicker$9,
 	categories: categories$9,
 	controllerLayouts: controllerLayouts$9,
-	artwork: artwork$9,
-	backendError: backendError$9
+	artwork: artwork$9
 };
 
 var settings$8 = {
@@ -18113,7 +18065,20 @@ var backend$9 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$8 = {
 	check: {
@@ -18934,21 +18899,6 @@ var artwork$8 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$8 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var ptPT = {
 	settings: settings$8,
 	common: common$8,
@@ -18971,8 +18921,7 @@ var ptPT = {
 	matchPicker: matchPicker$8,
 	categories: categories$8,
 	controllerLayouts: controllerLayouts$8,
-	artwork: artwork$8,
-	backendError: backendError$8
+	artwork: artwork$8
 };
 
 var settings$7 = {
@@ -19061,7 +19010,20 @@ var backend$8 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$7 = {
 	check: {
@@ -19882,21 +19844,6 @@ var artwork$7 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$7 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var roRO = {
 	settings: settings$7,
 	common: common$7,
@@ -19919,8 +19866,7 @@ var roRO = {
 	matchPicker: matchPicker$7,
 	categories: categories$7,
 	controllerLayouts: controllerLayouts$7,
-	artwork: artwork$7,
-	backendError: backendError$7
+	artwork: artwork$7
 };
 
 var settings$6 = {
@@ -20010,7 +19956,20 @@ var backend$7 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$6 = {
 	check: {
@@ -20831,21 +20790,6 @@ var artwork$6 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$6 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var ruRU = {
 	settings: settings$6,
 	common: common$6,
@@ -20868,8 +20812,7 @@ var ruRU = {
 	matchPicker: matchPicker$6,
 	categories: categories$6,
 	controllerLayouts: controllerLayouts$6,
-	artwork: artwork$6,
-	backendError: backendError$6
+	artwork: artwork$6
 };
 
 var settings$5 = {
@@ -20957,7 +20900,20 @@ var backend$6 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$5 = {
 	check: {
@@ -21778,21 +21734,6 @@ var artwork$5 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$5 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var sqAL = {
 	settings: settings$5,
 	common: common$5,
@@ -21815,8 +21756,7 @@ var sqAL = {
 	matchPicker: matchPicker$5,
 	categories: categories$5,
 	controllerLayouts: controllerLayouts$5,
-	artwork: artwork$5,
-	backendError: backendError$5
+	artwork: artwork$5
 };
 
 var settings$4 = {
@@ -21904,7 +21844,20 @@ var backend$5 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$4 = {
 	check: {
@@ -22725,21 +22678,6 @@ var artwork$4 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$4 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var svSE = {
 	settings: settings$4,
 	common: common$4,
@@ -22762,8 +22700,7 @@ var svSE = {
 	matchPicker: matchPicker$4,
 	categories: categories$4,
 	controllerLayouts: controllerLayouts$4,
-	artwork: artwork$4,
-	backendError: backendError$4
+	artwork: artwork$4
 };
 
 var settings$3 = {
@@ -22851,7 +22788,20 @@ var backend$4 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$3 = {
 	check: {
@@ -23672,21 +23622,6 @@ var artwork$3 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$3 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var trTR = {
 	settings: settings$3,
 	common: common$3,
@@ -23709,8 +23644,7 @@ var trTR = {
 	matchPicker: matchPicker$3,
 	categories: categories$3,
 	controllerLayouts: controllerLayouts$3,
-	artwork: artwork$3,
-	backendError: backendError$3
+	artwork: artwork$3
 };
 
 var settings$2 = {
@@ -23800,7 +23734,20 @@ var backend$3 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$2 = {
 	check: {
@@ -24621,21 +24568,6 @@ var artwork$2 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$2 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var ukUA = {
 	settings: settings$2,
 	common: common$2,
@@ -24658,8 +24590,7 @@ var ukUA = {
 	matchPicker: matchPicker$2,
 	categories: categories$2,
 	controllerLayouts: controllerLayouts$2,
-	artwork: artwork$2,
-	backendError: backendError$2
+	artwork: artwork$2
 };
 
 var settings$1 = {
@@ -24746,7 +24677,20 @@ var backend$2 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$1 = {
 	check: {
@@ -25567,21 +25511,6 @@ var artwork$1 = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError$1 = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var zhCN = {
 	settings: settings$1,
 	common: common$1,
@@ -25604,8 +25533,7 @@ var zhCN = {
 	matchPicker: matchPicker$1,
 	categories: categories$1,
 	controllerLayouts: controllerLayouts$1,
-	artwork: artwork$1,
-	backendError: backendError$1
+	artwork: artwork$1
 };
 
 var settings = {
@@ -25692,7 +25620,20 @@ var backend$1 = {
 	artwork_write_failed: "Failed to save Steam icon file.",
 	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
 	artwork_apply_failed: "Steam could not apply this artwork.",
-	artwork_clear_failed: "Steam could not clear this artwork."
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater = {
 	check: {
@@ -26513,21 +26454,6 @@ var artwork = {
 		clearedTitle: "Artwork cleared"
 	}
 };
-var backendError = {
-	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
-	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
-	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
-	sgdb_request_failed: "Could not reach SteamGridDB.",
-	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
-	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
-	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
-	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
-	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
-	artwork_invalid_file: "Selected artwork file is invalid.",
-	artwork_file_unreadable: "Could not read the selected artwork file.",
-	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
-	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
-};
 var zhTW = {
 	settings: settings,
 	common: common,
@@ -26550,8 +26476,7 @@ var zhTW = {
 	matchPicker: matchPicker,
 	categories: categories,
 	controllerLayouts: controllerLayouts,
-	artwork: artwork,
-	backendError: backendError
+	artwork: artwork
 };
 
 /** UI locales this plugin ships, primary fallback first. */
@@ -26931,7 +26856,6 @@ const sgdbListAssets = callable("sgdb_list_assets");
 const sgdbFetchAsset = callable("sgdb_fetch_asset");
 const readLocalArtworkFile = callable("read_local_artwork_file");
 const getTransparentArtworkAsset = callable("get_transparent_artwork_asset");
-const getSgdbGameOverride = callable("get_sgdb_game_override");
 const setSgdbGameOverride = callable("set_sgdb_game_override");
 const clearSgdbGameOverride = callable("clear_sgdb_game_override");
 const getProviderCache = callable("get_provider_cache");
@@ -26993,7 +26917,6 @@ var backend = /*#__PURE__*/Object.freeze({
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
     getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
-    getSgdbGameOverride: getSgdbGameOverride,
     getSgdbKeyStatus: getSgdbKeyStatus,
     getShortcutNameManagement: getShortcutNameManagement,
     getSteamOverride: getSteamOverride,
@@ -29337,14 +29260,10 @@ async function clearSteamArtworkSlot(appId, slot) {
 }
 const STEAM_LOGO_ANCHORS = [
     "UpperLeft",
-    "UpperCenter",
-    "UpperRight",
-    "CenterLeft",
-    "CenterCenter",
-    "CenterRight",
     "BottomLeft",
+    "UpperCenter",
+    "CenterCenter",
     "BottomCenter",
-    "BottomRight",
 ];
 const DEFAULT_LOGO_POSITION = {
     pinnedPosition: "BottomLeft",
@@ -29358,7 +29277,11 @@ function getCustomLogoPosition(appId) {
     if (!normalizedId)
         return { ...DEFAULT_LOGO_POSITION };
     try {
-        const raw = steamInternals().appDetailsStore?.GetAppData?.(normalizedId)?.libraryAssets?.logoPosition;
+        const internals = steamInternals();
+        const overview = internals.appStore?.GetAppOverviewByAppID?.(normalizedId);
+        const raw = (overview && internals.appDetailsStore?.GetCustomLogoPosition?.(overview)) ??
+            internals.appDetailsStore?.GetAppData?.(normalizedId)?.customImageInfo?.logoPosition ??
+            internals.appDetailsStore?.GetAppDetails?.(normalizedId)?.libraryAssets?.logoPosition;
         if (!raw || typeof raw !== "object")
             return { ...DEFAULT_LOGO_POSITION };
         const anchor = STEAM_LOGO_ANCHORS.includes(raw.pinnedPosition)
@@ -29588,6 +29511,26 @@ class ArtworkController {
             writable: true,
             value: []
         });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
         this.snapshot = {
             settings: structuredClone(DEFAULT_ARTWORK_SETTINGS),
             settingsLoaded: false,
@@ -29666,24 +29609,56 @@ class ArtworkController {
         }
     }
     async setSettings(next) {
-        const previous = this.snapshot.settings;
-        const normalizedNext = normalizeArtworkSettings(next);
-        this.publish({ settings: normalizedNext, settingsError: "" });
-        try {
-            const saved = normalizeArtworkSettings(await this.deps.setArtworkSettings(normalizedNext));
-            this.publish({ settings: saved, settingsLoaded: true, settingsError: "" });
-            if (saved.sgdbApiKey !== previous.sgdbApiKey) {
-                void this.refreshKeyStatus();
+        // While idle, the snapshot is what the backend last confirmed.
+        if (!this.saving)
+            this.confirmed = this.snapshot.settings;
+        const requested = normalizeArtworkSettings(next);
+        this.publish({ settings: requested, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
             }
-            if (this.lastGames.length > 0)
-                void this.refreshSummary(this.lastGames);
-            return true;
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time, so an older response can never overwrite a newer change. */
+    async drainSaves() {
+        while (this.queued) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            const previousKey = this.confirmed?.sgdbApiKey;
+            let saved = false;
+            try {
+                const confirmed = normalizeArtworkSettings(await this.deps.setArtworkSettings(settings));
+                this.confirmed = confirmed;
+                saved = true;
+                if (confirmed.sgdbApiKey !== previousKey)
+                    void this.refreshKeyStatus();
+                // A newer request is queued; showing this value first would flash it.
+                if (!this.queued) {
+                    this.publish({ settings: confirmed, settingsLoaded: true, settingsError: "" });
+                    if (this.lastGames.length > 0)
+                        void this.refreshSummary(this.lastGames);
+                }
+            }
+            catch (error) {
+                warn("artwork", "artwork settings save failed", error);
+                this.queued?.settles.forEach((settle) => settle(false));
+                this.queued = undefined;
+                this.publish({ settings: this.confirmed ?? this.snapshot.settings, settingsError: translateBackendError(error) });
+            }
+            for (const settle of settles)
+                settle(saved);
         }
-        catch (error) {
-            warn("artwork", "artwork settings save failed", error);
-            this.publish({ settings: previous, settingsError: translateBackendError(error) });
-            return false;
-        }
+        this.saving = false;
     }
     async updateSlotFilter(slot, filter) {
         const current = await this.ensureSettingsLoaded();
@@ -29693,13 +29668,6 @@ class ArtworkController {
                 ...current.filters,
                 [slot]: filter,
             },
-        });
-    }
-    async resetAllFilters() {
-        const current = await this.ensureSettingsLoaded();
-        return this.setSettings({
-            ...current,
-            filters: defaultArtworkFilters(),
         });
     }
     async refreshSummary(games) {
@@ -38714,6 +38682,17 @@ const SLOT_GRID_MIN_WIDTH = {
     logo: 205,
     icon: 108,
 };
+const mimeLabel = (mime) => {
+    if (mime === "image/png")
+        return "PNG";
+    if (mime === "image/jpeg")
+        return "JPEG";
+    if (mime === "image/webp")
+        return "WebP";
+    if (mime === "image/vnd.microsoft.icon")
+        return "ICO";
+    return mime;
+};
 const artworkBrowserCss = `
 .${artworkBrowserClass} {
   display: flex;
@@ -39032,7 +39011,7 @@ const artworkBrowserCss = `
 
 .${artworkBrowserClass}__anchor-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 6px;
 }
 `;
@@ -39040,24 +39019,13 @@ const artworkBrowserCss = `
 function ArtworkDetailsModal({ slot, asset, applying, onApply, closeModal, }) {
     const t = useT();
     const transparentBg = slot === "logo" || slot === "icon";
-    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, onEscKeypress: closeModal, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [SP_JSX.jsx("div", { style: { fontSize: 18, fontWeight: 700, color: "#ffffff" }, children: t("editor.artwork.detailsTitle") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__card-media${transparentBg ? " is-transparent-bg" : ""}`, style: { maxHeight: 280, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }, children: SP_JSX.jsx("img", { src: asset.url, alt: "", style: { maxWidth: "100%", maxHeight: 280, objectFit: "contain", display: "block" } }) }), SP_JSX.jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: [asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null, asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: `${asset.width}x${asset.height}` })) : null, asset.style ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: asset.style.replace("_", " ") })) : null, asset.mime ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: asset.mime.replace("image/", "").toUpperCase() })) : null] }), SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: colors.textSecondary }, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsAuthor"), ": "] }), asset.author.name || t("editor.artwork.unknownAuthor")] }), asset.notes ? (SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsNotes"), ": "] }), asset.notes] })) : null] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: () => {
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, onEscKeypress: closeModal, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [SP_JSX.jsx("div", { style: { fontSize: 18, fontWeight: 700, color: "#ffffff" }, children: t("editor.artwork.detailsTitle") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__card-media${transparentBg ? " is-transparent-bg" : ""}`, style: { maxHeight: 280, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }, children: SP_JSX.jsx("img", { src: asset.url, alt: "", style: { maxWidth: "100%", maxHeight: 280, objectFit: "contain", display: "block" } }) }), SP_JSX.jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: [asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null, asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: `${asset.width}x${asset.height}` })) : null, asset.style ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: asset.style.replace("_", " ") })) : null, asset.mime ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: mimeLabel(asset.mime) })) : null] }), SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: colors.textSecondary }, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsAuthor"), ": "] }), asset.author.name || t("editor.artwork.unknownAuthor")] }), asset.notes ? (SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsNotes"), ": "] }), asset.notes] })) : null] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: () => {
                                 onApply();
                                 closeModal?.();
                             }, children: t("editor.artwork.applyAction") })] })] }) }));
 }
 
 const toggleArrayItem = (items, value) => items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
-const mimeLabel = (mime) => {
-    if (mime === "image/png")
-        return "PNG";
-    if (mime === "image/jpeg")
-        return "JPEG";
-    if (mime === "image/webp")
-        return "WebP";
-    if (mime === "image/vnd.microsoft.icon")
-        return "ICO";
-    return mime;
-};
 function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery, initialFilter, onApplyFilter, onGameChanged, closeModal, }) {
     const t = useT();
     const [searchQuery, setSearchQuery] = SP_REACT.useState(currentGame?.name || initialQuery);
@@ -39126,8 +39094,8 @@ function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery
     const applyFilters = async () => {
         setSaving(true);
         try {
-            await onApplyFilter(draft);
-            closeModal?.();
+            if (await onApplyFilter(draft))
+                closeModal?.();
         }
         finally {
             setSaving(false);
@@ -39138,55 +39106,52 @@ function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery
                                     game: currentGame.name,
                                     source: isOverride ? t("editor.artwork.sourceOverride") : t("editor.artwork.sourceAuto"),
                                 })
-                                : t("editor.artwork.noGameMatched"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8, alignItems: "center", width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: searchQuery, onChange: (e) => setSearchQuery(e.target.value) }) }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: searching || !searchQuery.trim(), onClick: () => void runSearch(), children: searching ? t("editor.searching") : t("editor.search") }), isOverride ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void resetGameOverride(), children: t("editor.artwork.resetGameButton") })) : null] }) }), searchError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: searchError, bottomSeparator: "none" })) : null, searchResults !== null ? (searchResults.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.noSearchResults"), bottomSeparator: "none" })) : (searchResults.slice(0, 8).map((game) => (SP_JSX.jsx(DFL.Field, { label: game.name, description: t("editor.artwork.sgdbIdLabel", { id: game.id }), focusable: true, highlightOnFocus: true, onActivate: () => void selectGame(game), onClick: () => void selectGame(game) }, game.id))))) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.filtersHeading") }), dimensionOptions.length > 0 ? (SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.filterDimensions"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: dimensionOptions.map((dim) => {
-                                    const selected = draft.dimensions.includes(dim);
-                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`, onActivate: () => setDraft((prev) => ({
-                                            ...prev,
-                                            dimensions: toggleArrayItem(prev.dimensions, dim),
-                                        })), onClick: () => setDraft((prev) => ({
-                                            ...prev,
-                                            dimensions: toggleArrayItem(prev.dimensions, dim),
-                                        })), children: dim }, dim));
-                                }) }) })) : null, styleOptions.length > 0 ? (SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.filterStyles"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: styleOptions.map((style) => {
-                                    const selected = draft.styles.includes(style);
-                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`, onActivate: () => setDraft((prev) => ({
-                                            ...prev,
-                                            styles: toggleArrayItem(prev.styles, style),
-                                        })), onClick: () => setDraft((prev) => ({
-                                            ...prev,
-                                            styles: toggleArrayItem(prev.styles, style),
-                                        })), children: style.replace("_", " ") }, style));
-                                }) }) })) : null, SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.filterFormats"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: mimeOptions.map((mime) => {
-                                    const selected = draft.mimes.includes(mime);
-                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`, onActivate: () => setDraft((prev) => ({
-                                            ...prev,
-                                            mimes: toggleArrayItem(prev.mimes, mime),
-                                        })), onClick: () => setDraft((prev) => ({
-                                            ...prev,
-                                            mimes: toggleArrayItem(prev.mimes, mime),
-                                        })), children: mimeLabel(mime) }, mime));
-                                }) }) }), SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.filterTypes"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: ["static", "animated"].map((kind) => {
-                                    const selected = draft.types.includes(kind);
-                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`, onActivate: () => setDraft((prev) => ({
-                                            ...prev,
-                                            types: toggleArrayItem(prev.types, kind),
-                                        })), onClick: () => setDraft((prev) => ({
-                                            ...prev,
-                                            types: toggleArrayItem(prev.types, kind),
-                                        })), children: t(`editor.artwork.type.${kind}`) }, kind));
-                                }) }) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterHumor"), checked: draft.humor, onChange: (humor) => setDraft((prev) => ({ ...prev, humor })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterNsfw"), checked: draft.nsfw, onChange: (nsfw) => setDraft((prev) => ({ ...prev, nsfw })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterEpilepsy"), checked: draft.epilepsy, onChange: (epilepsy) => setDraft((prev) => ({ ...prev, epilepsy })) })] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => setDraft(defaultSlotFilter(slot)), children: t("editor.artwork.resetFilters") }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void applyFilters(), children: t("editor.artwork.applyFilters") })] })] })] }) }));
+                                : t("editor.artwork.noGameMatched"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8, alignItems: "center", width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: searchQuery, onChange: (e) => setSearchQuery(e.target.value) }) }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: searching || !searchQuery.trim(), onClick: () => void runSearch(), children: searching ? t("editor.searching") : t("editor.search") }), isOverride ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void resetGameOverride(), children: t("editor.artwork.resetGameButton") })) : null] }) }), searchError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: searchError, bottomSeparator: "none" })) : null, searchResults !== null ? (searchResults.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.noSearchResults"), bottomSeparator: "none" })) : (searchResults.slice(0, 8).map((game) => (SP_JSX.jsx(DFL.Field, { label: game.name, description: t("editor.artwork.sgdbIdLabel", { id: game.id }), focusable: true, highlightOnFocus: true, onActivate: () => void selectGame(game), onClick: () => void selectGame(game) }, game.id))))) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.filtersHeading") }), [
+                            {
+                                label: t("editor.artwork.filterDimensions"),
+                                visible: dimensionOptions.length > 0,
+                                options: dimensionOptions,
+                                selected: draft.dimensions,
+                                toggle: (value) => setDraft((prev) => ({ ...prev, dimensions: toggleArrayItem(prev.dimensions, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterStyles"),
+                                visible: styleOptions.length > 0,
+                                options: styleOptions,
+                                selected: draft.styles,
+                                format: (value) => value.replace("_", " "),
+                                toggle: (value) => setDraft((prev) => ({ ...prev, styles: toggleArrayItem(prev.styles, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterFormats"),
+                                visible: true,
+                                options: mimeOptions,
+                                selected: draft.mimes,
+                                format: mimeLabel,
+                                toggle: (value) => setDraft((prev) => ({ ...prev, mimes: toggleArrayItem(prev.mimes, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterTypes"),
+                                visible: true,
+                                options: ["static", "animated"],
+                                selected: draft.types,
+                                format: (value) => t(`editor.artwork.type.${value}`),
+                                toggle: (value) => setDraft((prev) => ({ ...prev, types: toggleArrayItem(prev.types, value) })),
+                            },
+                        ].map(({ label, options, selected, format, toggle, visible }) => visible ? (SP_JSX.jsx(DFL.Field, { label: label, childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: options.map((value) => {
+                                    const isSelected = selected.includes(value);
+                                    const onToggle = () => toggle(value);
+                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${isSelected ? " is-selected" : ""}`, onActivate: onToggle, onClick: onToggle, children: format ? format(value) : value }, value));
+                                }) }) }, label)) : null), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterHumor"), checked: draft.humor, onChange: (humor) => setDraft((prev) => ({ ...prev, humor })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterNsfw"), checked: draft.nsfw, onChange: (nsfw) => setDraft((prev) => ({ ...prev, nsfw })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterEpilepsy"), checked: draft.epilepsy, onChange: (epilepsy) => setDraft((prev) => ({ ...prev, epilepsy })) })] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => setDraft(defaultSlotFilter(slot)), children: t("editor.artwork.resetFilters") }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void applyFilters(), children: t("editor.artwork.applyFilters") })] })] })] }) }));
 }
 
-const ANCHOR_LABELS = {
-    UpperLeft: "UL",
-    UpperCenter: "UC",
-    UpperRight: "UR",
-    CenterLeft: "CL",
-    CenterCenter: "CC",
-    CenterRight: "CR",
-    BottomLeft: "BL",
-    BottomCenter: "BC",
-    BottomRight: "BR",
+// Steam supports only these five anchors; the picker places each where it pins the logo (row, column).
+const ANCHOR_CELLS = {
+    UpperLeft: { label: "UL", gridRow: 1, gridColumn: 1 },
+    UpperCenter: { label: "UC", gridRow: 1, gridColumn: 2 },
+    CenterCenter: { label: "CC", gridRow: 2, gridColumn: 2 },
+    BottomLeft: { label: "BL", gridRow: 3, gridColumn: 1 },
+    BottomCenter: { label: "BC", gridRow: 3, gridColumn: 2 },
 };
 function logoPreviewBoxStyle(position) {
     const style = {
@@ -39215,14 +39180,10 @@ function logoPreviewBoxStyle(position) {
         style.left = 0;
         style.justifyContent = "flex-start";
     }
-    else if (position.pinnedPosition.endsWith("Center")) {
+    else {
         style.left = "50%";
         style.transform = style.transform ? "translate(-50%, -50%)" : "translateX(-50%)";
         style.justifyContent = "center";
-    }
-    else {
-        style.right = 0;
-        style.justifyContent = "flex-end";
     }
     return style;
 }
@@ -39274,9 +39235,11 @@ function LogoPositionerModal({ appId, heroPreviewUrl, logoPreviewUrl, onSaved, c
                                     fontWeight: 700,
                                 }, children: t("qam.artwork.slot.logo.label") })) })] }), SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.logoAnchorLabel"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__anchor-grid`, children: STEAM_LOGO_ANCHORS.map((anchor) => {
                             const selected = position.pinnedPosition === anchor;
-                            return (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, style: selected
-                                    ? { background: "rgba(26, 159, 255, 0.35)", border: "1px solid #66c0f4" }
-                                    : undefined, onClick: () => setPosition((prev) => ({ ...prev, pinnedPosition: anchor })), children: ANCHOR_LABELS[anchor] }, anchor));
+                            return (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, style: {
+                                    gridRow: ANCHOR_CELLS[anchor].gridRow,
+                                    gridColumn: ANCHOR_CELLS[anchor].gridColumn,
+                                    ...(selected ? { background: "rgba(26, 159, 255, 0.35)", border: "1px solid #66c0f4" } : {}),
+                                }, onClick: () => setPosition((prev) => ({ ...prev, pinnedPosition: anchor })), children: ANCHOR_CELLS[anchor].label }, anchor));
                         }) }) }), SP_JSX.jsx(DFL.SliderField, { label: t("editor.artwork.logoWidthLabel"), value: position.nWidthPct, min: 10, max: 100, step: 5, showValue: true, valueSuffix: "%", onChange: (nWidthPct) => setPosition((prev) => ({ ...prev, nWidthPct })) }), SP_JSX.jsx(DFL.SliderField, { label: t("editor.artwork.logoHeightLabel"), value: position.nHeightPct, min: 10, max: 100, step: 5, showValue: true, valueSuffix: "%", onChange: (nHeightPct) => setPosition((prev) => ({ ...prev, nHeightPct })) }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void handleReset(), children: t("editor.artwork.resetLogoPosition") }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void handleSave(), children: t("editor.artwork.saveLogoPosition") })] })] })] }) }));
 }
 
@@ -39284,11 +39247,11 @@ const slotLabelKey$2 = (slot) => `qam.artwork.slot.${slot}.label`;
 function ArtworkManageTab({ appId, gameName, isSteamGame, savedSteamAppId, unsavedSteamAppId, state, busy, onBusyChange, onRefreshState, onSelectSlotTab, onGoToSteamMatch, onSaveMatch, }) {
     const t = useT();
     const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
+    // Controller actions bump the snapshot revision, and the editor reloads slot state on that.
     const runAction = async (work, successTitle, successBody) => {
         onBusyChange(true);
         try {
             await work();
-            await onRefreshState();
             if (successTitle && successBody)
                 toastSuccess(successTitle, successBody);
         }
@@ -39367,7 +39330,10 @@ function ArtworkManageTab({ appId, gameName, isSteamGame, savedSteamAppId, unsav
         const logoSlot = state?.slots.logo;
         DFL.showModal(SP_JSX.jsx(LogoPositionerModal, { appId: appId, heroPreviewUrl: heroSlot?.preview_data_url || heroSlot?.steam_url || null, logoPreviewUrl: logoSlot?.preview_data_url || logoSlot?.steam_url || null, onSaved: () => void onRefreshState() }));
     };
-    const handleResetLogoPosition = () => void runAction(() => clearCustomLogoPosition(appId), t("artwork.toast.clearedTitle"), t("editor.artwork.logoPositionReset"));
+    const handleResetLogoPosition = () => void runAction(async () => {
+        await clearCustomLogoPosition(appId);
+        await onRefreshState();
+    }, t("artwork.toast.clearedTitle"), t("editor.artwork.logoPositionReset"));
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.pendingMatchLabel"), description: t("editor.artwork.pendingMatchDescription"), disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })) : null, SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.manageControlsHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.lockLabel"), description: t("editor.artwork.lockDescription"), checked: state?.locked ?? false, disabled: busy || !state, onChange: handleToggleLock }), savedSteamAppId !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.fillMissingLabel"), description: t("editor.artwork.fillMissingDescription", {
                                     missing: ARTWORK_SLOT_ORDER.filter((slot) => state?.slots[slot]?.available && !state?.slots[slot]?.present).length,
                                 }), disabled: busy, onClick: () => handleOfficialBulk("fill-missing"), children: t("editor.artwork.fillMissingAction") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.replaceAllLabel"), description: t("editor.artwork.replaceAllDescription"), disabled: busy, onClick: () => handleOfficialBulk("replace-all"), children: t("editor.artwork.replaceAllAction") })] })) : !isSteamGame ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.noMatchLabel"), description: t("editor.artwork.noMatchManageDescription"), disabled: busy, onClick: onGoToSteamMatch, children: t("editor.artwork.goToSteamMatchAction") })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.slotsHeading") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__manage-grid`, children: ARTWORK_SLOT_ORDER.map((slot) => {
@@ -39441,6 +39407,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const browserRef = SP_REACT.useRef(null);
     // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
     const cardFocusPendingRef = SP_REACT.useRef(true);
+    const stateSeqRef = SP_REACT.useRef(0);
     SP_REACT.useEffect(() => {
         const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
         void artworkController.ensureSettingsLoaded();
@@ -39464,11 +39431,15 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         setAssetError("");
         setMissingKey(false);
         setOfficialOnly(false);
+        setArtworkState(null);
     }, [appId]);
     const loadArtworkState = SP_REACT.useCallback(async () => {
+        // The page stays mounted across games; only the newest request may publish its result.
+        const seq = ++stateSeqRef.current;
         try {
             const next = await getGameArtworkState(appId, savedSteamAppId);
-            setArtworkState(next);
+            if (seq === stateSeqRef.current)
+                setArtworkState(next);
         }
         catch {
             // Keep previous state on transient failure.
@@ -39551,6 +39522,9 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     }, [activeSlot, activeFilter, sgdbGame, officialOnly]);
     SP_REACT.useEffect(() => {
         if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+            // Drop any in-flight page so it cannot land on this game or this mode.
+            requestSeqRef.current += 1;
+            setLoadingAssets(false);
             setAssets([]);
             setHasMore(false);
             return;
@@ -39581,7 +39555,6 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         setActionBusy(true);
         try {
             await artworkController.applySgdbAsset(appId, slot, asset.url);
-            await loadArtworkState();
             toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$1(slot)), game: gameName }));
         }
         catch (error) {
@@ -39597,7 +39570,6 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         setActionBusy(true);
         try {
             await artworkController.applySingleSlot(appId, savedSteamAppId, slot);
-            await loadArtworkState();
             toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$1(slot)), game: gameName }));
         }
         catch (error) {
@@ -39611,7 +39583,10 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         if (!activeSlot || !activeFilter)
             return;
         DFL.showModal(SP_JSX.jsx(ArtworkFilterModal, { appId: appId, slot: activeSlot, currentGame: sgdbGame, isOverride: sgdbIsOverride, initialQuery: gameName, initialFilter: activeFilter, onApplyFilter: async (nextFilter) => {
-                await artworkController.updateSlotFilter(activeSlot, nextFilter);
+                const saved = await artworkController.updateSlotFilter(activeSlot, nextFilter);
+                if (!saved)
+                    toastError(t("artwork.toast.failedTitle"), artworkController.getSnapshot().settingsError);
+                return saved;
             }, onGameChanged: (game, isOverride) => {
                 if (game) {
                     setSgdbGame(game);
@@ -41686,7 +41661,8 @@ function CollapsibleSidebarShell({ collapsible, children, }) {
         const syncFromDom = () => {
             const sidebar = shell.querySelector(".PageListColumn");
             const content = shell.querySelector(".DialogContentTransition");
-            const active = typeof document !== "undefined" ? document.activeElement : null;
+            // Plugin code runs in another window; read Steam's gamepad focus, else this window's DOM focus.
+            const active = nativeFocusedElement() ?? shell.ownerDocument.activeElement;
             const sidebarFocused = Boolean(sidebar && (sidebar.classList.contains("gpfocuswithin") || (active && sidebar.contains(active))));
             const contentFocused = Boolean(content && (content.classList.contains("gpfocuswithin") || (active && content.contains(active))));
             setCollapsed((prev) => evaluateSidebarCollapseState(prev, sidebarFocused, contentFocused));
@@ -42508,7 +42484,12 @@ const MetadataPage = () => {
             ? "[data-editor-title] input"
             : "[data-artwork-initial-focus], [data-editor-hltb-search] input";
         const frame = requestAnimationFrame(() => {
-            root.querySelector(selector)?.focus();
+            const target = root.querySelector(selector);
+            // The artwork marker is a Steam Focusable; DOM focus() from this window does not move gamepad focus.
+            if (target?.matches("[data-artwork-initial-focus]"))
+                takeNativeFocus(target);
+            else
+                target?.focus();
         });
         return () => cancelAnimationFrame(frame);
     }, [editorEntryToken, nonSteam]);
@@ -43436,7 +43417,7 @@ const MetadataPage = () => {
     }
     function renderArtworkPage() {
         const effectiveSteamAppId = nonSteam ? savedSteamAppId : normalizedSteamAppId(appId);
-        return (SP_JSX.jsx(ArtworkEditorPage, { appId: appId, gameName: appName(appId), isSteamGame: !nonSteam, savedSteamAppId: effectiveSteamAppId, savedSteamName: nonSteam ? savedSteamStoreName : appName(appId), unsavedSteamAppId: nonSteam ? formSteamAppId : effectiveSteamAppId, entryBusy: entryBusy, onGoToSteamMatch: () => setPage("steam-match"), onSaveMatch: () => void saveCurrent(), onOpenArtworkSettings: () => openSettings("artwork") }));
+        return (SP_JSX.jsx(ArtworkEditorPage, { appId: appId, gameName: appName(appId), isSteamGame: !nonSteam, savedSteamAppId: effectiveSteamAppId, unsavedSteamAppId: nonSteam ? formSteamAppId : effectiveSteamAppId, entryBusy: entryBusy, onGoToSteamMatch: () => setPage("steam-match"), onSaveMatch: () => void saveCurrent(), onOpenArtworkSettings: () => openSettings("artwork") }));
     }
     const renderPageContent = {
         details: renderDetailsPage,
@@ -43488,6 +43469,8 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
     }, [settings.sgdbApiKey]);
     const tabOrder = settings.tabOrder?.length ? settings.tabOrder : [...ARTWORK_TAB_ORDER];
     const hiddenTabs = new Set(settings.hiddenTabs ?? []);
+    const visibleTabs = tabOrder.filter((tab) => tab === "manage" || !hiddenTabs.has(tab));
+    const defaultTab = settings.defaultTab ?? "cover";
     const saveApiKey = () => {
         const next = apiKeyDraft.trim();
         if (next === (settings.sgdbApiKey ?? "").trim())
@@ -43517,11 +43500,15 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
             const nextHidden = new Set(current.hiddenTabs ?? []);
             if (nextHidden.has(tab)) {
                 nextHidden.delete(tab);
+                return { ...current, hiddenTabs: [...nextHidden] };
             }
-            else {
-                nextHidden.add(tab);
-            }
-            return { ...current, hiddenTabs: [...nextHidden] };
+            nextHidden.add(tab);
+            // A hidden tab cannot stay the default; fall back to the first tab still shown.
+            const order = current.tabOrder?.length ? current.tabOrder : [...ARTWORK_TAB_ORDER];
+            const defaultTab = current.defaultTab === tab
+                ? order.find((other) => other === "manage" || !nextHidden.has(other)) ?? "manage"
+                : current.defaultTab;
+            return { ...current, hiddenTabs: [...nextHidden], defaultTab };
         });
     };
     const moveTab = (tab, delta) => {
@@ -43543,9 +43530,7 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
                                         setApiKeyDraft("");
                                         onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
-                                    }, children: t("qam.artwork.clearApiKeyAction") })) : null] }) }), SP_JSX.jsx(DFL.Field, { focusable: false, description: keyStatusMessage, bottomSeparator: "standard" }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: settings.defaultTab ?? "cover", rgOptions: tabOrder
-                            .filter((tab) => tab === "manage" || !hiddenTabs.has(tab))
-                            .map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
+                                    }, children: t("qam.artwork.clearApiKeyAction") })) : null] }) }), SP_JSX.jsx(DFL.Field, { focusable: false, description: keyStatusMessage, bottomSeparator: "standard" }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: visibleTabs.includes(defaultTab) ? defaultTab : visibleTabs[0], rgOptions: visibleTabs.map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
                             ...current,
                             defaultTab: option.data,
                         })) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.tabOrderLabel"), description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), tabOrder.map((tab, index) => (SP_JSX.jsx(DFL.Field, { label: t(tabLabelKey(tab)), children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === 0, onClick: () => moveTab(tab, -1), children: SP_JSX.jsx(FaChevronUp, {}) }), SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === tabOrder.length - 1, onClick: () => moveTab(tab, 1), children: SP_JSX.jsx(FaChevronDown, {}) }), SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hiddenTabs.has(tab), disabled: controlsDisabled || tab === "manage", onChange: () => toggleTabHidden(tab) })] }) }, tab))), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({

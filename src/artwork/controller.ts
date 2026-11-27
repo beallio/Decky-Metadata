@@ -268,6 +268,11 @@ export class ArtworkController {
   private unsubscribeConflicts: (() => void) | null = null;
   private settingsLoadPromise: Promise<ArtworkSettings> | null = null;
   private lastGames: GameOption[] = [];
+  /** Last settings the backend confirmed; a failed save shows these again. */
+  private confirmed: ArtworkSettings | undefined;
+  /** Latest requested settings waiting for the in-flight save, plus their callers. */
+  private queued: { settings: ArtworkSettings; settles: Array<(saved: boolean) => void> } | undefined;
+  private saving = false;
 
   constructor(private readonly deps: ArtworkControllerDeps) {
     this.snapshot = {
@@ -351,22 +356,50 @@ export class ArtworkController {
   }
 
   async setSettings(next: ArtworkSettings): Promise<boolean> {
-    const previous = this.snapshot.settings;
-    const normalizedNext = normalizeArtworkSettings(next);
-    this.publish({ settings: normalizedNext, settingsError: "" });
-    try {
-      const saved = normalizeArtworkSettings(await this.deps.setArtworkSettings(normalizedNext));
-      this.publish({ settings: saved, settingsLoaded: true, settingsError: "" });
-      if (saved.sgdbApiKey !== previous.sgdbApiKey) {
-        void this.refreshKeyStatus();
+    // While idle, the snapshot is what the backend last confirmed.
+    if (!this.saving) this.confirmed = this.snapshot.settings;
+    const requested = normalizeArtworkSettings(next);
+    this.publish({ settings: requested, settingsError: "" });
+    return new Promise<boolean>((resolve) => {
+      if (this.queued) {
+        // Latest wins; earlier callers settle with this newer value's save.
+        this.queued.settings = requested;
+        this.queued.settles.push(resolve);
+      } else {
+        this.queued = { settings: requested, settles: [resolve] };
       }
-      if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
-      return true;
-    } catch (error) {
-      log.warn("artwork", "artwork settings save failed", error);
-      this.publish({ settings: previous, settingsError: translateBackendError(error) });
-      return false;
+      if (this.saving) return;
+      this.saving = true;
+      void this.drainSaves();
+    });
+  }
+
+  /** Saves one request at a time, so an older response can never overwrite a newer change. */
+  private async drainSaves(): Promise<void> {
+    while (this.queued) {
+      const { settings, settles } = this.queued;
+      this.queued = undefined;
+      const previousKey = this.confirmed?.sgdbApiKey;
+      let saved = false;
+      try {
+        const confirmed = normalizeArtworkSettings(await this.deps.setArtworkSettings(settings));
+        this.confirmed = confirmed;
+        saved = true;
+        if (confirmed.sgdbApiKey !== previousKey) void this.refreshKeyStatus();
+        // A newer request is queued; showing this value first would flash it.
+        if (!this.queued) {
+          this.publish({ settings: confirmed, settingsLoaded: true, settingsError: "" });
+          if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
+        }
+      } catch (error) {
+        log.warn("artwork", "artwork settings save failed", error);
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.publish({ settings: this.confirmed ?? this.snapshot.settings, settingsError: translateBackendError(error) });
+      }
+      for (const settle of settles) settle(saved);
     }
+    this.saving = false;
   }
 
   async updateSlotFilter(slot: ArtworkSlot, filter: SgdbSlotFilter): Promise<boolean> {
@@ -377,14 +410,6 @@ export class ArtworkController {
         ...current.filters,
         [slot]: filter,
       },
-    });
-  }
-
-  async resetAllFilters(): Promise<boolean> {
-    const current = await this.ensureSettingsLoaded();
-    return this.setSettings({
-      ...current,
-      filters: defaultArtworkFilters(),
     });
   }
 

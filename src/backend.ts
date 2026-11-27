@@ -298,10 +298,6 @@ export const getTransparentArtworkAsset = callable<
   [appId: number, slot: ArtworkSlot],
   FetchedArtworkAsset
 >("get_transparent_artwork_asset");
-export const getSgdbGameOverride = callable<
-  [appId: number],
-  SgdbGameOverride | null
->("get_sgdb_game_override");
 export const setSgdbGameOverride = callable<
   [appId: number, sgdbGameId: number, name: string],
   SgdbGameOverride

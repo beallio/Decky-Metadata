@@ -245,14 +245,10 @@ export type SgdbAssetPage = {
 
 export type SteamLogoAnchor =
   | "UpperLeft"
-  | "CenterLeft"
   | "BottomLeft"
   | "UpperCenter"
   | "CenterCenter"
-  | "BottomCenter"
-  | "UpperRight"
-  | "CenterRight"
-  | "BottomRight";
+  | "BottomCenter";
 
 export type SteamLogoPosition = {
   pinnedPosition: SteamLogoAnchor;
@@ -450,7 +446,11 @@ export type SteamInternals = {
       logoPosition: SteamLogoPosition,
     ) => Promise<unknown> | void;
     ClearCustomLogoPosition?: (overview: SteamOverview) => Promise<unknown> | void;
+    GetCustomLogoPosition?: (overview: SteamOverview) => Partial<SteamLogoPosition> | null | undefined;
     GetAppData?: (appId: number) => {
+      customImageInfo?: { logoPosition?: Partial<SteamLogoPosition> | null } | null;
+    } | null;
+    GetAppDetails?: (appId: number) => {
       libraryAssets?: { logoPosition?: Partial<SteamLogoPosition> | null } | null;
     } | null;
     [key: string]: unknown;

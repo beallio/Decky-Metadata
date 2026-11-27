@@ -45,7 +45,6 @@ export type ArtworkEditorPageProps = {
   gameName: string;
   isSteamGame?: boolean;
   savedSteamAppId: number | null;
-  savedSteamName: string;
   unsavedSteamAppId: number | null;
   entryBusy: boolean;
   onGoToSteamMatch: () => void;
@@ -125,6 +124,7 @@ export function ArtworkEditorPage({
   const browserRef = useRef<HTMLDivElement | null>(null);
   // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
   const cardFocusPendingRef = useRef(true);
+  const stateSeqRef = useRef(0);
 
   useEffect(() => {
     const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
@@ -151,12 +151,15 @@ export function ArtworkEditorPage({
     setAssetError("");
     setMissingKey(false);
     setOfficialOnly(false);
+    setArtworkState(null);
   }, [appId]);
 
   const loadArtworkState = useCallback(async () => {
+    // The page stays mounted across games; only the newest request may publish its result.
+    const seq = ++stateSeqRef.current;
     try {
       const next = await getGameArtworkState(appId, savedSteamAppId);
-      setArtworkState(next);
+      if (seq === stateSeqRef.current) setArtworkState(next);
     } catch {
       // Keep previous state on transient failure.
     }
@@ -235,6 +238,9 @@ export function ArtworkEditorPage({
 
   useEffect(() => {
     if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+      // Drop any in-flight page so it cannot land on this game or this mode.
+      requestSeqRef.current += 1;
+      setLoadingAssets(false);
       setAssets([]);
       setHasMore(false);
       return;
@@ -269,7 +275,6 @@ export function ArtworkEditorPage({
     setActionBusy(true);
     try {
       await artworkController.applySgdbAsset(appId, slot, asset.url);
-      await loadArtworkState();
       toastSuccess(
         t("artwork.toast.appliedTitle"),
         t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey(slot)), game: gameName }),
@@ -286,7 +291,6 @@ export function ArtworkEditorPage({
     setActionBusy(true);
     try {
       await artworkController.applySingleSlot(appId, savedSteamAppId, slot);
-      await loadArtworkState();
       toastSuccess(
         t("artwork.toast.appliedTitle"),
         t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey(slot)), game: gameName }),
@@ -309,7 +313,9 @@ export function ArtworkEditorPage({
         initialQuery={gameName}
         initialFilter={activeFilter}
         onApplyFilter={async (nextFilter) => {
-          await artworkController.updateSlotFilter(activeSlot, nextFilter);
+          const saved = await artworkController.updateSlotFilter(activeSlot, nextFilter);
+          if (!saved) toastError(t("artwork.toast.failedTitle"), artworkController.getSnapshot().settingsError);
+          return saved;
         }}
         onGameChanged={(game, isOverride) => {
           if (game) {

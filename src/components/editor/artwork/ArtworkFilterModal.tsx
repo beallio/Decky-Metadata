@@ -23,7 +23,7 @@ import {
 import { translateBackendError, useT } from "../../../i18n";
 import { toastError, toastSuccess } from "../../../toast";
 import type { ArtworkSlot, SgdbGame, SgdbSlotFilter } from "../../../types";
-import { artworkBrowserClass } from "./artworkStyles";
+import { artworkBrowserClass, mimeLabel } from "./artworkStyles";
 
 export type ArtworkFilterModalProps = {
   appId: number;
@@ -32,21 +32,13 @@ export type ArtworkFilterModalProps = {
   isOverride: boolean;
   initialQuery: string;
   initialFilter: SgdbSlotFilter;
-  onApplyFilter: (filter: SgdbSlotFilter) => Promise<void>;
+  onApplyFilter: (filter: SgdbSlotFilter) => Promise<boolean>;
   onGameChanged: (game: SgdbGame | null, isOverride: boolean) => void;
   closeModal?: () => void;
 };
 
 const toggleArrayItem = (items: string[], value: string): string[] =>
   items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
-
-const mimeLabel = (mime: string): string => {
-  if (mime === "image/png") return "PNG";
-  if (mime === "image/jpeg") return "JPEG";
-  if (mime === "image/webp") return "WebP";
-  if (mime === "image/vnd.microsoft.icon") return "ICO";
-  return mime;
-};
 
 export function ArtworkFilterModal({
   appId,
@@ -127,8 +119,7 @@ export function ArtworkFilterModal({
   const applyFilters = async () => {
     setSaving(true);
     try {
-      await onApplyFilter(draft);
-      closeModal?.();
+      if (await onApplyFilter(draft)) closeModal?.();
     } finally {
       setSaving(false);
     }
@@ -209,121 +200,62 @@ export function ArtworkFilterModal({
         <DialogControlsSection>
           <DialogControlsSectionHeader>{t("editor.artwork.filtersHeading")}</DialogControlsSectionHeader>
 
-          {dimensionOptions.length > 0 ? (
-            <Field label={t("editor.artwork.filterDimensions")} childrenLayout="below" childrenContainerWidth="max">
+          {[
+            {
+              label: t("editor.artwork.filterDimensions"),
+              visible: dimensionOptions.length > 0,
+              options: dimensionOptions,
+              selected: draft.dimensions,
+              toggle: (value: string) =>
+                setDraft((prev) => ({ ...prev, dimensions: toggleArrayItem(prev.dimensions, value) })),
+            },
+            {
+              label: t("editor.artwork.filterStyles"),
+              visible: styleOptions.length > 0,
+              options: styleOptions,
+              selected: draft.styles,
+              format: (value: string) => value.replace("_", " "),
+              toggle: (value: string) =>
+                setDraft((prev) => ({ ...prev, styles: toggleArrayItem(prev.styles, value) })),
+            },
+            {
+              label: t("editor.artwork.filterFormats"),
+              visible: true,
+              options: mimeOptions,
+              selected: draft.mimes,
+              format: mimeLabel,
+              toggle: (value: string) =>
+                setDraft((prev) => ({ ...prev, mimes: toggleArrayItem(prev.mimes, value) })),
+            },
+            {
+              label: t("editor.artwork.filterTypes"),
+              visible: true,
+              options: ["static", "animated"],
+              selected: draft.types,
+              format: (value: string) => t(`editor.artwork.type.${value}`),
+              toggle: (value: string) =>
+                setDraft((prev) => ({ ...prev, types: toggleArrayItem(prev.types, value) })),
+            },
+          ].map(({ label, options, selected, format, toggle, visible }) => visible ? (
+            <Field key={label} label={label} childrenLayout="below" childrenContainerWidth="max">
               <Focusable flow-children="horizontal" className={`${artworkBrowserClass}__chip-row`}>
-                {dimensionOptions.map((dim) => {
-                  const selected = draft.dimensions.includes(dim);
+                {options.map((value) => {
+                  const isSelected = selected.includes(value);
+                  const onToggle = () => toggle(value);
                   return (
                     <Focusable
-                      key={dim}
-                      className={`${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`}
-                      onActivate={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          dimensions: toggleArrayItem(prev.dimensions, dim),
-                        }))
-                      }
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          dimensions: toggleArrayItem(prev.dimensions, dim),
-                        }))
-                      }
+                      key={value}
+                      className={`${artworkBrowserClass}__chip${isSelected ? " is-selected" : ""}`}
+                      onActivate={onToggle}
+                      onClick={onToggle}
                     >
-                      {dim}
+                      {format ? format(value) : value}
                     </Focusable>
                   );
                 })}
               </Focusable>
             </Field>
-          ) : null}
-
-          {styleOptions.length > 0 ? (
-            <Field label={t("editor.artwork.filterStyles")} childrenLayout="below" childrenContainerWidth="max">
-              <Focusable flow-children="horizontal" className={`${artworkBrowserClass}__chip-row`}>
-                {styleOptions.map((style) => {
-                  const selected = draft.styles.includes(style);
-                  return (
-                    <Focusable
-                      key={style}
-                      className={`${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`}
-                      onActivate={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          styles: toggleArrayItem(prev.styles, style),
-                        }))
-                      }
-                      onClick={() =>
-                        setDraft((prev) => ({
-                          ...prev,
-                          styles: toggleArrayItem(prev.styles, style),
-                        }))
-                      }
-                    >
-                      {style.replace("_", " ")}
-                    </Focusable>
-                  );
-                })}
-              </Focusable>
-            </Field>
-          ) : null}
-
-          <Field label={t("editor.artwork.filterFormats")} childrenLayout="below" childrenContainerWidth="max">
-            <Focusable flow-children="horizontal" className={`${artworkBrowserClass}__chip-row`}>
-              {mimeOptions.map((mime) => {
-                const selected = draft.mimes.includes(mime);
-                return (
-                  <Focusable
-                    key={mime}
-                    className={`${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`}
-                    onActivate={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        mimes: toggleArrayItem(prev.mimes, mime),
-                      }))
-                    }
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        mimes: toggleArrayItem(prev.mimes, mime),
-                      }))
-                    }
-                  >
-                    {mimeLabel(mime)}
-                  </Focusable>
-                );
-              })}
-            </Focusable>
-          </Field>
-
-          <Field label={t("editor.artwork.filterTypes")} childrenLayout="below" childrenContainerWidth="max">
-            <Focusable flow-children="horizontal" className={`${artworkBrowserClass}__chip-row`}>
-              {(["static", "animated"] as const).map((kind) => {
-                const selected = draft.types.includes(kind);
-                return (
-                  <Focusable
-                    key={kind}
-                    className={`${artworkBrowserClass}__chip${selected ? " is-selected" : ""}`}
-                    onActivate={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        types: toggleArrayItem(prev.types, kind),
-                      }))
-                    }
-                    onClick={() =>
-                      setDraft((prev) => ({
-                        ...prev,
-                        types: toggleArrayItem(prev.types, kind),
-                      }))
-                    }
-                  >
-                    {t(`editor.artwork.type.${kind}`)}
-                  </Focusable>
-                );
-              })}
-            </Focusable>
-          </Field>
+          ) : null)}
 
           <ToggleField
             label={t("editor.artwork.filterHumor")}

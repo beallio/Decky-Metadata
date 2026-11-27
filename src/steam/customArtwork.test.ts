@@ -2,15 +2,21 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   applySteamArtworkSlot,
   clearSteamArtworkSlot,
+  getCustomLogoPosition,
   hasCustomArtworkApi,
   STEAM_ARTWORK_ASSET_TYPE,
 } from "./customArtwork";
 
 describe("customArtwork SteamClient bridge", () => {
-  const originalSteamClient = (globalThis as any).SteamClient;
+  const globals = globalThis as unknown as Record<string, unknown>;
+  const originalSteamClient = globals.SteamClient;
+  const originalAppStore = globals.appStore;
+  const originalAppDetailsStore = globals.appDetailsStore;
 
   afterEach(() => {
-    (globalThis as any).SteamClient = originalSteamClient;
+    globals.SteamClient = originalSteamClient;
+    globals.appStore = originalAppStore;
+    globals.appDetailsStore = originalAppDetailsStore;
   });
 
   it("maps grid slots to SteamClient assetType numbers", async () => {
@@ -71,5 +77,67 @@ describe("customArtwork SteamClient bridge", () => {
       applySteamArtworkSlot(2800000001, "cover", { base64: "AA==", ext: "jpg", file_path: null }),
     ).rejects.toThrow("artwork_api_unavailable");
     await expect(clearSteamArtworkSlot(2800000001, "cover")).rejects.toThrow("artwork_api_unavailable");
+  });
+  it("reads the saved Steam custom logo position", () => {
+    const overview = { appid: 42 };
+    const GetCustomLogoPosition = vi.fn().mockReturnValue({
+      pinnedPosition: "UpperCenter",
+      nWidthPct: 65,
+      nHeightPct: 35,
+    });
+    globals.appStore = { GetAppOverviewByAppID: vi.fn().mockReturnValue(overview) };
+    globals.appDetailsStore = { GetCustomLogoPosition };
+
+    expect(getCustomLogoPosition(42)).toEqual({
+      pinnedPosition: "UpperCenter",
+      nWidthPct: 65,
+      nHeightPct: 35,
+    });
+    expect(GetCustomLogoPosition).toHaveBeenCalledWith(overview);
+  });
+
+  it("falls back to app data custom image info", () => {
+    globals.appStore = { GetAppOverviewByAppID: vi.fn().mockReturnValue({ appid: 42 }) };
+    globals.appDetailsStore = {
+      GetAppData: vi.fn().mockReturnValue({
+        customImageInfo: {
+          logoPosition: { pinnedPosition: "CenterCenter", nWidthPct: 70, nHeightPct: 40 },
+        },
+      }),
+    };
+
+    expect(getCustomLogoPosition(42)).toEqual({
+      pinnedPosition: "CenterCenter",
+      nWidthPct: 70,
+      nHeightPct: 40,
+    });
+  });
+
+  it("uses default logo position when no saved position exists", () => {
+    globals.appStore = { GetAppOverviewByAppID: vi.fn().mockReturnValue({ appid: 42 }) };
+    globals.appDetailsStore = {};
+
+    expect(getCustomLogoPosition(42)).toEqual({
+      pinnedPosition: "BottomLeft",
+      nWidthPct: 50,
+      nHeightPct: 50,
+    });
+  });
+
+  it("uses the default anchor when the saved anchor is invalid", () => {
+    globals.appStore = { GetAppOverviewByAppID: vi.fn().mockReturnValue({ appid: 42 }) };
+    globals.appDetailsStore = {
+      GetCustomLogoPosition: vi.fn().mockReturnValue({
+        pinnedPosition: "UpperRight",
+        nWidthPct: 60,
+        nHeightPct: 45,
+      }),
+    };
+
+    expect(getCustomLogoPosition(42)).toEqual({
+      pinnedPosition: "BottomLeft",
+      nWidthPct: 60,
+      nHeightPct: 45,
+    });
   });
 });

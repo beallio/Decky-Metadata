@@ -48,7 +48,6 @@ pub const METHODS: &[&str] = &[
     "sgdb_fetch_asset",
     "read_local_artwork_file",
     "get_transparent_artwork_asset",
-    "get_sgdb_game_override",
     "set_sgdb_game_override",
     "clear_sgdb_game_override",
     "get_provider_cache",
@@ -501,10 +500,6 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "get_transparent_artwork_asset" => {
             arity(&args, 2, 2)?;
             crate::steamgriddb::get_transparent_artwork_asset(&state, &args[0], &args[1]).await
-        }
-        "get_sgdb_game_override" => {
-            arity(&args, 1, 1)?;
-            crate::steamgriddb::get_sgdb_game_override(&state, &args[0]).await
         }
         "set_sgdb_game_override" => {
             arity(&args, 3, 3)?;
@@ -1247,7 +1242,8 @@ mod tests {
         assert_eq!(key_status["configured"], true);
 
         // Per-game SGDB overrides accept both native Steam IDs and non-Steam shortcut IDs.
-        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), Value::Null);
+        assert!(state.store().await.unwrap().data()["sgdb_game_overrides"]
+            .get("1091500").is_none());
         let over = call(
             "set_sgdb_game_override",
             vec![json!(1091500), json!(5258006), json!("Cyberpunk 2077")],
@@ -1255,7 +1251,10 @@ mod tests {
         .await
         .unwrap();
         assert_eq!(over, json!({"sgdb_game_id": 5258006, "name": "Cyberpunk 2077"}));
-        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), over);
+        assert_eq!(
+            state.store().await.unwrap().data()["sgdb_game_overrides"]["1091500"],
+            over
+        );
         // Resolve game uses persisted override before network lookup.
         let resolved = call(
             "sgdb_resolve_game",
@@ -1267,7 +1266,8 @@ mod tests {
         assert_eq!(resolved["game"]["id"], 5258006);
 
         call("clear_sgdb_game_override", vec![json!(1091500)]).await.unwrap();
-        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), Value::Null);
+        assert!(state.store().await.unwrap().data()["sgdb_game_overrides"]
+            .get("1091500").is_none());
 
         // Transparent PNG asset & local file asset work and sniff valid PNG.
         let transparent = call(

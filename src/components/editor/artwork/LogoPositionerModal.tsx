@@ -25,16 +25,13 @@ export type LogoPositionerModalProps = {
   closeModal?: () => void;
 };
 
-const ANCHOR_LABELS: Record<SteamLogoAnchor, string> = {
-  UpperLeft: "UL",
-  UpperCenter: "UC",
-  UpperRight: "UR",
-  CenterLeft: "CL",
-  CenterCenter: "CC",
-  CenterRight: "CR",
-  BottomLeft: "BL",
-  BottomCenter: "BC",
-  BottomRight: "BR",
+// Steam supports only these five anchors; the picker places each where it pins the logo (row, column).
+const ANCHOR_CELLS: Record<SteamLogoAnchor, { label: string; gridRow: number; gridColumn: number }> = {
+  UpperLeft: { label: "UL", gridRow: 1, gridColumn: 1 },
+  UpperCenter: { label: "UC", gridRow: 1, gridColumn: 2 },
+  CenterCenter: { label: "CC", gridRow: 2, gridColumn: 2 },
+  BottomLeft: { label: "BL", gridRow: 3, gridColumn: 1 },
+  BottomCenter: { label: "BC", gridRow: 3, gridColumn: 2 },
 };
 
 export function logoPreviewBoxStyle(position: SteamLogoPosition): CSSProperties {
@@ -62,13 +59,10 @@ export function logoPreviewBoxStyle(position: SteamLogoPosition): CSSProperties 
   if (position.pinnedPosition.endsWith("Left")) {
     style.left = 0;
     style.justifyContent = "flex-start";
-  } else if (position.pinnedPosition.endsWith("Center")) {
+  } else {
     style.left = "50%";
     style.transform = style.transform ? "translate(-50%, -50%)" : "translateX(-50%)";
     style.justifyContent = "center";
-  } else {
-    style.right = 0;
-    style.justifyContent = "flex-end";
   }
   return style;
 }
@@ -164,14 +158,14 @@ export function LogoPositionerModal({
                 <DialogButton
                   key={anchor}
                   className={`${artworkBrowserClass}__action-btn`}
-                  style={
-                    selected
-                      ? { background: "rgba(26, 159, 255, 0.35)", border: "1px solid #66c0f4" }
-                      : undefined
-                  }
+                  style={{
+                    gridRow: ANCHOR_CELLS[anchor].gridRow,
+                    gridColumn: ANCHOR_CELLS[anchor].gridColumn,
+                    ...(selected ? { background: "rgba(26, 159, 255, 0.35)", border: "1px solid #66c0f4" } : {}),
+                  }}
                   onClick={() => setPosition((prev) => ({ ...prev, pinnedPosition: anchor }))}
                 >
-                  {ANCHOR_LABELS[anchor]}
+                  {ANCHOR_CELLS[anchor].label}
                 </DialogButton>
               );
             })}

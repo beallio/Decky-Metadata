@@ -2,7 +2,7 @@ import { DialogButton, Focusable, ModalRoot } from "@decky/ui";
 import { useT } from "../../../i18n";
 import { colors } from "../../../tokens";
 import type { ArtworkSlot, SgdbAsset } from "../../../types";
-import { artworkBrowserClass } from "./artworkStyles";
+import { artworkBrowserClass, mimeLabel } from "./artworkStyles";
 
 export type ArtworkDetailsModalProps = {
   slot: ArtworkSlot;
@@ -53,7 +53,7 @@ export function ArtworkDetailsModal({
             <span className={`${artworkBrowserClass}__badge`}>{asset.style.replace("_", " ")}</span>
           ) : null}
           {asset.mime ? (
-            <span className={`${artworkBrowserClass}__badge`}>{asset.mime.replace("image/", "").toUpperCase()}</span>
+            <span className={`${artworkBrowserClass}__badge`}>{mimeLabel(asset.mime)}</span>
           ) : null}
         </div>
 

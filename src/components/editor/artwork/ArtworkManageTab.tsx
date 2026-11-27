@@ -57,11 +57,11 @@ export function ArtworkManageTab({
   const t = useT();
   const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
 
+  // Controller actions bump the snapshot revision, and the editor reloads slot state on that.
   const runAction = async (work: () => Promise<void>, successTitle?: string, successBody?: string) => {
     onBusyChange(true);
     try {
       await work();
-      await onRefreshState();
       if (successTitle && successBody) toastSuccess(successTitle, successBody);
     } catch (error) {
       toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
@@ -189,7 +189,10 @@ export function ArtworkManageTab({
 
   const handleResetLogoPosition = () =>
     void runAction(
-      () => clearCustomLogoPosition(appId),
+      async () => {
+        await clearCustomLogoPosition(appId);
+        await onRefreshState();
+      },
       t("artwork.toast.clearedTitle"),
       t("editor.artwork.logoPositionReset"),
     );

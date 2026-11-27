@@ -164,6 +164,24 @@ describe("ArtworkBody", () => {
     expect(manageToggle.props!).toMatchObject({ value: true, disabled: true });
   });
 
+  it("moves the default tab to the first shown tab when the default is hidden", () => {
+    const onSettingsChange = vi.fn();
+    const settings = { ...structuredClone(DEFAULT_ARTWORK_SETTINGS), defaultTab: "cover" as const };
+    const props = { listReady: true, onSettingsChange, onFillMissing: vi.fn(), onReplaceAll: vi.fn() };
+    const coverToggle = nodes(renderBody({ ...props, snapshot: makeSnapshot({ settings }) })).find(
+      (n) => n.type === "Field" && n.props?.label === "qam.artwork.slot.cover.label",
+    );
+    nodes(coverToggle).find((n) => n.type === "Toggle")!.props!.onChange(false);
+    const hidden = onSettingsChange.mock.calls[0][0](settings);
+    expect(hidden).toMatchObject({ hiddenTabs: ["cover"], defaultTab: settings.tabOrder.find((tab) => tab !== "cover") });
+
+    // A saved default that is hidden still shows a real choice in the dropdown.
+    const stale = { ...settings, hiddenTabs: ["cover" as const] };
+    const dropdown = nodes(renderBody({ ...props, snapshot: makeSnapshot({ settings: stale }) }))
+      .find((n) => n.type === "DropdownItem")!;
+    expect(dropdown.props!.selectedOption).toBe(stale.tabOrder.find((tab) => tab !== "cover"));
+  });
+
   it("shows SteamGridDB coexistence notice when installed and opens ConfirmModal for Replace all", () => {
     ui.showModal.mockClear();
     const onReplaceAll = vi.fn();
