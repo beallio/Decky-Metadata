@@ -52,6 +52,7 @@ jobs:
         shell: bash
         env:
           DECKY_PACKAGE_DIR: ${{ github.workspace }}
+          DECKY_SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
         run: |
           set -euo pipefail
           short_hash="${GITHUB_SHA::7}"

@@ -28,6 +28,7 @@ static REDACTIONS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         r#"(?i)((?:['"])?\bAuthorization(?:['"])?\s*[:=]\s*(?:['"])?)[A-Za-z][A-Za-z0-9_-]*\s+[^'"\s,}]+"#,
         r#"(?i)((?:['"])?\bAuthorization(?:['"])?\s*[:=]\s*(?:['"])?)(?:Bearer\s+)?[^'"\s,}]+"#,
         r#"(?i)((?:['"])?\bX-Authorization(?:['"])?\s*[:=]\s*(?:['"])?)[^'"\s,}]+"#,
+        r#"(?i)((?:['"])?\bsgdb[_-]?api[_-]?key(?:['"])?\s*[:=]\s*(?:['"])?)[^'"\s,}]+"#,
     ]
     .iter()
     .map(|pattern| Regex::new(pattern).unwrap())
@@ -276,9 +277,9 @@ mod tests {
     #[test]
     fn sensitive_fields_redact_without_disclosing_bearer_or_query() {
         let text = redact(
-            "https://host/?y=secret&api_key=key Authorization: Bearer abc X-Authorization='xyz' authorization='Basic dXNlcjpwYXNz'",
+            r#"https://host/?y=secret&api_key=key Authorization: Bearer abc X-Authorization='xyz' authorization='Basic dXNlcjpwYXNz' "sgdbApiKey":"sgdb-secret-123" sgdb_api_key=sgdb-secret-456"#,
         );
-        for secret in ["secret", "=key", "abc", "xyz", "dXNlcjpwYXNz"] {
+        for secret in ["secret", "=key", "abc", "xyz", "dXNlcjpwYXNz", "sgdb-secret-123", "sgdb-secret-456"] {
             assert!(!text.contains(secret), "{text}");
         }
         assert!(text.contains("Authorization: ***"));

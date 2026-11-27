@@ -548,6 +548,30 @@ pub async fn get_game_artwork_state(
     }))
 }
 
+pub(crate) fn save_local_icon_bytes(
+    app_id: u32,
+    shortcuts: &[Shortcut],
+    ext: &str,
+    bytes: &[u8],
+) -> Result<Option<String>, String> {
+    let Some(grid_dir) = shortcut_grid_dir(app_id, shortcuts) else {
+        return Ok(None);
+    };
+    fs::create_dir_all(&grid_dir).map_err(|_| "artwork_write_failed".to_owned())?;
+    let stem = ArtworkSlot::Icon.grid_stem(app_id);
+    for old_ext in GRID_EXTENSIONS {
+        let old = grid_dir.join(format!("{stem}.{old_ext}"));
+        if old.is_file() {
+            let _ = fs::remove_file(old);
+        }
+    }
+    let target = grid_dir.join(format!("{stem}.{ext}"));
+    let tmp = grid_dir.join(format!(".{stem}.{ext}.tmp"));
+    fs::write(&tmp, bytes).map_err(|_| "artwork_write_failed".to_owned())?;
+    fs::rename(&tmp, &target).map_err(|_| "artwork_write_failed".to_owned())?;
+    Ok(Some(target.to_string_lossy().into_owned()))
+}
+
 pub async fn fetch_steam_artwork_asset(
     state: &AppState,
     app_id_arg: &Value,
@@ -595,23 +619,8 @@ pub async fn fetch_steam_artwork_asset(
         let shortcuts = state.local_shortcuts().await?;
         let bytes = response.body;
         let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || -> Result<Option<String>, String> {
-            let Some(grid_dir) = shortcut_grid_dir(app_id, &shortcuts) else {
-                return Ok(None);
-            };
-            fs::create_dir_all(&grid_dir).map_err(|_| "artwork_write_failed".to_owned())?;
-            let stem = ArtworkSlot::Icon.grid_stem(app_id);
-            for old_ext in GRID_EXTENSIONS {
-                let old = grid_dir.join(format!("{stem}.{old_ext}"));
-                if old.is_file() {
-                    let _ = fs::remove_file(old);
-                }
-            }
-            let target = grid_dir.join(format!("{stem}.{ext_owned}"));
-            let tmp = grid_dir.join(format!(".{stem}.{ext_owned}.tmp"));
-            fs::write(&tmp, &bytes).map_err(|_| "artwork_write_failed".to_owned())?;
-            fs::rename(&tmp, &target).map_err(|_| "artwork_write_failed".to_owned())?;
-            Ok(Some(target.to_string_lossy().into_owned()))
+        tokio::task::spawn_blocking(move || {
+            save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
         })
         .await
         .map_err(|error| error.to_string())??

@@ -13,6 +13,7 @@ pub mod scan_runner;
 pub mod shortcuts_vdf;
 pub mod state;
 pub mod steam_paths;
+pub mod steamgriddb;
 pub mod storage;
 pub mod updater;
 

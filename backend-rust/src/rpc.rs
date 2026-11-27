@@ -41,6 +41,16 @@ pub const METHODS: &[&str] = &[
     "get_game_artwork_state",
     "fetch_steam_artwork_asset",
     "clear_local_artwork_file",
+    "get_sgdb_key_status",
+    "sgdb_search_games",
+    "sgdb_resolve_game",
+    "sgdb_list_assets",
+    "sgdb_fetch_asset",
+    "read_local_artwork_file",
+    "get_transparent_artwork_asset",
+    "get_sgdb_game_override",
+    "set_sgdb_game_override",
+    "clear_sgdb_game_override",
     "get_provider_cache",
     "put_protondb_cache",
     "get_hltb_settings",
@@ -462,6 +472,47 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "clear_local_artwork_file" => {
             arity(&args, 2, 2)?;
             crate::artwork::clear_local_artwork_file(&state, &args[0], &args[1]).await
+        }
+        "get_sgdb_key_status" => {
+            arity(&args, 0, 0)?;
+            crate::steamgriddb::get_sgdb_key_status(&state).await
+        }
+        "sgdb_search_games" => {
+            arity(&args, 1, 1)?;
+            crate::steamgriddb::sgdb_search_games(&state, &args[0]).await
+        }
+        "sgdb_resolve_game" => {
+            arity(&args, 3, 3)?;
+            crate::steamgriddb::sgdb_resolve_game(&state, &args[0], &args[1], &args[2]).await
+        }
+        "sgdb_list_assets" => {
+            arity(&args, 4, 4)?;
+            crate::steamgriddb::sgdb_list_assets(&state, &args[0], &args[1], &args[2], &args[3])
+                .await
+        }
+        "sgdb_fetch_asset" => {
+            arity(&args, 3, 3)?;
+            crate::steamgriddb::sgdb_fetch_asset(&state, &args[0], &args[1], &args[2]).await
+        }
+        "read_local_artwork_file" => {
+            arity(&args, 3, 3)?;
+            crate::steamgriddb::read_local_artwork_file(&state, &args[0], &args[1], &args[2]).await
+        }
+        "get_transparent_artwork_asset" => {
+            arity(&args, 2, 2)?;
+            crate::steamgriddb::get_transparent_artwork_asset(&state, &args[0], &args[1]).await
+        }
+        "get_sgdb_game_override" => {
+            arity(&args, 1, 1)?;
+            crate::steamgriddb::get_sgdb_game_override(&state, &args[0]).await
+        }
+        "set_sgdb_game_override" => {
+            arity(&args, 3, 3)?;
+            crate::steamgriddb::set_sgdb_game_override(&state, &args[0], &args[1], &args[2]).await
+        }
+        "clear_sgdb_game_override" => {
+            arity(&args, 1, 1)?;
+            crate::steamgriddb::clear_sgdb_game_override(&state, &args[0]).await
         }
         "get_protondb_badge_settings" => {
             arity(&args, 0, 0)?;
@@ -1159,6 +1210,97 @@ mod tests {
             Value::Null
         );
         assert_eq!(call("get_all_steam_overrides", Vec::new()).await.unwrap(), json!({}));
+
+        state.shutdown().await.unwrap();
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn sgdb_settings_overrides_and_local_artwork_rpcs() {
+        let (root, state) = test_state(None).await;
+        let call = |method: &'static str, args: Vec<Value>| dispatch(Arc::clone(&state), method, args);
+
+        // Extended artwork settings normalize & persist cleanly.
+        let initial = call("get_artwork_settings", Vec::new()).await.unwrap();
+        assert_eq!(initial["defaultTab"], "cover");
+        assert_eq!(initial["sgdbApiKey"], "");
+        assert_eq!(
+            initial["tabOrder"],
+            json!(["cover", "wide", "hero", "logo", "icon", "manage"])
+        );
+        assert_eq!(initial["hiddenTabs"], json!([]));
+
+        let mut updated = initial.clone();
+        updated["sgdbApiKey"] = json!("  my-test-key  ");
+        updated["defaultTab"] = json!("hero");
+        updated["tabOrder"] = json!(["hero", "cover", "wide", "logo", "icon", "manage"]);
+        updated["hiddenTabs"] = json!(["icon"]);
+        updated["filters"]["cover"]["nsfw"] = json!(true);
+        let saved = call("set_artwork_settings", vec![updated]).await.unwrap();
+        assert_eq!(saved["sgdbApiKey"], "my-test-key");
+        assert_eq!(saved["defaultTab"], "hero");
+        assert_eq!(saved["hiddenTabs"], json!(["icon"]));
+        assert_eq!(saved["filters"]["cover"]["nsfw"], true);
+
+        let key_status = call("get_sgdb_key_status", Vec::new()).await.unwrap();
+        assert_eq!(key_status["hasUserKey"], true);
+        assert_eq!(key_status["configured"], true);
+
+        // Per-game SGDB overrides accept both native Steam IDs and non-Steam shortcut IDs.
+        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), Value::Null);
+        let over = call(
+            "set_sgdb_game_override",
+            vec![json!(1091500), json!(5258006), json!("Cyberpunk 2077")],
+        )
+        .await
+        .unwrap();
+        assert_eq!(over, json!({"sgdb_game_id": 5258006, "name": "Cyberpunk 2077"}));
+        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), over);
+        // Resolve game uses persisted override before network lookup.
+        let resolved = call(
+            "sgdb_resolve_game",
+            vec![json!(1091500), json!(1091500), json!("Cyberpunk 2077")],
+        )
+        .await
+        .unwrap();
+        assert_eq!(resolved["override"], true);
+        assert_eq!(resolved["game"]["id"], 5258006);
+
+        call("clear_sgdb_game_override", vec![json!(1091500)]).await.unwrap();
+        assert_eq!(call("get_sgdb_game_override", vec![json!(1091500)]).await.unwrap(), Value::Null);
+
+        // Transparent PNG asset & local file asset work and sniff valid PNG.
+        let transparent = call(
+            "get_transparent_artwork_asset",
+            vec![json!(1091500), json!("logo")],
+        )
+        .await
+        .unwrap();
+        assert_eq!(transparent["slot"], "logo");
+        assert_eq!(transparent["ext"], "png");
+        assert_eq!(transparent["mime"], "image/png");
+        assert!(!transparent["base64"].as_str().unwrap().is_empty());
+
+        let local_png = root.join("sample.png");
+        std::fs::write(&local_png, crate::steamgriddb::TRANSPARENT_PNG).unwrap();
+        let local = call(
+            "read_local_artwork_file",
+            vec![json!(1091500), json!("cover"), json!(local_png.to_string_lossy())],
+        )
+        .await
+        .unwrap();
+        assert_eq!(local["slot"], "cover");
+        assert_eq!(local["ext"], "png");
+        assert_eq!(local["base64"], transparent["base64"]);
+
+        let bad_file = root.join("not-an-image.txt");
+        std::fs::write(&bad_file, b"hello world").unwrap();
+        assert!(call(
+            "read_local_artwork_file",
+            vec![json!(1091500), json!("cover"), json!(bad_file.to_string_lossy())],
+        )
+        .await
+        .is_err());
 
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);

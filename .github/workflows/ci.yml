@@ -63,6 +63,8 @@ jobs:
         run: ./run.sh npm run test:backend
 
       - name: Build locked static Rust backend
+        env:
+          DECKY_SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
         run: ./run.sh npm run build:backend
 
       - name: Build host diagnostics binary
@@ -94,6 +96,7 @@ jobs:
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           DECKY_PACKAGE_DIR: ${{ runner.temp }}/pr-package
+          DECKY_SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
         run: |
           set -euo pipefail
           base="$(node -p "require('./package.json').version")"
