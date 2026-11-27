@@ -12,6 +12,7 @@ import { t, translateBackendError } from "../i18n";
 import * as log from "../log";
 import { pluginConflicts } from "../pluginConflicts";
 import { metadataCache } from "../steam/core";
+import { matchedSteamAppId } from "../steam/detailsReassert";
 import {
   ARTWORK_SLOT_ORDER,
   applySteamArtworkSlot,
@@ -101,11 +102,6 @@ export type ArtworkControllerDeps = {
   subscribePluginConflicts: (listener: () => void) => () => void;
   toastSuccess: (title: string, body: string) => void;
   toastError: (title: string, body: string) => void;
-};
-
-const normalizedSteamAppId = (value: unknown): number | null => {
-  const id = Number(value);
-  return Number.isInteger(id) && id > 0 && id < 0x80000000 ? id : null;
 };
 
 export class ArtworkController {
@@ -289,51 +285,39 @@ export class ArtworkController {
 
   async runBulk(games: GameOption[], mode: ArtworkBulkMode): Promise<void> {
     if (this.snapshot.busy) return;
-    const settings = await this.ensureSettingsLoaded();
-    if (mode === "auto" && !settings.autoApply) return;
-    const anySlotEnabled = ARTWORK_SLOT_ORDER.some((slot) => settings.slots[slot]);
-    if (!anySlotEnabled) return;
-
-    const cache = this.deps.getMetadataCache();
-    let locks: Record<string, boolean> = {};
+    // Claim the run before the first await so overlapping calls cannot both start.
+    this.publish({ busy: true });
     try {
-      locks = await this.deps.getAllArtworkLocks();
-    } catch (error) {
-      log.warn("artwork", "artwork locks load failed", error);
-    }
+      const settings = await this.ensureSettingsLoaded();
+      if (mode === "auto" && !settings.autoApply) return;
+      const anySlotEnabled = ARTWORK_SLOT_ORDER.some((slot) => settings.slots[slot]);
+      if (!anySlotEnabled) return;
 
-    const targets = games
-      .map((game) => ({
-        game,
-        steamAppId: normalizedSteamAppId(cache[String(game.appid)]?.steam_appid),
-      }))
-      .filter(
-        (entry): entry is { game: GameOption; steamAppId: number } =>
-          entry.steamAppId !== null && locks[String(entry.game.appid)] !== true,
-      );
-
-    if (targets.length === 0) {
-      if (mode !== "auto") {
-        this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+      const cache = this.deps.getMetadataCache();
+      let locks: Record<string, boolean> = {};
+      try {
+        locks = await this.deps.getAllArtworkLocks();
+      } catch (error) {
+        log.warn("artwork", "artwork locks load failed", error);
       }
-      return;
-    }
 
-    this.publish({
-      busy: true,
-      progress: {
-        running: true,
-        mode,
-        completed: 0,
-        total: targets.length,
-        current: targets[0].game.name,
-      },
-    });
+      const targets = games
+        .map((game) => ({ game, steamAppId: matchedSteamAppId(cache[String(game.appid)]) }))
+        .filter(
+          (entry): entry is { game: GameOption; steamAppId: number } =>
+            entry.steamAppId !== null && locks[String(entry.game.appid)] !== true,
+        );
 
-    let totalApplied = 0;
-    let totalFailed = 0;
-    let gamesUpdated = 0;
-    try {
+      if (targets.length === 0) {
+        if (mode !== "auto") {
+          this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+        }
+        return;
+      }
+
+      let totalApplied = 0;
+      let totalFailed = 0;
+      let gamesUpdated = 0;
       const gameMode = mode === "auto" ? "policy" : mode;
       for (let index = 0; index < targets.length; index += 1) {
         const { game, steamAppId } = targets[index];
@@ -346,9 +330,8 @@ export class ArtworkController {
             current: game.name,
           },
         });
-        const result = await this.applyForGame(game.appid, steamAppId, gameMode, {
-          ignoreLock: true,
-        });
+        // applyForGame re-checks the per-game lock, which also covers a failed lock-list load.
+        const result = await this.applyForGame(game.appid, steamAppId, gameMode);
         totalApplied += result.applied;
         totalFailed += result.failed;
         if (result.applied > 0) gamesUpdated += 1;

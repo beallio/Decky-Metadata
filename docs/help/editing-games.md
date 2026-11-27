@@ -55,8 +55,10 @@ Searching, selecting a preview, and using a match do not change saved metadata
 until you select **Save**. Fields filled from Steam that are not saved yet are
 marked **From Steam, not saved** in amber. **Cancel selection** closes the
 preview and returns controller focus to that result. Using a match does not
-rename your shortcut or replace your custom artwork. Steam search needs an
-internet connection.
+rename your shortcut. If **Automatically apply Steam artwork** is on in
+**Settings → Artwork**, **Save** also applies the matched game's Steam artwork;
+with **Preserve existing artwork** off, this replaces your custom artwork.
+Steam search needs an internet connection.
 
 ### Enter an app ID or page link instead
 

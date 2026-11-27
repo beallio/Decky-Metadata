@@ -151,6 +151,31 @@ describe("ArtworkController", () => {
     expect(deps.toastSuccess).toHaveBeenCalled();
   });
 
+  it("still skips locked games when the lock list fails to load", async () => {
+    const deps = makeDeps();
+    vi.mocked(deps.getAllArtworkLocks).mockRejectedValue(new Error("rpc down"));
+    vi.mocked(deps.getGameArtworkState).mockResolvedValue(makeGameState(1002, 504230, { locked: true }));
+    const ctrl = new ArtworkController(deps);
+
+    await ctrl.runBulk([{ appid: 1002, name: "Celeste" }], "replace-all");
+    expect(deps.applySteamArtworkSlot).not.toHaveBeenCalled();
+  });
+
+  it("ignores a second bulk run that starts while the first is loading", async () => {
+    const deps = makeDeps({ autoApply: true, preserveExisting: false, slots: { cover: true, wide: false, hero: false, logo: false, icon: false } });
+    let releaseLocks!: (locks: Record<string, boolean>) => void;
+    vi.mocked(deps.getAllArtworkLocks).mockReturnValue(new Promise((resolve) => (releaseLocks = resolve)));
+    const ctrl = new ArtworkController(deps);
+    const games = [{ appid: 1001, name: "Hades II" }];
+
+    const first = ctrl.runBulk(games, "auto");
+    const second = ctrl.runBulk(games, "replace-all");
+    await Promise.resolve();
+    releaseLocks({});
+    await Promise.all([first, second]);
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledTimes(1);
+  });
+
   it("does not run auto-apply when autoApply setting is off", async () => {
     const deps = makeDeps(DEFAULT_ARTWORK_SETTINGS);
     const ctrl = new ArtworkController(deps);

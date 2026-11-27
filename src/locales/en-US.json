@@ -769,7 +769,7 @@
     }
   },
   "matchPicker": {
-    "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
+    "help": "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. Save does not rename your shortcut. If Automatically apply Steam artwork is on, Save also applies Steam artwork.",
     "searchAriaLabel": "Steam game search",
     "search": "Search Steam",
     "searching": "Searching Steam...",

@@ -220,9 +220,10 @@ pub fn parse_store_browse_assets(steam_appid: u32, payload: &Value) -> ResolvedS
         .map(|hash| format!("{COMMUNITY_ICON_BASE}{steam_appid}/{hash}.jpg"));
     ResolvedSteamAssets {
         cover: pick(&["library_capsule_2x", "library_capsule"]),
-        wide: pick(&["library_header_2x", "library_header", "header"]),
+        wide: pick(&["header_2x", "header"]),
         hero: pick(&["library_hero_2x", "library_hero"]),
-        logo: pick(&["library_logo_2x", "library_logo"]),
+        // IStoreBrowseService sends no logo key; resolve_steam_assets probes the CDN for it.
+        logo: None,
         icon,
     }
 }
@@ -274,13 +275,13 @@ pub async fn resolve_steam_assets(
     let mut url = reqwest::Url::parse(STORE_BROWSE_URL).expect("fixed Steam browse URL");
     url.query_pairs_mut()
         .append_pair("input_json", &input.to_string());
-    let mut resolved = match http
+    let browse = http
         .json(url.as_str(), Duration::from_secs(12), 512 * 1024)
-        .await
-    {
-        Ok(payload) => parse_store_browse_assets(steam_appid, &payload),
-        Err(_) => ResolvedSteamAssets::default(),
-    };
+        .await;
+    let browse_ok = browse.is_ok();
+    let mut resolved = browse
+        .map(|payload| parse_store_browse_assets(steam_appid, &payload))
+        .unwrap_or_default();
     // Delisted or hidden titles often omit IStoreBrowseService assets; fall back to standard CDN paths.
     if resolved.cover.is_none() {
         resolved.cover = first_existing_cdn(
@@ -297,25 +298,31 @@ pub async fn resolve_steam_assets(
         resolved.hero = first_existing_cdn(http, steam_appid, &["library_hero.jpg"]).await;
     }
     if resolved.logo.is_none() {
-        resolved.logo = first_existing_cdn(http, steam_appid, &["logo.png"]).await;
+        resolved.logo = first_existing_cdn(http, steam_appid, &["logo_2x.png", "logo.png"]).await;
     }
-    cache.lock().await.insert(steam_appid, resolved.clone());
+    // A network failure must not hide the game's artwork for the whole TTL.
+    if browse_ok || resolved != ResolvedSteamAssets::default() {
+        cache.lock().await.insert(steam_appid, resolved.clone());
+    }
     resolved
 }
 
+fn first_user_grid_dir() -> Option<PathBuf> {
+    steam_paths::detect_steam_installs(&steam_paths::discover_steam_roots())
+        .into_iter()
+        .find_map(|install| install.userdata_dirs.into_iter().next())
+        .map(|user| user.join("config/grid"))
+}
+
+fn grid_dir_of(shortcut: Option<&Shortcut>) -> Option<PathBuf> {
+    shortcut
+        .and_then(|shortcut| shortcut.shortcut_file.parent())
+        .map(|config_dir| config_dir.join("grid"))
+}
+
 fn shortcut_grid_dir(app_id: u32, shortcuts: &[Shortcut]) -> Option<PathBuf> {
-    if let Some(shortcut) = shortcuts.iter().find(|shortcut| shortcut.app_id == app_id) {
-        if let Some(config_dir) = shortcut.shortcut_file.parent() {
-            return Some(config_dir.join("grid"));
-        }
-    }
-    let roots = steam_paths::discover_steam_roots();
-    for install in steam_paths::detect_steam_installs(&roots) {
-        if let Some(user_dir) = install.userdata_dirs.first() {
-            return Some(user_dir.join("config/grid"));
-        }
-    }
-    None
+    grid_dir_of(shortcuts.iter().find(|shortcut| shortcut.app_id == app_id))
+        .or_else(first_user_grid_dir)
 }
 
 fn find_grid_file(grid_dir: &Path, stem: &str) -> Option<PathBuf> {
@@ -411,9 +418,8 @@ pub fn summarize_artwork_sync(
             locked_games += 1;
         }
         let shortcut = shortcuts.iter().find(|item| item.app_id == app_id);
-        let grid_dir = shortcut
-            .and_then(|item| item.shortcut_file.parent().map(|dir| dir.join("grid")))
-            .or_else(|| fallback_grid_dir.map(Path::to_path_buf));
+        let grid_dir =
+            grid_dir_of(shortcut).or_else(|| fallback_grid_dir.map(Path::to_path_buf));
         let shortcut_icon = shortcut.map(|item| item.icon.as_str());
         let mut game_missing = 0usize;
         for &idx in &enabled_indices {
@@ -461,10 +467,7 @@ pub async fn get_artwork_summary(state: &AppState, games: &Value) -> Result<Valu
     };
     let shortcuts = state.local_shortcuts().await?;
     tokio::task::spawn_blocking(move || {
-        let fallback_grid = steam_paths::detect_steam_installs(&steam_paths::discover_steam_roots())
-            .into_iter()
-            .find_map(|install| install.userdata_dirs.into_iter().next())
-            .map(|user| user.join("config/grid"));
+        let fallback_grid = first_user_grid_dir();
         summarize_artwork_sync(
             &game_ids,
             &metadata,
@@ -711,9 +714,9 @@ mod tests {
                         "asset_url_format": "steam/apps/1145350/${FILENAME}",
                         "library_capsule": "library_600x900.jpg",
                         "library_capsule_2x": "abc/library_capsule_2x.jpg",
-                        "header": "header.jpg",
+                        "header": "def/header.jpg",
+                        "header_2x": "def/header_2x.jpg",
                         "library_hero": "library_hero.jpg",
-                        "library_logo_2x": "logo_2x.png",
                         "community_icon": "0123456789abcdef0123456789abcdef01234567"
                     }
                 }]
@@ -726,16 +729,13 @@ mod tests {
         );
         assert_eq!(
             parsed.wide.as_deref(),
-            Some("https://shared.steamstatic.com/store_item_assets/steam/apps/1145350/header.jpg")
+            Some("https://shared.steamstatic.com/store_item_assets/steam/apps/1145350/def/header_2x.jpg")
         );
         assert_eq!(
             parsed.hero.as_deref(),
             Some("https://shared.steamstatic.com/store_item_assets/steam/apps/1145350/library_hero.jpg")
         );
-        assert_eq!(
-            parsed.logo.as_deref(),
-            Some("https://shared.steamstatic.com/store_item_assets/steam/apps/1145350/logo_2x.png")
-        );
+        assert!(parsed.logo.is_none());
         assert_eq!(
             parsed.icon.as_deref(),
             Some("https://shared.steamstatic.com/community_assets/images/apps/1145350/0123456789abcdef0123456789abcdef01234567.jpg")
@@ -848,7 +848,7 @@ mod tests {
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/library_600x900.jpg"),
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/header.jpg"),
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/library_hero.jpg"),
-            miss_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/logo.png"),
+            ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/logo_2x.png"),
         ]);
         let cache = Mutex::new(AssetCache::default());
         let first = resolve_steam_assets(&http, &cache, 224060).await;
@@ -858,11 +858,50 @@ mod tests {
         );
         assert!(first.wide.is_some());
         assert!(first.hero.is_some());
-        assert!(first.logo.is_none());
+        assert_eq!(
+            first.logo.as_deref(),
+            Some("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/logo_2x.png")
+        );
         http.assert_drained();
 
         // Second call serves from cache with zero HTTP requests.
         let second = resolve_steam_assets(&http, &cache, 224060).await;
         assert_eq!(first, second);
+    }
+
+    #[tokio::test]
+    async fn network_failure_is_not_cached() {
+        let input = json!({
+            "ids": [{"appid": 224060}],
+            "context": {"language": "english", "country_code": "US"},
+            "data_request": {"include_assets": true},
+        });
+        let mut browse_url = reqwest::Url::parse(STORE_BROWSE_URL).unwrap();
+        browse_url
+            .query_pairs_mut()
+            .append_pair("input_json", &input.to_string());
+        let down = |method: Method, url: &str| Fixture {
+            method,
+            url: url.to_owned(),
+            result: Err("network down".to_owned()),
+        };
+        let cdn = "https://shared.steamstatic.com/store_item_assets/steam/apps/224060/";
+        let mut fixtures = vec![down(Method::GET, browse_url.as_str())];
+        for file in [
+            "library_600x900_2x.jpg",
+            "library_600x900.jpg",
+            "header.jpg",
+            "library_hero.jpg",
+            "logo_2x.png",
+            "logo.png",
+        ] {
+            fixtures.push(down(Method::HEAD, &format!("{cdn}{file}")));
+        }
+        let http = Http::fixtures(fixtures);
+        let cache = Mutex::new(AssetCache::default());
+        let resolved = resolve_steam_assets(&http, &cache, 224060).await;
+        assert_eq!(resolved, ResolvedSteamAssets::default());
+        http.assert_drained();
+        assert!(cache.lock().await.get(224060).is_none());
     }
 }

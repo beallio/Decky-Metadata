@@ -1224,6 +1224,11 @@ export const MetadataPage = () => {
       const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
         ? await savePreviewedMetadata(appId, record, steamAppId)
         : await saveMetadata(appId, record);
+      // Apply before the early returns: later saves compare against this record and would never retry.
+      const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
+      if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
+        void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
+      }
       if (!isCurrentEditorEntry(requestedEntry)) return false;
       savedRecordRef.current = saved;
       previewedSteamAppIdRef.current = null;
@@ -1236,10 +1241,6 @@ export const MetadataPage = () => {
       applyMetadata(appId, { publishCompatibility: false });
       refreshCompatibilitySurfaces();
       toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
-      const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
-      if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
-        void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
-      }
       return true;
     } catch (error) {
       toastError(t("editor.toast.saveFailedTitle"), translateBackendError(error));

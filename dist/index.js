@@ -7806,7 +7806,7 @@ var editor$j = {
 	}
 };
 var matchPicker$j = {
-	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
+	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. Save does not rename your shortcut. If Automatically apply Steam artwork is on, Save also applies Steam artwork.",
 	searchAriaLabel: "Steam game search",
 	search: "Search Steam",
 	searching: "Searching Steam...",
@@ -26241,6 +26241,120 @@ const clearRouteShield = () => {
     metadataState.routeShield = null;
 };
 
+const matchedSteamAppId = (metadata) => {
+    const raw = metadata?.steam_appid;
+    if (typeof raw === "boolean" || raw === null || raw === undefined)
+        return null;
+    const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
+    return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
+        ? steamAppId
+        : null;
+};
+const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
+const associationsMatch = (current, people) => {
+    if (!Array.isArray(current) || current.length !== (people?.length || 0))
+        return false;
+    for (let index = 0; index < current.length; index += 1) {
+        const person = people[index];
+        if (current[index]?.strName !== person.name || current[index]?.strURL !== (person.url || ""))
+            return false;
+    }
+    return true;
+};
+const associationValues = (current, native, people) => {
+    if (associationsMatch(current, people))
+        return current;
+    if (associationsMatch(native, people))
+        return native;
+    return people?.map((person) => ({ strName: person.name, strURL: person.url || "" })) || [];
+};
+const SCREENSHOT_FIELDS = [
+    "appid", "id", "nScreenshotID", "strCaption", "strImageURL", "strThumbnailURL",
+    "strURL", "url", "nWidth", "nHeight", "width", "height", "bSpoiler",
+];
+const screenshotsMatch = (current, expected) => {
+    if (current === expected)
+        return true;
+    if (!Array.isArray(current) || current.length !== expected.length)
+        return false;
+    for (let index = 0; index < expected.length; index += 1) {
+        for (const field of SCREENSHOT_FIELDS) {
+            if (current[index]?.[field] !== expected[index]?.[field])
+                return false;
+        }
+    }
+    return true;
+};
+/**
+ * Reapply Decky's matched-game fields to a native app-data replacement.
+ *
+ * Steam rebuilds appData.details when another cache category arrives. The
+ * replacement must be populated before GetAppData returns it to SteamUI;
+ * otherwise observers can render the transient shortcut-only details and stay
+ * there until a later navigation.
+ */
+const reassertMatchedAppData = (appData, metadata, screenshots) => {
+    const details = appData?.details;
+    if (!details)
+        return false;
+    const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
+    if (appData.descriptionsData?.strFullDescription !== description ||
+        appData.descriptionsData?.strSnippet !== description) {
+        appData.descriptionsData = { strFullDescription: description, strSnippet: description };
+    }
+    const previousAssociations = appData.associationData;
+    const developers = associationValues(previousAssociations?.rgDevelopers, details.rgDevelopers, metadata.developers);
+    const publishers = associationValues(previousAssociations?.rgPublishers, details.rgPublishers, metadata.publishers);
+    const franchises = Array.isArray(previousAssociations?.rgFranchises) && previousAssociations.rgFranchises.length === 0
+        ? previousAssociations.rgFranchises
+        : Array.isArray(details.rgFranchises) && details.rgFranchises.length === 0
+            ? details.rgFranchises
+            : [];
+    if (previousAssociations?.rgDevelopers !== developers ||
+        previousAssociations?.rgPublishers !== publishers ||
+        previousAssociations?.rgFranchises !== franchises) {
+        appData.associationData = { rgDevelopers: developers, rgPublishers: publishers, rgFranchises: franchises };
+    }
+    // Peer getters can read these observables inside Steam's DLC autorun. New
+    // equivalent arrays would invalidate that autorun and re-render this page.
+    if (details.strFullDescription !== description)
+        details.strFullDescription = description;
+    if (details.strSnippet !== description)
+        details.strSnippet = description;
+    if (!associationsMatch(details.rgDevelopers, metadata.developers))
+        details.rgDevelopers = developers;
+    if (!associationsMatch(details.rgPublishers, metadata.publishers))
+        details.rgPublishers = publishers;
+    if (!Array.isArray(details.rgFranchises) || details.rgFranchises.length !== 0)
+        details.rgFranchises = franchises;
+    // A matched shortcut can inherit Steam screenshot metadata without becoming
+    // the real Steam application. Never advertise the shortcut appid as a
+    // Community Market target; the quick-link policy independently removes any
+    // stale native descriptor that SteamUI may already have rendered.
+    if (hasMatchedSteamAppId(metadata) && details.bCommunityMarketPresence !== false) {
+        details.bCommunityMarketPresence = false;
+    }
+    if (screenshots.length) {
+        if (details.nScreenshots !== screenshots.length)
+            details.nScreenshots = screenshots.length;
+        if (!screenshotsMatch(details.vecScreenShots, screenshots))
+            details.vecScreenShots = screenshots;
+        const previousScreenshots = appData.screenshots;
+        if (!screenshotsMatch(previousScreenshots?.rgScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.screenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenShots, screenshots)) {
+            appData.screenshots = {
+                rgScreenshots: screenshots,
+                screenshots,
+                vecScreenshots: screenshots,
+                vecScreenShots: screenshots,
+            };
+        }
+    }
+    return true;
+};
+
 const steamInternals = () => globalThis;
 /** SteamClient.Apps.SetCustomArtworkForApp / ClearCustomArtworkForApp asset type IDs. */
 const STEAM_ARTWORK_ASSET_TYPE = {
@@ -26364,10 +26478,6 @@ const EMPTY_ARTWORK_SUMMARY = {
     missing_slots: 0,
     existing_enabled_slots: 0,
     locked_games: 0,
-};
-const normalizedSteamAppId$1 = (value) => {
-    const id = Number(value);
-    return Number.isInteger(id) && id > 0 && id < 0x80000000 ? id : null;
 };
 class ArtworkController {
     constructor(deps) {
@@ -26580,46 +26690,35 @@ class ArtworkController {
     async runBulk(games, mode) {
         if (this.snapshot.busy)
             return;
-        const settings = await this.ensureSettingsLoaded();
-        if (mode === "auto" && !settings.autoApply)
-            return;
-        const anySlotEnabled = ARTWORK_SLOT_ORDER.some((slot) => settings.slots[slot]);
-        if (!anySlotEnabled)
-            return;
-        const cache = this.deps.getMetadataCache();
-        let locks = {};
+        // Claim the run before the first await so overlapping calls cannot both start.
+        this.publish({ busy: true });
         try {
-            locks = await this.deps.getAllArtworkLocks();
-        }
-        catch (error) {
-            warn("artwork", "artwork locks load failed", error);
-        }
-        const targets = games
-            .map((game) => ({
-            game,
-            steamAppId: normalizedSteamAppId$1(cache[String(game.appid)]?.steam_appid),
-        }))
-            .filter((entry) => entry.steamAppId !== null && locks[String(entry.game.appid)] !== true);
-        if (targets.length === 0) {
-            if (mode !== "auto") {
-                this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+            const settings = await this.ensureSettingsLoaded();
+            if (mode === "auto" && !settings.autoApply)
+                return;
+            const anySlotEnabled = ARTWORK_SLOT_ORDER.some((slot) => settings.slots[slot]);
+            if (!anySlotEnabled)
+                return;
+            const cache = this.deps.getMetadataCache();
+            let locks = {};
+            try {
+                locks = await this.deps.getAllArtworkLocks();
             }
-            return;
-        }
-        this.publish({
-            busy: true,
-            progress: {
-                running: true,
-                mode,
-                completed: 0,
-                total: targets.length,
-                current: targets[0].game.name,
-            },
-        });
-        let totalApplied = 0;
-        let totalFailed = 0;
-        let gamesUpdated = 0;
-        try {
+            catch (error) {
+                warn("artwork", "artwork locks load failed", error);
+            }
+            const targets = games
+                .map((game) => ({ game, steamAppId: matchedSteamAppId(cache[String(game.appid)]) }))
+                .filter((entry) => entry.steamAppId !== null && locks[String(entry.game.appid)] !== true);
+            if (targets.length === 0) {
+                if (mode !== "auto") {
+                    this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+                }
+                return;
+            }
+            let totalApplied = 0;
+            let totalFailed = 0;
+            let gamesUpdated = 0;
             const gameMode = mode === "auto" ? "policy" : mode;
             for (let index = 0; index < targets.length; index += 1) {
                 const { game, steamAppId } = targets[index];
@@ -26632,9 +26731,8 @@ class ArtworkController {
                         current: game.name,
                     },
                 });
-                const result = await this.applyForGame(game.appid, steamAppId, gameMode, {
-                    ignoreLock: true,
-                });
+                // applyForGame re-checks the per-game lock, which also covers a failed lock-list load.
+                const result = await this.applyForGame(game.appid, steamAppId, gameMode);
                 totalApplied += result.applied;
                 totalFailed += result.failed;
                 if (result.applied > 0)
@@ -28614,120 +28712,6 @@ const withInCallTruth = (state, run) => {
     finally {
         state.bypassCounter = previous;
     }
-};
-
-const matchedSteamAppId = (metadata) => {
-    const raw = metadata?.steam_appid;
-    if (typeof raw === "boolean" || raw === null || raw === undefined)
-        return null;
-    const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
-    return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
-        ? steamAppId
-        : null;
-};
-const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
-const associationsMatch = (current, people) => {
-    if (!Array.isArray(current) || current.length !== (people?.length || 0))
-        return false;
-    for (let index = 0; index < current.length; index += 1) {
-        const person = people[index];
-        if (current[index]?.strName !== person.name || current[index]?.strURL !== (person.url || ""))
-            return false;
-    }
-    return true;
-};
-const associationValues = (current, native, people) => {
-    if (associationsMatch(current, people))
-        return current;
-    if (associationsMatch(native, people))
-        return native;
-    return people?.map((person) => ({ strName: person.name, strURL: person.url || "" })) || [];
-};
-const SCREENSHOT_FIELDS = [
-    "appid", "id", "nScreenshotID", "strCaption", "strImageURL", "strThumbnailURL",
-    "strURL", "url", "nWidth", "nHeight", "width", "height", "bSpoiler",
-];
-const screenshotsMatch = (current, expected) => {
-    if (current === expected)
-        return true;
-    if (!Array.isArray(current) || current.length !== expected.length)
-        return false;
-    for (let index = 0; index < expected.length; index += 1) {
-        for (const field of SCREENSHOT_FIELDS) {
-            if (current[index]?.[field] !== expected[index]?.[field])
-                return false;
-        }
-    }
-    return true;
-};
-/**
- * Reapply Decky's matched-game fields to a native app-data replacement.
- *
- * Steam rebuilds appData.details when another cache category arrives. The
- * replacement must be populated before GetAppData returns it to SteamUI;
- * otherwise observers can render the transient shortcut-only details and stay
- * there until a later navigation.
- */
-const reassertMatchedAppData = (appData, metadata, screenshots) => {
-    const details = appData?.details;
-    if (!details)
-        return false;
-    const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
-    if (appData.descriptionsData?.strFullDescription !== description ||
-        appData.descriptionsData?.strSnippet !== description) {
-        appData.descriptionsData = { strFullDescription: description, strSnippet: description };
-    }
-    const previousAssociations = appData.associationData;
-    const developers = associationValues(previousAssociations?.rgDevelopers, details.rgDevelopers, metadata.developers);
-    const publishers = associationValues(previousAssociations?.rgPublishers, details.rgPublishers, metadata.publishers);
-    const franchises = Array.isArray(previousAssociations?.rgFranchises) && previousAssociations.rgFranchises.length === 0
-        ? previousAssociations.rgFranchises
-        : Array.isArray(details.rgFranchises) && details.rgFranchises.length === 0
-            ? details.rgFranchises
-            : [];
-    if (previousAssociations?.rgDevelopers !== developers ||
-        previousAssociations?.rgPublishers !== publishers ||
-        previousAssociations?.rgFranchises !== franchises) {
-        appData.associationData = { rgDevelopers: developers, rgPublishers: publishers, rgFranchises: franchises };
-    }
-    // Peer getters can read these observables inside Steam's DLC autorun. New
-    // equivalent arrays would invalidate that autorun and re-render this page.
-    if (details.strFullDescription !== description)
-        details.strFullDescription = description;
-    if (details.strSnippet !== description)
-        details.strSnippet = description;
-    if (!associationsMatch(details.rgDevelopers, metadata.developers))
-        details.rgDevelopers = developers;
-    if (!associationsMatch(details.rgPublishers, metadata.publishers))
-        details.rgPublishers = publishers;
-    if (!Array.isArray(details.rgFranchises) || details.rgFranchises.length !== 0)
-        details.rgFranchises = franchises;
-    // A matched shortcut can inherit Steam screenshot metadata without becoming
-    // the real Steam application. Never advertise the shortcut appid as a
-    // Community Market target; the quick-link policy independently removes any
-    // stale native descriptor that SteamUI may already have rendered.
-    if (hasMatchedSteamAppId(metadata) && details.bCommunityMarketPresence !== false) {
-        details.bCommunityMarketPresence = false;
-    }
-    if (screenshots.length) {
-        if (details.nScreenshots !== screenshots.length)
-            details.nScreenshots = screenshots.length;
-        if (!screenshotsMatch(details.vecScreenShots, screenshots))
-            details.vecScreenShots = screenshots;
-        const previousScreenshots = appData.screenshots;
-        if (!screenshotsMatch(previousScreenshots?.rgScreenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.screenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.vecScreenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.vecScreenShots, screenshots)) {
-            appData.screenshots = {
-                rgScreenshots: screenshots,
-                screenshots,
-                vecScreenshots: screenshots,
-                vecScreenShots: screenshots,
-            };
-        }
-    }
-    return true;
 };
 
 /** Project a calendar date into the running SteamUI JavaScript timezone.
@@ -38766,6 +38750,11 @@ const MetadataPage = () => {
             const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
                 ? await savePreviewedMetadata(appId, record, steamAppId)
                 : await saveMetadata(appId, record);
+            // Apply before the early returns: later saves compare against this record and would never retry.
+            const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
+            if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
+                void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
+            }
             if (!isCurrentEditorEntry(requestedEntry))
                 return false;
             savedRecordRef.current = saved;
@@ -38781,10 +38770,6 @@ const MetadataPage = () => {
             applyMetadata(appId, { publishCompatibility: false });
             refreshCompatibilitySurfaces();
             toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
-            const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
-            if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
-                void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
-            }
             return true;
         }
         catch (error) {
