@@ -162,12 +162,102 @@ export type EditorHeaderSettings = {
 
 export type ArtworkSlot = "cover" | "wide" | "hero" | "logo" | "icon";
 
+export type ArtworkTabId = ArtworkSlot | "manage";
+
 export type ArtworkSlotFlags = Record<ArtworkSlot, boolean>;
+
+export type SgdbSlotFilter = {
+  dimensions: string[];
+  styles: string[];
+  mimes: string[];
+  types: string[];
+  nsfw: boolean;
+  humor: boolean;
+  epilepsy: boolean;
+};
+
+export type SgdbFiltersBySlot = Record<ArtworkSlot, SgdbSlotFilter>;
 
 export type ArtworkSettings = {
   autoApply: boolean;
   preserveExisting: boolean;
   slots: ArtworkSlotFlags;
+  sgdbApiKey: string;
+  defaultTab: ArtworkTabId;
+  tabOrder: ArtworkTabId[];
+  hiddenTabs: ArtworkSlot[];
+  filters: SgdbFiltersBySlot;
+};
+
+export type SgdbKeyStatus = {
+  hasUserKey: boolean;
+  hasBuiltInKey: boolean;
+  configured: boolean;
+};
+
+export type SgdbGame = {
+  id: number;
+  name: string;
+  types?: string[];
+  verified?: boolean;
+  release_date?: number | null;
+  source?: "override" | "steam" | "search";
+};
+
+export type SgdbResolveGameResult = {
+  game: SgdbGame | null;
+  override: boolean;
+};
+
+export type SgdbGameOverride = {
+  sgdb_game_id: number;
+  name: string;
+};
+
+export type SgdbAssetAuthor = {
+  name: string;
+  steam64: string;
+  avatar: string;
+};
+
+export type SgdbAsset = {
+  id: number;
+  url: string;
+  thumb: string;
+  width: number;
+  height: number;
+  mime: string;
+  style: string;
+  animated: boolean;
+  nsfw: boolean;
+  humor: boolean;
+  epilepsy: boolean;
+  notes: string | null;
+  author: SgdbAssetAuthor;
+};
+
+export type SgdbAssetPage = {
+  items: SgdbAsset[];
+  page: number;
+  total: number;
+  has_more: boolean;
+};
+
+export type SteamLogoAnchor =
+  | "UpperLeft"
+  | "CenterLeft"
+  | "BottomLeft"
+  | "UpperCenter"
+  | "CenterCenter"
+  | "BottomCenter"
+  | "UpperRight"
+  | "CenterRight"
+  | "BottomRight";
+
+export type SteamLogoPosition = {
+  pinnedPosition: SteamLogoAnchor;
+  nWidthPct: number;
+  nHeightPct: number;
 };
 
 export type ArtworkSummary = {
@@ -354,7 +444,17 @@ export type SteamInternals = {
     GetIconURLForApp?: (overview: SteamOverview) => string | null;
     allApps?: SteamOverview[] | Record<string, SteamOverview>;
   };
-  appDetailsStore: object;
+  appDetailsStore: {
+    SaveCustomLogoPosition?: (
+      overview: SteamOverview,
+      logoPosition: SteamLogoPosition,
+    ) => Promise<unknown> | void;
+    ClearCustomLogoPosition?: (overview: SteamOverview) => Promise<unknown> | void;
+    GetAppData?: (appId: number) => {
+      libraryAssets?: { logoPosition?: Partial<SteamLogoPosition> | null } | null;
+    } | null;
+    [key: string]: unknown;
+  };
   appActivityStore?: object;
   Router?: {
     WindowStore?: {

@@ -8,8 +8,12 @@ vi.mock("../backend", () => ({
   getArtworkSettings: vi.fn(),
   getArtworkSummary: vi.fn(),
   getGameArtworkState: vi.fn(),
+  getSgdbKeyStatus: vi.fn(),
+  getTransparentArtworkAsset: vi.fn(),
+  readLocalArtworkFile: vi.fn(),
   setArtworkLocked: vi.fn(),
   setArtworkSettings: vi.fn(),
+  sgdbFetchAsset: vi.fn(),
 }));
 vi.mock("../steam/core", () => ({ metadataCache: {} }));
 vi.mock("../toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
@@ -72,9 +76,10 @@ const makeGameState = (
   },
 });
 
-const makeDeps = (settings: ArtworkSettings = DEFAULT_ARTWORK_SETTINGS): ArtworkControllerDeps => ({
-  getArtworkSettings: vi.fn().mockResolvedValue(settings),
+const makeDeps = (settings: Partial<ArtworkSettings> = DEFAULT_ARTWORK_SETTINGS): ArtworkControllerDeps => ({
+  getArtworkSettings: vi.fn().mockResolvedValue({ ...DEFAULT_ARTWORK_SETTINGS, ...settings }),
   setArtworkSettings: vi.fn().mockImplementation(async (next) => next),
+  getSgdbKeyStatus: vi.fn().mockResolvedValue({ hasUserKey: false, hasBuiltInKey: true, configured: true }),
   getArtworkSummary: vi.fn().mockResolvedValue({
     matched: 2,
     complete: 1,
@@ -97,6 +102,27 @@ const makeDeps = (settings: ArtworkSettings = DEFAULT_ARTWORK_SETTINGS): Artwork
     ext: "jpg",
     mime: "image/jpeg",
     file_path: slot === "icon" ? "/tmp/icon.jpg" : null,
+  })),
+  sgdbFetchAsset: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "SGDB==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
+  })),
+  readLocalArtworkFile: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "LOCAL==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
+  })),
+  getTransparentArtworkAsset: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "TRANS==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
   })),
   clearLocalArtworkFile: vi.fn().mockResolvedValue({ ok: true, removed: true }),
   applySteamArtworkSlot: vi.fn().mockResolvedValue(undefined),
@@ -199,5 +225,27 @@ describe("ArtworkController", () => {
     await ctrl.clearSingleSlot(1001, "cover");
     expect(deps.clearSteamArtworkSlot).toHaveBeenCalledWith(1001, "cover");
     expect(deps.clearLocalArtworkFile).toHaveBeenCalledWith(1001, "cover");
+  });
+
+  it("applies SteamGridDB, local file, and transparent assets and persists per-slot filters globally", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+
+    await ctrl.applySgdbAsset(1091500, "hero", "https://cdn2.steamgriddb.com/hero/1.png");
+    expect(deps.sgdbFetchAsset).toHaveBeenCalledWith(1091500, "hero", "https://cdn2.steamgriddb.com/hero/1.png");
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledWith(1091500, "hero", expect.objectContaining({ base64: "SGDB==" }));
+
+    await ctrl.applyLocalFile(1091500, "cover", "/home/deck/Downloads/poster.png");
+    expect(deps.readLocalArtworkFile).toHaveBeenCalledWith(1091500, "cover", "/home/deck/Downloads/poster.png");
+
+    await ctrl.applyTransparentSlot(1091500, "logo");
+    expect(deps.getTransparentArtworkAsset).toHaveBeenCalledWith(1091500, "logo");
+
+    const ok = await ctrl.updateSlotFilter("cover", {
+      ...DEFAULT_ARTWORK_SETTINGS.filters.cover,
+      nsfw: true,
+    });
+    expect(ok).toBe(true);
+    expect(ctrl.getSnapshot().settings.filters.cover.nsfw).toBe(true);
   });
 });

@@ -2,15 +2,28 @@ import { describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
+const defaultSettings = vi.hoisted(() => ({
+  autoApply: false,
+  preserveExisting: true,
+  slots: { cover: true, wide: true, hero: true, logo: true, icon: true },
+  sgdbApiKey: "",
+  defaultTab: "cover" as const,
+  tabOrder: ["cover", "wide", "hero", "logo", "icon", "manage"] as const,
+  hiddenTabs: [] as ("cover" | "wide" | "hero" | "logo" | "icon")[],
+  filters: {
+    cover: { dimensions: ["600x900", "342x482", "660x930"], styles: [], mimes: [], types: ["static"], nsfw: false, humor: true, epilepsy: false },
+    wide: { dimensions: ["460x215", "920x430"], styles: [], mimes: [], types: ["static"], nsfw: false, humor: true, epilepsy: false },
+    hero: { dimensions: ["1920x620", "3840x1240", "1600x650"], styles: [], mimes: [], types: ["static"], nsfw: false, humor: true, epilepsy: false },
+    logo: { dimensions: [], styles: [], mimes: [], types: ["static"], nsfw: false, humor: true, epilepsy: false },
+    icon: { dimensions: [], styles: [], mimes: [], types: ["static"], nsfw: false, humor: true, epilepsy: false },
+  },
+}));
 const ctrl = vi.hoisted(() => ({
   getSnapshot: vi.fn(() => ({
-    settings: {
-      autoApply: false,
-      preserveExisting: true,
-      slots: { cover: true, wide: true, hero: true, logo: true, icon: true },
-    },
+    settings: structuredClone(defaultSettings),
     settingsLoaded: true,
     settingsError: "",
+    sgdbKeyStatus: { hasUserKey: true, hasBuiltInKey: false, configured: true },
     summary: {
       matched: 0,
       complete: 0,
@@ -26,10 +39,15 @@ const ctrl = vi.hoisted(() => ({
     revision: 0,
   })),
   subscribe: vi.fn(() => () => undefined),
+  ensureSettingsLoaded: vi.fn(() => Promise.resolve(structuredClone(defaultSettings))),
   setGameLocked: vi.fn(),
   applySingleSlot: vi.fn(),
+  applySgdbAsset: vi.fn(),
+  applyLocalFile: vi.fn(),
+  applyTransparentSlot: vi.fn(),
   clearSingleSlot: vi.fn(),
   applyForGame: vi.fn(),
+  updateSlotFilter: vi.fn(),
 }));
 const hookState = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[] }));
 
@@ -39,11 +57,16 @@ vi.mock("react", () => ({
     if (idx >= hookState.slots.length) {
       hookState.slots.push(typeof initial === "function" ? (initial as () => unknown)() : initial);
     }
-    return [hookState.slots[idx], (val: unknown) => { hookState.slots[idx] = val; }];
+    return [hookState.slots[idx], (val: unknown) => {
+      hookState.slots[idx] = typeof val === "function" ? (val as (p: unknown) => unknown)(hookState.slots[idx]) : val;
+    }];
   },
   useCallback: <T,>(fn: T) => fn,
+  useMemo: <T,>(fn: () => T) => fn(),
+  useRef: <T,>(initial: T) => ({ current: initial }),
   useEffect: vi.fn(),
 }));
+vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
   ConfirmModal: "ConfirmModal",
@@ -51,19 +74,42 @@ vi.mock("@decky/ui", () => ({
   DialogControlsSectionHeader: "DialogControlsSectionHeader",
   DialogButton: "DialogButton",
   Field: "Field",
+  Focusable: "Focusable",
+  GamepadButton: { BUMPER_LEFT: 5, BUMPER_RIGHT: 6 },
+  ModalRoot: "ModalRoot",
+  SliderField: "SliderField",
+  TextField: "TextField",
   ToggleField: "ToggleField",
   showModal: ui.showModal,
 }));
-vi.mock("../../artwork/controller", () => ({ artworkController: ctrl }));
-vi.mock("../../backend", () => ({ getGameArtworkState: vi.fn() }));
+vi.mock("../../artwork/controller", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  artworkController: ctrl,
+}));
+vi.mock("../../backend", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
+  getGameArtworkState: vi.fn(),
+  sgdbListAssets: vi.fn(),
+  sgdbResolveGame: vi.fn(),
+  sgdbSearchGames: vi.fn(),
+  setSgdbGameOverride: vi.fn(),
+  clearSgdbGameOverride: vi.fn(),
+}));
 vi.mock("../../i18n", () => ({
   useT: () => (key: string) => key,
   translateBackendError: (e: unknown) => String(e),
 }));
 vi.mock("../../toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
-vi.mock("../../styles", () => ({ FocusableButton: "FocusableButton" }));
 
-import { ArtworkEditorPage } from "./ArtworkEditorPage";
+import { DEFAULT_ARTWORK_SETTINGS, defaultSlotFilter } from "../../artwork/controller";
+
+import {
+  ArtworkEditorPage,
+  computeVisibleArtworkTabs,
+  countActiveSlotFilters,
+  resolveInitialArtworkTab,
+} from "./ArtworkEditorPage";
+import { logoPreviewBoxStyle } from "./artwork/LogoPositionerModal";
 
 type Node = { type?: unknown; props?: Record<string, any> };
 const nodes = (node: unknown): Node[] => {
@@ -80,11 +126,41 @@ const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
 };
 
 describe("ArtworkEditorPage", () => {
-  it("guards unsaved Steam match previews before allowing artwork changes", () => {
+  it("computes visible tabs respecting tabOrder, hiddenTabs, and keeping manage visible", () => {
+    const custom = {
+      ...DEFAULT_ARTWORK_SETTINGS,
+      tabOrder: ["hero", "cover", "wide", "logo", "icon", "manage"] as const,
+      hiddenTabs: ["wide", "icon"] as ("wide" | "icon")[],
+      defaultTab: "wide" as const,
+    };
+    expect(computeVisibleArtworkTabs({ ...custom, tabOrder: [...custom.tabOrder] })).toEqual([
+      "hero",
+      "cover",
+      "logo",
+      "manage",
+    ]);
+    // Hidden defaultTab falls back to first visible tab.
+    expect(resolveInitialArtworkTab({ ...custom, tabOrder: [...custom.tabOrder] })).toBe("hero");
+  });
+
+  it("counts non-default slot filter selections", () => {
+    const base = defaultSlotFilter("cover");
+    expect(countActiveSlotFilters("cover", base)).toBe(0);
+    expect(
+      countActiveSlotFilters("cover", {
+        ...base,
+        nsfw: true,
+        styles: ["alternate"],
+      }),
+    ).toBe(2);
+  });
+
+  it("shows non-blocking Save Steam Match banner when unsaved preview exists while keeping artwork tabs interactive", () => {
     const onSaveMatch = vi.fn();
     const root = renderPage({
       appId: 1001,
       gameName: "Hades II",
+      isSteamGame: false,
       savedSteamAppId: null,
       savedSteamName: "",
       unsavedSteamAppId: 1145350,
@@ -92,27 +168,50 @@ describe("ArtworkEditorPage", () => {
       onGoToSteamMatch: vi.fn(),
       onSaveMatch,
     });
-    const saveBtn = nodes(root).find((n) => n.type === "ButtonItem")!;
-    expect(saveBtn.props?.label).toBe("editor.artwork.pendingMatchLabel");
+    const tree = nodes(root);
+    const saveBtn = tree.find(
+      (n) => n.type === "DialogButton" && n.props?.children === "editor.artwork.saveMatchAction",
+    )!;
+    expect(saveBtn).toBeDefined();
     saveBtn.props!.onClick();
     expect(onSaveMatch).toHaveBeenCalledTimes(1);
+    // All 6 slot tabs render immediately.
+    const tabLabels = tree
+      .filter((n) => typeof n.props?.className === "string" && n.props.className.includes("__tab"))
+      .filter((n) => !n.props.className.includes("__tabs") && !n.props.className.includes("__tab-list"))
+      .map((n) => n.props?.children);
+    expect(tabLabels).toHaveLength(6);
   });
 
-  it("shows empty unmatched state with jump button to Steam Match", () => {
-    const onGoToSteamMatch = vi.fn();
+  it("switches tabs on L1/R1 bumper presses", () => {
     const root = renderPage({
-      appId: 1001,
-      gameName: "Bloodborne",
-      savedSteamAppId: null,
-      savedSteamName: "",
-      unsavedSteamAppId: null,
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      savedSteamName: "Cyberpunk 2077",
+      unsavedSteamAppId: 1091500,
       entryBusy: false,
-      onGoToSteamMatch,
+      onGoToSteamMatch: vi.fn(),
       onSaveMatch: vi.fn(),
     });
-    const btn = nodes(root).find((n) => n.type === "ButtonItem")!;
-    expect(btn.props?.label).toBe("editor.artwork.noMatchLabel");
-    btn.props!.onClick();
-    expect(onGoToSteamMatch).toHaveBeenCalledTimes(1);
+    // Initial tab is "cover" (slot 1 of hookState is activeTab).
+    expect(hookState.slots[1]).toBe("cover");
+    root.props.onButtonDown({ detail: { button: 6 } }); // R1 -> wide
+    expect(hookState.slots[1]).toBe("wide");
+    root.props.onButtonDown({ detail: { button: 5 } }); // L1 -> back to cover
+    expect(hookState.slots[1]).toBe("cover");
+  });
+
+  it("computes LogoPositioner anchor preview styles for all corners and center", () => {
+    expect(
+      logoPreviewBoxStyle({ pinnedPosition: "UpperLeft", nWidthPct: 40, nHeightPct: 30 }),
+    ).toMatchObject({ top: 0, left: 0, width: "40%", height: "30%" });
+    expect(
+      logoPreviewBoxStyle({ pinnedPosition: "CenterCenter", nWidthPct: 50, nHeightPct: 50 }),
+    ).toMatchObject({ top: "50%", left: "50%", transform: "translate(-50%, -50%)" });
+    expect(
+      logoPreviewBoxStyle({ pinnedPosition: "BottomRight", nWidthPct: 60, nHeightPct: 25 }),
+    ).toMatchObject({ bottom: 0, right: 0, width: "60%", height: "25%" });
   });
 });

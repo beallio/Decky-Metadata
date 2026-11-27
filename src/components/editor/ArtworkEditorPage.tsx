@@ -1,429 +1,624 @@
 import {
-  ButtonItem,
-  ConfirmModal,
-  DialogControlsSection,
-  DialogControlsSectionHeader,
+  DialogButton,
   Field,
-  ToggleField,
+  Focusable,
+  GamepadButton,
   showModal,
 } from "@decky/ui";
-import type { CSSProperties } from "react";
-import { useCallback, useEffect, useState } from "react";
-
-import { artworkController } from "../../artwork/controller";
-import { getGameArtworkState } from "../../backend";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  ARTWORK_TAB_ORDER,
+  artworkController,
+  defaultSlotFilter,
+} from "../../artwork/controller";
+import {
+  getGameArtworkState,
+  sgdbListAssets,
+  sgdbResolveGame,
+} from "../../backend";
 import { translateBackendError, useT } from "../../i18n";
-import { editorFocusTargetClassName } from "../../metadataEditorStyles";
-import { ARTWORK_SLOT_ORDER } from "../../steam/customArtwork";
-import { FocusableButton } from "../../styles";
 import { toastError, toastSuccess } from "../../toast";
 import { colors } from "../../tokens";
-import type { ArtworkSlot, GameArtworkState } from "../../types";
+import type {
+  ArtworkSettings,
+  ArtworkSlot,
+  ArtworkTabId,
+  GameArtworkState,
+  SgdbAsset,
+  SgdbGame,
+  SgdbSlotFilter,
+} from "../../types";
+import { ArtworkDetailsModal } from "./artwork/ArtworkDetailsModal";
+import { ArtworkFilterModal } from "./artwork/ArtworkFilterModal";
+import { ArtworkManageTab } from "./artwork/ArtworkManageTab";
+import {
+  artworkBrowserClass,
+  artworkBrowserCss,
+  SLOT_ASPECT_RATIO,
+  SLOT_GRID_MIN_WIDTH,
+} from "./artwork/artworkStyles";
 
-type ArtworkEditorPageProps = {
+export type ArtworkEditorPageProps = {
   appId: number;
   gameName: string;
+  isSteamGame?: boolean;
   savedSteamAppId: number | null;
   savedSteamName: string;
   unsavedSteamAppId: number | null;
   entryBusy: boolean;
   onGoToSteamMatch: () => void;
   onSaveMatch: () => void;
+  onOpenArtworkSettings?: () => void;
 };
 
-const thumbPairStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-  flexShrink: 0,
-};
+export function computeVisibleArtworkTabs(settings: ArtworkSettings): ArtworkTabId[] {
+  const hidden = new Set<ArtworkTabId>(settings.hiddenTabs ?? []);
+  const ordered = (settings.tabOrder?.length ? settings.tabOrder : ARTWORK_TAB_ORDER).filter(
+    (tab) => tab === "manage" || !hidden.has(tab),
+  );
+  if (!ordered.includes("manage")) ordered.push("manage");
+  return ordered;
+}
 
-const thumbWellStyle: CSSProperties = {
-  width: 68,
-  height: 46,
-  borderRadius: 2,
-  background: "rgba(0, 0, 0, 0.35)",
-  border: "1px solid rgba(255, 255, 255, 0.1)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  overflow: "hidden",
-};
+export function resolveInitialArtworkTab(settings: ArtworkSettings): ArtworkTabId {
+  const visible = computeVisibleArtworkTabs(settings);
+  if (settings.defaultTab && visible.includes(settings.defaultTab)) {
+    return settings.defaultTab;
+  }
+  return visible[0] ?? "manage";
+}
 
-const thumbImgStyle: CSSProperties = {
-  maxWidth: "100%",
-  maxHeight: "100%",
-  objectFit: "contain",
-  display: "block",
-};
+export function countActiveSlotFilters(slot: ArtworkSlot, filter: SgdbSlotFilter): number {
+  const defaults = defaultSlotFilter(slot);
+  let diffs = 0;
+  if (filter.dimensions.join(",") !== defaults.dimensions.join(",")) diffs += 1;
+  if (filter.styles.length > 0) diffs += 1;
+  if (filter.mimes.length > 0) diffs += 1;
+  if (filter.types.join(",") !== defaults.types.join(",")) diffs += 1;
+  if (filter.nsfw !== defaults.nsfw) diffs += 1;
+  if (filter.humor !== defaults.humor) diffs += 1;
+  if (filter.epilepsy !== defaults.epilepsy) diffs += 1;
+  return diffs;
+}
 
-const thumbPlaceholderStyle: CSSProperties = {
-  fontSize: 11,
-  color: colors.textSecondary,
-};
-
-const slotActionsStyle: CSSProperties = {
-  display: "flex",
-  alignItems: "center",
-  gap: 8,
-};
-
-const slotButtonStyle: CSSProperties = {
-  width: "auto",
-  minWidth: 92,
-  padding: "0 12px",
-  whiteSpace: "nowrap",
-};
+const tabLabelKey = (tab: ArtworkTabId): string =>
+  tab === "manage" ? "editor.artwork.tab.manage" : `qam.artwork.slot.${tab}.label`;
 
 const slotLabelKey = (slot: ArtworkSlot): string => `qam.artwork.slot.${slot}.label`;
-const slotDimsKey = (slot: ArtworkSlot): string => `editor.artwork.dims.${slot}`;
 
 export function ArtworkEditorPage({
   appId,
   gameName,
+  isSteamGame = false,
   savedSteamAppId,
-  savedSteamName,
   unsavedSteamAppId,
   entryBusy,
   onGoToSteamMatch,
   onSaveMatch,
+  onOpenArtworkSettings,
 }: ArtworkEditorPageProps) {
   const t = useT();
+  const [snapshot, setSnapshot] = useState(() => artworkController.getSnapshot());
+  const visibleTabs = useMemo(
+    () => computeVisibleArtworkTabs(snapshot.settings),
+    [snapshot.settings],
+  );
+  const [activeTab, setActiveTab] = useState<ArtworkTabId>(() =>
+    resolveInitialArtworkTab(artworkController.getSnapshot().settings),
+  );
   const [artworkState, setArtworkState] = useState<GameArtworkState | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [busySlot, setBusySlot] = useState<ArtworkSlot | "bulk" | "lock" | null>(null);
-  const [settingsSnap, setSettingsSnap] = useState(() => artworkController.getSnapshot());
+  const [sgdbGame, setSgdbGame] = useState<SgdbGame | null>(null);
+  const [sgdbIsOverride, setSgdbIsOverride] = useState(false);
+  const [resolvingGame, setResolvingGame] = useState(false);
+  const [missingKey, setMissingKey] = useState(false);
+  const [assets, setAssets] = useState<SgdbAsset[]>([]);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingAssets, setLoadingAssets] = useState(false);
+  const [assetError, setAssetError] = useState("");
+  const [officialOnly, setOfficialOnly] = useState(false);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [gameReloadTick, setGameReloadTick] = useState(0);
+  const requestSeqRef = useRef(0);
 
   useEffect(() => {
-    const unsubscribe = artworkController.subscribe(() => {
-      setSettingsSnap(artworkController.getSnapshot());
-    });
-    setSettingsSnap(artworkController.getSnapshot());
-    return unsubscribe;
+    const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
+    void artworkController.ensureSettingsLoaded();
+    return unsub;
   }, []);
 
-  const loadState = useCallback(async () => {
-    if (savedSteamAppId === null) {
-      setArtworkState(null);
-      setError("");
-      setLoading(false);
-      return;
+  // Keep active tab valid when user changes tab visibility in settings.
+  useEffect(() => {
+    if (!visibleTabs.includes(activeTab)) {
+      setActiveTab(resolveInitialArtworkTab(snapshot.settings));
     }
-    setLoading(true);
-    setError("");
+  }, [activeTab, snapshot.settings, visibleTabs]);
+
+  // Reset to user's configured default tab when switching games.
+  useEffect(() => {
+    setActiveTab(resolveInitialArtworkTab(artworkController.getSnapshot().settings));
+    setSgdbGame(null);
+    setSgdbIsOverride(false);
+    setAssets([]);
+    setPage(0);
+    setHasMore(false);
+    setAssetError("");
+    setMissingKey(false);
+    setOfficialOnly(false);
+  }, [appId]);
+
+  const loadArtworkState = useCallback(async () => {
     try {
-      const loaded = await getGameArtworkState(appId, savedSteamAppId);
-      setArtworkState(loaded);
-    } catch (loadError) {
-      setError(translateBackendError(loadError));
-    } finally {
-      setLoading(false);
+      const next = await getGameArtworkState(appId, savedSteamAppId);
+      setArtworkState(next);
+    } catch {
+      // Keep previous state on transient failure.
     }
   }, [appId, savedSteamAppId]);
 
   useEffect(() => {
-    void loadState();
-  }, [loadState, settingsSnap.revision]);
+    void loadArtworkState();
+  }, [loadArtworkState, snapshot.revision]);
 
-  const busy = entryBusy || busySlot !== null || settingsSnap.busy;
-  const hasUnsavedMatch =
-    unsavedSteamAppId !== null && unsavedSteamAppId !== savedSteamAppId;
-
-  if (hasUnsavedMatch) {
-    return (
-      <DialogControlsSection>
-        <Field
-          focusable={false}
-          description={t("editor.artwork.immediateNotice")}
-          bottomSeparator="standard"
-        />
-        <Field
-          focusable={false}
-          description={
-            <span style={{ color: colors.warning }}>
-              {t("editor.artwork.unsavedMatchNotice", { appId: unsavedSteamAppId })}
-            </span>
-          }
-          bottomSeparator="standard"
-        />
-        <ButtonItem
-          layout="inline"
-          label={t("editor.artwork.pendingMatchLabel")}
-          description={t("editor.artwork.pendingMatchDescription")}
-          disabled={entryBusy}
-          onClick={onSaveMatch}
-          bottomSeparator="none"
-        >
-          {t("editor.artwork.saveMatchAction")}
-        </ButtonItem>
-      </DialogControlsSection>
-    );
-  }
-
-  if (savedSteamAppId === null) {
-    return (
-      <DialogControlsSection>
-        <Field
-          focusable={false}
-          description={t("editor.artwork.immediateNotice")}
-          bottomSeparator="standard"
-        />
-        <ButtonItem
-          layout="inline"
-          label={t("editor.artwork.noMatchLabel")}
-          description={t("editor.artwork.noMatchDescription")}
-          disabled={entryBusy}
-          onClick={onGoToSteamMatch}
-          bottomSeparator="none"
-        >
-          {t("editor.artwork.openSteamMatchAction")}
-        </ButtonItem>
-      </DialogControlsSection>
-    );
-  }
-
-  const slots = artworkState?.slots;
-  const enabledSlots = ARTWORK_SLOT_ORDER.filter((slot) => settingsSnap.settings.slots[slot]);
-  const missingEnabledCount = slots
-    ? enabledSlots.filter((slot) => slots[slot]?.available && !slots[slot]?.present).length
-    : 0;
-  const existingEnabledCount = slots
-    ? enabledSlots.filter((slot) => slots[slot]?.available && slots[slot]?.present).length
-    : 0;
-  const availableEnabledCount = slots
-    ? enabledSlots.filter((slot) => slots[slot]?.available).length
-    : 0;
-
-  const toggleLock = async (locked: boolean) => {
-    setBusySlot("lock");
-    try {
-      const saved = await artworkController.setGameLocked(appId, locked);
-      setArtworkState((current) => (current ? { ...current, locked: saved } : current));
-      toastSuccess(
-        t(saved ? "editor.artwork.toast.lockedTitle" : "editor.artwork.toast.unlockedTitle"),
-        t(saved ? "editor.artwork.toast.lockedBody" : "editor.artwork.toast.unlockedBody", {
-          game: gameName,
-        }),
-      );
-    } catch (lockError) {
-      toastError(t("artwork.toast.failedTitle"), translateBackendError(lockError));
-    } finally {
-      setBusySlot(null);
-    }
-  };
-
-  const applyOne = async (slot: ArtworkSlot) => {
-    setBusySlot(slot);
-    try {
-      await artworkController.applySingleSlot(appId, savedSteamAppId, slot);
-      toastSuccess(
-        t("artwork.toast.appliedTitle"),
-        t("editor.artwork.toast.slotAppliedBody", { slot: t(slotLabelKey(slot)), game: gameName }),
-      );
-      await loadState();
-    } catch (applyError) {
-      toastError(t("artwork.toast.failedTitle"), translateBackendError(applyError));
-    } finally {
-      setBusySlot(null);
-    }
-  };
-
-  const clearOne = async (slot: ArtworkSlot) => {
-    setBusySlot(slot);
-    try {
-      await artworkController.clearSingleSlot(appId, slot);
-      toastSuccess(
-        t("editor.artwork.toast.clearedTitle"),
-        t("editor.artwork.toast.slotClearedBody", { slot: t(slotLabelKey(slot)), game: gameName }),
-      );
-      await loadState();
-    } catch (clearError) {
-      toastError(t("artwork.toast.failedTitle"), translateBackendError(clearError));
-    } finally {
-      setBusySlot(null);
-    }
-  };
-
-  const runGameBulk = async (mode: "fill-missing" | "replace-all") => {
-    setBusySlot("bulk");
-    try {
-      const result = await artworkController.applyForGame(appId, savedSteamAppId, mode, {
-        ignoreLock: true,
+  // Resolve SteamGridDB game (persisted override -> Steam AppID -> name search).
+  useEffect(() => {
+    let cancelled = false;
+    setResolvingGame(true);
+    setMissingKey(false);
+    setAssetError("");
+    void sgdbResolveGame(appId, savedSteamAppId, gameName)
+      .then((res) => {
+        if (cancelled) return;
+        setSgdbGame(res.game);
+        setSgdbIsOverride(res.override);
+      })
+      .catch((error) => {
+        if (cancelled) return;
+        const raw = error instanceof Error ? error.message : String(error ?? "");
+        if (raw.includes("sgdb_missing_api_key")) {
+          setMissingKey(true);
+          setSgdbGame(null);
+          setSgdbIsOverride(false);
+        } else {
+          setAssetError(translateBackendError(error));
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setResolvingGame(false);
       });
-      if (result.applied > 0) {
-        toastSuccess(
-          t("artwork.toast.appliedTitle"),
-          t("artwork.toast.appliedGameBody", { count: result.applied, game: gameName }),
-        );
-      } else if (result.failed > 0) {
-        toastError(
-          t("artwork.toast.failedTitle"),
-          t("artwork.toast.bulkFailedBody", { failed: result.failed }),
-        );
-      } else {
-        toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
-      }
-      await loadState();
-    } catch (bulkError) {
-      toastError(t("artwork.toast.failedTitle"), translateBackendError(bulkError));
-    } finally {
-      setBusySlot(null);
-    }
-  };
+    return () => {
+      cancelled = true;
+    };
+  }, [appId, savedSteamAppId, gameName, snapshot.settings.sgdbApiKey, gameReloadTick]);
 
-  const handleReplaceAll = () => {
-    if (existingEnabledCount === 0) {
-      void runGameBulk("replace-all");
+  const activeSlot: ArtworkSlot | null = activeTab === "manage" ? null : activeTab;
+  const activeFilter: SgdbSlotFilter | null = activeSlot
+    ? snapshot.settings.filters[activeSlot] ?? defaultSlotFilter(activeSlot)
+    : null;
+
+  const fetchAssetsPage = useCallback(
+    async (targetPage: number, append: boolean) => {
+      if (!activeSlot || !activeFilter || !sgdbGame || officialOnly) return;
+      const seq = ++requestSeqRef.current;
+      setLoadingAssets(true);
+      setAssetError("");
+      try {
+        const result = await sgdbListAssets(sgdbGame.id, activeSlot, activeFilter, targetPage);
+        if (seq !== requestSeqRef.current) return;
+        setAssets((prev) => (append ? [...prev, ...result.items] : result.items));
+        setPage(result.page);
+        setHasMore(result.has_more);
+      } catch (error) {
+        if (seq !== requestSeqRef.current) return;
+        const raw = error instanceof Error ? error.message : String(error ?? "");
+        if (raw.includes("sgdb_missing_api_key")) {
+          setMissingKey(true);
+        } else {
+          setAssetError(translateBackendError(error));
+        }
+        if (!append) {
+          setAssets([]);
+          setHasMore(false);
+        }
+      } finally {
+        if (seq === requestSeqRef.current) setLoadingAssets(false);
+      }
+    },
+    [activeSlot, activeFilter, sgdbGame, officialOnly],
+  );
+
+  useEffect(() => {
+    if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+      setAssets([]);
+      setHasMore(false);
       return;
     }
+    void fetchAssetsPage(0, false);
+  }, [activeSlot, sgdbGame, activeFilter, missingKey, officialOnly, fetchAssetsPage]);
+
+  const cycleTab = useCallback(
+    (delta: number) => {
+      if (visibleTabs.length <= 1) return;
+      setActiveTab((current) => {
+        const idx = visibleTabs.indexOf(current);
+        const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
+        return visibleTabs[nextIdx];
+      });
+    },
+    [visibleTabs],
+  );
+
+  const busy = entryBusy || snapshot.busy || actionBusy;
+  const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
+
+  const applySgdb = async (slot: ArtworkSlot, asset: SgdbAsset) => {
+    if (busy) return;
+    setActionBusy(true);
+    try {
+      await artworkController.applySgdbAsset(appId, slot, asset.url);
+      await loadArtworkState();
+      toastSuccess(
+        t("artwork.toast.appliedTitle"),
+        t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey(slot)), game: gameName }),
+      );
+    } catch (error) {
+      toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const applyOfficial = async (slot: ArtworkSlot) => {
+    if (busy || savedSteamAppId === null) return;
+    setActionBusy(true);
+    try {
+      await artworkController.applySingleSlot(appId, savedSteamAppId, slot);
+      await loadArtworkState();
+      toastSuccess(
+        t("artwork.toast.appliedTitle"),
+        t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey(slot)), game: gameName }),
+      );
+    } catch (error) {
+      toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+    } finally {
+      setActionBusy(false);
+    }
+  };
+
+  const openFilterModal = () => {
+    if (!activeSlot || !activeFilter) return;
     showModal(
-      <ConfirmModal
-        strTitle={t("editor.artwork.replaceConfirm.title", { game: gameName })}
-        strOKButtonText={t("qam.artwork.replaceAllAction")}
-        strDescription={t("editor.artwork.replaceConfirm.body", {
-          count: existingEnabledCount,
-          game: gameName,
-        })}
-        onOK={() => void runGameBulk("replace-all")}
+      <ArtworkFilterModal
+        appId={appId}
+        slot={activeSlot}
+        currentGame={sgdbGame}
+        isOverride={sgdbIsOverride}
+        initialQuery={gameName}
+        initialFilter={activeFilter}
+        onApplyFilter={async (nextFilter) => {
+          await artworkController.updateSlotFilter(activeSlot, nextFilter);
+        }}
+        onGameChanged={(game, isOverride) => {
+          if (game) {
+            setSgdbGame(game);
+            setSgdbIsOverride(isOverride);
+          } else {
+            setSgdbIsOverride(false);
+            setGameReloadTick((tick) => tick + 1);
+          }
+        }}
       />,
     );
   };
 
+  const openDetailsModal = (slot: ArtworkSlot, asset: SgdbAsset) => {
+    showModal(
+      <ArtworkDetailsModal
+        slot={slot}
+        asset={asset}
+        applying={busy}
+        onApply={() => void applySgdb(slot, asset)}
+      />,
+    );
+  };
+
+  const handleBrowserButtonDown = (evt: { detail?: { button?: number } }) => {
+    const button = evt?.detail?.button;
+    if (button === GamepadButton.BUMPER_LEFT) {
+      cycleTab(-1);
+    } else if (button === GamepadButton.BUMPER_RIGHT) {
+      cycleTab(1);
+    }
+  };
+
+  const officialSlotState = activeSlot ? artworkState?.slots[activeSlot] ?? null : null;
+  const showOfficialCard =
+    activeSlot !== null &&
+    savedSteamAppId !== null &&
+    Boolean(officialSlotState?.available && officialSlotState?.steam_url);
+  const activeFilterCount =
+    activeSlot && activeFilter ? countActiveSlotFilters(activeSlot, activeFilter) : 0;
+
   return (
-    <>
-      <DialogControlsSection>
-        <Field
-          focusable={false}
-          description={t("editor.artwork.immediateNotice")}
-          bottomSeparator="standard"
-        />
-        <Field
-          label={t("editor.artwork.matchedLabel")}
-          description={t("matchPicker.appId", { appId: savedSteamAppId })}
-          focusable={false}
-          bottomSeparator="standard"
-        >
-          {savedSteamName || t("matchPicker.appId", { appId: savedSteamAppId })}
-        </Field>
-        <ToggleField
-          label={t("editor.artwork.lockLabel")}
-          description={t("editor.artwork.lockDescription")}
-          checked={artworkState?.locked ?? false}
-          disabled={busy || loading || !artworkState}
-          onChange={(locked) => void toggleLock(locked)}
-        />
-        {error ? (
-          <Field
-            focusable={false}
-            description={<span style={{ color: colors.error }}>{error}</span>}
-            bottomSeparator="none"
-          />
-        ) : null}
-      </DialogControlsSection>
+    <Focusable
+      className={artworkBrowserClass}
+      onButtonDown={handleBrowserButtonDown as never}
+      onSecondaryButton={activeSlot ? openFilterModal : undefined}
+      onSecondaryActionDescription={activeSlot ? t("editor.artwork.filterActionHint") : undefined}
+    >
+      <style>{artworkBrowserCss}</style>
 
-      <DialogControlsSection>
-        <DialogControlsSectionHeader>{t("editor.artwork.quickActionsHeading")}</DialogControlsSectionHeader>
-        <ButtonItem
-          layout="inline"
-          label={t("qam.artwork.fillMissingLabel")}
-          description={t("editor.artwork.fillMissingDescription", { missing: missingEnabledCount })}
-          disabled={busy || loading || missingEnabledCount === 0}
-          onClick={() => void runGameBulk("fill-missing")}
-        >
-          {busySlot === "bulk" ? t("qam.artwork.working") : t("qam.artwork.fillMissingAction")}
-        </ButtonItem>
-        <ButtonItem
-          layout="inline"
-          label={t("qam.artwork.replaceAllLabel")}
-          description={t("editor.artwork.replaceAllDescription")}
-          disabled={busy || loading || availableEnabledCount === 0}
-          onClick={handleReplaceAll}
-        >
-          {t("qam.artwork.replaceAllAction")}
-        </ButtonItem>
-      </DialogControlsSection>
+      {/* Top slot tabs with L1/R1 bumper hints */}
+      <Focusable
+        flow-children="horizontal"
+        className={`${artworkBrowserClass}__tabs`}
+      >
+        <span className={`${artworkBrowserClass}__bumper`} aria-hidden="true">
+          {t("editor.artwork.bumperLeft")}
+        </span>
+        <div className={`${artworkBrowserClass}__tab-list`}>
+          {visibleTabs.map((tab, idx) => {
+            const active = tab === activeTab;
+            return (
+              <Focusable
+                key={tab}
+                data-artwork-initial-focus={idx === 0 ? "" : undefined}
+                className={`${artworkBrowserClass}__tab${active ? " is-active" : ""}`}
+                onActivate={() => setActiveTab(tab)}
+                onClick={() => setActiveTab(tab)}
+              >
+                {t(tabLabelKey(tab))}
+              </Focusable>
+            );
+          })}
+        </div>
+        <span className={`${artworkBrowserClass}__bumper`} aria-hidden="true">
+          {t("editor.artwork.bumperRight")}
+        </span>
+      </Focusable>
 
-      <DialogControlsSection>
-        <DialogControlsSectionHeader>{t("qam.artwork.slotsHeading")}</DialogControlsSectionHeader>
-        {loading && !artworkState ? (
-          <Field
-            focusable={false}
-            description={t("editor.artwork.loading")}
-            bottomSeparator="none"
-          />
-        ) : null}
-        {slots
-          ? ARTWORK_SLOT_ORDER.map((slot) => {
-              const info = slots[slot];
-              const statusText = info.present
-                ? t("editor.artwork.statusPresent")
-                : info.available
-                  ? t("editor.artwork.statusMissing")
-                  : t("editor.artwork.statusUnavailable");
-              const statusColor = info.present
-                ? colors.info
-                : info.available
-                  ? colors.warning
-                  : colors.error;
-              return (
-                <Field
-                  key={slot}
-                  icon={
-                    <div style={thumbPairStyle}>
-                      <div style={thumbWellStyle}>
-                        {info.preview_data_url ? (
-                          <img src={info.preview_data_url} alt="" style={thumbImgStyle} />
-                        ) : (
-                          <span style={thumbPlaceholderStyle}>{t("editor.artwork.emptyThumb")}</span>
-                        )}
-                      </div>
-                      <span style={thumbPlaceholderStyle}>→</span>
-                      <div style={thumbWellStyle}>
-                        {info.steam_url ? (
-                          <img src={info.steam_url} alt="" style={thumbImgStyle} />
-                        ) : (
-                          <span style={thumbPlaceholderStyle}>{t("editor.artwork.naThumb")}</span>
-                        )}
-                      </div>
-                    </div>
-                  }
-                  label={
-                    <span>
-                      {t(slotLabelKey(slot))}{" "}
-                      <span style={{ color: statusColor, fontSize: 13 }}>{statusText}</span>
-                    </span>
-                  }
-                  description={t(slotDimsKey(slot))}
-                  bottomSeparator="standard"
+      {activeSlot !== null ? (
+        <>
+          {hasUnsavedSteamMatch ? (
+            <div className={`${artworkBrowserClass}__notice`}>
+              <div style={{ fontSize: 13, color: colors.text }}>
+                {t("editor.artwork.pendingMatchDescription")}
+              </div>
+              <Focusable flow-children="horizontal" style={{ display: "flex", gap: 8 }}>
+                <DialogButton
+                  className={`${artworkBrowserClass}__action-btn`}
+                  disabled={busy}
+                  onClick={onSaveMatch}
                 >
-                  <div style={slotActionsStyle}>
-                    <FocusableButton
-                      className={editorFocusTargetClassName}
-                      style={slotButtonStyle}
-                      disabled={busy || !info.available}
-                      onClick={() => void applyOne(slot)}
-                    >
-                      {busySlot === slot
-                        ? t("qam.artwork.working")
-                        : info.present
-                          ? t("editor.artwork.replaceAction")
-                          : t("editor.artwork.applyAction")}
-                    </FocusableButton>
-                    <FocusableButton
-                      className={editorFocusTargetClassName}
-                      style={slotButtonStyle}
-                      disabled={busy || !info.present}
-                      onClick={() => void clearOne(slot)}
-                    >
-                      {t("settings.action.clear")}
-                    </FocusableButton>
+                  {t("editor.artwork.saveMatchAction")}
+                </DialogButton>
+              </Focusable>
+            </div>
+          ) : null}
+
+          {/* Toolbar: active SGDB game + Change Game/Filter (Y) + Official toggle */}
+          <div className={`${artworkBrowserClass}__toolbar`}>
+            <div className={`${artworkBrowserClass}__game-meta`}>
+              <span className={`${artworkBrowserClass}__game-title`}>
+                {resolvingGame
+                  ? t("editor.artwork.resolvingGame")
+                  : sgdbGame
+                    ? sgdbGame.name
+                    : gameName}
+              </span>
+              {sgdbIsOverride ? (
+                <span className={`${artworkBrowserClass}__pill`}>
+                  {t("editor.artwork.sourceOverride")}
+                </span>
+              ) : null}
+              {activeFilterCount > 0 ? (
+                <span className={`${artworkBrowserClass}__pill`}>
+                  {t("editor.artwork.filtersActiveCount", { count: activeFilterCount })}
+                </span>
+              ) : null}
+            </div>
+            <Focusable flow-children="horizontal" className={`${artworkBrowserClass}__toolbar-actions`}>
+              {!missingKey ? (
+                <DialogButton
+                  className={`${artworkBrowserClass}__action-btn`}
+                  disabled={busy}
+                  onClick={openFilterModal}
+                >
+                  {t("editor.artwork.filterButton")}
+                </DialogButton>
+              ) : null}
+              {savedSteamAppId !== null ? (
+                <DialogButton
+                  className={`${artworkBrowserClass}__action-btn`}
+                  disabled={busy}
+                  onClick={() => setOfficialOnly((prev) => !prev)}
+                >
+                  {officialOnly
+                    ? t("editor.artwork.showAllSources")
+                    : t("editor.artwork.officialOnlyButton")}
+                </DialogButton>
+              ) : null}
+            </Focusable>
+          </div>
+
+          {/* Missing API key notice (Official Steam card still renders below when available) */}
+          {missingKey ? (
+            <div className={`${artworkBrowserClass}__notice`}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: colors.text }}>
+                {t("editor.artwork.missingKeyTitle")}
+              </div>
+              <div style={{ fontSize: 13, color: colors.textSecondary }}>
+                {t("editor.artwork.missingKeyDescription")}
+              </div>
+              {onOpenArtworkSettings ? (
+                <Focusable flow-children="horizontal" style={{ display: "flex", gap: 8 }}>
+                  <DialogButton
+                    className={`${artworkBrowserClass}__action-btn`}
+                    onClick={onOpenArtworkSettings}
+                  >
+                    {t("editor.artwork.openSettingsAction")}
+                  </DialogButton>
+                </Focusable>
+              ) : null}
+            </div>
+          ) : null}
+
+          {assetError ? (
+            <Field
+              focusable={false}
+              description={<span style={{ color: colors.warning }}>{assetError}</span>}
+              bottomSeparator="none"
+            />
+          ) : null}
+
+          {/* Responsive aspect-ratio artwork grid */}
+          {showOfficialCard || assets.length > 0 ? (
+            <Focusable
+              className={`${artworkBrowserClass}__grid`}
+              style={{
+                gridTemplateColumns: `repeat(auto-fill, minmax(${SLOT_GRID_MIN_WIDTH[activeSlot]}px, 1fr))`,
+              }}
+            >
+              {showOfficialCard && officialSlotState?.steam_url ? (
+                <Focusable
+                  key="official-steam"
+                  className={`${artworkBrowserClass}__card`}
+                  onActivate={() => void applyOfficial(activeSlot)}
+                  onClick={() => void applyOfficial(activeSlot)}
+                  onOKActionDescription={t("editor.artwork.applyAction")}
+                >
+                  <div
+                    className={`${artworkBrowserClass}__card-media${
+                      activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""
+                    }`}
+                    style={{ aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }}
+                  >
+                    <img
+                      className={`${artworkBrowserClass}__card-img`}
+                      src={officialSlotState.steam_url}
+                      alt=""
+                      style={{
+                        objectFit:
+                          activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
+                      }}
+                    />
+                    <div className={`${artworkBrowserClass}__badges`}>
+                      <span
+                        className={`${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--official`}
+                      >
+                        {t("editor.artwork.badgeOfficial")}
+                      </span>
+                    </div>
                   </div>
-                </Field>
-              );
-            })
-          : null}
-      </DialogControlsSection>
-    </>
+                  <div className={`${artworkBrowserClass}__card-meta`}>
+                    <span className={`${artworkBrowserClass}__card-author`}>
+                      {t("editor.artwork.officialSourceLabel")}
+                    </span>
+                  </div>
+                </Focusable>
+              ) : null}
+
+              {!officialOnly && !missingKey
+                ? assets.map((asset) => (
+                    <Focusable
+                      key={asset.id}
+                      className={`${artworkBrowserClass}__card`}
+                      onActivate={() => void applySgdb(activeSlot, asset)}
+                      onClick={() => void applySgdb(activeSlot, asset)}
+                      onOKActionDescription={t("editor.artwork.applyAction")}
+                      onSecondaryButton={openFilterModal}
+                      onSecondaryActionDescription={t("editor.artwork.filterActionHint")}
+                      onOptionsButton={() => openDetailsModal(activeSlot, asset)}
+                      onOptionsActionDescription={t("editor.artwork.detailsActionHint")}
+                    >
+                      <div
+                        className={`${artworkBrowserClass}__card-media${
+                          activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""
+                        }`}
+                        style={{ aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }}
+                      >
+                        <img
+                          className={`${artworkBrowserClass}__card-img`}
+                          src={asset.thumb}
+                          alt=""
+                          loading="lazy"
+                          style={{
+                            objectFit:
+                              activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
+                          }}
+                        />
+                        <div className={`${artworkBrowserClass}__badges`}>
+                          {asset.animated ? (
+                            <span
+                              className={`${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`}
+                            >
+                              {t("editor.artwork.badgeAnimated")}
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                      <div className={`${artworkBrowserClass}__card-meta`}>
+                        <span className={`${artworkBrowserClass}__card-author`}>
+                          {asset.author.name || t("editor.artwork.unknownAuthor")}
+                        </span>
+                        {asset.width > 0 && asset.height > 0 ? (
+                          <span>{`${asset.width}x${asset.height}`}</span>
+                        ) : null}
+                      </div>
+                    </Focusable>
+                  ))
+                : null}
+            </Focusable>
+          ) : !resolvingGame && !loadingAssets && !missingKey ? (
+            <div className={`${artworkBrowserClass}__notice`}>
+              <div style={{ fontSize: 13, color: colors.textSecondary }}>
+                {!sgdbGame
+                  ? t("editor.artwork.noGameMatched")
+                  : t("editor.artwork.noAssetsForFilter")}
+              </div>
+              <Focusable flow-children="horizontal" style={{ display: "flex", gap: 8 }}>
+                <DialogButton
+                  className={`${artworkBrowserClass}__action-btn`}
+                  onClick={openFilterModal}
+                >
+                  {t("editor.artwork.filterButton")}
+                </DialogButton>
+              </Focusable>
+            </div>
+          ) : null}
+
+          {loadingAssets ? (
+            <Field focusable={false} description={t("editor.artwork.loading")} bottomSeparator="none" />
+          ) : null}
+
+          {!officialOnly && !missingKey && hasMore && !loadingAssets ? (
+            <Focusable flow-children="horizontal" style={{ display: "flex", justifyContent: "center" }}>
+              <DialogButton
+                className={`${artworkBrowserClass}__action-btn`}
+                disabled={busy}
+                onClick={() => void fetchAssetsPage(page + 1, true)}
+              >
+                {t("editor.artwork.loadMore")}
+              </DialogButton>
+            </Focusable>
+          ) : null}
+        </>
+      ) : (
+        <ArtworkManageTab
+          appId={appId}
+          gameName={gameName}
+          isSteamGame={isSteamGame}
+          savedSteamAppId={savedSteamAppId}
+          unsavedSteamAppId={unsavedSteamAppId}
+          state={artworkState}
+          busy={busy}
+          onBusyChange={setActionBusy}
+          onRefreshState={loadArtworkState}
+          onSelectSlotTab={(slot) => setActiveTab(slot)}
+          onGoToSteamMatch={onGoToSteamMatch}
+          onSaveMatch={onSaveMatch}
+        />
+      )}
+    </Focusable>
   );
 }

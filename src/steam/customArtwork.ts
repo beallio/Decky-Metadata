@@ -1,4 +1,10 @@
-import type { ArtworkSlot, FetchedArtworkAsset, SteamInternals } from "../types";
+import type {
+  ArtworkSlot,
+  FetchedArtworkAsset,
+  SteamInternals,
+  SteamLogoAnchor,
+  SteamLogoPosition,
+} from "../types";
 import * as log from "../log";
 
 const steamInternals = () => globalThis as unknown as SteamInternals;
@@ -44,9 +50,10 @@ export async function applySteamArtworkSlot(
   if (!apps) throw new Error("artwork_api_unavailable");
 
   if (slot === "icon") {
+    const isShortcut = normalizedId >= 0x80000000;
     // shortcut: Steam Gaming Mode updates shortcut icons via SetShortcutIcon when given a local path,
-    // falling back to assetType 4 when SetShortcutIcon is unavailable on a build.
-    if (typeof apps.SetShortcutIcon === "function" && asset.file_path) {
+    // while native Steam games (and builds without SetShortcutIcon) use SetCustomArtworkForApp(assetType=4).
+    if (isShortcut && typeof apps.SetShortcutIcon === "function" && asset.file_path) {
       try {
         await apps.SetShortcutIcon.call(apps, normalizedId, asset.file_path);
         return;
@@ -97,7 +104,8 @@ export async function clearSteamArtworkSlot(appId: number, slot: ArtworkSlot): P
   if (!apps) throw new Error("artwork_api_unavailable");
 
   if (slot === "icon") {
-    if (typeof apps.SetShortcutIcon === "function") {
+    const isShortcut = normalizedId >= 0x80000000;
+    if (isShortcut && typeof apps.SetShortcutIcon === "function") {
       try {
         await apps.SetShortcutIcon.call(apps, normalizedId, "");
         return;
@@ -126,4 +134,78 @@ export async function clearSteamArtworkSlot(appId: number, slot: ArtworkSlot): P
     log.warn("artwork", `ClearCustomArtworkForApp(${slot}) failed`, error);
     throw new Error("artwork_clear_failed");
   }
+}
+
+export const STEAM_LOGO_ANCHORS: readonly SteamLogoAnchor[] = [
+  "UpperLeft",
+  "UpperCenter",
+  "UpperRight",
+  "CenterLeft",
+  "CenterCenter",
+  "CenterRight",
+  "BottomLeft",
+  "BottomCenter",
+  "BottomRight",
+];
+
+export const DEFAULT_LOGO_POSITION: SteamLogoPosition = {
+  pinnedPosition: "BottomLeft",
+  nWidthPct: 50,
+  nHeightPct: 50,
+};
+
+export const hasLogoPositionApi = (): boolean =>
+  typeof steamInternals().appDetailsStore?.SaveCustomLogoPosition === "function" &&
+  typeof steamInternals().appStore?.GetAppOverviewByAppID === "function";
+
+export function getCustomLogoPosition(appId: number): SteamLogoPosition {
+  const normalizedId = validAppId(appId);
+  if (!normalizedId) return { ...DEFAULT_LOGO_POSITION };
+  try {
+    const raw = steamInternals().appDetailsStore?.GetAppData?.(normalizedId)?.libraryAssets?.logoPosition;
+    if (!raw || typeof raw !== "object") return { ...DEFAULT_LOGO_POSITION };
+    const anchor = STEAM_LOGO_ANCHORS.includes(raw.pinnedPosition as SteamLogoAnchor)
+      ? (raw.pinnedPosition as SteamLogoAnchor)
+      : DEFAULT_LOGO_POSITION.pinnedPosition;
+    const nWidthPct =
+      typeof raw.nWidthPct === "number" && Number.isFinite(raw.nWidthPct)
+        ? Math.min(100, Math.max(10, Math.round(raw.nWidthPct)))
+        : DEFAULT_LOGO_POSITION.nWidthPct;
+    const nHeightPct =
+      typeof raw.nHeightPct === "number" && Number.isFinite(raw.nHeightPct)
+        ? Math.min(100, Math.max(10, Math.round(raw.nHeightPct)))
+        : DEFAULT_LOGO_POSITION.nHeightPct;
+    return { pinnedPosition: anchor, nWidthPct, nHeightPct };
+  } catch {
+    return { ...DEFAULT_LOGO_POSITION };
+  }
+}
+
+export async function saveCustomLogoPosition(
+  appId: number,
+  position: SteamLogoPosition,
+): Promise<void> {
+  const normalizedId = validAppId(appId);
+  if (!normalizedId) throw new Error("invalid_shortcut_app_id");
+  const overview = steamInternals().appStore?.GetAppOverviewByAppID?.(normalizedId);
+  const save = steamInternals().appDetailsStore?.SaveCustomLogoPosition;
+  if (!overview || typeof save !== "function") {
+    throw new Error("artwork_logo_position_unavailable");
+  }
+  await save.call(steamInternals().appDetailsStore, overview, {
+    pinnedPosition: position.pinnedPosition,
+    nWidthPct: Math.min(100, Math.max(10, Math.round(position.nWidthPct))),
+    nHeightPct: Math.min(100, Math.max(10, Math.round(position.nHeightPct))),
+  });
+}
+
+export async function clearCustomLogoPosition(appId: number): Promise<void> {
+  const normalizedId = validAppId(appId);
+  if (!normalizedId) throw new Error("invalid_shortcut_app_id");
+  const overview = steamInternals().appStore?.GetAppOverviewByAppID?.(normalizedId);
+  const clear = steamInternals().appDetailsStore?.ClearCustomLogoPosition;
+  if (!overview || typeof clear !== "function") {
+    throw new Error("artwork_logo_position_unavailable");
+  }
+  await clear.call(steamInternals().appDetailsStore, overview);
 }

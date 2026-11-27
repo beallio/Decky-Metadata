@@ -5,8 +5,12 @@ import {
   getArtworkSettings,
   getArtworkSummary,
   getGameArtworkState,
+  getSgdbKeyStatus,
+  getTransparentArtworkAsset,
+  readLocalArtworkFile,
   setArtworkLocked,
   setArtworkSettings,
+  sgdbFetchAsset,
 } from "../backend";
 import { t, translateBackendError } from "../i18n";
 import * as log from "../log";
@@ -23,11 +27,73 @@ import type {
   ArtworkSettings,
   ArtworkSlot,
   ArtworkSummary,
+  ArtworkTabId,
   FetchedArtworkAsset,
   GameArtworkState,
   GameOption,
   MetadataData,
+  SgdbFiltersBySlot,
+  SgdbKeyStatus,
+  SgdbSlotFilter,
 } from "../types";
+
+export const ARTWORK_TAB_ORDER: readonly ArtworkTabId[] = [
+  "cover",
+  "wide",
+  "hero",
+  "logo",
+  "icon",
+  "manage",
+];
+
+export const SGDB_DIMENSION_OPTIONS: Record<ArtworkSlot, readonly string[]> = {
+  cover: ["600x900", "342x482", "660x930", "512x512", "1024x1024"],
+  wide: ["460x215", "920x430", "512x512", "1024x1024"],
+  hero: ["1920x620", "3840x1240", "1600x650"],
+  logo: [],
+  icon: ["16x16", "24x24", "32x32", "48x48", "64x64", "96x96", "128x128", "192x192", "256x256", "512x512", "1024x1024"],
+};
+
+export const SGDB_STYLE_OPTIONS: Record<ArtworkSlot, readonly string[]> = {
+  cover: ["alternate", "blurred", "white_logo", "material", "no_logo"],
+  wide: ["alternate", "blurred", "white_logo", "material", "no_logo"],
+  hero: ["alternate", "blurred", "material"],
+  logo: ["official", "white", "black", "custom"],
+  icon: ["official", "custom"],
+};
+
+export const SGDB_MIME_OPTIONS: Record<ArtworkSlot, readonly string[]> = {
+  cover: ["image/png", "image/jpeg", "image/webp"],
+  wide: ["image/png", "image/jpeg", "image/webp"],
+  hero: ["image/png", "image/jpeg", "image/webp"],
+  logo: ["image/png", "image/webp"],
+  icon: ["image/png", "image/vnd.microsoft.icon"],
+};
+
+export const defaultSlotFilter = (slot: ArtworkSlot): SgdbSlotFilter => ({
+  dimensions:
+    slot === "cover"
+      ? ["600x900", "342x482", "660x930"]
+      : slot === "wide"
+        ? ["460x215", "920x430"]
+        : slot === "hero"
+          ? ["1920x620", "3840x1240", "1600x650"]
+          : [],
+  styles: [],
+  mimes: [],
+  types: ["static"],
+  nsfw: false,
+  humor: true,
+  epilepsy: false,
+});
+
+export const defaultArtworkFilters = (): SgdbFiltersBySlot => ({
+  cover: defaultSlotFilter("cover"),
+  wide: defaultSlotFilter("wide"),
+  hero: defaultSlotFilter("hero"),
+  logo: defaultSlotFilter("logo"),
+  icon: defaultSlotFilter("icon"),
+});
 
 export const DEFAULT_ARTWORK_SETTINGS: ArtworkSettings = {
   autoApply: false,
@@ -39,6 +105,81 @@ export const DEFAULT_ARTWORK_SETTINGS: ArtworkSettings = {
     logo: true,
     icon: true,
   },
+  sgdbApiKey: "",
+  defaultTab: "cover",
+  tabOrder: [...ARTWORK_TAB_ORDER],
+  hiddenTabs: [],
+  filters: defaultArtworkFilters(),
+};
+
+export function normalizeArtworkSettings(raw?: Partial<ArtworkSettings> | null): ArtworkSettings {
+  const defaults = structuredClone(DEFAULT_ARTWORK_SETTINGS);
+  if (!raw || typeof raw !== "object") return defaults;
+  const tabOrder: ArtworkTabId[] = [];
+  if (Array.isArray(raw.tabOrder)) {
+    for (const tab of raw.tabOrder) {
+      if (ARTWORK_TAB_ORDER.includes(tab) && !tabOrder.includes(tab)) {
+        tabOrder.push(tab);
+      }
+    }
+  }
+  for (const tab of ARTWORK_TAB_ORDER) {
+    if (!tabOrder.includes(tab)) tabOrder.push(tab);
+  }
+  const hiddenTabs: ArtworkSlot[] = Array.isArray(raw.hiddenTabs)
+    ? raw.hiddenTabs.filter(
+        (tab, idx, arr): tab is ArtworkSlot =>
+          ARTWORK_SLOT_ORDER.includes(tab) && arr.indexOf(tab) === idx,
+      )
+    : [];
+  const filters = defaultArtworkFilters();
+  if (raw.filters && typeof raw.filters === "object") {
+    for (const slot of ARTWORK_SLOT_ORDER) {
+      const saved = raw.filters[slot];
+      if (!saved || typeof saved !== "object") continue;
+      filters[slot] = {
+        dimensions: Array.isArray(saved.dimensions)
+          ? saved.dimensions.filter((d) => SGDB_DIMENSION_OPTIONS[slot].includes(d))
+          : filters[slot].dimensions,
+        styles: Array.isArray(saved.styles)
+          ? saved.styles.filter((s) => SGDB_STYLE_OPTIONS[slot].includes(s))
+          : filters[slot].styles,
+        mimes: Array.isArray(saved.mimes)
+          ? saved.mimes.filter((m) => SGDB_MIME_OPTIONS[slot].includes(m))
+          : filters[slot].mimes,
+        types: Array.isArray(saved.types)
+          ? saved.types.filter((item) => item === "static" || item === "animated")
+          : filters[slot].types,
+        nsfw: typeof saved.nsfw === "boolean" ? saved.nsfw : filters[slot].nsfw,
+        humor: typeof saved.humor === "boolean" ? saved.humor : filters[slot].humor,
+        epilepsy: typeof saved.epilepsy === "boolean" ? saved.epilepsy : filters[slot].epilepsy,
+      };
+    }
+  }
+  return {
+    autoApply: typeof raw.autoApply === "boolean" ? raw.autoApply : defaults.autoApply,
+    preserveExisting:
+      typeof raw.preserveExisting === "boolean" ? raw.preserveExisting : defaults.preserveExisting,
+    slots: {
+      cover: typeof raw.slots?.cover === "boolean" ? raw.slots.cover : defaults.slots.cover,
+      wide: typeof raw.slots?.wide === "boolean" ? raw.slots.wide : defaults.slots.wide,
+      hero: typeof raw.slots?.hero === "boolean" ? raw.slots.hero : defaults.slots.hero,
+      logo: typeof raw.slots?.logo === "boolean" ? raw.slots.logo : defaults.slots.logo,
+      icon: typeof raw.slots?.icon === "boolean" ? raw.slots.icon : defaults.slots.icon,
+    },
+    sgdbApiKey: typeof raw.sgdbApiKey === "string" ? raw.sgdbApiKey.trim() : "",
+    defaultTab:
+      raw.defaultTab && ARTWORK_TAB_ORDER.includes(raw.defaultTab) ? raw.defaultTab : "cover",
+    tabOrder,
+    hiddenTabs,
+    filters,
+  };
+}
+
+export const EMPTY_SGDB_KEY_STATUS: SgdbKeyStatus = {
+  hasUserKey: false,
+  hasBuiltInKey: false,
+  configured: false,
 };
 
 export const EMPTY_ARTWORK_SUMMARY: ArtworkSummary = {
@@ -64,6 +205,7 @@ export type ArtworkControllerSnapshot = {
   settings: ArtworkSettings;
   settingsLoaded: boolean;
   settingsError: string;
+  sgdbKeyStatus: SgdbKeyStatus;
   summary: ArtworkSummary;
   summaryLoaded: boolean;
   busy: boolean;
@@ -81,6 +223,7 @@ export type GameApplyResult = {
 export type ArtworkControllerDeps = {
   getArtworkSettings: () => Promise<ArtworkSettings>;
   setArtworkSettings: (settings: ArtworkSettings) => Promise<ArtworkSettings>;
+  getSgdbKeyStatus?: () => Promise<SgdbKeyStatus>;
   getArtworkSummary: (games: GameOption[]) => Promise<ArtworkSummary>;
   getAllArtworkLocks: () => Promise<Record<string, boolean>>;
   setArtworkLocked: (appId: number, locked: boolean) => Promise<boolean>;
@@ -88,6 +231,20 @@ export type ArtworkControllerDeps = {
   fetchSteamArtworkAsset: (
     appId: number,
     steamAppId: number,
+    slot: ArtworkSlot,
+  ) => Promise<FetchedArtworkAsset>;
+  sgdbFetchAsset?: (
+    appId: number,
+    slot: ArtworkSlot,
+    url: string,
+  ) => Promise<FetchedArtworkAsset>;
+  readLocalArtworkFile?: (
+    appId: number,
+    slot: ArtworkSlot,
+    filePath: string,
+  ) => Promise<FetchedArtworkAsset>;
+  getTransparentArtworkAsset?: (
+    appId: number,
     slot: ArtworkSlot,
   ) => Promise<FetchedArtworkAsset>;
   clearLocalArtworkFile: (appId: number, slot: ArtworkSlot) => Promise<{ ok: boolean; removed: boolean }>;
@@ -117,6 +274,7 @@ export class ArtworkController {
       settings: structuredClone(DEFAULT_ARTWORK_SETTINGS),
       settingsLoaded: false,
       settingsError: "",
+      sgdbKeyStatus: { ...EMPTY_SGDB_KEY_STATUS },
       summary: { ...EMPTY_ARTWORK_SUMMARY },
       summaryLoaded: false,
       busy: false,
@@ -162,8 +320,10 @@ export class ArtworkController {
     if (!this.settingsLoadPromise) {
       this.settingsLoadPromise = this.deps
         .getArtworkSettings()
-        .then((settings) => {
+        .then((raw) => {
+          const settings = normalizeArtworkSettings(raw);
           this.publish({ settings, settingsLoaded: true, settingsError: "" });
+          void this.refreshKeyStatus();
           return settings;
         })
         .catch((error) => {
@@ -178,12 +338,28 @@ export class ArtworkController {
     return this.settingsLoadPromise;
   }
 
+  async refreshKeyStatus(): Promise<SgdbKeyStatus> {
+    if (!this.deps.getSgdbKeyStatus) return this.snapshot.sgdbKeyStatus;
+    try {
+      const sgdbKeyStatus = await this.deps.getSgdbKeyStatus();
+      this.publish({ sgdbKeyStatus });
+      return sgdbKeyStatus;
+    } catch (error) {
+      log.warn("artwork", "sgdb key status load failed", error);
+      return this.snapshot.sgdbKeyStatus;
+    }
+  }
+
   async setSettings(next: ArtworkSettings): Promise<boolean> {
     const previous = this.snapshot.settings;
-    this.publish({ settings: next, settingsError: "" });
+    const normalizedNext = normalizeArtworkSettings(next);
+    this.publish({ settings: normalizedNext, settingsError: "" });
     try {
-      const saved = await this.deps.setArtworkSettings(next);
+      const saved = normalizeArtworkSettings(await this.deps.setArtworkSettings(normalizedNext));
       this.publish({ settings: saved, settingsLoaded: true, settingsError: "" });
+      if (saved.sgdbApiKey !== previous.sgdbApiKey) {
+        void this.refreshKeyStatus();
+      }
       if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
       return true;
     } catch (error) {
@@ -191,6 +367,25 @@ export class ArtworkController {
       this.publish({ settings: previous, settingsError: translateBackendError(error) });
       return false;
     }
+  }
+
+  async updateSlotFilter(slot: ArtworkSlot, filter: SgdbSlotFilter): Promise<boolean> {
+    const current = await this.ensureSettingsLoaded();
+    return this.setSettings({
+      ...current,
+      filters: {
+        ...current.filters,
+        [slot]: filter,
+      },
+    });
+  }
+
+  async resetAllFilters(): Promise<boolean> {
+    const current = await this.ensureSettingsLoaded();
+    return this.setSettings({
+      ...current,
+      filters: defaultArtworkFilters(),
+    });
   }
 
   async refreshSummary(games: GameOption[]): Promise<ArtworkSummary> {
@@ -214,6 +409,30 @@ export class ArtworkController {
 
   async applySingleSlot(appId: number, steamAppId: number, slot: ArtworkSlot): Promise<void> {
     const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    this.bumpRevision();
+    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
+  }
+
+  async applySgdbAsset(appId: number, slot: ArtworkSlot, url: string): Promise<void> {
+    if (!this.deps.sgdbFetchAsset) throw new Error("artwork_download_failed");
+    const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
+    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    this.bumpRevision();
+    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
+  }
+
+  async applyLocalFile(appId: number, slot: ArtworkSlot, filePath: string): Promise<void> {
+    if (!this.deps.readLocalArtworkFile) throw new Error("artwork_file_unreadable");
+    const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
+    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    this.bumpRevision();
+    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
+  }
+
+  async applyTransparentSlot(appId: number, slot: ArtworkSlot): Promise<void> {
+    if (!this.deps.getTransparentArtworkAsset) throw new Error("artwork_apply_failed");
+    const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
     await this.deps.applySteamArtworkSlot(appId, slot, asset);
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
@@ -383,11 +602,15 @@ export class ArtworkController {
 export const artworkController = new ArtworkController({
   getArtworkSettings,
   setArtworkSettings,
+  getSgdbKeyStatus,
   getArtworkSummary,
   getAllArtworkLocks,
   setArtworkLocked,
   getGameArtworkState,
   fetchSteamArtworkAsset,
+  sgdbFetchAsset,
+  readLocalArtworkFile,
+  getTransparentArtworkAsset,
   clearLocalArtworkFile,
   applySteamArtworkSlot,
   clearSteamArtworkSlot,

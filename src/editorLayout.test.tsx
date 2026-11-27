@@ -1,6 +1,6 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { EditorLayout, type EditorLayoutPage, type EditorLayoutProps } from "./editorLayout";
+import { EditorLayout, evaluateSidebarCollapseState, type EditorLayoutPage, type EditorLayoutProps } from "./editorLayout";
 
 const mocks = vi.hoisted(() => ({
   findModuleExport: vi.fn(),
@@ -182,5 +182,15 @@ describe("EditorLayout", () => {
         "value" in node.props && node.props.value === nextPages,
     );
     expect(contentProvider?.props.value[0].content).toBe(nextContent);
+  });
+
+  it("keeps sidebar collapsed when focus moves to child modals and expands only when sidebar regains focus", () => {
+    expect(evaluateSidebarCollapseState(false, false, true)).toBe(true);
+    // Focus moves to modal/dropdown/OSK (neither column has focus): stay collapsed without flicker.
+    expect(evaluateSidebarCollapseState(true, false, false)).toBe(true);
+    // Focus returns to sidebar: expand.
+    expect(evaluateSidebarCollapseState(true, true, false)).toBe(false);
+    // Sidebar wins if both ever report true during transition.
+    expect(evaluateSidebarCollapseState(true, true, true)).toBe(false);
   });
 });

@@ -1,5 +1,5 @@
 import { DialogBody, DialogButton, DialogHeader, Focusable, Marquee } from "@decky/ui";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { getEditorHeaderSettings } from "./backend";
 import { resolveEditorIcon } from "./editorHeaderIcon";
 import type { EditorPageId } from "./editorPages";
@@ -30,6 +30,8 @@ export interface EditorLayoutProps {
   saveLabel: string;
   saveDisabled: boolean;
   onSave(): void;
+  /** When true (Artwork tab), auto-collapse .PageListColumn to a 64px icon rail while content holds focus. */
+  collapsibleSidebar?: boolean;
 }
 
 const layout = "decky-metadata-editor-layout";
@@ -88,6 +90,54 @@ const css = `
   min-width: 0;
 }
 
+.${layout}__shell {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.${layout}__shell.is-collapsible .PageListColumn {
+  transition: width 180ms ease, min-width 180ms ease, max-width 180ms ease, flex-basis 180ms ease;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn {
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  flex: 0 0 64px !important;
+  overflow: hidden !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-title,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-label,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__dirty-dot,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header > :last-child {
+  display: none !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header {
+  justify-content: center;
+  gap: 0;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
+  width: 48px !important;
+  min-width: 48px !important;
+  margin: auto 4px 22px !important;
+  padding: 0 4px !important;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .DialogContentTransition {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
+}
+
 `;
 
 const NativePagedSettings = resolveNativePagedSettings();
@@ -128,6 +178,75 @@ function EditorTitle({ title, appId, steamAppId }: Pick<EditorLayoutProps, "titl
   );
 }
 
+export function evaluateSidebarCollapseState(
+  currentlyCollapsed: boolean,
+  sidebarHasFocus: boolean,
+  contentHasFocus: boolean,
+): boolean {
+  if (sidebarHasFocus) return false;
+  if (contentHasFocus) return true;
+  return currentlyCollapsed;
+}
+
+function CollapsibleSidebarShell({
+  collapsible,
+  children,
+}: {
+  collapsible: boolean;
+  children: ReactNode;
+}): JSX.Element {
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!collapsible) {
+      setCollapsed(false);
+      return;
+    }
+    const shell = shellRef.current;
+    if (!shell) return;
+
+    const syncFromDom = () => {
+      const sidebar = shell.querySelector<HTMLElement>(".PageListColumn");
+      const content = shell.querySelector<HTMLElement>(".DialogContentTransition");
+      const active = typeof document !== "undefined" ? document.activeElement : null;
+      const sidebarFocused = Boolean(
+        sidebar && (sidebar.classList.contains("gpfocuswithin") || (active && sidebar.contains(active))),
+      );
+      const contentFocused = Boolean(
+        content && (content.classList.contains("gpfocuswithin") || (active && content.contains(active))),
+      );
+      setCollapsed((prev) => evaluateSidebarCollapseState(prev, sidebarFocused, contentFocused));
+    };
+
+    syncFromDom();
+    shell.addEventListener("focusin", syncFromDom, true);
+    let observer: MutationObserver | null = null;
+    if (typeof MutationObserver !== "undefined") {
+      observer = new MutationObserver(syncFromDom);
+      observer.observe(shell, { attributes: true, attributeFilter: ["class"], subtree: true });
+    }
+    return () => {
+      shell.removeEventListener("focusin", syncFromDom, true);
+      observer?.disconnect();
+    };
+  }, [collapsible]);
+
+  const className = [
+    `${layout}__shell`,
+    collapsible ? "is-collapsible" : "",
+    collapsible && collapsed ? "is-sidebar-collapsed" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div ref={shellRef} className={className}>
+      {children}
+    </div>
+  );
+}
+
 function NativeEditorLayout({
   title,
   appId,
@@ -138,6 +257,7 @@ function NativeEditorLayout({
   saveLabel,
   saveDisabled,
   onSave,
+  collapsibleSidebar = false,
 }: EditorLayoutProps): JSX.Element {
   // Keep descriptors stable as fields edit; context supplies the latest content nodes.
   const pageDependencies = pages.flatMap(({ id, label, icon, dirty, visible, separatorBefore }) =>
@@ -176,23 +296,25 @@ function NativeEditorLayout({
   return (
     <PageContentContext.Provider value={pages}>
       <style>{css}</style>
-      <NativePagedSettings
-        pages={nativePages}
-        page={page}
-        onPageRequested={(id) => onPageRequested(id as EditorPageId)}
-        title={<EditorTitle title={title} appId={appId} steamAppId={steamAppId} />}
-        showTitle={true}
-        bottomControls={
-          <DialogButton
-            className={`${layout}__save`}
-            focusable={!saveDisabled}
-            disabled={saveDisabled}
-            onClick={onSave}
-          >
-            {saveLabel}
-          </DialogButton>
-        }
-      />
+      <CollapsibleSidebarShell collapsible={collapsibleSidebar}>
+        <NativePagedSettings
+          pages={nativePages}
+          page={page}
+          onPageRequested={(id) => onPageRequested(id as EditorPageId)}
+          title={<EditorTitle title={title} appId={appId} steamAppId={steamAppId} />}
+          showTitle={true}
+          bottomControls={
+            <DialogButton
+              className={`${layout}__save`}
+              focusable={!saveDisabled}
+              disabled={saveDisabled}
+              onClick={onSave}
+            >
+              {saveLabel}
+            </DialogButton>
+          }
+        />
+      </CollapsibleSidebarShell>
     </PageContentContext.Provider>
   );
 }

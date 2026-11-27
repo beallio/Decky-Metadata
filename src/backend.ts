@@ -29,6 +29,12 @@ import {
   ArtworkSummary,
   GameArtworkState,
   FetchedArtworkAsset,
+  SgdbAssetPage,
+  SgdbGame,
+  SgdbGameOverride,
+  SgdbKeyStatus,
+  SgdbResolveGameResult,
+  SgdbSlotFilter,
   IgnTrailerResult,
   ProtonDbTier,
 } from "./types";
@@ -270,6 +276,40 @@ export const clearLocalArtworkFile = callable<
   [appId: number, slot: ArtworkSlot],
   { ok: boolean; removed: boolean }
 >("clear_local_artwork_file");
+export const getSgdbKeyStatus = callable<[], SgdbKeyStatus>("get_sgdb_key_status");
+export const sgdbSearchGames = callable<[query: string], SgdbGame[]>("sgdb_search_games");
+export const sgdbResolveGame = callable<
+  [appId: number, steamAppId: number | null, gameName: string],
+  SgdbResolveGameResult
+>("sgdb_resolve_game");
+export const sgdbListAssets = callable<
+  [sgdbGameId: number, slot: ArtworkSlot, filters: SgdbSlotFilter, page: number],
+  SgdbAssetPage
+>("sgdb_list_assets");
+export const sgdbFetchAsset = callable<
+  [appId: number, slot: ArtworkSlot, url: string],
+  FetchedArtworkAsset
+>("sgdb_fetch_asset");
+export const readLocalArtworkFile = callable<
+  [appId: number, slot: ArtworkSlot, filePath: string],
+  FetchedArtworkAsset
+>("read_local_artwork_file");
+export const getTransparentArtworkAsset = callable<
+  [appId: number, slot: ArtworkSlot],
+  FetchedArtworkAsset
+>("get_transparent_artwork_asset");
+export const getSgdbGameOverride = callable<
+  [appId: number],
+  SgdbGameOverride | null
+>("get_sgdb_game_override");
+export const setSgdbGameOverride = callable<
+  [appId: number, sgdbGameId: number, name: string],
+  SgdbGameOverride
+>("set_sgdb_game_override");
+export const clearSgdbGameOverride = callable<
+  [appId: number],
+  { ok: boolean }
+>("clear_sgdb_game_override");
 export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
 export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
 export type HltbTimes = { main: number; plus: number; complete: number; all: number };
