@@ -6,14 +6,22 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ### Added
 
-- **Official Steam artwork for matched non-Steam games.** Added an **Artwork**
-  tab to both **Settings** and **Edit Metadata** so you can apply official Steam
-  **Cover**, **Wide cover**, **Hero background**, **Game logo**, and **Game
-  icon** artwork whenever a non-Steam shortcut is matched to a Steam App ID.
-  Supports opt-in automatic application on metadata scans and saved Steam
-  matches, a **Preserve existing artwork** toggle, per-slot toggles, global
-  **Fill missing** / **Replace all** bulk actions (with confirmation), per-game
-  **Lock artwork**, and non-blocking SteamGridDB coexistence.
+- **Built-in SteamGridDB & Official Steam artwork browser.** Added an **Artwork**
+  tab to both **Settings** and **Edit Metadata** for both Steam games and
+  non-Steam shortcuts (including unmatched shortcuts via automatic name search).
+  Includes a SteamGridDB v2 browser across **Cover**, **Wide cover**, **Hero
+  background**, **Game logo**, **Game icon**, and **Manage** tabs with `L1`/`R1`
+  tab switching, responsive aspect-ratio grids, pagination, `OFFICIAL` and
+  `ANIMATED` badges, **Y** Filter & Change Game modal (global per-slot filter
+  defaults + per-game SteamGridDB override), **Menu** Asset Details modal,
+  native **Logo Positioner**, local file picker, transparent placeholder, and
+  an Artwork-only auto-collapsing editor sidebar (`240px → 64px` icon rail).
+  Also supports Official Steam automatic artwork on metadata scans and saved
+  Steam matches, **Preserve existing artwork**, per-slot toggles, global **Fill
+  missing** / **Replace all** bulk actions, manual per-game **Lock artwork**,
+  tab reorder/visibility settings, an unmasked custom SteamGridDB API key input
+  (redacted in logs) with optional build-time fallback, and non-blocking
+  coexistence with the standalone SteamGridDB plugin.
 
 ## [0.6.8] - 2026-11-25
 
