@@ -209,6 +209,24 @@ export function ArtworkBody({
           bottomSeparator="standard"
         />
 
+        <ButtonItem
+          layout="inline"
+          label={t("qam.artwork.resetFiltersLabel")}
+          description={t("qam.artwork.resetFiltersDescription")}
+          disabled={controlsDisabled}
+          onClick={() =>
+            onSettingsChange((current) => ({
+              ...current,
+              filters: defaultArtworkFilters(),
+            }))
+          }
+        >
+          {t("qam.artwork.resetFiltersAction")}
+        </ButtonItem>
+      </DialogControlsSection>
+
+      <DialogControlsSection>
+        <DialogControlsSectionHeader>{t("qam.artwork.tabOrderLabel")}</DialogControlsSectionHeader>
         <DropdownItem
           label={t("qam.artwork.defaultTabLabel")}
           description={t("qam.artwork.defaultTabDescription")}
@@ -224,7 +242,6 @@ export function ArtworkBody({
         />
 
         <Field
-          label={t("qam.artwork.tabOrderLabel")}
           description={t("qam.artwork.tabOrderDescription")}
           focusable={false}
           bottomSeparator="none"
@@ -254,21 +271,6 @@ export function ArtworkBody({
             </Focusable>
           </Field>
         ))}
-
-        <ButtonItem
-          layout="inline"
-          label={t("qam.artwork.resetFiltersLabel")}
-          description={t("qam.artwork.resetFiltersDescription")}
-          disabled={controlsDisabled}
-          onClick={() =>
-            onSettingsChange((current) => ({
-              ...current,
-              filters: defaultArtworkFilters(),
-            }))
-          }
-        >
-          {t("qam.artwork.resetFiltersAction")}
-        </ButtonItem>
       </DialogControlsSection>
 
       <DialogControlsSection>

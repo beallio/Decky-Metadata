@@ -90,7 +90,6 @@ vi.mock("@decky/ui", () => ({
   Focusable: "Focusable",
   GamepadButton: { BUMPER_LEFT: 5, BUMPER_RIGHT: 6 },
   ModalRoot: "ModalRoot",
-  NavEntryPositionPreferences: { PREFERRED_CHILD: 4 },
   SliderField: "SliderField",
   TextField: "TextField",
   ToggleField: "ToggleField",
@@ -200,7 +199,7 @@ describe("ArtworkEditorPage", () => {
     expect(tabLabels).toHaveLength(6);
   });
 
-  it("keeps joystick and L1/R1 on one tab and cancels the entry card jump on a manual change", () => {
+  it("switches slot tabs only with L1/R1 or touch, and tabs are not gamepad focus targets", () => {
     const root = renderPage({
       appId: 1091500,
       gameName: "Cyberpunk 2077",
@@ -211,25 +210,19 @@ describe("ArtworkEditorPage", () => {
       onGoToSteamMatch: vi.fn(),
       onSaveMatch: vi.fn(),
     });
-    // Refs in order: requestSeq, browser, cardFocusPending.
-    const cardFocusPending = hookState.refs[2];
     const tab = (id: string) => nodes(root).find((n) => n.props?.["data-artwork-tab"] === id)!;
     // Initial tab is "cover" (slot 1 of hookState is activeTab).
     expect(hookState.slots[1]).toBe("cover");
-    expect(tab("cover").props!.preferredFocus).toBe(true);
+    // Plain elements: the D-pad and stick cannot land on them, so only one tab is ever highlighted.
+    expect(tab("cover").type).toBe("div");
+    expect(nodes(root).find((n) => n.type === "Focusable" && n.props?.className?.endsWith("__tabs"))).toBeUndefined();
 
-    // Entry focus landing on the active tab keeps the jump armed.
-    tab("cover").props!.onGamepadFocus();
-    expect(cardFocusPending.current).toBe(true);
-
-    tab("wide").props!.onGamepadFocus(); // joystick -> wide
+    root.props.onButtonDown({ detail: { button: 6 } }); // R1 -> wide
     expect(hookState.slots[1]).toBe("wide");
-    expect(cardFocusPending.current).toBe(false);
-
-    root.props.onButtonDown({ detail: { button: 6 } }); // R1 -> hero
+    root.props.onButtonDown({ detail: { button: 5 } }); // L1 -> back to cover
+    expect(hookState.slots[1]).toBe("cover");
+    tab("hero").props!.onClick(); // touch
     expect(hookState.slots[1]).toBe("hero");
-    root.props.onButtonDown({ detail: { button: 5 } }); // L1 -> back to wide
-    expect(hookState.slots[1]).toBe("wide");
   });
 
   it("cancels the entry card jump when L1/R1 changes the tab", () => {
@@ -259,53 +252,46 @@ describe("ArtworkEditorPage", () => {
       onGoToSteamMatch: vi.fn(),
       onSaveMatch: vi.fn(),
     };
-    // Minimal stand-ins for Big Picture's DOM: a tab strip with two tabs, a grid card, and the sidebar.
+    // Minimal stand-ins for Big Picture's DOM: a toolbar button (entry focus), a grid card, and the sidebar.
     const makeDom = () => {
       const body = { id: "body" };
       const doc = { activeElement: body as unknown, body };
-      const strip: Record<string, unknown> = { ownerDocument: doc };
-      const tab = (id: string) => ({ id, closest: (s: string) => (s.includes("__tabs") ? strip : null) });
-      const cover = tab("cover");
-      const wide = tab("wide");
+      const toolbar = { id: "toolbar" };
+      const toolbarButton = { id: "filter", closest: (s: string) => (s.includes("__toolbar") ? toolbar : null) };
       const card = { id: "card", closest: () => null };
       const sidebar = { id: "sidebar", closest: () => null };
-      strip.contains = (el: unknown) => el === cover || el === wide;
-      strip.querySelector = (s: string) => (s.includes('"wide"') ? wide : cover);
       const browser = {
         ownerDocument: doc,
-        querySelector: (s: string) => (s.includes("__grid") ? card : s.includes("__tabs") ? strip : null),
+        querySelector: (s: string) => (s.includes("__grid") ? card : null),
       };
-      return { doc, cover, wide, card, sidebar, browser };
+      return { doc, toolbarButton, card, sidebar, browser };
     };
-    // Render with artwork cards present, attach the fake DOM, and return [entryJump, tabSync].
-    const renderWithCards = (browser: unknown, activeTab = "cover") => {
+    // Render with artwork cards present, attach the fake DOM, and return the entry-jump effect.
+    const renderWithCards = (browser: unknown) => {
       renderPage(props);
-      hookState.slots[1] = activeTab;
       hookState.slots[7] = [{ id: 1, url: "u", thumb: "t", animated: false, author: { name: "a" }, width: 1, height: 1 }];
       hookState.cursor = 0;
       hookState.refs = [];
       hookState.effects = [];
       ArtworkEditorPage(props);
       hookState.refs[1].current = browser;
-      return hookState.effects.slice(-2);
+      return hookState.effects[hookState.effects.length - 1];
     };
 
-    it("moves Steam focus to the first card when the user is still on the tab strip", () => {
+    it("moves Steam focus to the first card when the user is still on the toolbar entry spot", () => {
       nav.takeNativeFocus.mockClear();
       const dom = makeDom();
-      nav.nativeFocusedElement.mockReturnValue(dom.cover);
-      const [entryJump] = renderWithCards(dom.browser);
-      entryJump();
+      nav.nativeFocusedElement.mockReturnValue(dom.toolbarButton);
+      renderWithCards(dom.browser)();
       expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.card);
     });
 
-    it("leaves Steam focus in the sidebar even when DOM focus is still on a tab", () => {
+    it("leaves Steam focus in the sidebar even when DOM focus is still on the toolbar", () => {
       nav.takeNativeFocus.mockClear();
       const dom = makeDom();
-      dom.doc.activeElement = dom.cover;
+      dom.doc.activeElement = dom.toolbarButton;
       nav.nativeFocusedElement.mockReturnValue(dom.sidebar);
-      const [entryJump] = renderWithCards(dom.browser);
-      entryJump();
+      renderWithCards(dom.browser)();
       expect(nav.takeNativeFocus).not.toHaveBeenCalled();
     });
 
@@ -314,24 +300,11 @@ describe("ArtworkEditorPage", () => {
       const dom = makeDom();
       nav.nativeFocusedElement.mockReturnValue(null);
       dom.doc.activeElement = dom.sidebar;
-      renderWithCards(dom.browser)[0]();
+      renderWithCards(dom.browser)();
       expect(nav.takeNativeFocus).not.toHaveBeenCalled();
       dom.doc.activeElement = dom.doc.body;
-      renderWithCards(dom.browser)[0]();
+      renderWithCards(dom.browser)();
       expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.card);
-    });
-
-    it("moves Steam focus to the new tab after L1/R1 only while focus is on the strip", () => {
-      nav.takeNativeFocus.mockClear();
-      const dom = makeDom();
-      nav.nativeFocusedElement.mockReturnValue(dom.cover);
-      renderWithCards(dom.browser, "wide")[1]();
-      expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.wide);
-
-      nav.takeNativeFocus.mockClear();
-      nav.nativeFocusedElement.mockReturnValue(dom.card);
-      renderWithCards(dom.browser, "wide")[1]();
-      expect(nav.takeNativeFocus).not.toHaveBeenCalled();
     });
   });
 

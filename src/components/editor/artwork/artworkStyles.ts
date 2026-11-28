@@ -87,14 +87,6 @@ export const artworkBrowserCss = `
   border-color: rgba(26, 159, 255, 0.65);
 }
 
-.${artworkBrowserClass}__tab.gpfocus,
-.${artworkBrowserClass}__tab:focus {
-  background: rgba(255, 255, 255, 0.18);
-  color: #ffffff;
-  border-color: #ffffff;
-  outline: none;
-}
-
 .${artworkBrowserClass}__toolbar {
   display: flex;
   flex-wrap: wrap;

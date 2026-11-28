@@ -3,7 +3,6 @@ import {
   Field,
   Focusable,
   GamepadButton,
-  NavEntryPositionPreferences,
   showModal,
 } from "@decky/ui";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -358,12 +357,8 @@ export function ArtworkEditorPage({
   const activeFilterCount =
     activeSlot && activeFilter ? countActiveSlotFilters(activeSlot, activeFilter) : 0;
   const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
-  // The editor's entry focus targets this marker: the first artwork card, or the active tab until cards exist.
+  // The editor's entry focus targets this marker: the first artwork card, or the first toolbar button until cards exist.
   const cardsFocusTarget = showOfficialCard || showAssetCards;
-
-  // Where the user is: Steam's gamepad focus, else DOM focus in the editor's own window.
-  // Plugin code runs in another window, so the global `document` never holds the editor's focus.
-  const focusedElement = (root: Element) => nativeFocusedElement() ?? root.ownerDocument.activeElement;
 
   useEffect(() => {
     if (!cardFocusPendingRef.current) return;
@@ -374,21 +369,12 @@ export function ArtworkEditorPage({
     const browser = browserRef.current;
     if (!cardsFocusTarget || !browser) return;
     cardFocusPendingRef.current = false;
-    const focused = focusedElement(browser);
-    // Never take focus the user already moved off the tab strip.
-    if (focused && focused !== browser.ownerDocument.body && !focused.closest(`.${artworkBrowserClass}__tabs`)) return;
+    // Steam's gamepad focus, else DOM focus in the editor's own window (plugin code runs in another window).
+    const focused = nativeFocusedElement() ?? browser.ownerDocument.activeElement;
+    // Never take focus the user already moved off the toolbar where entry focus starts.
+    if (focused && focused !== browser.ownerDocument.body && !focused.closest(`.${artworkBrowserClass}__toolbar`)) return;
     takeNativeFocus(browser.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`));
   }, [activeSlot, cardsFocusTarget]);
-
-  // One highlight: when L1/R1 changes the tab while focus is on the tab strip, focus follows it.
-  useEffect(() => {
-    const strip = browserRef.current?.querySelector(`.${artworkBrowserClass}__tabs`);
-    if (!strip) return;
-    const focused = focusedElement(strip);
-    const tab = strip.querySelector(`[data-artwork-tab="${activeTab}"]`);
-    if (!focused || focused === tab || !strip.contains(focused)) return;
-    takeNativeFocus(tab);
-  }, [activeTab]);
 
   return (
     <Focusable
@@ -400,39 +386,27 @@ export function ArtworkEditorPage({
     >
       <style>{artworkBrowserCss}</style>
 
-      {/* Top slot tabs with L1/R1 bumper hints; entering the strip lands on the active tab. */}
-      <Focusable
-        flow-children="horizontal"
-        className={`${artworkBrowserClass}__tabs`}
-        navEntryPreferPosition={NavEntryPositionPreferences.PREFERRED_CHILD}
-      >
+      {/* Slot tabs switch only with L1/R1 (or touch), like Steam's library tabs, so they are not focus targets. */}
+      <div className={`${artworkBrowserClass}__tabs`}>
         <span className={`${artworkBrowserClass}__bumper`} aria-hidden="true">
           {t("editor.artwork.bumperLeft")}
         </span>
         <div className={`${artworkBrowserClass}__tab-list`}>
-          {visibleTabs.map((tab, idx) => {
-            const active = tab === activeTab;
-            return (
-              <Focusable
-                key={tab}
-                data-artwork-tab={tab}
-                data-artwork-initial-focus={active && !cardsFocusTarget ? "" : undefined}
-                className={`${artworkBrowserClass}__tab${active ? " is-active" : ""}`}
-                preferredFocus={active}
-                // Moving focus across tabs selects them, like Steam's own tab bars.
-                onGamepadFocus={() => selectTab(tab)}
-                onActivate={() => selectTab(tab)}
-                onClick={() => selectTab(tab)}
-              >
-                {t(tabLabelKey(tab))}
-              </Focusable>
-            );
-          })}
+          {visibleTabs.map((tab) => (
+            <div
+              key={tab}
+              data-artwork-tab={tab}
+              className={`${artworkBrowserClass}__tab${tab === activeTab ? " is-active" : ""}`}
+              onClick={() => selectTab(tab)}
+            >
+              {t(tabLabelKey(tab))}
+            </div>
+          ))}
         </div>
         <span className={`${artworkBrowserClass}__bumper`} aria-hidden="true">
           {t("editor.artwork.bumperRight")}
         </span>
-      </Focusable>
+      </div>
 
       {activeSlot !== null ? (
         <>
@@ -478,6 +452,7 @@ export function ArtworkEditorPage({
               {!missingKey ? (
                 <DialogButton
                   className={`${artworkBrowserClass}__action-btn`}
+                  data-artwork-initial-focus={cardsFocusTarget ? undefined : ""}
                   disabled={busy}
                   onClick={openFilterModal}
                 >
@@ -487,6 +462,7 @@ export function ArtworkEditorPage({
               {savedSteamAppId !== null ? (
                 <DialogButton
                   className={`${artworkBrowserClass}__action-btn`}
+                  data-artwork-initial-focus={!cardsFocusTarget && missingKey ? "" : undefined}
                   disabled={busy}
                   onClick={() => setOfficialOnly((prev) => !prev)}
                 >
