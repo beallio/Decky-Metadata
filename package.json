@@ -23,6 +23,7 @@
   "devDependencies": {
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.7.2",
+    "@types/node": "^25.9.2",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
     "mobx": "6.16.1",
