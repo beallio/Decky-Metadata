@@ -8,7 +8,7 @@ import {
   TextField,
   ToggleField,
 } from "@decky/ui";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   clearSgdbGameOverride,
   setSgdbGameOverride,
@@ -56,6 +56,7 @@ export function ArtworkFilterModal({
   const [searching, setSearching] = useState(false);
   const [searchResults, setSearchResults] = useState<SgdbGame[] | null>(null);
   const [searchError, setSearchError] = useState("");
+  const searchSeqRef = useRef(0);
   const [draft, setDraft] = useState<SgdbSlotFilter>(() => ({
     dimensions: [...initialFilter.dimensions],
     styles: [...initialFilter.styles],
@@ -74,15 +75,17 @@ export function ArtworkFilterModal({
   const runSearch = async () => {
     const trimmed = searchQuery.trim();
     if (!trimmed) return;
+    const seq = ++searchSeqRef.current;
     setSearching(true);
+    setSearchResults(null);
     setSearchError("");
     try {
       const results = await sgdbSearchGames(trimmed);
-      setSearchResults(results);
+      if (seq === searchSeqRef.current) setSearchResults(results);
     } catch (error) {
-      setSearchError(translateBackendError(error));
+      if (seq === searchSeqRef.current) setSearchError(translateBackendError(error));
     } finally {
-      setSearching(false);
+      if (seq === searchSeqRef.current) setSearching(false);
     }
   };
 

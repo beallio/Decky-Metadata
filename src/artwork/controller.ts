@@ -263,6 +263,7 @@ export type ArtworkControllerDeps = {
 
 export class ArtworkController {
   private snapshot: ArtworkControllerSnapshot;
+  private readonly slotGenerations = new Map<number, Partial<Record<ArtworkSlot, number>>>();
   private readonly listeners = new Set<() => void>();
   private mounted = false;
   private unsubscribeConflicts: (() => void) | null = null;
@@ -273,7 +274,6 @@ export class ArtworkController {
   /** Latest requested settings waiting for the in-flight save, plus their callers. */
   private queued: { settings: ArtworkSettings; settles: Array<(saved: boolean) => void> } | undefined;
   private saving = false;
-
   constructor(private readonly deps: ArtworkControllerDeps) {
     this.snapshot = {
       settings: structuredClone(DEFAULT_ARTWORK_SETTINGS),
@@ -355,7 +355,24 @@ export class ArtworkController {
     }
   }
 
+  private slotGeneration(appId: number, slot: ArtworkSlot): number {
+    return this.slotGenerations.get(appId)?.[slot] ?? 0;
+  }
+
+  private captureSlotGenerations(appId: number): Record<ArtworkSlot, number> {
+    const generations = {} as Record<ArtworkSlot, number>;
+    for (const slot of ARTWORK_SLOT_ORDER) generations[slot] = this.slotGeneration(appId, slot);
+    return generations;
+  }
+
+  private invalidateAutomaticSlot(appId: number, slot: ArtworkSlot): void {
+    const generations = this.slotGenerations.get(appId) ?? {};
+    generations[slot] = (generations[slot] ?? 0) + 1;
+    this.slotGenerations.set(appId, generations);
+  }
+
   async setSettings(next: ArtworkSettings): Promise<boolean> {
+    if (!this.snapshot.settingsLoaded) return false;
     // While idle, the snapshot is what the backend last confirmed.
     if (!this.saving) this.confirmed = this.snapshot.settings;
     const requested = normalizeArtworkSettings(next);
@@ -405,6 +422,7 @@ export class ArtworkController {
 
   async updateSlotFilter(slot: ArtworkSlot, filter: SgdbSlotFilter): Promise<boolean> {
     const current = await this.ensureSettingsLoaded();
+    if (!this.snapshot.settingsLoaded) return false;
     return this.setSettings({
       ...current,
       filters: {
@@ -434,6 +452,7 @@ export class ArtworkController {
   }
 
   async applySingleSlot(appId: number, steamAppId: number, slot: ArtworkSlot): Promise<void> {
+    this.invalidateAutomaticSlot(appId, slot);
     const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
     await this.deps.applySteamArtworkSlot(appId, slot, asset);
     this.bumpRevision();
@@ -441,6 +460,7 @@ export class ArtworkController {
   }
 
   async applySgdbAsset(appId: number, slot: ArtworkSlot, url: string): Promise<void> {
+    this.invalidateAutomaticSlot(appId, slot);
     if (!this.deps.sgdbFetchAsset) throw new Error("artwork_download_failed");
     const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
     await this.deps.applySteamArtworkSlot(appId, slot, asset);
@@ -449,6 +469,7 @@ export class ArtworkController {
   }
 
   async applyLocalFile(appId: number, slot: ArtworkSlot, filePath: string): Promise<void> {
+    this.invalidateAutomaticSlot(appId, slot);
     if (!this.deps.readLocalArtworkFile) throw new Error("artwork_file_unreadable");
     const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
     await this.deps.applySteamArtworkSlot(appId, slot, asset);
@@ -457,6 +478,7 @@ export class ArtworkController {
   }
 
   async applyTransparentSlot(appId: number, slot: ArtworkSlot): Promise<void> {
+    this.invalidateAutomaticSlot(appId, slot);
     if (!this.deps.getTransparentArtworkAsset) throw new Error("artwork_apply_failed");
     const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
     await this.deps.applySteamArtworkSlot(appId, slot, asset);
@@ -465,8 +487,9 @@ export class ArtworkController {
   }
 
   async clearSingleSlot(appId: number, slot: ArtworkSlot): Promise<void> {
+    this.invalidateAutomaticSlot(appId, slot);
     await this.deps.clearSteamArtworkSlot(appId, slot);
-    await this.deps.clearLocalArtworkFile(appId, slot).catch(() => undefined);
+    await this.deps.clearLocalArtworkFile(appId, slot);
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
@@ -480,6 +503,22 @@ export class ArtworkController {
     steamAppId: number,
     mode: "fill-missing" | "replace-all" | "policy",
     options?: { ignoreLock?: boolean },
+  ): Promise<GameApplyResult> {
+    return this.applyForGameWithGenerations(
+      appId,
+      steamAppId,
+      mode,
+      options,
+      this.captureSlotGenerations(appId),
+    );
+  }
+
+  private async applyForGameWithGenerations(
+    appId: number,
+    steamAppId: number,
+    mode: "fill-missing" | "replace-all" | "policy",
+    options: { ignoreLock?: boolean } | undefined,
+    slotGenerations: Record<ArtworkSlot, number>,
   ): Promise<GameApplyResult> {
     const settings = await this.ensureSettingsLoaded();
     const state = await this.deps.getGameArtworkState(appId, steamAppId);
@@ -497,6 +536,7 @@ export class ArtworkController {
       if (preserveExisting && slotState.present) continue;
       try {
         const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+        if (this.slotGeneration(appId, slot) !== slotGenerations[slot]) continue;
         await this.deps.applySteamArtworkSlot(appId, slot, asset);
         applied += 1;
       } catch (error) {
@@ -512,11 +552,18 @@ export class ArtworkController {
   }
 
   async autoApplyForMatchedGame(appId: number, steamAppId: number, gameName: string): Promise<void> {
+    const slotGenerations = this.captureSlotGenerations(appId);
     const settings = await this.ensureSettingsLoaded();
     if (!settings.autoApply) return;
     if (this.snapshot.busy) return;
     try {
-      const result = await this.applyForGame(appId, steamAppId, "policy");
+      const result = await this.applyForGameWithGenerations(
+        appId,
+        steamAppId,
+        "policy",
+        undefined,
+        slotGenerations,
+      );
       if (result.applied > 0) {
         this.deps.toastSuccess(
           t("artwork.toast.appliedTitle"),

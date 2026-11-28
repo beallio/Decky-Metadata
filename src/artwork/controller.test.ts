@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import type { ArtworkSettings, ArtworkSlot, GameArtworkState } from "../types";
+import type { ArtworkSettings, ArtworkSlot, FetchedArtworkAsset, GameArtworkState } from "../types";
 
 vi.mock("../backend", () => ({
   clearLocalArtworkFile: vi.fn(),
@@ -292,5 +292,75 @@ describe("ArtworkController", () => {
     await expect(ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "lost" })).resolves.toBe(false);
     expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
     expect(ctrl.getSnapshot().settingsError).not.toBe("");
+  });
+  it("does not save settings when the initial settings load fails", async () => {
+    const deps = makeDeps();
+    vi.mocked(deps.getArtworkSettings).mockRejectedValue(new Error("rpc down"));
+    const ctrl = new ArtworkController(deps);
+
+    await expect(ctrl.updateSlotFilter("cover", DEFAULT_ARTWORK_SETTINGS.filters.cover)).resolves.toBe(false);
+    await expect(ctrl.setSettings(DEFAULT_ARTWORK_SETTINGS)).resolves.toBe(false);
+    expect(deps.setArtworkSettings).not.toHaveBeenCalled();
+    expect(ctrl.getSnapshot().settingsError).not.toBe("");
+  });
+
+  it("does not let a late automatic write replace a manual clear", async () => {
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: true, wide: false, hero: false, logo: false, icon: false },
+    });
+    const requested = Promise.withResolvers<void>();
+    const autoAsset = Promise.withResolvers<FetchedArtworkAsset>();
+    vi.mocked(deps.fetchSteamArtworkAsset).mockImplementationOnce(async () => {
+      requested.resolve();
+      return autoAsset.promise;
+    });
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(1001, 1145350, "Hades II");
+
+    await requested.promise;
+    await ctrl.clearSingleSlot(1001, "cover");
+    autoAsset.resolve({ slot: "cover", base64: "AUTO==", ext: "jpg", mime: "image/jpeg", file_path: null });
+    await automatic;
+
+    expect(deps.clearSteamArtworkSlot).toHaveBeenCalledWith(1001, "cover");
+    expect(deps.applySteamArtworkSlot).not.toHaveBeenCalled();
+  });
+  it("does not let a late automatic write replace a manual single-slot apply", async () => {
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: true, wide: false, hero: false, logo: false, icon: false },
+    });
+    const requested = Promise.withResolvers<void>();
+    const autoAsset = Promise.withResolvers<FetchedArtworkAsset>();
+    vi.mocked(deps.fetchSteamArtworkAsset).mockImplementationOnce(async () => {
+      requested.resolve();
+      return autoAsset.promise;
+    });
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(1001, 1145350, "Hades II");
+
+    await requested.promise;
+    await ctrl.applySingleSlot(1001, 1145350, "cover");
+    autoAsset.resolve({ slot: "cover", base64: "AUTO==", ext: "jpg", mime: "image/jpeg", file_path: null });
+    await automatic;
+
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledTimes(1);
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledWith(
+      1001,
+      "cover",
+      expect.objectContaining({ base64: "AA==" }),
+    );
+  });
+
+  it("propagates local artwork clear failures", async () => {
+    const deps = makeDeps();
+    const failure = new Error("file could not be removed");
+    vi.mocked(deps.clearLocalArtworkFile).mockRejectedValueOnce(failure);
+    const ctrl = new ArtworkController(deps);
+
+    await expect(ctrl.clearSingleSlot(1001, "cover")).rejects.toBe(failure);
   });
 });
