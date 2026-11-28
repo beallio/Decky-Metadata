@@ -64,6 +64,26 @@ describe("HltbStore", () => {
     expect(store.view(621, { ...inputs, pinned: 42 }, now).needsFetch).toBe(true);
   });
 
+  it("retries a failed lookup when its cooldown ends while the game is subscribed", async () => {
+    vi.useFakeTimers();
+    const fetch = vi.fn<(...args: unknown[]) => Promise<HltbStatsResult>>()
+      .mockResolvedValueOnce({ status: "error", retry_after_ms: 1_000 })
+      .mockResolvedValueOnce({ status: "blocked" });
+    const store = new HltbStore(fetch);
+    const unsubscribe = store.subscribe(620, () => store.request(620, false, inputs));
+    store.request(620, false, inputs);
+    await settle();
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1_000);
+    await settle();
+
+    expect(fetch).toHaveBeenCalledTimes(2);
+    unsubscribe();
+    store.reset();
+    vi.useRealTimers();
+  });
+
   it("stops showing a cached title match after Remove metadata", async () => {
     const fetch = vi.fn<(...args: unknown[]) => Promise<HltbStatsResult>>().mockResolvedValue({ status: "blocked" });
     const store = new HltbStore(fetch);

@@ -24,10 +24,15 @@ async function fetchWithTimeout(
   fetchPromise: Promise<Response>,
   timeoutMs: number = FETCH_TIMEOUT_MS
 ): Promise<Response> {
+  let timeout: number | NodeJS.Timeout = 0
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
+    timeout = setTimeout(() => reject(new Error('Request timeout')), timeoutMs)
   })
-  return Promise.race([fetchPromise, timeoutPromise])
+  try {
+    return await Promise.race([fetchPromise, timeoutPromise])
+  } finally {
+    clearTimeout(timeout)
+  }
 }
 
 async function findAlgoliaAppIdByName(

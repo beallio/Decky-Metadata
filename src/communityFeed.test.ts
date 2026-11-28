@@ -53,6 +53,9 @@ describe("community fallback helpers", () => {
     expect(card.spoiler_tag).toBe(false);
     expect(card.time_created).toBeTypeOf("number");
     expect(fallbackPageToNativeHub(1, fallback("steam-scrape")).hub[0].creator.name).toBe("Steam Community · Alice");
+    const noAuthor = fallback();
+    noAuthor.items[0].author = "";
+    expect(fallbackPageToNativeHub(1, noAuthor).hub[0].creator.name).toBe("Metadata");
     expect(fallbackPageToNativeHub(1, { source: "none", page: 1, items: [] })).toEqual({ cached: false, hub: [] });
   });
 

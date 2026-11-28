@@ -86,7 +86,7 @@ export const fallbackPageToNativeHub = (appId: number, fallback: CommunityFallba
   hub: fallback.items.map((item, index) => {
     const sourceLabel = fallback.source === "steam-scrape"
       ? item.author ? t("community.steamAuthor", { author: item.author }) : t("community.steamCommunity")
-      : item.author || "Metadata";
+      : item.author || t("qam.metadata.title");
     const providerIcon = communityProviderIcon(fallback.source === "steam-scrape" ? "steam" : sourceLabel);
     const itemLink = item.link || item.image_url;
     const publishedFileId = syntheticCommunityId(appId, fallback.page, index);

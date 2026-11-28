@@ -118,6 +118,25 @@ describe("ProtonDbRatingCache", () => {
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
+  it("retries a failed rating after its cooldown while it remains subscribed", async () => {
+    fetchMock
+      .mockRejectedValueOnce(new Error("offline"))
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
+    const cache = newCache();
+    mountEnabled(cache);
+    const unsubscribe = cache.subscribeRating(620, vi.fn());
+    await flushMicrotasks();
+    expect(cache.getRating(620).status).toBe("error");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(30_000);
+    await flushMicrotasks();
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(cache.getRating(620).status).toBe("ready");
+    unsubscribe();
+  });
+
   it("represents a missing report as a ready null tier rather than Borked", async () => {
     fetchMock.mockResolvedValue(new Response(null, { status: 404 }));
     const cache = newCache();

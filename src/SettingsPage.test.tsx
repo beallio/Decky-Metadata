@@ -208,6 +208,9 @@ describe("SettingsPage", () => {
   });
 
   it("checks trailer status quickly only while the Game trailers tab is shown", () => {
+    const inactive = layout(render()).pages.find((page) => page.id === "trailers")!.content as ReactElement<Record<string, unknown>>;
+    expect(inactive.props.visible).toBe(false);
+    layout(render()).onPageRequested("trailers");
     const trailers = mountTab("trailers");
     expect(controllers.trailers.setPanelVisible).toHaveBeenLastCalledWith(true);
 

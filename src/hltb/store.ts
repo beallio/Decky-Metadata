@@ -1,5 +1,6 @@
 import { getHltbStats, type HltbEntry, type HltbStatsResult } from "../backend";
 
+type TimerHandle = number | NodeJS.Timeout;
 const DAY_MS = 86_400_000;
 export const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
 export const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
@@ -21,6 +22,7 @@ export class HltbStore {
   private readonly blocked = new Map<string, string>();
   private readonly inFlight = new Map<string, object>();
   private readonly retryAt = new Map<string, number>();
+  private readonly retryTimers = new Map<string, TimerHandle>();
   private readonly listeners = new Map<number, Set<() => void>>();
 
   constructor(private readonly fetchStats: Fetch = getHltbStats) {}
@@ -50,7 +52,14 @@ export class HltbStore {
   /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
   request(appId: number, isShortcut: boolean, inputs: HltbInputs, now = Date.now(), usePinned = true): void {
     const key = slotKey(appId, inputs.pinned);
-    if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now) return;
+    if (this.inFlight.has(key)) return;
+    const retryAt = this.retryAt.get(key) ?? 0;
+    if (retryAt > now) {
+      if (this.listeners.get(appId)?.size && !this.retryTimers.has(key)) {
+        this.scheduleRetry(appId, key, retryAt - now);
+      }
+      return;
+    }
     const request = {};
     this.inFlight.set(key, request);
     const ownsRequest = () => this.inFlight.get(key) === request;
@@ -66,13 +75,17 @@ export class HltbStore {
           this.blocked.delete(resultKey);
         } else if (result.status === "error") {
           this.retryAt.set(key, Date.now() + Math.max(1_000, result.retry_after_ms));
+          this.scheduleRetry(appId, key, Math.max(1_000, result.retry_after_ms));
         } else {
           this.blocked.set(key, inputsKey(inputs));
         }
         this.notify(appId);
       },
       () => {
-        if (ownsRequest()) this.retryAt.set(key, Date.now() + 30_000);
+        if (ownsRequest()) {
+          this.retryAt.set(key, Date.now() + 30_000);
+          this.scheduleRetry(appId, key, 30_000);
+        }
       },
     ).finally(() => {
       if (ownsRequest()) this.inFlight.delete(key);
@@ -85,13 +98,21 @@ export class HltbStore {
     set.add(listener);
     return () => {
       set.delete(listener);
-      if (set.size === 0) this.listeners.delete(appId);
+      if (set.size === 0) {
+        this.listeners.delete(appId);
+        for (const key of this.retryTimers.keys()) {
+          if (key.startsWith(`${appId}:`)) {
+            this.clearRetry(key);
+          }
+        }
+      }
     };
   }
 
   /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
   forget(appId: number): void {
     const prefix = `${appId}:`;
+    for (const key of [...this.retryTimers.keys()]) if (key.startsWith(prefix)) this.clearRetry(key);
     for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
       for (const key of [...map.keys()]) {
         if (key.startsWith(prefix)) map.delete(key);
@@ -102,11 +123,28 @@ export class HltbStore {
 
   /** Forget everything, e.g. after Clear cache or when the feature stops. */
   reset(): void {
+    for (const timer of this.retryTimers.values()) clearTimeout(timer);
+    this.retryTimers.clear();
     this.entries.clear();
     this.blocked.clear();
     this.inFlight.clear();
     this.retryAt.clear();
     for (const appId of [...this.listeners.keys()]) this.notify(appId);
+  }
+
+  private scheduleRetry(appId: number, key: string, delay: number): void {
+    this.clearRetry(key);
+    this.retryTimers.set(key, setTimeout(() => {
+      this.retryTimers.delete(key);
+      this.retryAt.delete(key);
+      if (this.listeners.get(appId)?.size) this.notify(appId);
+    }, Math.max(0, delay)));
+  }
+
+  private clearRetry(key: string): void {
+    const timer = this.retryTimers.get(key);
+    if (timer !== undefined) clearTimeout(timer);
+    this.retryTimers.delete(key);
   }
 
   private notify(appId: number): void {

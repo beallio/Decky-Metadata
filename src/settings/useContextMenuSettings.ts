@@ -7,6 +7,7 @@ import type { EditorHeaderSettings } from "../types";
 export function useContextMenuSettings() {
   const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
   const [error, setError] = useState("");
+  const saveQueue = useRef(Promise.resolve());
   // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
   const latest = useRef<EditorHeaderSettings | null>(null);
   // The last settings the backend has; a failed save goes back to these, never to another unsaved toggle.
@@ -32,7 +33,9 @@ export function useContextMenuSettings() {
     latest.current = next;
     setSettings(next);
     setError("");
-    setEditorHeaderSettings(next).then(
+    const save = saveQueue.current.then(() => setEditorHeaderSettings(next));
+    saveQueue.current = save.then(() => undefined, () => undefined);
+    save.then(
       () => { saved.current = next; },
       (saveError) => {
         if (latest.current !== next) return;
