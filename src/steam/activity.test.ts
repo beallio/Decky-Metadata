@@ -546,6 +546,55 @@ describe("native news history navigation", () => {
     }
   });
 
+  it("uses the current browser route when replaceState omits its URL", async () => {
+    const appId = 9712;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Tracked browser news", "42345678901234568");
+    const activity = await refreshDeckyNativeActivityForApp(appId) as {
+      appActivityByDay?: Array<{ events?: Array<{ eventModel?: { GID?: string } }> }>;
+    } | null;
+    const eventId = activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GID;
+    expect(eventId).toBeTruthy();
+
+    const host = globalThis as Record<string, unknown>;
+    const originalRouter = host.Router;
+    const originalWindow = host.window;
+    const path = `/library/app/${appId}`;
+    const browserWindow = {
+      history: null as unknown,
+      location: { pathname: path },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    let state: unknown = null;
+    const browserHistory = {
+      get state() { return state; },
+      back: vi.fn(),
+      pushState: (_state: unknown, _title: string, _url?: string | URL | null) => undefined,
+      replaceState: (nextState: unknown, _title: string, url?: string | URL | null) => {
+        state = nextState;
+        if (url) browserWindow.location.pathname = String(url);
+      },
+    };
+    browserWindow.history = browserHistory;
+    host.Router = undefined;
+    host.window = browserWindow as unknown as Window;
+    const unpatchers: Array<() => void> = [];
+    try {
+      installNativeNewsHistoryRedirects(unpatchers);
+      browserHistory.pushState({ event_to_show: { eventid: eventId } }, "", path);
+      browserHistory.replaceState({}, "");
+
+      expect(browserHistory.back).not.toHaveBeenCalled();
+    } finally {
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      if (originalRouter === undefined) delete host.Router;
+      else host.Router = originalRouter;
+      if (originalWindow === undefined) delete host.window;
+      else host.window = originalWindow;
+    }
+  });
+
   it("keeps a later window.history wrapper installed on unpatch", () => {
     const host = globalThis as Record<string, unknown>;
     const originalRouter = host.Router;

@@ -1,6 +1,6 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
 import { isNativeSteamAppId } from "./appId";
-import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview, StoreCategory } from "../types";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
@@ -242,28 +242,16 @@ export const removeMetadataCacheEntry = (appId: number) => {
 };
 
 export const replaceMetadataCacheEntries = (records: Record<string, MetadataData>) => {
-  const normalizedRecords = Object.fromEntries(
-    Object.entries(records || {}).map(([key, value]) => [
-      key,
-      value?.store_categories?.includes(392)
-        ? {
-            ...value,
-            store_categories: value.store_categories.map((category) =>
-              category === 392 ? StoreCategory.LocalCoOp : category,
-            ),
-          }
-        : value,
-    ]),
-  );
+  const nextRecords = records || {};
   const previous = new Map(
     Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]),
   );
   Object.keys(metadataCache).forEach((key) => {
-    if (!(key in normalizedRecords)) countRemoval(key);
+    if (!(key in nextRecords)) countRemoval(key);
     delete metadataCache[key];
   });
-  Object.assign(metadataCache, normalizedRecords);
-  const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+  Object.assign(metadataCache, nextRecords);
+  const appIds = new Set([...previous.keys(), ...Object.keys(nextRecords)]);
   for (const key of appIds) {
     const previousMatch = previous.get(key) ?? null;
     const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
@@ -872,6 +860,7 @@ export const patchMethod = (
   methodName: string,
   replacement: (thisValue: any, original: (...args: any[]) => any, args: any[]) => any
 ): Unpatch => {
+  if (typeof target?.[methodName] !== "function") return () => undefined;
   const original = target[methodName];
   let active = true;
   const patched = function patchedMethod(...args: any[]) {
@@ -908,6 +897,72 @@ export const safeAfterPatch = (
       return ret;
     }
   });
+
+type RouteRenderTarget = { renderFunc?: unknown };
+type RouteRenderPatch = { object: unknown; original: unknown; patchedFunction: unknown; unpatch: Unpatch };
+
+const routeRenderPatchInChain = (renderFunc: unknown, targetPatch: unknown) => {
+  try {
+    let current = renderFunc;
+    while (typeof current === "function") {
+      if (current === targetPatch) return true;
+      const patch = Reflect.get(current, "__deckyPatch");
+      if (!patch || typeof patch !== "object") return false;
+      current = Reflect.get(patch, "original");
+    }
+  } catch {
+    return false;
+  }
+  return false;
+};
+
+export const createRouteRenderPatcher = <Args extends unknown[], Rendered>(
+  handler: (args: Args, rendered: Rendered) => Rendered,
+) => {
+  let renderTarget: RouteRenderTarget | undefined;
+  let renderPatch: RouteRenderPatch | undefined;
+  let active = false;
+
+  const release = () => {
+    const patch = renderPatch;
+    renderPatch = undefined;
+    renderTarget = undefined;
+    active = false;
+    try {
+      patch?.unpatch();
+    } catch {
+      // A foreign non-Decky wrapper does not expose the inner patch chain.
+    }
+  };
+
+  return {
+    patch: (target?: RouteRenderTarget | null) => {
+      if (typeof target?.renderFunc !== "function") {
+        release();
+        return;
+      }
+      if (target === renderTarget) return;
+      if (renderPatch && routeRenderPatchInChain(target.renderFunc, renderPatch.patchedFunction)) {
+        renderPatch.object = target;
+        renderTarget = target;
+        return;
+      }
+      if (renderPatch && target.renderFunc === renderPatch.original) {
+        renderPatch.object = target;
+        target.renderFunc = renderPatch.patchedFunction;
+        renderTarget = target;
+        return;
+      }
+      release();
+      active = true;
+      renderPatch = safeAfterPatch(target, "renderFunc", (args: Args, rendered: Rendered) =>
+        active ? handler(args, rendered) : rendered,
+      );
+      renderTarget = target;
+    },
+    release,
+  };
+};
 
 export const overviewFromReactTree = (tree: any): any | null => {
   try {

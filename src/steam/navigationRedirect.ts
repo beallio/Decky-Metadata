@@ -158,12 +158,9 @@ export const installMainWindowHistoryRedirect = (unpatchers: Unpatch[]) => {
       }
       return original(...args);
     });
-    const patched = history?.[methodName];
     redirectUnpatchers.push(() => {
       try {
-        if (history?.[methodName] === patched) {
-          unpatch();
-        }
+        unpatch();
       } catch (_error) {
         // Best effort teardown.
       }

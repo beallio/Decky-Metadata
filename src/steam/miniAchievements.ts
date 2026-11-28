@@ -2,9 +2,9 @@
 // page passes no onSeek, and Valve's MiniAchievements row renders nothing without
 // it (ValveSoftware/steam-for-linux#13540), so one is supplied here. See NOTICE.
 import { routerHook } from "@decky/api";
-import { afterPatch, findClassModule, findInReactTree } from "@decky/ui";
+import { findClassModule, findInReactTree } from "@decky/ui";
 import * as log from "../log";
-import { GAME_DETAIL_ROUTES } from "./core";
+import { createRouteRenderPatcher, GAME_DETAIL_ROUTES } from "./core";
 import { getNativeCssClass, subscribeNativeCssClasses } from "./nativeCssClasses";
 import { steamUiDocuments } from "./steamUiHost";
 
@@ -213,40 +213,21 @@ export function installMiniAchievementsPatch(): () => void {
   requestSync();
 
   for (const route of GAME_DETAIL_ROUTES) {
-    let renderTarget: object | undefined;
-    let unpatchRender: (() => void) | undefined;
-    let patchedRenderFunc: unknown;
-    const releaseRender = () => {
-      unpatchRender?.();
-      unpatchRender = undefined;
-      patchedRenderFunc = undefined;
-      renderTarget = undefined;
-    };
+    const renderPatcher = createRouteRenderPatcher<unknown[], unknown>((_args, rendered) => {
+      requestSync();
+      return rendered;
+    });
     try {
       const patch = routerHook.addPatch(route, (tree) => {
         try {
-          const routeProps = findInReactTree(tree, (node) => node?.renderFunc);
-          if (typeof routeProps?.renderFunc === "function") {
-            if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
-              releaseRender();
-              const renderPatch = afterPatch(routeProps, "renderFunc", (_args: unknown[], rendered: unknown) => {
-                requestSync();
-                return rendered;
-              });
-              renderTarget = routeProps;
-              patchedRenderFunc = routeProps.renderFunc;
-              unpatchRender = () => renderPatch.unpatch();
-            }
-          } else {
-            releaseRender();
-          }
+          renderPatcher.patch(findInReactTree(tree, (node) => node?.renderFunc));
         } catch (error) {
           log.warn("miniAchievements", "achievement stat patch failed", error);
         }
         return tree;
       });
       unpatchers.push(() => {
-        releaseRender();
+        renderPatcher.release();
         routerHook.removePatch(route, patch);
       });
     } catch (error) {
