@@ -64,6 +64,9 @@ impl Storage {
     /// `stamp` is read before loading, so a change during the read causes another reload.
     async fn adopt(&mut self, (mut data, persist): (Value, Persist), stamp: Stamp) -> Result<(), String> {
         let migrated = migrate_release_dates(&mut data)?;
+        if let Some(metadata) = data.get_mut("metadata") {
+            normalize_store_categories(metadata);
+        }
         if migrated || persist == Persist::All {
             write_all(&self.dir, &data).await?;
         } else if persist == Persist::Envelope {
@@ -1375,6 +1378,32 @@ pub fn migrate_release_dates(payload: &mut Value) -> Result<bool, String> {
     Ok(true)
 }
 
+fn normalize_store_categories(metadata: &mut Value) {
+    let Some(records) = metadata.as_object_mut() else {
+        return;
+    };
+    for record in records.values_mut().filter_map(Value::as_object_mut) {
+        let Some(categories) = record
+            .get_mut("store_categories")
+            .and_then(Value::as_array_mut)
+        else {
+            continue;
+        };
+        let mut normalized = Vec::with_capacity(categories.len());
+        for category in categories.drain(..) {
+            let category = if category.as_i64() == Some(392) {
+                json!(39)
+            } else {
+                category
+            };
+            if !normalized.contains(&category) {
+                normalized.push(category);
+            }
+        }
+        *categories = normalized;
+    }
+}
+
 fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     let Value::Object(mut source) = payload else {
         return Err("metadata settings must be a JSON object".to_owned());
@@ -1382,7 +1411,8 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     let release_date_format = source
         .remove("release_date_format")
         .unwrap_or_else(|| Value::String(RELEASE_DATE_FORMAT.to_owned()));
-    let metadata = truthy_object(source.remove("metadata"), "metadata")?;
+    let mut metadata = truthy_object(source.remove("metadata"), "metadata")?;
+    normalize_store_categories(&mut metadata);
     let steam_overrides = normalize_steam_overrides(source.remove("steam_overrides"));
     let shortcut_names = match source.remove("shortcut_names") {
         Some(Value::Object(shortcut_names)) => Value::Object(shortcut_names),
@@ -2040,6 +2070,36 @@ mod tests {
         object.insert("metadata".to_owned(), Value::Object(records));
         data
     }
+
+    #[tokio::test]
+    async fn loaded_records_normalize_legacy_local_coop_categories() {
+        let dir = TempDir::new();
+        std::fs::write(
+            dir.0.join(SETTINGS_FILE_NAME),
+            serde_json::to_vec(&json!({
+                "metadata": {
+                    "1": {"store_categories": [392, 39]},
+                    "2": {"store_categories": [392]}
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let store = Storage::open(dir.0.clone()).await.unwrap();
+        for id in ["1", "2"] {
+            assert_eq!(
+                store.data()["metadata"][id]["store_categories"],
+                json!([39])
+            );
+            let saved: Value = serde_json::from_slice(
+                &std::fs::read(dir.0.join(RECORDS_DIR_NAME).join(format!("{id}.json"))).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(saved["store_categories"], json!([39]));
+        }
+    }
+
 
     #[test]
     fn settings_normalize_per_field_and_validate_strictly() {

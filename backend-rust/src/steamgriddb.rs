@@ -429,6 +429,7 @@ pub async fn sgdb_resolve_game(
     };
 
     // 2. Try Steam AppID lookup if available.
+    let mut steam_unauthorized = false;
     if let Some(steam_appid) = storage::positive_steam_app_id(steam_appid_arg) {
         let url = format!("{SGDB_API_BASE}/games/steam/{steam_appid}");
         match sgdb_get_json(state, &url, &api_key).await {
@@ -450,7 +451,7 @@ pub async fn sgdb_resolve_game(
                     }
                 }
             }
-            Err(error) if error == SGDB_UNAUTHORIZED => {}
+            Err(error) if error == SGDB_UNAUTHORIZED => steam_unauthorized = true,
             Err(error) => return Err(public_sgdb_error(error)),
         }
     }
@@ -475,6 +476,8 @@ pub async fn sgdb_resolve_game(
                 "override": false,
             }));
         }
+    } else if steam_unauthorized {
+        return Err("sgdb_invalid_api_key".to_owned());
     }
 
     Ok(json!({
@@ -870,6 +873,28 @@ mod tests {
             assert_eq!(resolved["game"]["source"], "search");
             assert_eq!(resolved["game"]["id"], 7);
         }
+
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_lookup_401_with_blank_name_reports_invalid_key() {
+        let steam_url = format!("{SGDB_API_BASE}/games/steam/1145350");
+        let (root, state) = test_state(vec![status_fixture(&steam_url, 401)]).await;
+
+        assert_eq!(
+            sgdb_resolve_game(
+                &state,
+                &json!(0x8000_0001_u32),
+                &json!(1145350),
+                &json!(" \t "),
+            )
+            .await
+            .unwrap_err(),
+            "sgdb_invalid_api_key"
+        );
 
         state.http.assert_drained();
         state.shutdown().await.unwrap();

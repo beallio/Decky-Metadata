@@ -206,8 +206,11 @@ fn active_userdata_folder_id(loginusers: &str) -> Option<u64> {
             }
         }
         if line
-            .strip_prefix("\"MostRecent\"")
-            .is_some_and(|value| value.trim() == "\"1\"")
+            .strip_prefix('"')
+            .and_then(|line| line.split_once('"'))
+            .is_some_and(|(key, value)| {
+                key.eq_ignore_ascii_case("MostRecent") && value.trim() == "\"1\""
+            })
         {
             if let Some(folder_id) = steam_id.and_then(|id| id.checked_sub(STEAM_ID64_BASE)) {
                 return Some(folder_id);
@@ -372,7 +375,7 @@ mod tests {
         fs::write(
             loginusers,
             format!(
-                "\"users\"\n{{\n\t\"{steam_id}\"\n\t{{\n\t\t\"MostRecent\"\t\"1\"\n\t}}\n}}\n"
+                "\"users\"\n{{\n\t\"{steam_id}\"\n\t{{\n\t\t\"mostrecent\"\t\"1\"\n\t}}\n}}\n"
             ),
         )
         .unwrap();
