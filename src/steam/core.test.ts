@@ -104,6 +104,41 @@ describe("route render patch lifecycle", () => {
       mocks.afterPatch.mockReset();
     }
   });
+  it("runs only the current patch when a foreign wrapper blocks release", () => {
+    mocks.afterPatch.mockImplementation((
+      target: Record<string, unknown>,
+      method: string,
+      handler: (args: unknown[], rendered: unknown) => unknown,
+    ) => {
+      const original = target[method] as (...args: unknown[]) => unknown;
+      const patched = (...args: unknown[]) => handler(args, original(...args));
+      target[method] = patched;
+      return {
+        object: target,
+        original,
+        patchedFunction: patched,
+        unpatch: () => {
+          if (target[method] !== patched) throw new TypeError("foreign wrapper");
+          target[method] = original;
+        },
+      };
+    });
+    const handler = vi.fn((_args: unknown[], rendered: unknown) => rendered);
+    const patcher = core.createRouteRenderPatcher(handler);
+    const oldTarget = { renderFunc: () => "old" };
+    patcher.patch(oldTarget);
+    const oldPatched = oldTarget.renderFunc;
+    oldTarget.renderFunc = () => (oldPatched as () => string)();
+
+    const nextTarget = { renderFunc: () => "new" };
+    patcher.patch(nextTarget);
+    oldTarget.renderFunc();
+    nextTarget.renderFunc();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    patcher.release();
+    mocks.afterPatch.mockReset();
+  });
 });
 
 describe("isCurrentGameDetailRoute", () => {
