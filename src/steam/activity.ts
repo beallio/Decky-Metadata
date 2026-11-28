@@ -1481,7 +1481,7 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
         if (methodName === "replaceState") {
           const currentState = (browserHistory as any)?.state;
           if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
-            if (isTrackedDeckyNativeNewsNavigation(currentState, target)) {
+            if (isTrackedDeckyNativeNewsNavigation(currentState, target || currentRoutePath())) {
               clearNavigationAfterReplace = true;
             } else {
               deckyNativeNewsNavigation = null;

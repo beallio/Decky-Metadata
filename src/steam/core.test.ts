@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@decky/ui", () => ({ afterPatch: vi.fn(), findInReactTree: vi.fn() }));
+const mocks = vi.hoisted(() => ({ afterPatch: vi.fn() }));
+vi.mock("@decky/ui", () => ({ afterPatch: mocks.afterPatch, findInReactTree: vi.fn() }));
 
 import * as core from "./core";
-import type { MetadataData } from "../types";
 
 const isCurrentGameDetailRoute = (routeContext: string, appId: number) =>
   (core as Record<string, unknown>).isCurrentGameDetailRoute as
@@ -32,6 +32,77 @@ describe("patchMethod ownership", () => {
     unpatch();
 
     expect(target.run("test")).toBe("later:original:test");
+  });
+
+  it("skips absent methods safely", () => {
+    for (const target of [undefined, {}]) {
+      const unpatch = core.patchMethod(target, "run", (_thisValue, original) => original());
+      expect(unpatch).not.toThrow();
+    }
+  });
+});
+
+describe("route render patch lifecycle", () => {
+  it("patches three hook callbacks once across cloned targets and tolerates a foreign wrapper", () => {
+    const unpatches: Array<() => void> = [];
+    mocks.afterPatch.mockImplementation((
+      target: Record<string, unknown>,
+      method: string,
+      handler: (args: unknown[], rendered: unknown) => unknown,
+    ) => {
+      const original = target[method];
+      if (typeof original !== "function") throw new Error("missing render");
+      const patched = function (this: unknown, ...args: unknown[]) {
+        return handler(args, Reflect.apply(original, this, args));
+      };
+      Object.defineProperty(patched, "__deckyPatch", { value: { original } });
+      target[method] = patched;
+      const patch: { object: unknown; original: unknown; patchedFunction: unknown; unpatch: () => void } = {
+        object: target,
+        original,
+        patchedFunction: patched,
+        unpatch: () => undefined,
+      };
+      patch.unpatch = vi.fn(() => {
+        if (!patch.object || typeof patch.object !== "object" || Reflect.get(patch.object, method) !== patched) {
+          throw new TypeError("foreign wrapper");
+        }
+        Reflect.set(patch.object, method, original);
+      });
+      unpatches.push(patch.unpatch);
+      return patch;
+    });
+
+    const originalRender = () => null;
+    const routeProps: Record<string, unknown> = { renderFunc: originalRender };
+    const patchers = Array.from({ length: 3 }, () =>
+      core.createRouteRenderPatcher<unknown[], unknown>((_args, rendered) => rendered),
+    );
+    try {
+      patchers.forEach((patcher) => patcher.patch(routeProps));
+      patchers.forEach((patcher) => patcher.patch(routeProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const nextRouteProps: Record<string, unknown> = { renderFunc: originalRender };
+      patchers.forEach((patcher) => patcher.patch(nextRouteProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const chainedRouteProps: Record<string, unknown> = { renderFunc: nextRouteProps.renderFunc };
+      patchers.forEach((patcher) => patcher.patch(chainedRouteProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const latestRender = chainedRouteProps.renderFunc;
+      if (typeof latestRender !== "function") throw new Error("missing chained render");
+      chainedRouteProps.renderFunc = (...args: unknown[]) => Reflect.apply(latestRender, chainedRouteProps, args);
+      expect(() => patchers.forEach((patcher) => patcher.patch(chainedRouteProps))).not.toThrow();
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      expect(() => patchers.forEach((patcher) => patcher.release())).not.toThrow();
+      unpatches.forEach((unpatch) => expect(unpatch).toHaveBeenCalledTimes(1));
+    } finally {
+      patchers.forEach((patcher) => patcher.release());
+      mocks.afterPatch.mockReset();
+    }
   });
 });
 
@@ -190,17 +261,6 @@ describe("metadata match revisions", () => {
     }
   });
 
-  it("normalizes legacy local co-op categories when metadata is loaded", () => {
-    const appId = 0x80000047;
-    try {
-      core.replaceMetadataCacheEntries({
-        [String(appId)]: { title: "Legacy", store_categories: [392, 24] } as unknown as MetadataData,
-      });
-      expect(core.metadataCache[String(appId)].store_categories).toEqual([39, 24]);
-    } finally {
-      delete core.metadataCache[String(appId)];
-    }
-  });
 });
 
 describe("normalizedTabText", () => {

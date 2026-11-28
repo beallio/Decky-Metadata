@@ -1,6 +1,7 @@
 import React from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type * as I18nModule from "../i18n";
+import type * as SteamCoreModule from "../steam/core";
 import type { HltbEntry } from "../backend";
 import type { HltbStats } from "./HltbStats";
 import type { HltbBlur, HltbSettings } from "./settings";
@@ -109,12 +110,16 @@ vi.mock("../i18n", async (importOriginal) => {
   const actual = await importOriginal<typeof I18nModule>();
   return { ...actual, useT: () => actual.t };
 });
-vi.mock("../steam/core", () => ({
-  GAME_DETAIL_ROUTES: ["/library/app/:appid", "/library/details/:appid", "/library/:collection/app/:appid"],
-  getNativeOverview: (appId: number) => appId === 620 ? { appid: 620, display_name: "Portal 2" } : null,
-  isNativeNonSteamShortcut: () => false,
-  metadataCache: {},
-}));
+vi.mock("../steam/core", async (importOriginal) => {
+  const core = await importOriginal<typeof SteamCoreModule>();
+  return {
+    ...core,
+    GAME_DETAIL_ROUTES: ["/library/app/:appid", "/library/details/:appid", "/library/:collection/app/:appid"],
+    getNativeOverview: (appId: number) => appId === 620 ? { appid: 620, display_name: "Portal 2" } : null,
+    isNativeNonSteamShortcut: () => false,
+    metadataCache: {},
+  };
+});
 
 import { releaseProviderCache } from "../providerCache";
 import { hltbController, hltbInputs } from "./gameView";
