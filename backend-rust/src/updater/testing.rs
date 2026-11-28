@@ -1,4 +1,7 @@
-use crate::updater::models::{parse_plugin_version, parse_release_manifest};
+use crate::updater::{
+    models::{parse_plugin_version, parse_release_manifest},
+    urls::is_repository_release_download_url,
+};
 use serde_json::{Value, json};
 
 pub const REPOSITORY: &str = "beallio/Decky-Metadata";
@@ -6,8 +9,6 @@ pub const TESTING_PR_LABEL: &str = "test-build";
 pub const TESTING_WORKFLOW_NAME: &str = "CI";
 pub const PR_BUILDS_RELEASE_TAG: &str = "pr-builds";
 pub const MAX_SIDECAR_BYTES: usize = 16 * 1024;
-const PR_RELEASE_DOWNLOAD_PREFIX: &str =
-    "https://github.com/beallio/Decky-Metadata/releases/download/";
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PrReleaseAssetUrls {
@@ -230,7 +231,7 @@ pub fn find_pr_release_assets(release: &Value, pr_id: u64) -> Option<PrReleaseAs
         let Some(url) = asset
             .get("browser_download_url")
             .and_then(Value::as_str)
-            .filter(|url| url.starts_with(PR_RELEASE_DOWNLOAD_PREFIX))
+            .filter(|url| is_repository_release_download_url(url))
         else {
             continue;
         };

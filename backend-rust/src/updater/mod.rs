@@ -4,6 +4,7 @@ pub mod models;
 pub mod pending;
 pub mod rate_limit;
 pub mod testing;
+pub mod urls;
 
 use crate::{
     http::Http,
