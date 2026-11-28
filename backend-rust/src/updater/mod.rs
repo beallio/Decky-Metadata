@@ -386,6 +386,13 @@ impl Updater {
                 break;
             }
         }
+        if selected.is_none() && releases.len() > MAX_MANIFEST_FETCH_ATTEMPTS {
+            return Ok(json!({
+                "status": "failed",
+                "checked_at": checked_at,
+                "message": "manifest_discovery_incomplete"
+            }));
+        }
         let candidate = selected.and_then(|candidate| {
             select_candidate(&[candidate], current_version, &channel_snapshot)
         });
@@ -484,6 +491,13 @@ impl Updater {
                 "message": "revalidation_failed"
             }));
         };
+        if prevalidated.tag_name != tag {
+            return Ok(json!({
+                "status": "failed",
+                "checked_at": isoformat_utc(self.now()),
+                "message": "revalidation_failed"
+            }));
+        }
         let manifest_response = self.client.get_manifest(&manifest_url(&prevalidated)).await;
         let validated = if manifest_response.status == 200 {
             validate_manifest_candidate(&prevalidated, &manifest_response.body)
@@ -919,7 +933,8 @@ mod tests {
     use serde_json::json;
 
     const RELEASES_URL: &str = "https://api.github.com/repos/beallio/Decky-Metadata/releases";
-    const MANIFEST_URL: &str = "https://example.test/manifest";
+    const MANIFEST_URL: &str =
+        "https://github.com/beallio/Decky-Metadata/releases/download/manifest";
     const RELEASE_TAG_URL: &str =
         "https://api.github.com/repos/beallio/Decky-Metadata/releases/tags/v0.4.0";
 
@@ -957,7 +972,7 @@ mod tests {
             "published_at": "2026-07-17T12:00:00Z",
             "assets": [
                 {"name": format!("Decky-Metadata-{tag}.manifest.json"), "browser_download_url": MANIFEST_URL},
-                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": "https://example.test/plugin.zip"}
+                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": "https://github.com/beallio/Decky-Metadata/releases/download/plugin.zip"}
             ]
         })
     }
@@ -1132,13 +1147,13 @@ mod tests {
         let http = Http::fixtures(fixtures);
         let fixture_http = http.clone();
         let mut updater = make_updater(http, "0.3.1", &json!({}));
-        assert_eq!(
-            updater
-                .check_for_update(&json!("0.3.1"), true)
-                .await
-                .unwrap()["status"],
-            "current"
-        );
+        let result = updater
+            .check_for_update(&json!("0.3.1"), true)
+            .await
+            .unwrap();
+        assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "manifest_discovery_incomplete");
+        assert!(updater.cache.get("last_result").is_none());
         fixture_http.assert_drained();
     }
 
@@ -1248,7 +1263,7 @@ mod tests {
                 "version": "0.4.0",
                 "tag": "v0.4.0",
                 "channel": "stable",
-                "artifact_url": "https://example.test/plugin.zip",
+                "artifact_url": "https://github.com/beallio/Decky-Metadata/releases/download/plugin.zip",
                 "sha256": "a".repeat(64),
                 "release_url": "https://example.test/releases/v0.4.0",
                 "published_at": "2026-07-17T12:00:00Z",
@@ -1266,6 +1281,25 @@ mod tests {
             assert_eq!(result["message"], change.2);
             fixture_http.assert_drained();
         }
+    }
+
+    #[tokio::test]
+    async fn revalidation_rejects_a_release_tag_mismatch() {
+        let http = Http::fixtures(vec![fixture(
+            RELEASE_TAG_URL,
+            200,
+            release("0.4.1", "stable"),
+            &[],
+        )]);
+        let fixture_http = http.clone();
+        let mut updater = make_updater(http, "0.3.1", &json!({}));
+        let result = updater
+            .revalidate(&json!({"tag": "v0.4.0"}))
+            .await
+            .unwrap();
+        assert_eq!(result["status"], "failed");
+        assert_eq!(result["message"], "revalidation_failed");
+        fixture_http.assert_drained();
     }
 
     #[tokio::test]
@@ -1362,7 +1396,7 @@ mod tests {
             .revalidate(&json!({
                 "version": "0.4.0",
                 "tag": "v0.4.0",
-                "artifact_url": "https://example.test/plugin.zip",
+                "artifact_url": "https://github.com/beallio/Decky-Metadata/releases/download/plugin.zip",
                 "sha256": "a".repeat(64),
                 "action": "move_to_stable"
             }))

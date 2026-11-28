@@ -1,11 +1,11 @@
 use crate::{
-    http::Http,
+    http::{Http, Redirects},
     logging,
     matching::{self, py_string, py_truthy},
 };
 use log::Level;
 use regex::Regex;
-use reqwest::Url;
+use reqwest::{Method, Url};
 use serde_json::{Map, Value, json};
 use std::{collections::HashSet, sync::LazyLock, time::Duration};
 
@@ -20,6 +20,10 @@ pub const STEAM_STORE_APP_URL: &str = "https://store.steampowered.com/app/{appid
 
 const STEAM_NEWS_FEEDS: &str = "steam_community_announcements,steam_community_announcements_koreana,steam_community_announcements_japanese,steam_community_announcements_schinese,steam_community_announcements_tchinese,steam_community_announcements_french,steam_community_announcements_german,steam_community_announcements_spanish,steam_community_announcements_italian,steam_community_announcements_polish,steam_community_announcements_portuguese,steam_community_announcements_russian";
 const STEAM_ACTIVITY_EVENT_TYPES: [i64; 9] = [12, 13, 14, 15, 23, 24, 25, 28, 35];
+const STEAM_API_RESPONSE_LIMIT: usize = 2 * 1024 * 1024;
+const STEAM_APP_DETAILS_RESPONSE_LIMIT: usize = 16 * 1024 * 1024;
+const STEAM_EVENTS_RESPONSE_LIMIT: usize = 16 * 1024 * 1024;
+const STEAM_ANNOUNCEMENT_PAGE_LIMIT: usize = 2 * 1024 * 1024;
 
 /// `SteamClient.Settings.GetCurrentLanguage()` values. Steam silently serves English for any
 /// other string, so only these exact values may leave the backend.
@@ -533,13 +537,35 @@ pub fn steam_news_summary(contents: &str) -> String {
 
 pub async fn steam_announcement_page_image(http: &Http, url: &str) -> String {
     let url = matching::https_url(url);
-    if url.is_empty() {
-        return String::new();
-    }
-    let Ok(page) = http.text(&url, Duration::from_secs(7), usize::MAX).await else {
+    let Ok(parsed_url) = Url::parse(&url) else {
         return String::new();
     };
-    let text = unescape_steam_text(&page);
+    if parsed_url.scheme() != "https"
+        || !matches!(
+            parsed_url.host_str(),
+            Some("store.steampowered.com" | "steamcommunity.com")
+        )
+    {
+        return String::new();
+    }
+    let Ok(response) = http
+        .request(
+            Method::GET,
+            &url,
+            &[],
+            None,
+            Duration::from_secs(7),
+            STEAM_ANNOUNCEMENT_PAGE_LIMIT,
+            Redirects::None,
+        )
+        .await
+    else {
+        return String::new();
+    };
+    if !(200..300).contains(&response.status) {
+        return String::new();
+    }
+    let text = unescape_steam_text(&response.text());
     static RX_ANNOUNCEMENT_IMAGE_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
         [
             r#"(?is)<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image|image)["'][^>]+content=["']([^"']+)["']"#,
@@ -633,7 +659,10 @@ pub async fn steam_deck_compat_lookup_for_appid(
         STEAM_DECK_COMPAT_URL,
         &[("nAppID", appid.to_string()), ("l", "english".into())],
     );
-    let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+    let payload = match http
+        .json(&url, Duration::from_secs(12), STEAM_API_RESPONSE_LIMIT)
+        .await
+    {
         Ok(payload) => payload,
         Err(error) => {
             log_provider_error(
@@ -752,7 +781,10 @@ pub async fn search_steam_matches(http: &Http, query: &Value, limit: &Value) -> 
             ("l", "english".into()),
         ],
     );
-    let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+    let payload = match http
+        .json(&url, Duration::from_secs(12), STEAM_API_RESPONSE_LIMIT)
+        .await
+    {
         Ok(payload) => payload,
         Err(_) => {
             log_provider_error("match search failed", None, None, Level::Warn);
@@ -837,7 +869,10 @@ pub async fn steam_appdetails_for_appid(http: &Http, appid: i64) -> Option<Value
         STEAM_APP_DETAILS_URL,
         &[("appids", appid.to_string()), ("l", "english".into())],
     );
-    let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+    let payload = match http
+        .json(&url, Duration::from_secs(12), STEAM_APP_DETAILS_RESPONSE_LIMIT)
+        .await
+    {
         Ok(payload) => payload,
         Err(error) => {
             log_provider_error(
@@ -977,7 +1012,7 @@ pub async fn steam_localized_details_for_appid(
         ],
     );
     let payload = http
-        .json(&url, Duration::from_secs(12), usize::MAX)
+        .json(&url, Duration::from_secs(12), STEAM_APP_DETAILS_RESPONSE_LIMIT)
         .await
         .ok()?;
     let data = payload
@@ -1017,7 +1052,10 @@ pub async fn steam_partner_events_for_appid(
             ("origin", "https://store.steampowered.com".into()),
         ],
     );
-    let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+    let payload = match http
+        .json(&url, Duration::from_secs(12), STEAM_EVENTS_RESPONSE_LIMIT)
+        .await
+    {
         Ok(payload) => payload,
         Err(error) => {
             log_provider_error(
@@ -1159,7 +1197,10 @@ pub async fn steam_news_for_appid(
             ("feeds", STEAM_NEWS_FEEDS.into()),
         ],
     );
-    let payload = match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+    let payload = match http
+        .json(&url, Duration::from_secs(12), STEAM_API_RESPONSE_LIMIT)
+        .await
+    {
         Ok(payload) => payload,
         Err(error) => {
             log_provider_error("news fetch failed", Some(appid), Some(&error), Level::Error);
@@ -1260,7 +1301,10 @@ pub async fn resolve_steam_appid_for_title(
     );
     let mut payload = None;
     for attempt in 0..3 {
-        match http.json(&url, Duration::from_secs(12), usize::MAX).await {
+        match http
+            .json(&url, Duration::from_secs(12), STEAM_API_RESPONSE_LIMIT)
+            .await
+        {
             Ok(value) => {
                 payload = Some(value);
                 break;
@@ -1886,6 +1930,16 @@ mod tests {
             1
         );
         fallback.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn steam_news_image_fetch_ignores_non_steam_hosts() {
+        let url = "https://steamcommunity.com.attacker.test/games/400/announcements/detail/2";
+        let http = Http::fixtures(vec![Fixture::text(
+            url,
+            "<meta property=\"og:image\" content=\"https://cdn.example.com/image.jpg\">",
+        )]);
+        assert_eq!(steam_announcement_page_image(&http, url).await, "");
     }
 
     #[tokio::test]
