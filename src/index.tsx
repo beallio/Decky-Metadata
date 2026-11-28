@@ -20,6 +20,7 @@ import { pluginUpdateController } from "./updater/pluginUpdateController";
 import { startTrailerController } from "./trailers/controller";
 import { startMiniAchievementsController } from "./steam/miniAchievementsController";
 import { protonDbBadgeController } from "./protondb/controller";
+import { artworkController } from "./artwork/controller";
 import { installProtonDbCoverBadges } from "./protondb/covers";
 import { resetProtonDbAppIdResolution } from "./protondb/identity";
 import { installProtonDbGameView } from "./protondb/gameView";
@@ -101,6 +102,7 @@ export default definePlugin(() => {
 
   resetProtonDbAppIdResolution();
   protonDbBadgeController.mount();
+  artworkController.mount();
   hltbController.mount();
   // Both features started their one shared read of the saved cache.
   releaseProviderCache();
@@ -143,6 +145,7 @@ export default definePlugin(() => {
       stopStoreInfoRow();
       stopProtonDbGameView();
       protonDbBadgeController.stop();
+      artworkController.stop();
       hltbController.stop();
       stopPluginConflicts();
       resetProtonDbAppIdResolution();

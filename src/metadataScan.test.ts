@@ -6,6 +6,7 @@ vi.mock("./backend", () => ({
   getMissingMetadataCount: vi.fn(),
 }));
 vi.mock("./steam", () => ({ refreshMetadataCache: vi.fn(), metadataCache: {} }));
+vi.mock("./artwork/controller", () => ({ artworkController: { runBulk: vi.fn() } }));
 vi.mock("./toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./i18n", () => ({
   t: (key: string, values?: Record<string, unknown>) => {

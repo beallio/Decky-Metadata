@@ -114,7 +114,11 @@ export const refreshOpenSettingsRoute = (routes: RouteRegistry): (() => void) =>
   };
 };
 
-export const openSettings = () => {
+export const openSettings = (tab?: string) => {
+  if (tab) {
+    const host = globalThis as Record<string, unknown>;
+    host[RELOAD_TAB_GLOBAL_KEY] = { tab, savedAt: Date.now() } satisfies SavedReloadTab;
+  }
   Navigation.CloseSideMenus();
   // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
   if (!isSettingsRouteOpen()) Navigation.Navigate(SETTINGS_ROUTE);
@@ -151,7 +155,7 @@ export function SettingsTitleView() {
           minWidth: 0,
           padding: 0,
         }}
-        onClick={openSettings}
+        onClick={() => openSettings()}
       >
         <FaGear />
       </DialogButton>

@@ -44,6 +44,7 @@ export class PluginConflictMonitor implements PluginConflictSource {
   private events: StateEvents | undefined;
   private pollTimer: number | undefined;
   private readonly listeners = new Set<() => void>();
+  private activePlugins = new Set<string>();
   private readonly conflicts: Record<ConflictingFeature, FeatureConflict> = {
     protondb: UNAVAILABLE,
     trailers: UNAVAILABLE,
@@ -56,6 +57,10 @@ export class PluginConflictMonitor implements PluginConflictSource {
 
   getConflict(feature: ConflictingFeature): FeatureConflict {
     return this.conflicts[feature];
+  }
+
+  isPluginActive(pluginName: string): boolean {
+    return this.activePlugins.has(pluginName);
   }
 
   subscribe(listener: () => void): () => void {
@@ -127,6 +132,20 @@ export class PluginConflictMonitor implements PluginConflictSource {
 
   private publish(plugins: PluginEntry[] | undefined, disabled: PluginEntry[] | undefined): void {
     let changed = false;
+    const nextActive = new Set<string>();
+    if (plugins && disabled) {
+      const disabledNames = new Set(disabled.map((plugin) => plugin.name));
+      for (const plugin of plugins) {
+        if (!disabledNames.has(plugin.name)) nextActive.add(plugin.name);
+      }
+    }
+    if (
+      nextActive.size !== this.activePlugins.size ||
+      Array.from(nextActive).some((name) => !this.activePlugins.has(name))
+    ) {
+      this.activePlugins = nextActive;
+      changed = true;
+    }
     for (const feature of FEATURES) {
       const conflict = KNOWN_CONFLICTS[feature];
       const next = !plugins || !disabled ? UNAVAILABLE

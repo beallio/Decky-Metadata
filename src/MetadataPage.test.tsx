@@ -104,8 +104,17 @@ vi.mock("@decky/ui", () => ({
 }));
 
 vi.mock("./backend", () => backend);
+vi.mock("./artwork/controller", () => ({
+  artworkController: {
+    autoApplyForMatchedGame: vi.fn(),
+  },
+}));
+vi.mock("./components/editor/ArtworkEditorPage", () => ({
+  ArtworkEditorPage: "ArtworkEditorPage",
+}));
 vi.mock("./steam", () => steam);
 vi.mock("./steam/gamepadTextArea", () => ({ getGamepadTextArea: () => textarea.component }));
+vi.mock("./steam/nativeFocus", () => ({ takeNativeFocus: vi.fn(), nativeFocusedElement: vi.fn(() => null) }));
 vi.mock("./toast", () => toast);
 vi.mock("./editorLayout", () => ({
   EditorLayout: ({ title, pages, page, onPageRequested, saveLabel, saveDisabled, onSave }: LayoutProps) => (
@@ -529,16 +538,16 @@ describe("MetadataPage compatibility status", () => {
     expect(layoutProps(page).pages.find(({ id }) => id === "compatibility")?.content).toBeNull();
   });
 
-  it.each([true, false])("passes ordered pages with Steam-game HLTB-only visibility (non-Steam: %s)", (nonSteam) => {
+  it.each([true, false])("passes ordered pages with Steam-game Artwork + HLTB visibility (non-Steam: %s)", (nonSteam) => {
     steam.isNonSteamApp.mockReturnValue(nonSteam);
     const layout = layoutProps(renderPage());
 
     expect(layout.title).toBe("Shortcut");
-    expect(layout.page).toBe(nonSteam ? "details" : "hltb");
+    expect(layout.page).toBe(nonSteam ? "details" : "artwork");
     expect(layout.pages.map(({ id }) => id)).toEqual(EDITOR_PAGE_ORDER);
     expect(layout.pages.every(({ icon }) => icon !== undefined)).toBe(true);
     expect(layout.pages.map(({ visible }) => visible)).toEqual(
-      EDITOR_PAGE_ORDER.map((id) => (nonSteam ? true : id === "hltb")),
+      EDITOR_PAGE_ORDER.map((id) => (nonSteam ? true : id === "artwork" || id === "hltb")),
     );
     expect(layout.pages.filter(({ separatorBefore }) => separatorBefore === true).map(({ id }) => id)).toEqual(
       nonSteam ? ["advanced"] : [],
@@ -1149,10 +1158,14 @@ describe("MetadataPage compatibility status", () => {
     expect(backend.getMetadata).not.toHaveBeenCalled();
     expect(backend.getShortcutNameManagement).not.toHaveBeenCalled();
 
-    const page = renderPage();
+    const initialPage = renderPage();
+    const initialLayout = layoutProps(initialPage);
+    expect(initialLayout.page).toBe("artwork");
+    expect(initialLayout.pages.filter(({ visible }) => visible).map(({ id }) => id)).toEqual(["artwork", "hltb"]);
+
+    const page = openPage("HowLongToBeat");
     const layout = layoutProps(page);
     expect(layout.page).toBe("hltb");
-    expect(layout.pages.filter(({ visible }) => visible).map(({ id }) => id)).toEqual(["hltb"]);
     expect(walk(page, (node) => node.type === HltbGameSearch)[0].props.disabled).toBe(false);
     expect(textField(page, "HowLongToBeat game").props.disabled).toBeUndefined();
     expect(textField(page, "HowLongToBeat game").props.value).toBe("4031");
@@ -1178,11 +1191,13 @@ describe("MetadataPage compatibility status", () => {
     expect(backend.saveSteamOverride).toHaveBeenLastCalledWith(65540, { hltb_game_id: null });
   });
 
-  it("shows a notice on the Steam game HLTB page when HLTB times are off", () => {
+  it("hides the Steam game HLTB page and shows only Artwork when HLTB times are off", () => {
     steam.isNonSteamApp.mockReturnValue(false);
     hltbMatch.effectiveEnabled = false;
     try {
-      expect(text(renderPage())).toContain("HowLongToBeat times are currently turned off in Settings.");
+      const layout = layoutProps(renderPage());
+      expect(layout.page).toBe("artwork");
+      expect(layout.pages.filter(({ visible }) => visible).map(({ id }) => id)).toEqual(["artwork"]);
     } finally {
       hltbMatch.effectiveEnabled = true;
     }
@@ -2652,7 +2667,7 @@ describe("Draft field markers and editor actions", () => {
     backend.saveSteamOverride.mockResolvedValue({ hltb_game_id: 4031 });
     hydrateMetadata(makeMetadata({ hltb_game_id: null }));
 
-    const initial = renderPage();
+    const initial = openPage("HowLongToBeat");
     expect(layoutProps(initial).saveDisabled).toBe(true);
 
     textField(initial, "HowLongToBeat game").props.onChange({ target: { value: "4031" } });

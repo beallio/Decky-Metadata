@@ -145,6 +145,12 @@ describe("backend messages", () => {
     expect(translateBackendError(new Error("Error: hltb_busy"))).toBe("Steam is busy right now");
   });
 
+  it("translates the SteamGridDB invalid API key error", () => {
+    expect(translateBackendError(new Error("sgdb_invalid_api_key"))).toBe(
+      "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+    );
+  });
+
   it("keeps English prose unchanged", () => {
     expect(translateBackendError(new Error("Error: Steam is busy right now"))).toBe(
       "Steam is busy right now",

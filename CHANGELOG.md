@@ -4,6 +4,27 @@ All notable changes to this project are documented here in Keep a Changelog form
 
 ## [Unreleased]
 
+### Added
+
+- **Built-in SteamGridDB & Official Steam artwork browser.** Added an **Artwork**
+  tab to both **Settings** and **Edit Metadata** for both Steam games and
+  non-Steam shortcuts (including unmatched shortcuts via automatic name search).
+  Includes a SteamGridDB v2 browser across **Cover**, **Wide cover**, **Hero
+  background**, **Game logo**, **Game icon**, and **Manage** tabs with `L1`/`R1`
+  tab switching, responsive aspect-ratio grids, pagination, `OFFICIAL` and
+  `ANIMATED` badges, **Y** Filter & Change Game modal (global per-slot filter
+  defaults + per-game SteamGridDB override), **Menu** Asset Details modal,
+  native **Logo Positioner**, local file picker, transparent placeholder, and
+  an Artwork-only auto-collapsing editor sidebar (`240px → 64px` icon rail
+  that shows the game icon).
+  Also supports Official Steam automatic artwork on metadata scans and saved
+  Steam matches, **Preserve existing artwork**, per-slot toggles, global **Fill
+  missing** / **Replace all** bulk actions, manual per-game **Lock artwork**,
+  tab order (Decky reorderable list) and visibility (toggles) settings, an unmasked
+  custom SteamGridDB API key input that saves when you leave it (redacted in
+  logs) with optional build-time fallback, and non-blocking
+  coexistence with the standalone SteamGridDB plugin.
+
 ## [0.6.8] - 2026-11-25
 
 Add Steam HLTB overrides, PR Testing tab, and Settings UI polish

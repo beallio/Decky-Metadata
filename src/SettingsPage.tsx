@@ -1,8 +1,10 @@
 import { Focusable, Navigation } from "@decky/ui";
 import { useEffect, useState, type ComponentProps } from "react";
-import { FaBars, FaClock, FaFileAlt, FaFlask, FaInfoCircle, FaPlayCircle, FaSyncAlt, FaTrophy } from "react-icons/fa";
+import { FaBars, FaClock, FaFileAlt, FaFlask, FaImage, FaInfoCircle, FaPlayCircle, FaSyncAlt, FaTrophy } from "react-icons/fa";
 import { FaTags } from "react-icons/fa6";
 import { SiSteamdeck } from "react-icons/si";
+import { artworkController } from "./artwork/controller";
+import { ArtworkBody } from "./components/qam/ArtworkSection";
 import { CompatibilityBody } from "./components/qam/CompatibilitySection";
 import { ContextMenuBody } from "./components/qam/ContextMenuSection";
 import { GameTrailersBody } from "./components/qam/GameTrailersSection";
@@ -39,6 +41,7 @@ const css = `.${rootClassName} { height: 100%; }`;
 // Module constants so page descriptors stay stable across renders.
 const icons = {
   metadata: <FaTags />,
+  artwork: <FaImage />,
   compat: <SiSteamdeck />,
   protondb: <ProtonDbIcon />,
   hltb: <FaClock />,
@@ -62,6 +65,24 @@ function useStoreSnapshot<T>(store: SnapshotStore<T>): T {
     return unsubscribe;
   }, [store]);
   return snapshot;
+}
+
+function ArtworkTab({ games, listReady }: { games: ReturnType<typeof useScanGames>["games"]; listReady: boolean }) {
+  const artwork = useStoreSnapshot(artworkController);
+  useEffect(() => {
+    if (listReady) void artworkController.refreshSummary(games);
+  }, [games, listReady]);
+  return (
+    <ArtworkBody
+      snapshot={artwork}
+      listReady={listReady}
+      onSettingsChange={(update) =>
+        void artworkController.setSettings(update(artworkController.getSnapshot().settings))
+      }
+      onFillMissing={() => void artworkController.runBulk(games, "fill-missing")}
+      onReplaceAll={() => void artworkController.runBulk(games, "replace-all")}
+    />
+  );
 }
 
 // The feature controllers are module singletons, so their state survives a tab switch without a page-level hook.
@@ -178,6 +199,12 @@ export function SettingsPage() {
           <MetadataMaintenanceBody scanBusy={scan.busy} listReady={loaded} {...maintenance} />
         </>
       ),
+    },
+    {
+      id: "artwork",
+      label: t("qam.artwork.title"),
+      icon: icons.artwork,
+      content: <ArtworkTab games={games} listReady={loaded} />,
     },
     { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: <CompatibilityBody {...compatibility} /> },
     { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: <ProtonDbTab /> },

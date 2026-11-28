@@ -24,6 +24,17 @@ import {
   TrailerSettings,
   ProtonDbBadgeSettings,
   EditorHeaderSettings,
+  ArtworkSettings,
+  ArtworkSlot,
+  ArtworkSummary,
+  GameArtworkState,
+  FetchedArtworkAsset,
+  SgdbAssetPage,
+  SgdbGame,
+  SgdbGameOverride,
+  SgdbKeyStatus,
+  SgdbResolveGameResult,
+  SgdbSlotFilter,
   IgnTrailerResult,
   ProtonDbTier,
 } from "./types";
@@ -241,6 +252,60 @@ export const setEditorHeaderSettings = callable<
   [settings: EditorHeaderSettings],
   EditorHeaderSettings
 >("set_editor_header_settings");
+export const getArtworkSettings = callable<[], ArtworkSettings>("get_artwork_settings");
+export const setArtworkSettings = callable<[settings: ArtworkSettings], ArtworkSettings>(
+  "set_artwork_settings"
+);
+export const getArtworkLocked = callable<[appId: number], boolean>("get_artwork_locked");
+export const setArtworkLocked = callable<[appId: number, locked: boolean], boolean>(
+  "set_artwork_locked"
+);
+export const getAllArtworkLocks = callable<[], Record<string, boolean>>("get_all_artwork_locks");
+export const getArtworkSummary = callable<[games: GameOption[]], ArtworkSummary>(
+  "get_artwork_summary"
+);
+export const getGameArtworkState = callable<
+  [appId: number, steamAppId: number | null],
+  GameArtworkState
+>("get_game_artwork_state");
+export const fetchSteamArtworkAsset = callable<
+  [appId: number, steamAppId: number, slot: ArtworkSlot],
+  FetchedArtworkAsset
+>("fetch_steam_artwork_asset");
+export const clearLocalArtworkFile = callable<
+  [appId: number, slot: ArtworkSlot],
+  { ok: boolean; removed: boolean }
+>("clear_local_artwork_file");
+export const getSgdbKeyStatus = callable<[], SgdbKeyStatus>("get_sgdb_key_status");
+export const sgdbSearchGames = callable<[query: string], SgdbGame[]>("sgdb_search_games");
+export const sgdbResolveGame = callable<
+  [appId: number, steamAppId: number | null, gameName: string],
+  SgdbResolveGameResult
+>("sgdb_resolve_game");
+export const sgdbListAssets = callable<
+  [sgdbGameId: number, slot: ArtworkSlot, filters: SgdbSlotFilter, page: number],
+  SgdbAssetPage
+>("sgdb_list_assets");
+export const sgdbFetchAsset = callable<
+  [appId: number, slot: ArtworkSlot, url: string],
+  FetchedArtworkAsset
+>("sgdb_fetch_asset");
+export const readLocalArtworkFile = callable<
+  [appId: number, slot: ArtworkSlot, filePath: string],
+  FetchedArtworkAsset
+>("read_local_artwork_file");
+export const getTransparentArtworkAsset = callable<
+  [appId: number, slot: ArtworkSlot],
+  FetchedArtworkAsset
+>("get_transparent_artwork_asset");
+export const setSgdbGameOverride = callable<
+  [appId: number, sgdbGameId: number, name: string],
+  SgdbGameOverride
+>("set_sgdb_game_override");
+export const clearSgdbGameOverride = callable<
+  [appId: number],
+  { ok: boolean }
+>("clear_sgdb_game_override");
 export type ProtonDbRatingRecord = { tier: ProtonDbTier | null; updated_at: number };
 export type ProtonDbNameRecord = { name: string; steam_appid: number; resolved_at: number };
 export type HltbTimes = { main: number; plus: number; complete: number; all: number };

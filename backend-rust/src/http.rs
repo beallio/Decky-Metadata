@@ -191,7 +191,7 @@ impl Http {
                 }
             }
             let response = fixture.result?;
-            let bound = response_limit(response.status, &response.headers, limit, error_limit)?;
+            let bound = response_limit(&method, response.status, &response.headers, limit, error_limit)?;
             if response.body.len() > bound {
                 return Err("HTTP response exceeds bounded read limit".into());
             }
@@ -256,7 +256,7 @@ impl Http {
                     .unwrap_or("")
                     .to_owned();
             }
-            let bound = response_limit(status, &headers, limit, error_limit)?;
+            let bound = response_limit(&method, status, &headers, limit, error_limit)?;
             let mut body = Vec::new();
             let mut stream = response.bytes_stream();
             while let Some(chunk) = stream.next().await {
@@ -448,6 +448,7 @@ impl Http {
 }
 
 fn response_limit(
+    method: &Method,
     status: u16,
     headers: &HeaderMap,
     limit: usize,
@@ -458,6 +459,10 @@ fn response_limit(
     } else {
         error_limit
     };
+    // A HEAD response has no body; its Content-Length describes the resource a GET would return.
+    if method == Method::HEAD {
+        return Ok(bound);
+    }
     if let Some(length) = headers.get("Content-Length") {
         let length = length
             .to_str()
@@ -563,6 +568,25 @@ mod tests {
             };
             assert!(error.contains("bounded"), "{error}");
         }
+    }
+
+    #[tokio::test]
+    async fn head_ignores_resource_length_but_get_keeps_the_limit() {
+        // Steam's CDN reports the full image size on HEAD; an 8 KiB probe must still succeed.
+        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let reply = b"HTTP/1.1 200 OK\r\nContent-Length: 82568\r\nConnection: close\r\n\r\n";
+        let url = server(reply, Duration::ZERO).await;
+        let head = http
+            .request(Method::HEAD, &url, &[], None, Duration::from_secs(1), 8 * 1024, Redirects::Default)
+            .await
+            .unwrap();
+        assert_eq!(head.status, 200);
+        let url = server(reply, Duration::ZERO).await;
+        let error = http
+            .request(Method::GET, &url, &[], None, Duration::from_secs(1), 8 * 1024, Redirects::Default)
+            .await
+            .unwrap_err();
+        assert!(error.contains("bounded"), "{error}");
     }
 
     #[tokio::test]

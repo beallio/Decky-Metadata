@@ -1,3 +1,4 @@
+pub mod artwork;
 pub mod cef_bridge;
 pub mod css_classes;
 pub mod hltb;
@@ -12,6 +13,7 @@ pub mod scan_runner;
 pub mod shortcuts_vdf;
 pub mod state;
 pub mod steam_paths;
+pub mod steamgriddb;
 pub mod storage;
 pub mod updater;
 

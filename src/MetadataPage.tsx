@@ -13,8 +13,10 @@ import {
 } from "@decky/ui";
 import type { ComponentProps, ComponentType, CSSProperties, ReactNode } from "react";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { FaClock, FaCog, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
+import { FaClock, FaCog, FaImage, FaInfoCircle, FaPencilAlt, FaSteam } from "react-icons/fa";
 import { SiSteamdeck } from "react-icons/si";
+import { artworkController } from "./artwork/controller";
+import { ArtworkEditorPage } from "./components/editor/ArtworkEditorPage";
 import {
   frontendLog,
   clearShortcutNameState,
@@ -54,6 +56,7 @@ import {
   subscribeCompatibilityRevision,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
+import { takeNativeFocus } from "./steam/nativeFocus";
 import {
   CATEGORY_LABELS,
   categoryLabel,
@@ -103,6 +106,7 @@ import { changedDraftFields, changedFormFields } from "./metadataDraft";
 import { EditorScopedStyle } from "./editorScopedStyle";
 import type { DraftFieldKey, DraftFormState } from "./metadataDraft";
 import { EditorLayout } from "./editorLayout";
+import { openSettings } from "./settingsRoute";
 import { dirtyPages, EDITOR_PAGE_ORDER, PAGE_OF_FIELD, type EditorPageId } from "./editorPages";
 import {
   draftFieldLabel,
@@ -143,6 +147,7 @@ type BusyOperation = "steam" | "ign" | "other";
 const PAGE_LABEL_KEYS: Record<EditorPageId, string> = {
   details: "editor.page.details",
   "steam-match": "editor.page.steamMatch",
+  artwork: "editor.page.artwork",
   hltb: "editor.page.hltb",
   compatibility: "editor.page.compatibility",
   "shortcut-name": "editor.page.shortcutName",
@@ -151,6 +156,7 @@ const PAGE_LABEL_KEYS: Record<EditorPageId, string> = {
 const PAGE_ICONS: Record<EditorPageId, ReactNode> = {
   details: <FaInfoCircle size={20} />,
   "steam-match": <FaSteam size={20} />,
+  artwork: <FaImage size={20} />,
   hltb: <FaClock size={20} />,
   compatibility: <SiSteamdeck size={20} />,
   "shortcut-name": <FaPencilAlt size={20} />,
@@ -713,7 +719,7 @@ export const MetadataPage = () => {
     setResults(null);
     // An unsaved HLTB draft belongs to the game it was typed on.
     setHltbIdDraft(null);
-    setPage(nonSteam ? "details" : "hltb");
+    setPage(nonSteam ? "details" : "artwork");
   }, [appId, nonSteam]);
 
   useEffect(() => {
@@ -800,9 +806,14 @@ export const MetadataPage = () => {
     const root = editorRootRef.current;
     if (!root) return;
     // Wait for the initial page to mount again when a new entry resets the selected page.
-    const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
+    const selector = nonSteam
+      ? "[data-editor-title] input"
+      : "[data-artwork-initial-focus], [data-editor-hltb-search] input";
     const frame = requestAnimationFrame(() => {
-      root.querySelector<HTMLInputElement>(selector)?.focus();
+      const target = root.querySelector<HTMLElement>(selector);
+      // The artwork marker is a Steam Focusable; DOM focus() from this window does not move gamepad focus.
+      if (target?.matches("[data-artwork-initial-focus]")) takeNativeFocus(target);
+      else target?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, [editorEntryToken, nonSteam]);
@@ -870,7 +881,7 @@ export const MetadataPage = () => {
     },
     [],
   );
-  const [page, setPage] = useState<EditorPageId>(nonSteam ? "details" : "hltb");
+  const [page, setPage] = useState<EditorPageId>(nonSteam ? "details" : "artwork");
   // Steam search results outlive the Game Match page, as IGN results do.
   const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
   // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -1214,11 +1225,17 @@ export const MetadataPage = () => {
         return true;
       }
       const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
+      const previousSteamAppId = normalizedSteamAppId(savedRecordRef.current?.steam_appid);
       const steamAppId = normalizedSteamAppId(record.steam_appid);
       // Only a trusted save may store the provider fields a preview fetched.
       const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
         ? await savePreviewedMetadata(appId, record, steamAppId)
         : await saveMetadata(appId, record);
+      // Apply before the early returns: later saves compare against this record and would never retry.
+      const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
+      if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
+        void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
+      }
       if (!isCurrentEditorEntry(requestedEntry)) return false;
       savedRecordRef.current = saved;
       previewedSteamAppIdRef.current = null;
@@ -2233,16 +2250,36 @@ export const MetadataPage = () => {
     );
   }
 
+  function renderArtworkPage() {
+    const effectiveSteamAppId = nonSteam ? savedSteamAppId : normalizedSteamAppId(appId);
+    return (
+      <ArtworkEditorPage
+        appId={appId}
+        gameName={appName(appId)}
+        isSteamGame={!nonSteam}
+        savedSteamAppId={effectiveSteamAppId}
+        unsavedSteamAppId={nonSteam ? formSteamAppId : effectiveSteamAppId}
+        entryBusy={entryBusy}
+        onGoToSteamMatch={() => setPage("steam-match")}
+        onSaveMatch={() => void saveCurrent()}
+        onOpenArtworkSettings={() => openSettings("artwork")}
+      />
+    );
+  }
+
   const renderPageContent = {
     details: renderDetailsPage,
     "steam-match": renderSteamMatchPage,
+    artwork: renderArtworkPage,
     hltb: renderHltbPage,
     compatibility: renderCompatibilityPage,
     "shortcut-name": renderShortcutNamePage,
     advanced: renderAdvancedPage,
   };
   const pages = EDITOR_PAGE_ORDER.map((id) => {
-    const visible = nonSteam ? true : id === "hltb";
+    const visible = nonSteam
+      ? true
+      : id === "artwork" || (hltbSnapshot.effectiveEnabled && id === "hltb");
     return {
       id,
       label: t(PAGE_LABEL_KEYS[id]),
@@ -2253,7 +2290,11 @@ export const MetadataPage = () => {
       content: visible ? renderPageContent[id]() : null,
     };
   });
-  const activePage: EditorPageId = nonSteam ? page : "hltb";
+  const activePage: EditorPageId = nonSteam
+    ? page
+    : page === "hltb" && hltbSnapshot.effectiveEnabled
+      ? "hltb"
+      : "artwork";
 
   return (
     <Focusable
@@ -2276,6 +2317,7 @@ export const MetadataPage = () => {
         saveLabel={saveLabel}
         saveDisabled={saveDisabled}
         onSave={() => void saveCurrent()}
+        collapsibleSidebar={activePage === "artwork"}
       />
     </Focusable>
   );

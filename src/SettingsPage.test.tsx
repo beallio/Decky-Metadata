@@ -53,12 +53,13 @@ vi.mock("@decky/ui", () => ({
   Navigation: navigation,
 }));
 vi.mock("react-icons/fa", () => ({
-  FaBars: "FaBars", FaClock: "FaClock", FaFileAlt: "FaFileAlt", FaFlask: "FaFlask", FaInfoCircle: "FaInfoCircle",
+  FaBars: "FaBars", FaClock: "FaClock", FaFileAlt: "FaFileAlt", FaFlask: "FaFlask", FaImage: "FaImage", FaInfoCircle: "FaInfoCircle",
   FaPlayCircle: "FaPlayCircle", FaSyncAlt: "FaSyncAlt", FaTrophy: "FaTrophy",
 }));
 vi.mock("react-icons/fa6", () => ({ FaTags: "FaTags" }));
 vi.mock("react-icons/si", () => ({ SiSteamdeck: "SiSteamdeck" }));
 vi.mock("./protondb/Icon", () => ({ ProtonDbIcon: "ProtonDbIcon" }));
+vi.mock("./components/qam/ArtworkSection", () => ({ ArtworkBody: "ArtworkBody" }));
 vi.mock("./components/qam/CompatibilitySection", () => ({ CompatibilityBody: "CompatibilityBody" }));
 vi.mock("./components/qam/ContextMenuSection", () => ({ ContextMenuBody: "ContextMenuBody" }));
 vi.mock("./components/qam/GameTrailersSection", () => ({ GameTrailersBody: "GameTrailersBody" }));
@@ -97,6 +98,7 @@ vi.mock("./steam/miniAchievementsController", () => ({
   get miniAchievementsController() { return controllers.miniAchievements; },
 }));
 vi.mock("./protondb/controller", () => ({ get protonDbBadgeController() { return controllers.protonDb; } }));
+vi.mock("./artwork/controller", () => ({ get artworkController() { return controllers.artwork; } }));
 vi.mock("./hltb/gameView", () => ({ get hltbController() { return controllers.hltb; } }));
 
 import { SettingsPage } from "./SettingsPage";
@@ -143,7 +145,10 @@ beforeEach(() => {
   vi.clearAllMocks();
   harness.slots = [];
   hooks.updates.testingTabEnabled = false;
-  for (const name of ["trailers", "miniAchievements", "protonDb", "hltb"]) controllers[name] = controller(name);
+  for (const name of ["trailers", "miniAchievements", "protonDb", "hltb", "artwork"]) controllers[name] = controller(name);
+  (controllers.artwork as any).refreshSummary = vi.fn();
+  (controllers.artwork as any).setSettings = vi.fn();
+  (controllers.artwork as any).runBulk = vi.fn();
 });
 
 describe("SettingsPage", () => {
@@ -151,7 +156,7 @@ describe("SettingsPage", () => {
     const pages = layout(render()).pages;
 
     expect(pages.map((page) => page.id)).toEqual([
-      "metadata", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
+      "metadata", "artwork", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
       "logs", "updates", "versions",
     ]);
     expect(pages.filter((page) => page.separatorBefore).map((page) => page.id)).toEqual(["logs"]);
@@ -162,7 +167,7 @@ describe("SettingsPage", () => {
     const pages = layout(render()).pages;
 
     expect(pages.map((page) => page.id)).toEqual([
-      "metadata", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
+      "metadata", "artwork", "compat", "protondb", "hltb", "trailers", "miniAchievements", "contextMenu",
       "logs", "updates", "testing", "versions",
     ]);
 

@@ -18,6 +18,7 @@ if (api._version != API_VERSION) {
 const callable = api.callable;
 const routerHook = api.routerHook;
 const toaster = api.toaster;
+const openFilePicker = api.openFilePicker;
 const executeInTab = api.executeInTab;
 const fetchNoCors = api.fetchNoCors;
 
@@ -2943,7 +2944,30 @@ var backend$p = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$o = {
 	check: {
@@ -3257,6 +3281,70 @@ var qam$o = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$o = {
@@ -3388,7 +3476,8 @@ var editor$o = {
 		compatibility: "التوافق",
 		storeCategories: "فئات المتجر",
 		shortcutName: "اسم الاختصار",
-		advanced: "إعدادات متقدمة"
+		advanced: "إعدادات متقدمة",
+		artwork: "Artwork"
 	},
 	currentMatch: "المطابقة الحالية",
 	loadFromSteam: "تحميل من Steam",
@@ -3530,7 +3619,134 @@ var editor$o = {
 	steamTextLanguage: "لغة نص Steam: {{language}}",
 	fetchSteamText: "تحميل نص Steam باللغة {{language}}",
 	steamTextUnavailable: "لم يُرجع Steam أي نص لهذه اللعبة.",
-	hltbDisabledNotice: "أوقات HowLongToBeat متوقفة حالياً في الإعدادات."
+	hltbDisabledNotice: "أوقات HowLongToBeat متوقفة حالياً في الإعدادات.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$o = {
 	help: "ابحث في Steam، ثم اختر نتيجة لمراجعة تفاصيلها. يحمّل «تطبيق» تفاصيلها إلى هذا النموذج، ويحفظها زر «حفظ». لا يعيد تسمية اختصارك ولا يستبدل رسوماتك المخصصة.",
@@ -3559,6 +3775,19 @@ var controllerLayouts$o = {
 	disabledHeading: "تم تعطيل تخطيطات وحدة التحكم",
 	disabledBody: "تُستخدم واجهة تخطيطات وحدة التحكم القياسية في Steam حتى إعادة تحميل Decky Metadata."
 };
+var artwork$o = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var arAA = {
 	settings: settings$o,
 	common: common$o,
@@ -3580,7 +3809,8 @@ var arAA = {
 	editor: editor$o,
 	matchPicker: matchPicker$o,
 	categories: categories$o,
-	controllerLayouts: controllerLayouts$o
+	controllerLayouts: controllerLayouts$o,
+	artwork: artwork$o
 };
 
 var settings$n = {
@@ -3658,7 +3888,30 @@ var backend$o = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$n = {
 	check: {
@@ -3972,6 +4225,70 @@ var qam$n = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$n = {
@@ -4103,7 +4420,8 @@ var editor$n = {
 		compatibility: "Съвместимост",
 		storeCategories: "Категории в магазина",
 		shortcutName: "Име на прекия път",
-		advanced: "Разширени"
+		advanced: "Разширени",
+		artwork: "Artwork"
 	},
 	currentMatch: "Текущо съвпадение",
 	loadFromSteam: "Зареждане от Steam",
@@ -4245,7 +4563,134 @@ var editor$n = {
 	steamTextLanguage: "Език на текста в Steam: {{language}}",
 	fetchSteamText: "Зареждане на текст от Steam на {{language}}",
 	steamTextUnavailable: "Steam не върна текст за тази игра.",
-	hltbDisabledNotice: "Времената от HowLongToBeat в момента са изключени в Настройки."
+	hltbDisabledNotice: "Времената от HowLongToBeat в момента са изключени в Настройки.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$n = {
 	help: "Потърсете в Steam, след което изберете резултат, за да прегледате подробностите му. „Прилагане“ ги зарежда в този формуляр, а „Запазване“ ги запазва. Това не преименува прекия път и не заменя персонализираното ви изображение.",
@@ -4274,6 +4719,19 @@ var controllerLayouts$n = {
 	disabledHeading: "Оформленията на контролера са изключени",
 	disabledBody: "Използва се стандартният интерфейс за оформления на контролера на Steam, докато Decky Metadata не бъде презаредена."
 };
+var artwork$n = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var bgBG = {
 	settings: settings$n,
 	common: common$n,
@@ -4295,7 +4753,8 @@ var bgBG = {
 	editor: editor$n,
 	matchPicker: matchPicker$n,
 	categories: categories$n,
-	controllerLayouts: controllerLayouts$n
+	controllerLayouts: controllerLayouts$n,
+	artwork: artwork$n
 };
 
 var settings$m = {
@@ -4375,7 +4834,30 @@ var backend$n = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$m = {
 	check: {
@@ -4689,6 +5171,70 @@ var qam$m = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$m = {
@@ -4820,7 +5366,8 @@ var editor$m = {
 		compatibility: "Kompatibilita",
 		storeCategories: "Kategorie v obchodu",
 		shortcutName: "Název zástupce",
-		advanced: "Pokročilé"
+		advanced: "Pokročilé",
+		artwork: "Artwork"
 	},
 	currentMatch: "Aktuální shoda",
 	loadFromSteam: "Načíst ze Steamu",
@@ -4962,7 +5509,134 @@ var editor$m = {
 	steamTextLanguage: "Jazyk textu ve Steamu: {{language}}",
 	fetchSteamText: "Načíst text ze Steamu v jazyce {{language}}",
 	steamTextUnavailable: "Steam pro tuto hru nevrátil žádný text.",
-	hltbDisabledNotice: "Časy HowLongToBeat jsou v nastavení momentálně vypnuté."
+	hltbDisabledNotice: "Časy HowLongToBeat jsou v nastavení momentálně vypnuté.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$m = {
 	help: "Vyhledejte hru ve Steamu, poté vyberte výsledek pro kontrolu podrobností. „Použít“ je načte do tohoto formuláře a „Uložit“ je uloží. Nezmění název zástupce ani nenahradí vaši vlastní grafiku.",
@@ -4991,6 +5665,19 @@ var controllerLayouts$m = {
 	disabledHeading: "Rozvržení ovladače vypnuta",
 	disabledBody: "Používá se standardní rozhraní rozvržení ovladače Steam, dokud nebude Decky Metadata znovu načten."
 };
+var artwork$m = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var csCZ = {
 	settings: settings$m,
 	common: common$m,
@@ -5012,7 +5699,8 @@ var csCZ = {
 	editor: editor$m,
 	matchPicker: matchPicker$m,
 	categories: categories$m,
-	controllerLayouts: controllerLayouts$m
+	controllerLayouts: controllerLayouts$m,
+	artwork: artwork$m
 };
 
 var settings$l = {
@@ -5090,7 +5778,30 @@ var backend$m = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$l = {
 	check: {
@@ -5404,6 +6115,70 @@ var qam$l = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$l = {
@@ -5535,7 +6310,8 @@ var editor$l = {
 		compatibility: "Kompatibilität",
 		storeCategories: "Shop-Kategorien",
 		shortcutName: "Verknüpfungsname",
-		advanced: "Erweitert"
+		advanced: "Erweitert",
+		artwork: "Artwork"
 	},
 	currentMatch: "Aktuelle Zuordnung",
 	loadFromSteam: "Von Steam laden",
@@ -5677,7 +6453,134 @@ var editor$l = {
 	steamTextLanguage: "Sprache des Steam-Texts: {{language}}",
 	fetchSteamText: "Steam-Text auf {{language}} laden",
 	steamTextUnavailable: "Steam hat für dieses Spiel keinen Text zurückgegeben.",
-	hltbDisabledNotice: "HowLongToBeat-Zeiten sind derzeit in den Einstellungen deaktiviert."
+	hltbDisabledNotice: "HowLongToBeat-Zeiten sind derzeit in den Einstellungen deaktiviert.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$l = {
 	help: "Durchsuche Steam und wähle dann ein Ergebnis, um die Details zu prüfen. Anwenden lädt sie in dieses Formular, Speichern übernimmt sie. Es benennt deine Verknüpfung nicht um und ersetzt dein eigenes Artwork nicht.",
@@ -5706,6 +6609,19 @@ var controllerLayouts$l = {
 	disabledHeading: "Controller-Layouts deaktiviert",
 	disabledBody: "Bis Decky Metadata neu geladen wird, wird Steams Standardoberfläche für Controller-Layouts verwendet."
 };
+var artwork$l = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var deDE = {
 	settings: settings$l,
 	common: common$l,
@@ -5727,7 +6643,8 @@ var deDE = {
 	editor: editor$l,
 	matchPicker: matchPicker$l,
 	categories: categories$l,
-	controllerLayouts: controllerLayouts$l
+	controllerLayouts: controllerLayouts$l,
+	artwork: artwork$l
 };
 
 var settings$k = {
@@ -5805,7 +6722,30 @@ var backend$l = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$k = {
 	check: {
@@ -6119,6 +7059,70 @@ var qam$k = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$k = {
@@ -6250,7 +7254,8 @@ var editor$k = {
 		compatibility: "Συμβατότητα",
 		storeCategories: "Κατηγορίες καταστήματος",
 		shortcutName: "Όνομα συντόμευσης",
-		advanced: "Για προχωρημένους"
+		advanced: "Για προχωρημένους",
+		artwork: "Artwork"
 	},
 	currentMatch: "Τρέχουσα αντιστοίχιση",
 	loadFromSteam: "Φόρτωση από το Steam",
@@ -6392,7 +7397,134 @@ var editor$k = {
 	steamTextLanguage: "Γλώσσα κειμένου Steam: {{language}}",
 	fetchSteamText: "Φόρτωση κειμένου από το Steam στα {{language}}",
 	steamTextUnavailable: "Το Steam δεν επέστρεψε κείμενο για αυτό το παιχνίδι.",
-	hltbDisabledNotice: "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις."
+	hltbDisabledNotice: "Οι χρόνοι HowLongToBeat είναι αυτήν τη στιγμή απενεργοποιημένοι στις Ρυθμίσεις.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$k = {
 	help: "Αναζητήστε στο Steam και μετά επιλέξτε ένα αποτέλεσμα για να ελέγξετε τις λεπτομέρειες. Η «Εφαρμογή» τις φορτώνει σε αυτή τη φόρμα και η «Αποθήκευση» τις διατηρεί. Δεν μετονομάζει τη συντόμευση ούτε αντικαθιστά τα προσαρμοσμένα γραφικά σας.",
@@ -6421,6 +7553,19 @@ var controllerLayouts$k = {
 	disabledHeading: "Οι διατάξεις χειριστηρίου είναι ανενεργές",
 	disabledBody: "Χρησιμοποιείται η τυπική διεπαφή διατάξεων χειριστηρίου του Steam μέχρι να επαναφορτωθεί το Decky Metadata."
 };
+var artwork$k = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var elGR = {
 	settings: settings$k,
 	common: common$k,
@@ -6442,7 +7587,8 @@ var elGR = {
 	editor: editor$k,
 	matchPicker: matchPicker$k,
 	categories: categories$k,
-	controllerLayouts: controllerLayouts$k
+	controllerLayouts: controllerLayouts$k,
+	artwork: artwork$k
 };
 
 var settings$j = {
@@ -6520,7 +7666,30 @@ var backend$k = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$j = {
 	check: {
@@ -6834,6 +8003,70 @@ var qam$j = {
 		installModalDescription: "Verifies the pull request build from GitHub Releases, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$j = {
@@ -6965,7 +8198,8 @@ var editor$j = {
 		compatibility: "Compatibility",
 		storeCategories: "Store Categories",
 		shortcutName: "Shortcut Name",
-		advanced: "Advanced"
+		advanced: "Advanced",
+		artwork: "Artwork"
 	},
 	currentMatch: "Current match",
 	loadFromSteam: "Load from Steam",
@@ -7107,10 +8341,137 @@ var editor$j = {
 	steamTextLanguage: "Steam text language: {{language}}",
 	fetchSteamText: "Load Steam text in {{language}}",
 	steamTextUnavailable: "Steam did not return text for this game.",
-	hltbDisabledNotice: "HowLongToBeat times are currently turned off in Settings."
+	hltbDisabledNotice: "HowLongToBeat times are currently turned off in Settings.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$j = {
-	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. It does not rename your shortcut or replace your custom artwork.",
+	help: "Search Steam, then select a result to review its details. Apply loads them into this form and Save stores them. Save does not rename your shortcut. If Automatically apply Steam artwork is on, Save also applies Steam artwork.",
 	searchAriaLabel: "Steam game search",
 	search: "Search Steam",
 	searching: "Searching Steam...",
@@ -7136,6 +8497,19 @@ var controllerLayouts$j = {
 	disabledHeading: "Controller layouts disabled",
 	disabledBody: "Using Steam's standard controller layout UI until Decky Metadata is reloaded."
 };
+var artwork$j = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var enUS = {
 	settings: settings$j,
 	common: common$j,
@@ -7157,7 +8531,8 @@ var enUS = {
 	editor: editor$j,
 	matchPicker: matchPicker$j,
 	categories: categories$j,
-	controllerLayouts: controllerLayouts$j
+	controllerLayouts: controllerLayouts$j,
+	artwork: artwork$j
 };
 
 var settings$i = {
@@ -7236,7 +8611,30 @@ var backend$j = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$i = {
 	check: {
@@ -7550,6 +8948,70 @@ var qam$i = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$i = {
@@ -7681,7 +9143,8 @@ var editor$i = {
 		compatibility: "Compatibilidad",
 		storeCategories: "Categorías de la tienda",
 		shortcutName: "Nombre del acceso directo",
-		advanced: "Avanzado"
+		advanced: "Avanzado",
+		artwork: "Artwork"
 	},
 	currentMatch: "Coincidencia actual",
 	loadFromSteam: "Cargar desde Steam",
@@ -7823,7 +9286,134 @@ var editor$i = {
 	steamTextLanguage: "Idioma del texto de Steam: {{language}}",
 	fetchSteamText: "Cargar el texto de Steam en {{language}}",
 	steamTextUnavailable: "Steam no devolvió texto para este juego.",
-	hltbDisabledNotice: "Los tiempos de HowLongToBeat están desactivados actualmente en Ajustes."
+	hltbDisabledNotice: "Los tiempos de HowLongToBeat están desactivados actualmente en Ajustes.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$i = {
 	help: "Busca en Steam y luego selecciona un resultado para revisar sus detalles. Aplicar los carga en este formulario y Guardar los conserva. No cambia el nombre de tu acceso directo ni sustituye tu ilustración personalizada.",
@@ -7852,6 +9442,19 @@ var controllerLayouts$i = {
 	disabledHeading: "Disposiciones del mando desactivadas",
 	disabledBody: "Se usará la interfaz estándar de disposición del mando de Steam hasta que se recargue Decky Metadata."
 };
+var artwork$i = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var esES = {
 	settings: settings$i,
 	common: common$i,
@@ -7873,7 +9476,8 @@ var esES = {
 	editor: editor$i,
 	matchPicker: matchPicker$i,
 	categories: categories$i,
-	controllerLayouts: controllerLayouts$i
+	controllerLayouts: controllerLayouts$i,
+	artwork: artwork$i
 };
 
 var settings$h = {
@@ -7951,7 +9555,30 @@ var backend$i = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$h = {
 	check: {
@@ -8265,6 +9892,70 @@ var qam$h = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$h = {
@@ -8396,7 +10087,8 @@ var editor$h = {
 		compatibility: "Yhteensopivuus",
 		storeCategories: "Kaupan kategoriat",
 		shortcutName: "Pikakuvakkeen nimi",
-		advanced: "Lisäasetukset"
+		advanced: "Lisäasetukset",
+		artwork: "Artwork"
 	},
 	currentMatch: "Nykyinen vastaavuus",
 	loadFromSteam: "Lataa Steamistä",
@@ -8538,7 +10230,134 @@ var editor$h = {
 	steamTextLanguage: "Steamin tekstin kieli: {{language}}",
 	fetchSteamText: "Lataa Steamin teksti kielellä {{language}}",
 	steamTextUnavailable: "Steam ei palauttanut tekstiä tälle pelille.",
-	hltbDisabledNotice: "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa."
+	hltbDisabledNotice: "HowLongToBeat-ajat ovat tällä hetkellä pois päältä asetuksissa.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$h = {
 	help: "Hae Steamista ja valitse sitten tulos tarkistaaksesi sen tiedot. Käytä lataa ne tähän lomakkeeseen ja Tallenna tallentaa ne. Se ei nimeä pikakuvakettasi uudelleen eikä korvaa omaa kuvitustasi.",
@@ -8567,6 +10386,19 @@ var controllerLayouts$h = {
 	disabledHeading: "Ohjainasettelut poissa käytöstä",
 	disabledBody: "Käytetään Steamin tavallista ohjainasettelujen käyttöliittymää, kunnes Decky Metadata ladataan uudelleen."
 };
+var artwork$h = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var fiFI = {
 	settings: settings$h,
 	common: common$h,
@@ -8588,7 +10420,8 @@ var fiFI = {
 	editor: editor$h,
 	matchPicker: matchPicker$h,
 	categories: categories$h,
-	controllerLayouts: controllerLayouts$h
+	controllerLayouts: controllerLayouts$h,
+	artwork: artwork$h
 };
 
 var settings$g = {
@@ -8667,7 +10500,30 @@ var backend$h = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$g = {
 	check: {
@@ -8981,6 +10837,70 @@ var qam$g = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$g = {
@@ -9112,7 +11032,8 @@ var editor$g = {
 		compatibility: "Compatibilité",
 		storeCategories: "Catégories du magasin",
 		shortcutName: "Nom du raccourci",
-		advanced: "Avancé"
+		advanced: "Avancé",
+		artwork: "Artwork"
 	},
 	currentMatch: "Correspondance actuelle",
 	loadFromSteam: "Charger depuis Steam",
@@ -9254,7 +11175,134 @@ var editor$g = {
 	steamTextLanguage: "Langue du texte Steam : {{language}}",
 	fetchSteamText: "Charger le texte de Steam en {{language}}",
 	steamTextUnavailable: "Steam n'a renvoyé aucun texte pour ce jeu.",
-	hltbDisabledNotice: "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres."
+	hltbDisabledNotice: "Les temps HowLongToBeat sont actuellement désactivés dans les paramètres.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$g = {
 	help: "Recherchez sur Steam, puis sélectionnez un résultat pour vérifier ses détails. Appliquer les charge dans ce formulaire et Enregistrer les conserve. Cela ne renomme pas votre raccourci et ne remplace pas votre jaquette personnalisée.",
@@ -9283,6 +11331,19 @@ var controllerLayouts$g = {
 	disabledHeading: "Configurations de manette désactivées",
 	disabledBody: "Utilisation de l'interface standard des configurations de manette de Steam jusqu'au rechargement de Decky Metadata."
 };
+var artwork$g = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var frFR = {
 	settings: settings$g,
 	common: common$g,
@@ -9304,7 +11365,8 @@ var frFR = {
 	editor: editor$g,
 	matchPicker: matchPicker$g,
 	categories: categories$g,
-	controllerLayouts: controllerLayouts$g
+	controllerLayouts: controllerLayouts$g,
+	artwork: artwork$g
 };
 
 var settings$f = {
@@ -9383,7 +11445,30 @@ var backend$g = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$f = {
 	check: {
@@ -9697,6 +11782,70 @@ var qam$f = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$f = {
@@ -9828,7 +11977,8 @@ var editor$f = {
 		compatibility: "Compatibilità",
 		storeCategories: "Categorie del Negozio",
 		shortcutName: "Nome del collegamento",
-		advanced: "Avanzate"
+		advanced: "Avanzate",
+		artwork: "Artwork"
 	},
 	currentMatch: "Corrispondenza attuale",
 	loadFromSteam: "Carica da Steam",
@@ -9970,7 +12120,134 @@ var editor$f = {
 	steamTextLanguage: "Lingua del testo Steam: {{language}}",
 	fetchSteamText: "Carica il testo di Steam in {{language}}",
 	steamTextUnavailable: "Steam non ha restituito testo per questo gioco.",
-	hltbDisabledNotice: "I tempi di HowLongToBeat sono attualmente disattivati nelle Impostazioni."
+	hltbDisabledNotice: "I tempi di HowLongToBeat sono attualmente disattivati nelle Impostazioni.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$f = {
 	help: "Cerca su Steam, poi seleziona un risultato per controllarne i dettagli. Applica li carica in questo modulo e Salva li conserva. Non rinomina il collegamento né sostituisce la tua immagine personalizzata.",
@@ -9999,6 +12276,19 @@ var controllerLayouts$f = {
 	disabledHeading: "Layout del controller disattivati",
 	disabledBody: "Viene usata l'interfaccia standard dei layout del controller di Steam fino al ricaricamento di Decky Metadata."
 };
+var artwork$f = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var itIT = {
 	settings: settings$f,
 	common: common$f,
@@ -10020,7 +12310,8 @@ var itIT = {
 	editor: editor$f,
 	matchPicker: matchPicker$f,
 	categories: categories$f,
-	controllerLayouts: controllerLayouts$f
+	controllerLayouts: controllerLayouts$f,
+	artwork: artwork$f
 };
 
 var settings$e = {
@@ -10097,7 +12388,30 @@ var backend$f = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$e = {
 	check: {
@@ -10411,6 +12725,70 @@ var qam$e = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$e = {
@@ -10542,7 +12920,8 @@ var editor$e = {
 		compatibility: "互換性",
 		storeCategories: "ストアカテゴリ",
 		shortcutName: "ショートカット名",
-		advanced: "詳細設定"
+		advanced: "詳細設定",
+		artwork: "Artwork"
 	},
 	currentMatch: "現在の一致",
 	loadFromSteam: "Steam から読み込む",
@@ -10684,7 +13063,134 @@ var editor$e = {
 	steamTextLanguage: "Steam テキストの言語: {{language}}",
 	fetchSteamText: "{{language}} で Steam のテキストを読み込む",
 	steamTextUnavailable: "Steam はこのゲームのテキストを返しませんでした。",
-	hltbDisabledNotice: "HowLongToBeat の時間は現在設定でオフになっています。"
+	hltbDisabledNotice: "HowLongToBeat の時間は現在設定でオフになっています。",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$e = {
 	help: "Steam を検索し、結果を選択して詳細を確認します。「適用」でこのフォームに読み込み、「保存」で保存します。ショートカット名の変更やカスタムアートワークの置き換えは行いません。",
@@ -10713,6 +13219,19 @@ var controllerLayouts$e = {
 	disabledHeading: "コントローラーレイアウトが無効です",
 	disabledBody: "Decky Metadata を再読み込みするまで、Steam 標準のコントローラーレイアウト UI を使用します。"
 };
+var artwork$e = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var jaJP = {
 	settings: settings$e,
 	common: common$e,
@@ -10734,7 +13253,8 @@ var jaJP = {
 	editor: editor$e,
 	matchPicker: matchPicker$e,
 	categories: categories$e,
-	controllerLayouts: controllerLayouts$e
+	controllerLayouts: controllerLayouts$e,
+	artwork: artwork$e
 };
 
 var settings$d = {
@@ -10812,7 +13332,30 @@ var backend$e = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$d = {
 	check: {
@@ -11126,6 +13669,70 @@ var qam$d = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$d = {
@@ -11257,7 +13864,8 @@ var editor$d = {
 		compatibility: "თავსებადობა",
 		storeCategories: "მაღაზიის კატეგორიები",
 		shortcutName: "მალსახმობის სახელი",
-		advanced: "დამატებითი პარამეტრები"
+		advanced: "დამატებითი პარამეტრები",
+		artwork: "Artwork"
 	},
 	currentMatch: "მიმდინარე შესატყვისი",
 	loadFromSteam: "Steam-იდან ჩატვირთვა",
@@ -11399,7 +14007,134 @@ var editor$d = {
 	steamTextLanguage: "Steam-ის ტექსტის ენა: {{language}}",
 	fetchSteamText: "Steam-ის ტექსტის ჩატვირთვა {{language}} ენაზე",
 	steamTextUnavailable: "Steam-მა ამ თამაშისთვის ტექსტი არ დააბრუნა.",
-	hltbDisabledNotice: "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში."
+	hltbDisabledNotice: "HowLongToBeat-ის დროები ამჟამად გამორთულია პარამეტრებში.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$d = {
 	help: "მოძებნეთ Steam-ში, შემდეგ აირჩიეთ შედეგი დეტალების გადასახედად. „გამოყენება“ ტვირთავს მათ ამ ფორმაში, ხოლო „შენახვა“ ინახავს. ის არ გადაარქმევს თქვენს მალსახმობს და არ ჩაანაცვლებს მორგებულ არტს.",
@@ -11428,6 +14163,19 @@ var controllerLayouts$d = {
 	disabledHeading: "კონტროლერის განლაგებები გამორთულია",
 	disabledBody: "Decky Metadata-ს გადატვირთვამდე გამოიყენება Steam-ის სტანდარტული კონტროლერის განლაგების ინტერფეისი."
 };
+var artwork$d = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var kaDZ = {
 	settings: settings$d,
 	common: common$d,
@@ -11449,7 +14197,8 @@ var kaDZ = {
 	editor: editor$d,
 	matchPicker: matchPicker$d,
 	categories: categories$d,
-	controllerLayouts: controllerLayouts$d
+	controllerLayouts: controllerLayouts$d,
+	artwork: artwork$d
 };
 
 var settings$c = {
@@ -11526,7 +14275,30 @@ var backend$d = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$c = {
 	check: {
@@ -11840,6 +14612,70 @@ var qam$c = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$c = {
@@ -11971,7 +14807,8 @@ var editor$c = {
 		compatibility: "호환성",
 		storeCategories: "상점 카테고리",
 		shortcutName: "바로가기 이름",
-		advanced: "고급"
+		advanced: "고급",
+		artwork: "Artwork"
 	},
 	currentMatch: "현재 일치 항목",
 	loadFromSteam: "Steam에서 불러오기",
@@ -12113,7 +14950,134 @@ var editor$c = {
 	steamTextLanguage: "Steam 텍스트 언어: {{language}}",
 	fetchSteamText: "Steam 텍스트 불러오기 ({{language}})",
 	steamTextUnavailable: "Steam이 이 게임의 텍스트를 반환하지 않았습니다.",
-	hltbDisabledNotice: "HowLongToBeat 시간은 현재 설정에서 꺼져 있습니다."
+	hltbDisabledNotice: "HowLongToBeat 시간은 현재 설정에서 꺼져 있습니다.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$c = {
 	help: "Steam을 검색한 다음 결과를 선택해 세부 정보를 검토하세요. '적용'은 세부 정보를 이 양식에 로드하고, '저장'은 이를 저장합니다. 바로가기 이름을 바꾸거나 사용자 지정 아트워크를 교체하지는 않습니다.",
@@ -12142,6 +15106,19 @@ var controllerLayouts$c = {
 	disabledHeading: "컨트롤러 레이아웃 비활성화됨",
 	disabledBody: "Decky Metadata를 다시 로드할 때까지 Steam의 표준 컨트롤러 레이아웃 UI를 사용합니다."
 };
+var artwork$c = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var koKR = {
 	settings: settings$c,
 	common: common$c,
@@ -12163,7 +15140,8 @@ var koKR = {
 	editor: editor$c,
 	matchPicker: matchPicker$c,
 	categories: categories$c,
-	controllerLayouts: controllerLayouts$c
+	controllerLayouts: controllerLayouts$c,
+	artwork: artwork$c
 };
 
 var settings$b = {
@@ -12241,7 +15219,30 @@ var backend$c = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$b = {
 	check: {
@@ -12555,6 +15556,70 @@ var qam$b = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$b = {
@@ -12686,7 +15751,8 @@ var editor$b = {
 		compatibility: "Compatibiliteit",
 		storeCategories: "Winkelcategorieën",
 		shortcutName: "Naam van snelkoppeling",
-		advanced: "Geavanceerd"
+		advanced: "Geavanceerd",
+		artwork: "Artwork"
 	},
 	currentMatch: "Huidige match",
 	loadFromSteam: "Laden vanuit Steam",
@@ -12828,7 +15894,134 @@ var editor$b = {
 	steamTextLanguage: "Taal van Steam-tekst: {{language}}",
 	fetchSteamText: "Steam-tekst laden in {{language}}",
 	steamTextUnavailable: "Steam heeft geen tekst voor dit spel geretourneerd.",
-	hltbDisabledNotice: "HowLongToBeat-tijden staan momenteel uit in Instellingen."
+	hltbDisabledNotice: "HowLongToBeat-tijden staan momenteel uit in Instellingen.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$b = {
 	help: "Doorzoek Steam en selecteer dan een resultaat om de details te bekijken. Toepassen laadt ze in dit formulier en Opslaan bewaart ze. Je snelkoppeling wordt niet hernoemd en je eigen illustratie wordt niet vervangen.",
@@ -12857,6 +16050,19 @@ var controllerLayouts$b = {
 	disabledHeading: "Controllerindelingen uitgeschakeld",
 	disabledBody: "Steams standaardinterface voor controllerindelingen wordt gebruikt totdat Decky Metadata opnieuw is geladen."
 };
+var artwork$b = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var nlNL = {
 	settings: settings$b,
 	common: common$b,
@@ -12878,7 +16084,8 @@ var nlNL = {
 	editor: editor$b,
 	matchPicker: matchPicker$b,
 	categories: categories$b,
-	controllerLayouts: controllerLayouts$b
+	controllerLayouts: controllerLayouts$b,
+	artwork: artwork$b
 };
 
 var settings$a = {
@@ -12958,7 +16165,30 @@ var backend$b = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$a = {
 	check: {
@@ -13272,6 +16502,70 @@ var qam$a = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$a = {
@@ -13403,7 +16697,8 @@ var editor$a = {
 		compatibility: "Kompatybilność",
 		storeCategories: "Kategorie sklepu",
 		shortcutName: "Nazwa skrótu",
-		advanced: "Zaawansowane"
+		advanced: "Zaawansowane",
+		artwork: "Artwork"
 	},
 	currentMatch: "Bieżące dopasowanie",
 	loadFromSteam: "Wczytaj ze Steam",
@@ -13545,7 +16840,134 @@ var editor$a = {
 	steamTextLanguage: "Język tekstu Steam: {{language}}",
 	fetchSteamText: "Wczytaj tekst ze Steam w języku: {{language}}",
 	steamTextUnavailable: "Steam nie zwrócił tekstu dla tej gry.",
-	hltbDisabledNotice: "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach."
+	hltbDisabledNotice: "Czasy HowLongToBeat są obecnie wyłączone w Ustawieniach.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$a = {
 	help: "Wyszukaj grę w Steam, a następnie wybierz wynik, aby sprawdzić szczegóły. „Zastosuj” wczytuje je do tego formularza, a „Zapisz” zapisuje. Nie zmienia nazwy skrótu ani nie zastępuje własnej grafiki.",
@@ -13574,6 +16996,19 @@ var controllerLayouts$a = {
 	disabledHeading: "Układy kontrolera wyłączone",
 	disabledBody: "Używany jest standardowy interfejs układów kontrolera Steam, dopóki Decky Metadata nie zostanie przeładowana."
 };
+var artwork$a = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var plPL = {
 	settings: settings$a,
 	common: common$a,
@@ -13595,7 +17030,8 @@ var plPL = {
 	editor: editor$a,
 	matchPicker: matchPicker$a,
 	categories: categories$a,
-	controllerLayouts: controllerLayouts$a
+	controllerLayouts: controllerLayouts$a,
+	artwork: artwork$a
 };
 
 var settings$9 = {
@@ -13674,7 +17110,30 @@ var backend$a = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$9 = {
 	check: {
@@ -13988,6 +17447,70 @@ var qam$9 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$9 = {
@@ -14119,7 +17642,8 @@ var editor$9 = {
 		compatibility: "Compatibilidade",
 		storeCategories: "Categorias da loja",
 		shortcutName: "Nome do atalho",
-		advanced: "Avançado"
+		advanced: "Avançado",
+		artwork: "Artwork"
 	},
 	currentMatch: "Correspondência atual",
 	loadFromSteam: "Carregar da Steam",
@@ -14261,7 +17785,134 @@ var editor$9 = {
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
 	steamTextUnavailable: "A Steam não retornou texto para este jogo.",
-	hltbDisabledNotice: "Os tempos do HowLongToBeat estão desativados nas Configurações."
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão desativados nas Configurações.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$9 = {
 	help: "Pesquise na Steam e selecione um resultado para revisar seus detalhes. Aplicar os carrega neste formulário e Salvar os armazena. Isso não renomeia seu atalho nem substitui sua arte personalizada.",
@@ -14290,6 +17941,19 @@ var controllerLayouts$9 = {
 	disabledHeading: "Layouts de controle desativados",
 	disabledBody: "Usando a interface padrão de layouts de controle da Steam até o Decky Metadata ser recarregado."
 };
+var artwork$9 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var ptBR = {
 	settings: settings$9,
 	common: common$9,
@@ -14311,7 +17975,8 @@ var ptBR = {
 	editor: editor$9,
 	matchPicker: matchPicker$9,
 	categories: categories$9,
-	controllerLayouts: controllerLayouts$9
+	controllerLayouts: controllerLayouts$9,
+	artwork: artwork$9
 };
 
 var settings$8 = {
@@ -14390,7 +18055,30 @@ var backend$9 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$8 = {
 	check: {
@@ -14704,6 +18392,70 @@ var qam$8 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$8 = {
@@ -14835,7 +18587,8 @@ var editor$8 = {
 		compatibility: "Compatibilidade",
 		storeCategories: "Categorias da loja",
 		shortcutName: "Nome do atalho",
-		advanced: "Avançado"
+		advanced: "Avançado",
+		artwork: "Artwork"
 	},
 	currentMatch: "Correspondência atual",
 	loadFromSteam: "Carregar a partir da Steam",
@@ -14977,7 +18730,134 @@ var editor$8 = {
 	steamTextLanguage: "Idioma do texto da Steam: {{language}}",
 	fetchSteamText: "Carregar texto da Steam em {{language}}",
 	steamTextUnavailable: "A Steam não devolveu texto para este jogo.",
-	hltbDisabledNotice: "Os tempos do HowLongToBeat estão atualmente desativados nas Definições."
+	hltbDisabledNotice: "Os tempos do HowLongToBeat estão atualmente desativados nas Definições.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$8 = {
 	help: "Pesquise na Steam e selecione um resultado para rever os detalhes. Aplicar carrega-os neste formulário e Guardar mantém-nos. Não renomeia o seu atalho nem substitui a sua arte personalizada.",
@@ -15006,6 +18886,19 @@ var controllerLayouts$8 = {
 	disabledHeading: "Esquemas de comando desativados",
 	disabledBody: "A usar a interface predefinida de esquemas de comando da Steam até o Decky Metadata ser recarregado."
 };
+var artwork$8 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var ptPT = {
 	settings: settings$8,
 	common: common$8,
@@ -15027,7 +18920,8 @@ var ptPT = {
 	editor: editor$8,
 	matchPicker: matchPicker$8,
 	categories: categories$8,
-	controllerLayouts: controllerLayouts$8
+	controllerLayouts: controllerLayouts$8,
+	artwork: artwork$8
 };
 
 var settings$7 = {
@@ -15106,7 +19000,30 @@ var backend$8 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$7 = {
 	check: {
@@ -15420,6 +19337,70 @@ var qam$7 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$7 = {
@@ -15551,7 +19532,8 @@ var editor$7 = {
 		compatibility: "Compatibilitate",
 		storeCategories: "Categorii din magazin",
 		shortcutName: "Numele scurtăturii",
-		advanced: "Avansat"
+		advanced: "Avansat",
+		artwork: "Artwork"
 	},
 	currentMatch: "Potrivirea curentă",
 	loadFromSteam: "Încarcă din Steam",
@@ -15693,7 +19675,134 @@ var editor$7 = {
 	steamTextLanguage: "Limba textului Steam: {{language}}",
 	fetchSteamText: "Încarcă textul Steam în {{language}}",
 	steamTextUnavailable: "Steam nu a returnat text pentru acest joc.",
-	hltbDisabledNotice: "Timpii HowLongToBeat sunt dezactivați în prezent în Setări."
+	hltbDisabledNotice: "Timpii HowLongToBeat sunt dezactivați în prezent în Setări.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$7 = {
 	help: "Caută pe Steam, apoi selectează un rezultat pentru a-i verifica detaliile. Aplică le încarcă în acest formular, iar Salvează le păstrează. Nu redenumește scurtătura și nu înlocuiește imaginea personalizată.",
@@ -15722,6 +19831,19 @@ var controllerLayouts$7 = {
 	disabledHeading: "Configurațiile controlerului sunt dezactivate",
 	disabledBody: "Se folosește interfața standard Steam pentru configurațiile controlerului până la reîncărcarea Decky Metadata."
 };
+var artwork$7 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var roRO = {
 	settings: settings$7,
 	common: common$7,
@@ -15743,7 +19865,8 @@ var roRO = {
 	editor: editor$7,
 	matchPicker: matchPicker$7,
 	categories: categories$7,
-	controllerLayouts: controllerLayouts$7
+	controllerLayouts: controllerLayouts$7,
+	artwork: artwork$7
 };
 
 var settings$6 = {
@@ -15823,7 +19946,30 @@ var backend$7 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$6 = {
 	check: {
@@ -16137,6 +20283,70 @@ var qam$6 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$6 = {
@@ -16268,7 +20478,8 @@ var editor$6 = {
 		compatibility: "Совместимость",
 		storeCategories: "Категории магазина",
 		shortcutName: "Название ярлыка",
-		advanced: "Дополнительно"
+		advanced: "Дополнительно",
+		artwork: "Artwork"
 	},
 	currentMatch: "Текущее совпадение",
 	loadFromSteam: "Загрузить из Steam",
@@ -16410,7 +20621,134 @@ var editor$6 = {
 	steamTextLanguage: "Язык текста Steam: {{language}}",
 	fetchSteamText: "Загрузить текст Steam на языке {{language}}",
 	steamTextUnavailable: "Steam не вернул текст для этой игры.",
-	hltbDisabledNotice: "Время HowLongToBeat сейчас отключено в настройках."
+	hltbDisabledNotice: "Время HowLongToBeat сейчас отключено в настройках.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$6 = {
 	help: "Найдите игру в Steam, затем выберите результат, чтобы просмотреть сведения. «Применить» загружает их в эту форму, а «Сохранить» сохраняет. Оно не переименовывает ярлык и не заменяет ваш арт.",
@@ -16439,6 +20777,19 @@ var controllerLayouts$6 = {
 	disabledHeading: "Раскладки контроллера отключены",
 	disabledBody: "Используется стандартный интерфейс раскладок контроллера Steam, пока Decky Metadata не будет перезагружен."
 };
+var artwork$6 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var ruRU = {
 	settings: settings$6,
 	common: common$6,
@@ -16460,7 +20811,8 @@ var ruRU = {
 	editor: editor$6,
 	matchPicker: matchPicker$6,
 	categories: categories$6,
-	controllerLayouts: controllerLayouts$6
+	controllerLayouts: controllerLayouts$6,
+	artwork: artwork$6
 };
 
 var settings$5 = {
@@ -16538,7 +20890,30 @@ var backend$6 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$5 = {
 	check: {
@@ -16852,6 +21227,70 @@ var qam$5 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$5 = {
@@ -16983,7 +21422,8 @@ var editor$5 = {
 		compatibility: "Përputhshmëria",
 		storeCategories: "Kategoritë e dyqanit",
 		shortcutName: "Emri i shkurtores",
-		advanced: "Të avancuara"
+		advanced: "Të avancuara",
+		artwork: "Artwork"
 	},
 	currentMatch: "Përputhja aktuale",
 	loadFromSteam: "Ngarko nga Steam",
@@ -17125,7 +21565,134 @@ var editor$5 = {
 	steamTextLanguage: "Gjuha e tekstit të Steam: {{language}}",
 	fetchSteamText: "Ngarko tekstin e Steam në {{language}}",
 	steamTextUnavailable: "Steam nuk ktheu tekst për këtë lojë.",
-	hltbDisabledNotice: "Kohët e HowLongToBeat janë aktualisht të çaktivizuara në Cilësime."
+	hltbDisabledNotice: "Kohët e HowLongToBeat janë aktualisht të çaktivizuara në Cilësime.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$5 = {
 	help: "Kërko në Steam, pastaj zgjidh një rezultat për të shqyrtuar detajet e tij. Zbato i ngarkon ato në këtë formular dhe Ruaj i ruan. Nuk e riemërton shkurtoren dhe nuk e zëvendëson artin tënd të personalizuar.",
@@ -17154,6 +21721,19 @@ var controllerLayouts$5 = {
 	disabledHeading: "Paraqitjet e kontrolluesit u çaktivizuan",
 	disabledBody: "Po përdoret ndërfaqja standarde e paraqitjeve të kontrolluesit të Steam derisa Decky Metadata të ringarkohet."
 };
+var artwork$5 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var sqAL = {
 	settings: settings$5,
 	common: common$5,
@@ -17175,7 +21755,8 @@ var sqAL = {
 	editor: editor$5,
 	matchPicker: matchPicker$5,
 	categories: categories$5,
-	controllerLayouts: controllerLayouts$5
+	controllerLayouts: controllerLayouts$5,
+	artwork: artwork$5
 };
 
 var settings$4 = {
@@ -17253,7 +21834,30 @@ var backend$5 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$4 = {
 	check: {
@@ -17567,6 +22171,70 @@ var qam$4 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$4 = {
@@ -17698,7 +22366,8 @@ var editor$4 = {
 		compatibility: "Kompatibilitet",
 		storeCategories: "Butikskategorier",
 		shortcutName: "Genvägens namn",
-		advanced: "Avancerat"
+		advanced: "Avancerat",
+		artwork: "Artwork"
 	},
 	currentMatch: "Aktuell matchning",
 	loadFromSteam: "Läs in från Steam",
@@ -17840,7 +22509,134 @@ var editor$4 = {
 	steamTextLanguage: "Språk för Steam-text: {{language}}",
 	fetchSteamText: "Läs in Steam-text på {{language}}",
 	steamTextUnavailable: "Steam returnerade ingen text för det här spelet.",
-	hltbDisabledNotice: "HowLongToBeat-tider är för närvarande avstängda i Inställningar."
+	hltbDisabledNotice: "HowLongToBeat-tider är för närvarande avstängda i Inställningar.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$4 = {
 	help: "Sök på Steam och välj sedan ett resultat för att granska detaljerna. Använd läser in dem i det här formuläret och Spara sparar dem. Det döper inte om din genväg och ersätter inte din egen grafik.",
@@ -17869,6 +22665,19 @@ var controllerLayouts$4 = {
 	disabledHeading: "Handkontrollslayouter inaktiverade",
 	disabledBody: "Steams vanliga gränssnitt för handkontrollslayouter används tills Decky Metadata läses in igen."
 };
+var artwork$4 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var svSE = {
 	settings: settings$4,
 	common: common$4,
@@ -17890,7 +22699,8 @@ var svSE = {
 	editor: editor$4,
 	matchPicker: matchPicker$4,
 	categories: categories$4,
-	controllerLayouts: controllerLayouts$4
+	controllerLayouts: controllerLayouts$4,
+	artwork: artwork$4
 };
 
 var settings$3 = {
@@ -17968,7 +22778,30 @@ var backend$4 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$3 = {
 	check: {
@@ -18282,6 +23115,70 @@ var qam$3 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$3 = {
@@ -18413,7 +23310,8 @@ var editor$3 = {
 		compatibility: "Uyumluluk",
 		storeCategories: "Mağaza Kategorileri",
 		shortcutName: "Kısayol Adı",
-		advanced: "Gelişmiş"
+		advanced: "Gelişmiş",
+		artwork: "Artwork"
 	},
 	currentMatch: "Geçerli eşleşme",
 	loadFromSteam: "Steam'den yükle",
@@ -18555,7 +23453,134 @@ var editor$3 = {
 	steamTextLanguage: "Steam metin dili: {{language}}",
 	fetchSteamText: "Steam metnini {{language}} dilinde yükle",
 	steamTextUnavailable: "Steam bu oyun için metin döndürmedi.",
-	hltbDisabledNotice: "HowLongToBeat süreleri şu anda Ayarlar'da kapalı."
+	hltbDisabledNotice: "HowLongToBeat süreleri şu anda Ayarlar'da kapalı.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$3 = {
 	help: "Steam'de arayın, ardından ayrıntılarını gözden geçirmek için bir sonuç seçin. Uygula bunları bu forma yükler ve Kaydet saklar. Kısayolunuzu yeniden adlandırmaz veya özel görselinizi değiştirmez.",
@@ -18584,6 +23609,19 @@ var controllerLayouts$3 = {
 	disabledHeading: "Kontrolcü düzenleri devre dışı",
 	disabledBody: "Decky Metadata yeniden yüklenene kadar Steam'in standart kontrolcü düzeni arayüzü kullanılıyor."
 };
+var artwork$3 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var trTR = {
 	settings: settings$3,
 	common: common$3,
@@ -18605,7 +23643,8 @@ var trTR = {
 	editor: editor$3,
 	matchPicker: matchPicker$3,
 	categories: categories$3,
-	controllerLayouts: controllerLayouts$3
+	controllerLayouts: controllerLayouts$3,
+	artwork: artwork$3
 };
 
 var settings$2 = {
@@ -18685,7 +23724,30 @@ var backend$3 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$2 = {
 	check: {
@@ -18999,6 +24061,70 @@ var qam$2 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$2 = {
@@ -19130,7 +24256,8 @@ var editor$2 = {
 		compatibility: "Сумісність",
 		storeCategories: "Категорії крамниці",
 		shortcutName: "Назва ярлика",
-		advanced: "Додатково"
+		advanced: "Додатково",
+		artwork: "Artwork"
 	},
 	currentMatch: "Поточний збіг",
 	loadFromSteam: "Завантажити зі Steam",
@@ -19272,7 +24399,134 @@ var editor$2 = {
 	steamTextLanguage: "Мова тексту Steam: {{language}}",
 	fetchSteamText: "Завантажити текст Steam мовою {{language}}",
 	steamTextUnavailable: "Steam не повернув текст для цієї гри.",
-	hltbDisabledNotice: "Час HowLongToBeat зараз вимкнено в налаштуваннях."
+	hltbDisabledNotice: "Час HowLongToBeat зараз вимкнено в налаштуваннях.",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$2 = {
 	help: "Знайдіть гру в Steam, потім виберіть результат, щоб переглянути відомості. «Застосувати» завантажує їх у цю форму, а «Зберегти» зберігає. Воно не перейменовує ярлик і не замінює ваш арт.",
@@ -19301,6 +24555,19 @@ var controllerLayouts$2 = {
 	disabledHeading: "Розкладки контролера вимкнено",
 	disabledBody: "Використовується стандартний інтерфейс розкладок контролера Steam, поки Decky Metadata не буде перезавантажено."
 };
+var artwork$2 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var ukUA = {
 	settings: settings$2,
 	common: common$2,
@@ -19322,7 +24589,8 @@ var ukUA = {
 	editor: editor$2,
 	matchPicker: matchPicker$2,
 	categories: categories$2,
-	controllerLayouts: controllerLayouts$2
+	controllerLayouts: controllerLayouts$2,
+	artwork: artwork$2
 };
 
 var settings$1 = {
@@ -19399,7 +24667,30 @@ var backend$2 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater$1 = {
 	check: {
@@ -19713,6 +25004,70 @@ var qam$1 = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow$1 = {
@@ -19844,7 +25199,8 @@ var editor$1 = {
 		compatibility: "兼容性",
 		storeCategories: "商店分类",
 		shortcutName: "快捷方式名称",
-		advanced: "高级"
+		advanced: "高级",
+		artwork: "Artwork"
 	},
 	currentMatch: "当前匹配",
 	loadFromSteam: "从 Steam 加载",
@@ -19986,7 +25342,134 @@ var editor$1 = {
 	steamTextLanguage: "Steam 文本语言：{{language}}",
 	fetchSteamText: "加载 Steam 文本（{{language}}）",
 	steamTextUnavailable: "Steam 未返回此游戏的文本。",
-	hltbDisabledNotice: "HowLongToBeat 时长目前已在设置中关闭。"
+	hltbDisabledNotice: "HowLongToBeat 时长目前已在设置中关闭。",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker$1 = {
 	help: "搜索 Steam，然后选择一个结果查看详情。应用会将其加载到此表单，保存会将其存储。它不会重命名你的快捷方式，也不会替换你的自定义艺术图。",
@@ -20015,6 +25498,19 @@ var controllerLayouts$1 = {
 	disabledHeading: "控制器布局已禁用",
 	disabledBody: "在重新加载 Decky Metadata 前，将使用 Steam 的标准控制器布局界面。"
 };
+var artwork$1 = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var zhCN = {
 	settings: settings$1,
 	common: common$1,
@@ -20036,7 +25532,8 @@ var zhCN = {
 	editor: editor$1,
 	matchPicker: matchPicker$1,
 	categories: categories$1,
-	controllerLayouts: controllerLayouts$1
+	controllerLayouts: controllerLayouts$1,
+	artwork: artwork$1
 };
 
 var settings = {
@@ -20113,7 +25610,30 @@ var backend$1 = {
 	testing_download_failed: "Failed to download the pull request build artifact.",
 	testing_artifact_invalid: "The pull request build artifact is invalid or incomplete.",
 	testing_artifact_sha_mismatch: "SHA-256 verification failed for the pull request build artifact.",
-	testing_staging_failed: "Failed to stage the verified pull request build on disk."
+	testing_staging_failed: "Failed to stage the verified pull request build on disk.",
+	artwork_settings_unavailable: "artwork settings could not be loaded",
+	artwork_invalid_slot: "Invalid artwork slot.",
+	artwork_asset_unavailable: "Steam does not publish official artwork for this slot.",
+	artwork_invalid_url: "Blocked non-Steam artwork URL.",
+	artwork_download_failed: "Failed to download Steam artwork.",
+	artwork_invalid_image: "Downloaded Steam artwork was not a valid image.",
+	artwork_write_failed: "Failed to save Steam icon file.",
+	artwork_api_unavailable: "Steam custom artwork API is unavailable.",
+	artwork_apply_failed: "Steam could not apply this artwork.",
+	artwork_clear_failed: "Steam could not clear this artwork.",
+	sgdb_missing_api_key: "SteamGridDB API key is not configured.",
+	sgdb_invalid_api_key: "SteamGridDB rejected the API key. Check it in Settings → Artwork.",
+	sgdb_rate_limited: "SteamGridDB rate limit reached. Try again in a moment.",
+	sgdb_request_failed: "Could not reach SteamGridDB.",
+	sgdb_invalid_response: "SteamGridDB returned an unexpected response.",
+	sgdb_invalid_url: "Blocked non-SteamGridDB artwork URL.",
+	sgdb_empty_query: "Enter a game name to search SteamGridDB.",
+	sgdb_invalid_game_id: "Invalid SteamGridDB game ID.",
+	sgdb_invalid_game_name: "Invalid SteamGridDB game name.",
+	artwork_invalid_file: "Selected artwork file is invalid.",
+	artwork_file_unreadable: "Could not read the selected artwork file.",
+	artwork_file_too_large: "Selected artwork file exceeds the 10 MB size limit.",
+	artwork_logo_position_unavailable: "Steam's custom logo position API is unavailable."
 };
 var updater = {
 	check: {
@@ -20427,6 +25947,70 @@ var qam = {
 		installModalDescription: "Downloads and verifies the CI build artifact, then hands it to Decky Loader to install.",
 		downloadingArtifact: "Downloading and verifying build for PR #{{id}}...",
 		prepareFailed: "Failed to prepare pull request build."
+	},
+	artwork: {
+		title: "Artwork",
+		matchedGames: "Matched non-Steam games",
+		completeArtwork: "Complete artwork",
+		missingGames: "Games missing artwork",
+		sgdbNotice: "SteamGridDB is installed. Both plugins work together cleanly — keep \"Preserve existing artwork\" enabled to protect your SteamGridDB picks.",
+		automaticHeading: "Automatic artwork",
+		autoApplyLabel: "Automatically apply Steam artwork",
+		autoApplyDescription: "Fetch and apply official Steam artwork when a non-Steam game is matched during a metadata scan or saved on the Steam Match page.",
+		preserveExistingLabel: "Preserve existing artwork",
+		preserveExistingOnDescription: "Only fills empty artwork slots. Existing custom artwork from SteamGridDB or Steam Desktop is left untouched.",
+		preserveExistingOffDescription: "Replaces existing artwork in enabled slots whenever automatic artwork runs. Per-game locked shortcuts are still skipped.",
+		slotsHeading: "Artwork slots",
+		slotsScopeNote: "These slot toggles apply to automatic artwork, bulk actions below, and Fill missing / Replace all in Edit Metadata. Individual slots can always be applied manually per game.",
+		bulkHeading: "Bulk actions",
+		progressStatus: "Applying Steam artwork ({{completed}}/{{total}}): {{game}}",
+		fillMissingLabel: "Fill missing artwork",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots across unlocked matched games ({{missing}} empty slots). Never overwrites existing artwork.",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all artwork",
+		replaceAllDescription: "Replace all enabled slots on unlocked matched games with official Steam artwork, including slots that already have custom artwork.",
+		replaceAllAction: "Replace all",
+		working: "Working...",
+		replaceConfirm: {
+			title: "Replace all artwork from Steam?",
+			body: "Official Steam artwork will replace enabled slots ({{slots}}) on {{unlocked}} unlocked matched games ({{locked}} locked skipped). Empty slots to fill: {{missing}}. Existing custom slots overwritten: {{existing}} (not backed up)."
+		},
+		slot: {
+			cover: {
+				label: "Cover",
+				description: "Vertical library capsule (600x900) used in Library grids and Collections."
+			},
+			wide: {
+				label: "Wide cover",
+				description: "Landscape capsule (920x430) used on the Home screen Most Recent tile."
+			},
+			hero: {
+				label: "Hero background",
+				description: "Wide banner artwork (3840x1240) across the top of the game details page."
+			},
+			logo: {
+				label: "Game logo",
+				description: "Transparent title logo overlaid on the Hero background."
+			},
+			icon: {
+				label: "Game icon",
+				description: "Square icon (184x184) used in lists, shortcuts, and the editor header."
+			}
+		},
+		browserHeading: "SteamGridDB browser",
+		sgdbApiKeyLabel: "SteamGridDB API key",
+		sgdbApiKeyDescription: "Optional personal SteamGridDB v2 API key. Used instead of the built-in key when provided.",
+		clearApiKeyAction: "Clear",
+		sgdbKeyStatusUser: "Using your custom SteamGridDB API key.",
+		sgdbKeyStatusBuiltIn: "Using the built-in SteamGridDB API key.",
+		sgdbKeyStatusMissing: "No SteamGridDB API key configured. Official Steam artwork still works without a key.",
+		defaultTabLabel: "Default artwork tab",
+		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
+		tabOrderLabel: "Artwork tab order & visibility",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
+		resetFiltersLabel: "Reset browser filters",
+		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
+		resetFiltersAction: "Reset filters"
 	}
 };
 var storeRow = {
@@ -20558,7 +26142,8 @@ var editor = {
 		compatibility: "相容性",
 		storeCategories: "商店分類",
 		shortcutName: "捷徑名稱",
-		advanced: "進階"
+		advanced: "進階",
+		artwork: "Artwork"
 	},
 	currentMatch: "目前比對",
 	loadFromSteam: "從 Steam 載入",
@@ -20700,7 +26285,134 @@ var editor = {
 	steamTextLanguage: "Steam 文字語言：{{language}}",
 	fetchSteamText: "載入 Steam 文字（{{language}}）",
 	steamTextUnavailable: "Steam 未傳回此遊戲的文字。",
-	hltbDisabledNotice: "HowLongToBeat 時數目前已在設定中關閉。"
+	hltbDisabledNotice: "HowLongToBeat 時數目前已在設定中關閉。",
+	artwork: {
+		immediateNotice: "Changes on this page apply immediately to Steam's artwork cache.",
+		unsavedMatchNotice: "Save your new Steam Match (App ID {{appId}}) before applying Steam artwork.",
+		pendingMatchLabel: "Pending Steam match",
+		pendingMatchDescription: "Save metadata to confirm the matched Steam game, then manage official Steam artwork here.",
+		saveMatchAction: "Save match",
+		noMatchLabel: "No Steam match",
+		noMatchDescription: "Match this shortcut to a Steam game on the Steam Match page to fetch official Steam artwork.",
+		openSteamMatchAction: "Open Steam Match",
+		matchedLabel: "Matched Steam game",
+		lockLabel: "Lock artwork",
+		lockDescription: "Skip this game during automatic artwork updates and global Fill missing / Replace all runs.",
+		quickActionsHeading: "Quick actions",
+		fillMissingDescription: "Apply official Steam artwork to empty enabled slots ({{missing}} missing). Preserves existing artwork.",
+		replaceAllDescription: "Replace all globally enabled slots with official Steam artwork for this game.",
+		loading: "Loading Steam artwork...",
+		statusPresent: "Artwork set",
+		statusMissing: "Missing",
+		statusUnavailable: "Unavailable on Steam",
+		emptyThumb: "Empty",
+		naThumb: "N/A",
+		applyAction: "Apply",
+		replaceAction: "Replace",
+		dims: {
+			cover: "600x900 portrait",
+			wide: "920x430 landscape",
+			hero: "3840x1240 banner",
+			logo: "Transparent PNG",
+			icon: "184x184 square"
+		},
+		replaceConfirm: {
+			title: "Replace artwork for {{game}}?",
+			body: "This will overwrite {{count}} existing artwork slot(s) on {{game}} with official Steam artwork. Existing custom files are not backed up."
+		},
+		toast: {
+			lockedTitle: "Artwork locked",
+			lockedBody: "{{game}} will be skipped during automatic artwork and bulk actions.",
+			unlockedTitle: "Artwork unlocked",
+			unlockedBody: "{{game}} will follow global artwork actions.",
+			slotAppliedBody: "Applied {{slot}} from Steam for {{game}}.",
+			clearedTitle: "Artwork cleared",
+			slotClearedBody: "Cleared {{slot}} for {{game}}."
+		},
+		tab: {
+			manage: "Manage"
+		},
+		filterModalTitle: "{{slot}} — Filter & Game",
+		changeGameHeading: "SteamGridDB game",
+		searchGameLabel: "Search SteamGridDB",
+		currentGameDesc: "Showing artwork for {{game}} ({{source}}).",
+		sourceOverride: "Custom",
+		sourceAuto: "Auto",
+		noGameMatched: "No SteamGridDB game matched automatically. Use Filter / Game to search.",
+		resetGameButton: "Reset to Auto",
+		noSearchResults: "No SteamGridDB games matched your search.",
+		gameChangedBody: "Switched artwork source to {{game}}.",
+		filtersHeading: "Filters (saved globally for this slot)",
+		filterDimensions: "Dimensions",
+		filterStyles: "Styles",
+		filterFormats: "File format",
+		filterTypes: "Type",
+		type: {
+			"static": "Static",
+			animated: "Animated"
+		},
+		filterHumor: "Include humor",
+		filterNsfw: "Include NSFW",
+		filterEpilepsy: "Include epilepsy / flashing",
+		resetFilters: "Reset defaults",
+		applyFilters: "Apply filters",
+		filterActionHint: "Filter / Game",
+		filterButton: "Filter / Game",
+		filtersActiveCount: "{{count}} filter(s)",
+		detailsTitle: "Artwork details",
+		detailsAuthor: "Author",
+		detailsNotes: "Notes",
+		detailsActionHint: "Details",
+		unknownAuthor: "Community",
+		badgeOfficial: "OFFICIAL",
+		badgeAnimated: "ANIMATED",
+		officialSourceLabel: "Official Steam",
+		officialOnlyButton: "Official only",
+		showAllSources: "Show SteamGridDB",
+		resolvingGame: "Finding game on SteamGridDB...",
+		missingKeyTitle: "SteamGridDB API key required",
+		missingKeyDescription: "Add a SteamGridDB API key in Settings → Artwork to browse community artwork. Official Steam artwork remains available below.",
+		openSettingsAction: "Open Settings",
+		noAssetsForFilter: "No artwork matched the active filters for this slot.",
+		loadMore: "Load more",
+		manageControlsHeading: "Artwork controls",
+		slotsHeading: "Current artwork",
+		fillMissingLabel: "Fill missing from Steam",
+		fillMissingAction: "Fill missing",
+		replaceAllLabel: "Replace all from Steam",
+		replaceAllAction: "Replace all",
+		noMatchManageDescription: "Match this shortcut to a Steam game on Steam Match to enable Official Steam artwork.",
+		goToSteamMatchAction: "Open Steam Match",
+		statusAvailable: "Official Steam available",
+		noCustomArt: "Empty",
+		browseAction: "Browse",
+		applyOfficialAction: "Official",
+		localFileAction: "Local file",
+		transparentAction: "Transparent",
+		clearAction: "Clear",
+		appliedSlotBody: "Applied {{slot}} for {{game}}.",
+		clearedSlotBody: "Cleared {{slot}} for {{game}}.",
+		filePickerUnavailable: "File picker is unavailable in this environment.",
+		logoPositionHeading: "Logo position",
+		logoPositionTitle: "Adjust game logo position",
+		logoAnchorLabel: "Anchor position",
+		logoWidthLabel: "Logo width",
+		logoHeightLabel: "Logo height",
+		adjustLogoPositionLabel: "Adjust logo position",
+		adjustLogoPositionDescription: "Set where the game logo sits over the hero banner and how large it renders.",
+		adjustLogoPositionAction: "Adjust",
+		saveLogoPosition: "Save position",
+		resetLogoPosition: "Reset logo position",
+		resetLogoPositionDescription: "Restore Steam's default logo placement for this game.",
+		resetLogoPositionAction: "Reset",
+		logoPositionSaved: "Saved custom logo position.",
+		logoPositionReset: "Reset logo position to Steam default.",
+		logoPositionUnavailable: "Logo position controls are unavailable on this Steam client.",
+		cancelAction: "Cancel",
+		bumperLeft: "L1",
+		bumperRight: "R1",
+		sgdbIdLabel: "SteamGridDB #{{id}}"
+	}
 };
 var matchPicker = {
 	help: "搜尋 Steam，然後選取結果以查看詳細資料。套用會將其載入此表單，儲存會將其儲存。它不會重新命名你的捷徑，也不會取代你的自訂美術圖。",
@@ -20729,6 +26441,19 @@ var controllerLayouts = {
 	disabledHeading: "控制器配置已停用",
 	disabledBody: "在 Decky Metadata 重新載入前，使用 Steam 的標準控制器配置介面。"
 };
+var artwork = {
+	toast: {
+		appliedTitle: "Steam artwork applied",
+		appliedGameBody: "Applied {{count}} Steam artwork slot(s) to {{game}}.",
+		bulkCompleteBody: "Applied {{slots}} Steam artwork slot(s) across {{games}} game(s).",
+		bulkPartialBody: "Applied {{slots}} slot(s) across {{games}} game(s); {{failed}} failed.",
+		bulkFailedBody: "Could not apply Steam artwork ({{failed}} failed).",
+		upToDateTitle: "Artwork already up to date",
+		upToDateBody: "No matching Steam artwork slots needed updating.",
+		failedTitle: "Artwork update failed",
+		clearedTitle: "Artwork cleared"
+	}
+};
 var zhTW = {
 	settings: settings,
 	common: common,
@@ -20750,7 +26475,8 @@ var zhTW = {
 	editor: editor,
 	matchPicker: matchPicker,
 	categories: categories,
-	controllerLayouts: controllerLayouts
+	controllerLayouts: controllerLayouts,
+	artwork: artwork
 };
 
 /** UI locales this plugin ships, primary fallback first. */
@@ -21021,7 +26747,7 @@ const formatHoursShort = (hours) => t("common.hoursShort", {
     value: formatNumber(hours, { minimumFractionDigits: 1, maximumFractionDigits: 1 }),
 });
 
-const ProgressBarField = DFL.ProgressBarWithInfo;
+const ProgressBarField$1 = DFL.ProgressBarWithInfo;
 const SCAN_PROGRESS_CLASS = "decky-metadata-scan-progress";
 const scanProgressCss = `
 .${SCAN_PROGRESS_CLASS} {
@@ -21041,7 +26767,7 @@ function MetadataScanBody({ detectedCount, savedCount, missingCount, scanBusy, s
     // stretch the progress bar past the right edge of the QAM. Putting it in FieldLeftColumn via
     // childrenLayout="below" and wrapping the QAM row in PanelSectionRow keeps it within the panel.
     const progressStyle = scanBusy ? SP_JSX.jsx("style", { children: scanProgressCss }) : null;
-    const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
+    const progress = scanBusy ? (SP_JSX.jsx(ProgressBarField$1, { nProgress: scanTotal > 0 ? (scanCompleted / scanTotal) * 100 : 0, sOperationText: scanMessage || t("qam.metadata.refreshingStatus"), childrenContainerWidth: "max", childrenLayout: "below", className: SCAN_PROGRESS_CLASS, focusable: false, bottomSeparator: inline ? undefined : "none" })) : null;
     if (inline) {
         return (SP_JSX.jsxs(DFL.DialogControlsSection, { children: [progressStyle, SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.detectedGames"), focusable: true, highlightOnFocus: true, children: String(detectedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.saved"), focusable: true, highlightOnFocus: true, children: String(savedCount) }), SP_JSX.jsx(DFL.Field, { label: t("qam.metadata.missing"), focusable: true, highlightOnFocus: true, children: String(missingCount) }), progress, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.metadata.refresh"), description: t("qam.metadata.refreshDescription"), disabled: !listReady || scanBusy || detectedCount === 0, onClick: onRefreshMetadata, children: scanBusy ? SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.metadata.refreshing") }) : t("settings.action.refresh") })] }));
     }
@@ -21114,6 +26840,24 @@ const getProtonDbBadgeSettings = callable("get_protondb_badge_settings");
 const setProtonDbBadgeSettings = callable("set_protondb_badge_settings");
 const getEditorHeaderSettings = callable("get_editor_header_settings");
 const setEditorHeaderSettings = callable("set_editor_header_settings");
+const getArtworkSettings = callable("get_artwork_settings");
+const setArtworkSettings = callable("set_artwork_settings");
+const getArtworkLocked = callable("get_artwork_locked");
+const setArtworkLocked = callable("set_artwork_locked");
+const getAllArtworkLocks = callable("get_all_artwork_locks");
+const getArtworkSummary = callable("get_artwork_summary");
+const getGameArtworkState = callable("get_game_artwork_state");
+const fetchSteamArtworkAsset = callable("fetch_steam_artwork_asset");
+const clearLocalArtworkFile = callable("clear_local_artwork_file");
+const getSgdbKeyStatus = callable("get_sgdb_key_status");
+const sgdbSearchGames = callable("sgdb_search_games");
+const sgdbResolveGame = callable("sgdb_resolve_game");
+const sgdbListAssets = callable("sgdb_list_assets");
+const sgdbFetchAsset = callable("sgdb_fetch_asset");
+const readLocalArtworkFile = callable("read_local_artwork_file");
+const getTransparentArtworkAsset = callable("get_transparent_artwork_asset");
+const setSgdbGameOverride = callable("set_sgdb_game_override");
+const clearSgdbGameOverride = callable("clear_sgdb_game_override");
 const getProviderCache = callable("get_provider_cache");
 const putProtonDbCache = callable("put_protondb_cache");
 const getAllSteamOverrides = callable("get_all_steam_overrides");
@@ -21135,24 +26879,32 @@ var backend = /*#__PURE__*/Object.freeze({
     checkForPluginUpdate: checkForPluginUpdate,
     checkHltbGameId: checkHltbGameId,
     clearHltbCache: clearHltbCache,
+    clearLocalArtworkFile: clearLocalArtworkFile,
     clearMetadataCache: clearMetadataCache,
     clearPendingUpdateInstall: clearPendingUpdateInstall,
+    clearSgdbGameOverride: clearSgdbGameOverride,
     clearShortcutNameState: clearShortcutNameState,
     confirmUpdateInstallHandoff: confirmUpdateInstallHandoff,
     enrichSteamApp: enrichSteamApp,
     evalInBigPicture: evalInBigPicture,
     fetchMetadata: fetchMetadata,
+    fetchSteamArtworkAsset: fetchSteamArtworkAsset,
     findIgnTrailer: findIgnTrailer,
     frontendLog: frontendLog,
     getActivityRefreshProgress: getActivityRefreshProgress,
+    getAllArtworkLocks: getAllArtworkLocks,
     getAllMetadata: getAllMetadata,
     getAllSteamOverrides: getAllSteamOverrides,
+    getArtworkLocked: getArtworkLocked,
+    getArtworkSettings: getArtworkSettings,
+    getArtworkSummary: getArtworkSummary,
     getCommunityFallbackPage: getCommunityFallbackPage,
     getCompatibilityDefault: getCompatibilityDefault,
     getCompatibilityDefaultScope: getCompatibilityDefaultScope,
     getDebugLogging: getDebugLogging,
     getDelistedIndexStatus: getDelistedIndexStatus,
     getEditorHeaderSettings: getEditorHeaderSettings,
+    getGameArtworkState: getGameArtworkState,
     getHltbSettings: getHltbSettings,
     getHltbStats: getHltbStats,
     getLocalShortcuts: getLocalShortcuts,
@@ -21165,17 +26917,20 @@ var backend = /*#__PURE__*/Object.freeze({
     getProtonDbBadgeSettings: getProtonDbBadgeSettings,
     getProviderCache: getProviderCache,
     getScanProgress: getScanProgress,
+    getSgdbKeyStatus: getSgdbKeyStatus,
     getShortcutNameManagement: getShortcutNameManagement,
     getSteamOverride: getSteamOverride,
     getSystemVersions: getSystemVersions,
     getTestingVersions: getTestingVersions,
     getTrailerSettings: getTrailerSettings,
+    getTransparentArtworkAsset: getTransparentArtworkAsset,
     getUpdateCheckContext: getUpdateCheckContext,
     getUpdateSettings: getUpdateSettings,
     prepareTestingVersion: prepareTestingVersion,
     previewFetchedMetadata: previewFetchedMetadata,
     previewSteamMetadata: previewSteamMetadata,
     putProtonDbCache: putProtonDbCache,
+    readLocalArtworkFile: readLocalArtworkFile,
     recordUpdateInstallRequested: recordUpdateInstallRequested,
     refreshDelistedIndex: refreshDelistedIndex,
     refreshSteamActivityForApp: refreshSteamActivityForApp,
@@ -21189,6 +26944,8 @@ var backend = /*#__PURE__*/Object.freeze({
     searchHltbGames: searchHltbGames,
     searchMetadata: searchMetadata,
     searchSteamMatches: searchSteamMatches,
+    setArtworkLocked: setArtworkLocked,
+    setArtworkSettings: setArtworkSettings,
     setAutomaticUpdateChecks: setAutomaticUpdateChecks,
     setCompatibilityDefault: setCompatibilityDefault,
     setCompatibilityDefaultScope: setCompatibilityDefaultScope,
@@ -21197,9 +26954,14 @@ var backend = /*#__PURE__*/Object.freeze({
     setHltbSettings: setHltbSettings,
     setMiniAchievementsEnabled: setMiniAchievementsEnabled,
     setProtonDbBadgeSettings: setProtonDbBadgeSettings,
+    setSgdbGameOverride: setSgdbGameOverride,
     setTestingTabEnabled: setTestingTabEnabled,
     setTrailerSettings: setTrailerSettings,
     setUpdateChannel: setUpdateChannel,
+    sgdbFetchAsset: sgdbFetchAsset,
+    sgdbListAssets: sgdbListAssets,
+    sgdbResolveGame: sgdbResolveGame,
+    sgdbSearchGames: sgdbSearchGames,
     startRefreshSteamActivities: startRefreshSteamActivities,
     startScanMissing: startScanMissing
 });
@@ -21303,6 +27065,8 @@ function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 192 512"},"child":[{"tag":"path","attr":{"d":"M20 424.229h20V279.771H20c-11.046 0-20-8.954-20-20V212c0-11.046 8.954-20 20-20h112c11.046 0 20 8.954 20 20v212.229h20c11.046 0 20 8.954 20 20V492c0 11.046-8.954 20-20 20H20c-11.046 0-20-8.954-20-20v-47.771c0-11.046 8.954-20 20-20zM96 0C56.235 0 24 32.235 24 72s32.235 72 72 72 72-32.235 72-72S135.764 0 96 0z"},"child":[]}]})(props);
 }function FaInfoCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 110c23.196 0 42 18.804 42 42s-18.804 42-42 42-42-18.804-42-42 18.804-42 42-42zm56 254c0 6.627-5.373 12-12 12h-88c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h12v-64h-12c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h64c6.627 0 12 5.373 12 12v100h12c6.627 0 12 5.373 12 12v24z"},"child":[]}]})(props);
+}function FaImage (props) {
+  return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M464 448H48c-26.51 0-48-21.49-48-48V112c0-26.51 21.49-48 48-48h416c26.51 0 48 21.49 48 48v288c0 26.51-21.49 48-48 48zM112 120c-30.928 0-56 25.072-56 56s25.072 56 56 56 56-25.072 56-56-25.072-56-56-56zM64 384h384V272l-87.515-87.515c-4.686-4.686-12.284-4.686-16.971 0L208 320l-55.515-55.515c-4.686-4.686-12.284-4.686-16.971 0L64 336v48z"},"child":[]}]})(props);
 }function FaFlask (props) {
   return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M437.2 403.5L320 215V64h8c13.3 0 24-10.7 24-24V24c0-13.3-10.7-24-24-24H120c-13.3 0-24 10.7-24 24v16c0 13.3 10.7 24 24 24h8v151L10.8 403.5C-18.5 450.6 15.3 512 70.9 512h306.2c55.7 0 89.4-61.5 60.1-108.5zM137.9 320l48.2-77.6c3.7-5.2 5.8-11.6 5.8-18.4V64h64v160c0 6.9 2.2 13.2 5.8 18.4l48.2 77.6h-172z"},"child":[]}]})(props);
 }function FaFileAlt (props) {
@@ -22215,6 +27979,1922 @@ const error = (area, message, ...args) => {
     console.error(prefix(area), message, ...args);
 };
 
+const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
+const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
+const KNOWN_CONFLICTS = {
+    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
+    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
+    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
+    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
+};
+const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
+const FALLBACK_POLL_MS = 1000;
+const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
+const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
+    typeof value.addEventListener === "function" && "removeEventListener" in value &&
+    typeof value.removeEventListener === "function";
+const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
+/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
+class PluginConflictMonitor {
+    constructor(getLoader = currentLoader) {
+        Object.defineProperty(this, "getLoader", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: getLoader
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "events", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "pollTimer", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "activePlugins", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: {
+                protondb: UNAVAILABLE,
+                trailers: UNAVAILABLE,
+                miniAchievements: UNAVAILABLE,
+                hltb: UNAVAILABLE,
+            }
+        });
+        Object.defineProperty(this, "handleUpdate", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.refresh()
+        });
+    }
+    getConflict(feature) {
+        return this.conflicts[feature];
+    }
+    isPluginActive(pluginName) {
+        return this.activePlugins.has(pluginName);
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        return () => { this.listeners.delete(listener); };
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.refresh();
+    }
+    stop() {
+        this.mounted = false;
+        this.attachEvents(undefined);
+        this.setPolling(false);
+        this.publish(undefined, undefined);
+        this.listeners.clear();
+    }
+    attachEvents(events) {
+        if (events === this.events)
+            return;
+        try {
+            this.events?.removeEventListener("update", this.handleUpdate);
+        }
+        catch { /* Loader may be unloading. */ }
+        this.events = undefined;
+        try {
+            if (isStateEvents(events)) {
+                events.addEventListener("update", this.handleUpdate);
+                this.events = events;
+            }
+        }
+        catch { /* Poll when Loader state notifications are unavailable. */ }
+    }
+    setPolling(enabled) {
+        if (enabled && this.pollTimer === undefined) {
+            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
+        }
+        else if (!enabled && this.pollTimer !== undefined) {
+            window.clearInterval(this.pollTimer);
+            this.pollTimer = undefined;
+        }
+    }
+    refresh() {
+        if (!this.mounted)
+            return;
+        let plugins;
+        let disabled;
+        try {
+            const loader = this.getLoader();
+            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
+                ? loader.deckyState : undefined;
+            if (state !== null && typeof state === "object") {
+                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
+                const inventory = "publicState" in state && typeof state.publicState === "function"
+                    ? state.publicState() : undefined;
+                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
+                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
+                    plugins = inventory.plugins;
+                    disabled = inventory.disabledPlugins;
+                }
+            }
+            else {
+                this.attachEvents(undefined);
+            }
+        }
+        catch {
+            this.attachEvents(undefined);
+        }
+        this.publish(plugins, disabled);
+        this.setPolling(!this.events || !plugins || !disabled);
+    }
+    publish(plugins, disabled) {
+        let changed = false;
+        const nextActive = new Set();
+        if (plugins && disabled) {
+            const disabledNames = new Set(disabled.map((plugin) => plugin.name));
+            for (const plugin of plugins) {
+                if (!disabledNames.has(plugin.name))
+                    nextActive.add(plugin.name);
+            }
+        }
+        if (nextActive.size !== this.activePlugins.size ||
+            Array.from(nextActive).some((name) => !this.activePlugins.has(name))) {
+            this.activePlugins = nextActive;
+            changed = true;
+        }
+        for (const feature of FEATURES) {
+            const conflict = KNOWN_CONFLICTS[feature];
+            const next = !plugins || !disabled ? UNAVAILABLE
+                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
+                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
+            if (next === this.conflicts[feature])
+                continue;
+            this.conflicts[feature] = next;
+            changed = true;
+        }
+        if (!changed)
+            return;
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch { /* One feature must not block another subscriber. */ }
+        }
+    }
+}
+function featureConflictNotice(conflict, feature, savedEnabled) {
+    if (conflict.pluginName) {
+        const notice = t("conflicts.pluginConflict", {
+            pluginName: conflict.pluginName,
+            feature,
+        });
+        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
+    }
+    return conflict.detectionAvailable ? ""
+        : t("conflicts.detectionUnavailable", { feature });
+}
+const pluginConflicts = new PluginConflictMonitor();
+function startPluginConflicts() {
+    pluginConflicts.mount();
+    return () => pluginConflicts.stop();
+}
+
+const patchInstallStatus = {
+    activity: "pending",
+    partnerEvents: "pending",
+    contextMenu: "pending"};
+/** Typed accessor for the Steam internals exposed on `globalThis`. */
+const steamInternals$1 = () => globalThis;
+const hasSteamInternals = () => !!steamInternals$1().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
+const steamPatchTargetsReady = () => {
+    try {
+        return hasSteamInternals() && !!appStore?.allApps?.[0]?.__proto__ && !!appDetailsStore?.__proto__;
+    }
+    catch (_error) {
+        return false;
+    }
+};
+const hasActivityStore = () => !!steamInternals$1().appActivityStore;
+const NON_STEAM_APP_TYPE = 1073741824;
+/** EAppType bitmask for playable Steam titles (Game, Demo, Beta); excludes Tools/Proton, Videos, Music, Apps. */
+const NATIVE_STEAM_GAME_APP_TYPE_MASK = 1 | 8 | 65536;
+const GAME_DETAIL_ROUTES = [
+    "/library/app/:appid",
+    "/library/details/:appid",
+    "/library/:collection/app/:appid",
+];
+const GAME_ACTIVITY_ROUTES = [
+    "/library/app/:appid/activity",
+    "/library/app/:appid/activity/:rest",
+    "/library/details/:appid/activity",
+    "/library/details/:appid/activity/:rest",
+    "/library/:collection/app/:appid/activity",
+    "/library/:collection/app/:appid/activity/:rest",
+];
+const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
+const newCompatibilityMetadataState = () => ({
+    bypassCounter: 0,
+    metadataLoaded: false,
+    metadataLoadPromise: null,
+    metadataRequestOwners: new Map(),
+    screenshotRequestOwners: new Map(),
+    loadingMetadata: new Set(),
+    loadingScreenshots: new Set(),
+    appliedMetadataRef: {},
+    compatibilityBaselines: {},
+    compatibilityBaselineBits: 10,
+    compatibilityPendingLegacyBits: new Set(),
+    deferredCompatibilityUpdates: new Map(),
+    deferredEditorCompatibilityPublications: new Set(),
+    compatibilityDefault: null,
+    compatibilityDefaultLoaded: false,
+    compatibilityDefaultScope: "all",
+    compatibilityDefaultGeneration: 0,
+    compatibilityLifecycleGeneration: 0,
+    compatibilityDefaultLoadPromise: null,
+    compatibilityRevision: 0,
+    metadataMatchRevision: 0,
+    lastObservedGameDetailAppId: 0,
+    routeShield: null,
+});
+/**
+ * Decky loads a new module bundle during an in-place plugin import, while a
+ * mounted route can still hold callbacks from the retiring bundle. Keep the
+ * mutable compatibility runtime on SteamUI's global host for that handoff.
+ * A lifecycle change makes old asynchronous work inert; the shared object
+ * ensures a surviving editor observes the current cache, policy, and revision.
+ */
+const compatibilityRuntime = () => {
+    const host = globalThis;
+    const existing = host[COMPATIBILITY_RUNTIME_KEY];
+    if (existing &&
+        typeof existing === "object" &&
+        existing.metadataCache &&
+        existing.metadataState &&
+        existing.revisionListeners instanceof Set) {
+        const state = existing.metadataState;
+        // Older bundles do not have the reload-owned maps. Keep their public Set
+        // fields for callbacks that still hold the retiring import, but make this
+        // import's authoritative guards and compatibility queues shared.
+        if (!(state.metadataRequestOwners instanceof Map)) {
+            state.metadataRequestOwners = new Map();
+        }
+        if (!(state.screenshotRequestOwners instanceof Map)) {
+            state.screenshotRequestOwners = new Map();
+        }
+        if (!(state.deferredCompatibilityUpdates instanceof Map)) {
+            state.deferredCompatibilityUpdates = new Map();
+        }
+        if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
+            state.deferredEditorCompatibilityPublications = new Set();
+        }
+        if (!(state.compatibilityPendingLegacyBits instanceof Set)) {
+            state.compatibilityPendingLegacyBits = new Set();
+        }
+        if (typeof state.metadataMatchRevision !== "number")
+            state.metadataMatchRevision = 0;
+        if (!(existing.matchRevisionListeners instanceof Set)) {
+            existing.matchRevisionListeners = new Set();
+        }
+        return existing;
+    }
+    const runtime = {
+        metadataCache: {},
+        metadataState: newCompatibilityMetadataState(),
+        revisionListeners: new Set(),
+        matchRevisionListeners: new Set(),
+    };
+    host[COMPATIBILITY_RUNTIME_KEY] = runtime;
+    return runtime;
+};
+const runtime$1 = compatibilityRuntime();
+const metadataCache = runtime$1.metadataCache;
+const metadataState = runtime$1.metadataState;
+const metadataMatchRevisionSnapshot = () => metadataState.metadataMatchRevision;
+const subscribeMetadataMatchChanges = (listener) => {
+    metadataMatchRevisionListeners.add(listener);
+    return () => metadataMatchRevisionListeners.delete(listener);
+};
+const normalizedSavedSteamAppId = (value) => {
+    if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value)))
+        return null;
+    const appId = Number(value);
+    return Number.isSafeInteger(appId) && appId > 0 && appId < 0x80000000 ? appId : null;
+};
+const notifyMetadataMatchChanged = (appId) => {
+    const revision = ++metadataState.metadataMatchRevision;
+    metadataMatchRevisionListeners.forEach((listener) => {
+        try {
+            listener(appId, revision);
+        }
+        catch { /* A trailer update cannot block metadata. */ }
+    });
+    return revision;
+};
+const setMetadataCacheEntry = (appId, value) => {
+    const key = String(appId);
+    const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+    metadataCache[key] = value;
+    const nextMatch = normalizedSavedSteamAppId(value?.steam_appid);
+    if (previousMatch !== nextMatch)
+        notifyMetadataMatchChanged(appId);
+};
+// Plugin replies can arrive out of commit order, so a background result taken before a removal
+// checks this per-app count before it writes the cache.
+const metadataRemovals = new Map();
+const metadataRemovalSnapshot = (appId) => metadataRemovals.get(String(appId)) ?? 0;
+const countRemoval = (key) => metadataRemovals.set(key, (metadataRemovals.get(key) ?? 0) + 1);
+const removeMetadataCacheEntry = (appId) => {
+    const key = String(appId);
+    const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+    delete metadataCache[key];
+    countRemoval(key);
+    if (previousMatch !== null)
+        notifyMetadataMatchChanged(appId);
+};
+const replaceMetadataCacheEntries = (records) => {
+    const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
+    Object.keys(metadataCache).forEach((key) => {
+        if (!(key in (records || {})))
+            countRemoval(key);
+        delete metadataCache[key];
+    });
+    Object.assign(metadataCache, records || {});
+    const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+    for (const key of appIds) {
+        const previousMatch = previous.get(key) ?? null;
+        const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
+        if (previousMatch !== nextMatch) {
+            const appId = Number(key);
+            if (Number.isInteger(appId) && appId > 0)
+                notifyMetadataMatchChanged(appId);
+        }
+    }
+};
+const compatibilityRevisionListeners = runtime$1.revisionListeners;
+const metadataMatchRevisionListeners = runtime$1.matchRevisionListeners;
+const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
+const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
+const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
+const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
+const compatibilityLifecycleSnapshot = () => metadataState.compatibilityLifecycleGeneration;
+const isCompatibilityLifecycleCurrent = (generation) => generation === metadataState.compatibilityLifecycleGeneration;
+const subscribeCompatibilityRevision = (listener) => {
+    compatibilityRevisionListeners.add(listener);
+    return () => {
+        compatibilityRevisionListeners.delete(listener);
+    };
+};
+const notifyCompatibilityRevision = () => {
+    const revision = ++metadataState.compatibilityRevision;
+    compatibilityRevisionListeners.forEach((listener) => {
+        try {
+            listener();
+        }
+        catch {
+            // One failed card update must not block other compatibility indicators.
+        }
+    });
+    return revision;
+};
+/**
+ * Trademark, registered, and copyright marks appear in official Steam store
+ * names but not in persisted metadata titles, which are already stripped.
+ * Every title comparison must erase them, so `cleanTitle` and
+ * `normalizedTabText` share this one definition instead of drifting apart.
+ */
+const TRADEMARK_MARKS = /[\u2122\u00ae\u00a9]/g;
+const cleanTitle = (value) => String(value || "")
+    .replace(TRADEMARK_MARKS, "")
+    .replace(/\s+/g, " ")
+    .trim();
+const isNonSteamAppWithoutPatchedMethod = (overview) => {
+    if (!overview)
+        return false;
+    if (Number(overview?.app_type) === NON_STEAM_APP_TYPE)
+        return true;
+    try {
+        if (overview?.BIsShortcut?.())
+            return true;
+    }
+    catch (_error) {
+        return false;
+    }
+    const appId = Number(overview?.appid);
+    return Number.isFinite(appId) && !!metadataCache[String(appId)];
+};
+const currentRoutePath = () => {
+    const steamRouter = steamInternals$1().Router;
+    const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
+    const windowLocation = steamInternals$1().window;
+    const browserLocation = windowLocation?.location;
+    return [
+        location?.pathname,
+        location?.search,
+        location?.hash,
+        windowLocation?.pathname,
+        windowLocation?.search,
+        windowLocation?.hash,
+        windowLocation?.href,
+        browserLocation?.pathname,
+        browserLocation?.search,
+        browserLocation?.hash,
+        browserLocation?.href,
+    ]
+        .filter(Boolean)
+        .join(" ");
+};
+const isNonSteamApp = (overview) => {
+    if (isNonSteamAppWithoutPatchedMethod(overview))
+        return true;
+    try {
+        if (overview?.BIsModOrShortcut?.())
+            return true;
+    }
+    catch (_error) {
+        return false;
+    }
+    return false;
+};
+/**
+ * Require Steam's native shortcut identity for operations that write back to
+ * an overview. Cached metadata alone must never make an official app eligible.
+ */
+const isNativeNonSteamShortcut = (overview) => {
+    if (!isNonSteamApp(overview))
+        return false;
+    if (Number(overview?.app_type) === NON_STEAM_APP_TYPE)
+        return true;
+    try {
+        return overview?.BIsShortcut?.() === true;
+    }
+    catch (_error) {
+        return false;
+    }
+};
+/**
+ * True for native Steam games (Game, Demo, Beta) — never shortcuts, Tools/Proton,
+ * Soundtracks, Videos, or Applications.
+ */
+const isNativeSteamGame = (overview) => {
+    if (!overview || isNativeNonSteamShortcut(overview))
+        return false;
+    const appId = Number(overview?.appid);
+    if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000)
+        return false;
+    const appType = Number(overview?.app_type);
+    return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
+};
+const getOverview = (appId) => {
+    try {
+        return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+/** Steam's own icon URL for an app; null until a shortcut's icon data has loaded. */
+const getAppIconUrl = (appId) => {
+    try {
+        const overview = getOverview(appId);
+        return (overview && appStore?.GetIconURLForApp?.(overview)) || null;
+    }
+    catch {
+        return null;
+    }
+};
+/**
+ * Resolve an overview by its own AppID without passing through plugin patches.
+ * This is required for writes: GetAppOverviewByAppID intentionally aliases a
+ * matched Steam AppID to its shortcut on the rich-details path.
+ */
+const getNativeOverview = (appId) => {
+    const nativeAppId = Number(appId);
+    if (!Number.isFinite(nativeAppId) || nativeAppId <= 0)
+        return null;
+    try {
+        const allApps = appStore?.allApps;
+        const entries = Array.isArray(allApps)
+            ? allApps
+            : allApps && typeof allApps === "object"
+                ? Object.values(allApps)
+                : [];
+        return entries.find((overview) => Number(overview?.appid) === nativeAppId) ?? null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const steamAppIdForApp = (appId) => Number(metadataCache[String(appId)]?.steam_appid) || 0;
+const safeDecodeURIComponent = (value) => {
+    try {
+        return decodeURIComponent(value);
+    }
+    catch (_error) {
+        return value;
+    }
+};
+const steamWebLinkTarget = (url) => {
+    const match = url.match(/(?:https?:\/\/)?store\.steampowered\.com\/app\/(\d+)/i) ||
+        url.match(/(?:https?:\/\/)?steamcommunity\.com\/app\/(\d+)/i);
+    const queryMatch = match ||
+        url.match(/(?:https?:\/\/)?(?:store\.steampowered\.com|steamcommunity\.com)\/[^?#]*\?(?:[^#&]*&)*appid=(\d+)/i);
+    if (!queryMatch?.[1])
+        return null;
+    const appId = Number(queryMatch[1]);
+    if (!Number.isFinite(appId) || appId <= 0)
+        return null;
+    const kind = /steamcommunity\.com/i.test(queryMatch[0]) ? "community" : "store";
+    const idIndex = queryMatch.index === undefined ? -1 : queryMatch.index + queryMatch[0].lastIndexOf(queryMatch[1]);
+    if (idIndex < 0)
+        return null;
+    return {
+        kind,
+        appId,
+        replace: (mappedAppId) => `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + queryMatch[1].length)}`,
+    };
+};
+const steamProtocolLinkTarget = (url) => {
+    const storeMatch = url.match(/^steam:\/\/store\/(\d+)/i) ||
+        url.match(/^steam:\/\/url\/StoreAppPage\/(\d+)/i);
+    if (storeMatch?.[1]) {
+        const appId = Number(storeMatch[1]);
+        const idIndex = storeMatch.index === undefined ? -1 : storeMatch.index + storeMatch[0].lastIndexOf(storeMatch[1]);
+        if (Number.isFinite(appId) && appId > 0 && idIndex >= 0) {
+            return {
+                kind: "store",
+                appId,
+                replace: (mappedAppId) => `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + storeMatch[1].length)}`,
+            };
+        }
+    }
+    const openUrlMatch = url.match(/^steam:\/\/openurl\/(.+)$/i);
+    if (!openUrlMatch?.[1])
+        return null;
+    const rawTarget = openUrlMatch[1];
+    const decodedTarget = safeDecodeURIComponent(rawTarget);
+    const nested = steamWebLinkTarget(decodedTarget) || steamWebLinkTarget(rawTarget);
+    if (!nested)
+        return null;
+    return {
+        kind: nested.kind,
+        appId: nested.appId,
+        replace: (mappedAppId) => `steam://openurl/${nested.replace(mappedAppId)}`,
+    };
+};
+const steamLinkTarget = (url) => {
+    try {
+        const rawUrl = String(url || "");
+        return steamProtocolLinkTarget(rawUrl) || steamWebLinkTarget(rawUrl);
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const rewriteSteamLinkToMatchedApp = (url) => {
+    try {
+        const rawUrl = String(url || "");
+        const target = steamLinkTarget(rawUrl);
+        if (!target)
+            return { url: rawUrl, rewrote: false };
+        const mapped = steamAppIdForApp(target.appId);
+        if (mapped > 0 && mapped !== target.appId) {
+            return {
+                url: target.replace(mapped),
+                rewrote: true,
+                fromAppId: target.appId,
+                toAppId: mapped,
+            };
+        }
+        return { url: rawUrl, rewrote: false };
+    }
+    catch (_error) {
+        return { url: String(url || ""), rewrote: false };
+    }
+};
+const rewriteSteamwebNavState = (state) => {
+    try {
+        if (!state || typeof state !== "object")
+            return { state, rewrote: false };
+        let clone;
+        try {
+            clone = structuredClone(state);
+        }
+        catch (_error) {
+            return { state, rewrote: false };
+        }
+        let rewrote = false;
+        const seen = new WeakSet();
+        const walk = (value, depth) => {
+            if (!value || typeof value !== "object" || depth < 0)
+                return;
+            if (seen.has(value))
+                return;
+            seen.add(value);
+            const keys = Array.isArray(value) ? value.keys() : Object.keys(value);
+            for (const key of keys) {
+                const item = value[key];
+                if (typeof item === "string") {
+                    const rewritten = rewriteSteamLinkToMatchedApp(item);
+                    if (rewritten.rewrote) {
+                        value[key] = rewritten.url;
+                        rewrote = true;
+                    }
+                    continue;
+                }
+                if (item && typeof item === "object") {
+                    walk(item, depth - 1);
+                }
+            }
+        };
+        walk(clone, 6);
+        return { state: clone, rewrote };
+    }
+    catch (_error) {
+        return { state, rewrote: false };
+    }
+};
+const appName = (appId) => {
+    const overview = getOverview(appId);
+    return cleanTitle(overview?.display_name ||
+        overview?.localized_name ||
+        overview?.name ||
+        `App ${appId}`);
+};
+const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
+const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
+const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
+const deckyNativeActivityCache = () => {
+    const host = steamInternals$1();
+    if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
+        host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
+};
+const deckyNativePartnerEventCache = () => {
+    const host = steamInternals$1();
+    if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
+        host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
+    return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
+};
+const deckyNativePartnerEventStore = () => steamInternals$1()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
+const activityAppIdFromUrl = (url) => {
+    const decoded = decodeURIComponent(String(url || ""));
+    const patterns = [
+        /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
+        /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
+        /(?:appid|app_id|appId)=(\d+).*?(?:appactivity|activity|appnews|appupdates)/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1]);
+    }
+    return 0;
+};
+const gameDetailAppIdFromPath = (path) => {
+    const decoded = decodeURIComponent(String(path || ""));
+    const patterns = [
+        /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
+        /(?:^|[?#&\s])appid=(\d+)/i,
+        /(?:^|[?#&\s])app_id=(\d+)/i,
+        /\bapp\/(\d+)\b/i,
+    ];
+    for (const pattern of patterns) {
+        const match = decoded.match(pattern);
+        if (match)
+            return Number(match[1] || 0);
+    }
+    return 0;
+};
+/**
+ * True only when a joined Steam route context identifies this exact app's
+ * Library detail page.  `currentRoutePath` joins pathname, search, hash, and
+ * href tokens, while `gameDetailAppIdFromPath` deliberately accepts broader
+ * discovery hints.  Identity spoofing needs this stricter boundary: a query,
+ * a sidebar item, or a different app must not turn a shortcut into a native
+ * app for unrelated Steam consumers.
+ */
+const isCurrentGameDetailRoute = (routeContext, appId) => {
+    if (!Number.isSafeInteger(appId) || appId <= 0)
+        return false;
+    const tokens = String(routeContext || "").trim().split(/\s+/);
+    // `currentRoutePath` currently contributes at most eleven values. Keep this
+    // hot-path parser bounded even if a malformed host object appends noise.
+    // Every authoritative route token must agree. A stale detail path must not
+    // override a current Home, controller, or other-app path during navigation.
+    let foundCurrentDetail = false;
+    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+        const token = tokens[index];
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
+            return false;
+        }
+        const match = pathname.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i);
+        if (!match)
+            return false;
+        const routeAppId = Number(match[1] || match[2]);
+        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
+            return false;
+        foundCurrentDetail = true;
+    }
+    return foundCurrentDetail;
+};
+/**
+ * The metadata editor is a separate route, but Steam keeps the selected
+ * game's Game Info tree mounted beneath it. For that exact app only, render
+ * identity must stay matched while the editor saves a changed packed value.
+ * This is intentionally separate from Game Info deferral: entering the editor
+ * still releases any held compatibility update.
+ */
+const isCurrentMetadataEditorRoute = (routeContext, appId) => {
+    if (!Number.isSafeInteger(appId) || appId <= 0)
+        return false;
+    const tokens = String(routeContext || "").trim().split(/\s+/);
+    let foundCurrentEditor = false;
+    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
+        const token = tokens[index];
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        const match = pathname.match(/^\/(?:routes\/)?decky-metadata\/(\d+)\/?$/i);
+        if (!match)
+            return false;
+        const routeAppId = Number(match[1]);
+        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
+            return false;
+        foundCurrentEditor = true;
+    }
+    return foundCurrentEditor;
+};
+/**
+ * Render identity has one more valid route than compatibility deferral. The
+ * exact plugin editor is part of its selected app's still-mounted detail tree;
+ * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
+ */
+const isCurrentMatchedRenderRoute = (routeContext, appId) => isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
+/**
+ * True only for the exact Game Info tab of this app. Other detail tabs share
+ * the app route, but leaving Game Info must release a held compatibility
+ * update instead of treating the whole app page as protected.
+ */
+const isCurrentGameInfoRoute = (routeContext, appId) => {
+    if (!isCurrentGameDetailRoute(routeContext, appId))
+        return false;
+    return String(routeContext || "").split(/\s+/).some((token) => /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token));
+};
+/**
+ * A history listener can confirm an exact Game Info return before Steam's
+ * window and browser route tokens leave the metadata editor.  Let that short
+ * re-entry shield cover only this app and only when the current tokens contain
+ * no explicit destination that conflicts with it.  Generic route templates
+ * and a shield for another app cannot recover a stale route.
+ */
+const canRecoverStaleGameDetailRoute = (routeContext, appId) => {
+    const shield = metadataState.routeShield;
+    if (!shield || shield.appId !== appId)
+        return false;
+    if (!isCurrentGameDetailRoute(shield.path, appId))
+        return false;
+    for (const token of String(routeContext || "").trim().split(/\s+/)) {
+        if (!token)
+            continue;
+        let pathname = token;
+        try {
+            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
+                pathname = new URL(token).pathname;
+            else if (!token.startsWith("/"))
+                continue;
+            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
+        }
+        catch (_error) {
+            continue;
+        }
+        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
+            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
+            return false;
+        }
+        const routeAppId = gameDetailAppIdFromPath(pathname);
+        if (routeAppId && routeAppId !== appId)
+            return false;
+    }
+    return true;
+};
+const appIdFromDom = () => {
+    const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
+    const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
+    for (const element of candidates) {
+        if (!visibleElement(element))
+            continue;
+        for (const attribute of attributes) {
+            const value = element.getAttribute(attribute) || "";
+            const appId = gameDetailAppIdFromPath(value);
+            if (appId)
+                return appId;
+        }
+    }
+    return 0;
+};
+const appIdFromVisibleMetadataTitle = () => {
+    try {
+        const pageText = normalizedTabText(document.body?.textContent || "");
+        if (!pageText || !metadataCache)
+            return 0;
+        const candidates = Object.entries(metadataCache)
+            .map(([key, metadata]) => {
+            const appId = Number(key);
+            const title = normalizedTabText(metadata?.title || appName(appId));
+            return { appId, title };
+        })
+            .filter((candidate) => candidate.appId && candidate.title && candidate.title.length >= 3)
+            .sort((a, b) => b.title.length - a.title.length);
+        for (const candidate of candidates) {
+            if (pageText.includes(candidate.title))
+                return candidate.appId;
+        }
+    }
+    catch (_error) {
+        // Best-effort fallback only.
+    }
+    return 0;
+};
+const currentGameDetailAppId = () => {
+    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
+    if (routeAppId)
+        return routeAppId;
+    if (metadataState.lastObservedGameDetailAppId)
+        return metadataState.lastObservedGameDetailAppId;
+    const titleAppId = appIdFromVisibleMetadataTitle();
+    if (titleAppId)
+        return titleAppId;
+    const domAppId = appIdFromDom();
+    if (domAppId && (metadataCache[String(domAppId)] || isNonSteamAppWithoutPatchedMethod(getOverview(domAppId))))
+        return domAppId;
+    return domAppId || 0;
+};
+const visibleElement = (element) => {
+    if (!(element instanceof HTMLElement))
+        return false;
+    const rect = element.getBoundingClientRect();
+    if (rect.width < 2 || rect.height < 2)
+        return false;
+    const style = window.getComputedStyle(element);
+    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
+};
+const deepQuerySelectorAll = (selector, root = document) => {
+    const results = [];
+    const seen = new Set();
+    const visit = (scope) => {
+        let elements = [];
+        try {
+            elements = Array.from(scope.querySelectorAll?.(selector) || []);
+        }
+        catch (_error) {
+            elements = [];
+        }
+        elements.forEach((element) => {
+            if (!seen.has(element)) {
+                seen.add(element);
+                results.push(element);
+            }
+            const shadowRoot = element.shadowRoot;
+            if (shadowRoot)
+                visit(shadowRoot);
+        });
+    };
+    visit(root);
+    return results;
+};
+const normalizedTabText = (value) => String(value || "")
+    .replace(TRADEMARK_MARKS, "")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLocaleLowerCase();
+const patchMethod = (target, methodName, replacement) => {
+    if (!target?.[methodName])
+        return () => undefined;
+    const original = target[methodName];
+    target[methodName] = function patchedMethod(...args) {
+        const boundOriginal = original.bind(this);
+        try {
+            return replacement(this, boundOriginal, args);
+        }
+        catch (_error) {
+            // A patch replacement must never break the Steam method it wraps.
+            try {
+                return boundOriginal(...args);
+            }
+            catch (_originalError) {
+                return undefined;
+            }
+        }
+    };
+    return () => {
+        target[methodName] = original;
+    };
+};
+const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
+    try {
+        return handler.call(this, args, ret);
+    }
+    catch (_error) {
+        // An afterPatch handler must never break the Steam method it augments.
+        return ret;
+    }
+});
+const overviewFromReactTree = (tree) => {
+    try {
+        const holder = DFL.findInReactTree(tree, (node) => {
+            const overview = node?.props?.overview || node?.overview;
+            return overview?.appid ? true : undefined;
+        });
+        return holder?.props?.overview || holder?.overview || null;
+    }
+    catch (_error) {
+        return null;
+    }
+};
+const appIdFromReactTree = (tree) => {
+    const overview = overviewFromReactTree(tree);
+    const appId = Number(overview?.appid || 0);
+    return Number.isFinite(appId) ? appId : 0;
+};
+const historyPathFromArgs = (args) => {
+    const first = args?.[0];
+    if (typeof first === "string")
+        return first;
+    if (first && typeof first === "object") {
+        return String(first.pathname || first.path || first.href || first.url || "");
+    }
+    return "";
+};
+const historyStateFromArgs = (args) => {
+    const first = args?.[0];
+    const second = args?.[1];
+    // React Router / Steam history may call push(path, { state }), push(path, state),
+    // push({ pathname, state }), replace(location, state), or the raw browser
+    // history API with the state as first argument. The previous build only handled
+    // the direct state shapes, so Steam's Navigator.App(appid, { gidPartnerEvent })
+    // slipped through as args[1].state and kept polluting the back stack.
+    if (first && typeof first === "object") {
+        if (first.state?.event_to_show)
+            return first.state;
+        if (first.event_to_show)
+            return first;
+        if ("state" in first && first.state)
+            return first.state;
+    }
+    if (second && typeof second === "object") {
+        if (second.state?.event_to_show)
+            return second.state;
+        if (second.event_to_show)
+            return second;
+        if ("state" in second && second.state)
+            return second.state;
+    }
+    return second;
+};
+// The hit budget is only a runaway backstop; the 2000 ms TTL is the real expiry required by launch flows.
+const ROUTE_SHIELD_MAX_HITS = 64;
+const ROUTE_SHIELD_TTL_MS = 2000;
+let shieldSeq = 0;
+const armRouteShield = (appId, path, trigger) => {
+    if (appId <= 0)
+        return;
+    shieldSeq += 1;
+    metadataState.routeShield = {
+        appId,
+        path,
+        trigger,
+        armedAt: Date.now(),
+        remaining: ROUTE_SHIELD_MAX_HITS,
+        seqId: shieldSeq,
+    };
+};
+const consumeRouteShield = (appId) => {
+    const shield = metadataState.routeShield;
+    if (!shield)
+        return false;
+    if (shield.appId !== appId)
+        return false;
+    const age = Date.now() - shield.armedAt;
+    if (age > ROUTE_SHIELD_TTL_MS || shield.remaining <= 0) {
+        metadataState.routeShield = null; // Stale or exhausted
+        return false;
+    }
+    shield.remaining -= 1;
+    return true;
+};
+const clearRouteShield = () => {
+    metadataState.routeShield = null;
+};
+
+const matchedSteamAppId = (metadata) => {
+    const raw = metadata?.steam_appid;
+    if (typeof raw === "boolean" || raw === null || raw === undefined)
+        return null;
+    const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
+    return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
+        ? steamAppId
+        : null;
+};
+const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
+const associationsMatch = (current, people) => {
+    if (!Array.isArray(current) || current.length !== (people?.length || 0))
+        return false;
+    for (let index = 0; index < current.length; index += 1) {
+        const person = people[index];
+        if (current[index]?.strName !== person.name || current[index]?.strURL !== (person.url || ""))
+            return false;
+    }
+    return true;
+};
+const associationValues = (current, native, people) => {
+    if (associationsMatch(current, people))
+        return current;
+    if (associationsMatch(native, people))
+        return native;
+    return people?.map((person) => ({ strName: person.name, strURL: person.url || "" })) || [];
+};
+const SCREENSHOT_FIELDS = [
+    "appid", "id", "nScreenshotID", "strCaption", "strImageURL", "strThumbnailURL",
+    "strURL", "url", "nWidth", "nHeight", "width", "height", "bSpoiler",
+];
+const screenshotsMatch = (current, expected) => {
+    if (current === expected)
+        return true;
+    if (!Array.isArray(current) || current.length !== expected.length)
+        return false;
+    for (let index = 0; index < expected.length; index += 1) {
+        for (const field of SCREENSHOT_FIELDS) {
+            if (current[index]?.[field] !== expected[index]?.[field])
+                return false;
+        }
+    }
+    return true;
+};
+/**
+ * Reapply Decky's matched-game fields to a native app-data replacement.
+ *
+ * Steam rebuilds appData.details when another cache category arrives. The
+ * replacement must be populated before GetAppData returns it to SteamUI;
+ * otherwise observers can render the transient shortcut-only details and stay
+ * there until a later navigation.
+ */
+const reassertMatchedAppData = (appData, metadata, screenshots) => {
+    const details = appData?.details;
+    if (!details)
+        return false;
+    const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
+    if (appData.descriptionsData?.strFullDescription !== description ||
+        appData.descriptionsData?.strSnippet !== description) {
+        appData.descriptionsData = { strFullDescription: description, strSnippet: description };
+    }
+    const previousAssociations = appData.associationData;
+    const developers = associationValues(previousAssociations?.rgDevelopers, details.rgDevelopers, metadata.developers);
+    const publishers = associationValues(previousAssociations?.rgPublishers, details.rgPublishers, metadata.publishers);
+    const franchises = Array.isArray(previousAssociations?.rgFranchises) && previousAssociations.rgFranchises.length === 0
+        ? previousAssociations.rgFranchises
+        : Array.isArray(details.rgFranchises) && details.rgFranchises.length === 0
+            ? details.rgFranchises
+            : [];
+    if (previousAssociations?.rgDevelopers !== developers ||
+        previousAssociations?.rgPublishers !== publishers ||
+        previousAssociations?.rgFranchises !== franchises) {
+        appData.associationData = { rgDevelopers: developers, rgPublishers: publishers, rgFranchises: franchises };
+    }
+    // Peer getters can read these observables inside Steam's DLC autorun. New
+    // equivalent arrays would invalidate that autorun and re-render this page.
+    if (details.strFullDescription !== description)
+        details.strFullDescription = description;
+    if (details.strSnippet !== description)
+        details.strSnippet = description;
+    if (!associationsMatch(details.rgDevelopers, metadata.developers))
+        details.rgDevelopers = developers;
+    if (!associationsMatch(details.rgPublishers, metadata.publishers))
+        details.rgPublishers = publishers;
+    if (!Array.isArray(details.rgFranchises) || details.rgFranchises.length !== 0)
+        details.rgFranchises = franchises;
+    // A matched shortcut can inherit Steam screenshot metadata without becoming
+    // the real Steam application. Never advertise the shortcut appid as a
+    // Community Market target; the quick-link policy independently removes any
+    // stale native descriptor that SteamUI may already have rendered.
+    if (hasMatchedSteamAppId(metadata) && details.bCommunityMarketPresence !== false) {
+        details.bCommunityMarketPresence = false;
+    }
+    if (screenshots.length) {
+        if (details.nScreenshots !== screenshots.length)
+            details.nScreenshots = screenshots.length;
+        if (!screenshotsMatch(details.vecScreenShots, screenshots))
+            details.vecScreenShots = screenshots;
+        const previousScreenshots = appData.screenshots;
+        if (!screenshotsMatch(previousScreenshots?.rgScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.screenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenshots, screenshots) ||
+            !screenshotsMatch(previousScreenshots?.vecScreenShots, screenshots)) {
+            appData.screenshots = {
+                rgScreenshots: screenshots,
+                screenshots,
+                vecScreenshots: screenshots,
+                vecScreenShots: screenshots,
+            };
+        }
+    }
+    return true;
+};
+
+const steamInternals = () => globalThis;
+/** SteamClient.Apps.SetCustomArtworkForApp / ClearCustomArtworkForApp asset type IDs. */
+const STEAM_ARTWORK_ASSET_TYPE = {
+    cover: 0,
+    hero: 1,
+    logo: 2,
+    wide: 3,
+    icon: 4,
+};
+const ARTWORK_SLOT_ORDER = [
+    "cover",
+    "wide",
+    "hero",
+    "logo",
+    "icon",
+];
+const validAppId = (value) => {
+    const id = Number(value);
+    return Number.isInteger(id) && id > 0 && id <= 0xffffffff ? id : null;
+};
+/** Apply one downloaded Steam asset live via SteamClient.Apps. */
+async function applySteamArtworkSlot(appId, slot, asset) {
+    const normalizedId = validAppId(appId);
+    if (!normalizedId)
+        throw new Error("invalid_shortcut_app_id");
+    const apps = steamInternals().SteamClient?.Apps;
+    if (!apps)
+        throw new Error("artwork_api_unavailable");
+    if (slot === "icon") {
+        const isShortcut = normalizedId >= 0x80000000;
+        // shortcut: Steam Gaming Mode updates shortcut icons via SetShortcutIcon when given a local path,
+        // while native Steam games (and builds without SetShortcutIcon) use SetCustomArtworkForApp(assetType=4).
+        if (isShortcut && typeof apps.SetShortcutIcon === "function" && asset.file_path) {
+            try {
+                await apps.SetShortcutIcon.call(apps, normalizedId, asset.file_path);
+                return;
+            }
+            catch (error) {
+                warn("artwork", "SetShortcutIcon failed, trying SetCustomArtworkForApp", error);
+            }
+        }
+        if (typeof apps.SetCustomArtworkForApp === "function") {
+            try {
+                await apps.SetCustomArtworkForApp.call(apps, normalizedId, asset.base64, asset.ext, STEAM_ARTWORK_ASSET_TYPE.icon);
+                return;
+            }
+            catch (error) {
+                warn("artwork", "SetCustomArtworkForApp(icon) failed", error);
+                throw new Error("artwork_apply_failed");
+            }
+        }
+        throw new Error("artwork_api_unavailable");
+    }
+    if (typeof apps.SetCustomArtworkForApp !== "function") {
+        throw new Error("artwork_api_unavailable");
+    }
+    try {
+        await apps.SetCustomArtworkForApp.call(apps, normalizedId, asset.base64, asset.ext, STEAM_ARTWORK_ASSET_TYPE[slot]);
+    }
+    catch (error) {
+        warn("artwork", `SetCustomArtworkForApp(${slot}) failed`, error);
+        throw new Error("artwork_apply_failed");
+    }
+}
+/** Clear one artwork slot live via SteamClient.Apps. */
+async function clearSteamArtworkSlot(appId, slot) {
+    const normalizedId = validAppId(appId);
+    if (!normalizedId)
+        throw new Error("invalid_shortcut_app_id");
+    const apps = steamInternals().SteamClient?.Apps;
+    if (!apps)
+        throw new Error("artwork_api_unavailable");
+    if (slot === "icon") {
+        const isShortcut = normalizedId >= 0x80000000;
+        if (isShortcut && typeof apps.SetShortcutIcon === "function") {
+            try {
+                await apps.SetShortcutIcon.call(apps, normalizedId, "");
+                return;
+            }
+            catch (error) {
+                warn("artwork", "SetShortcutIcon clear failed", error);
+            }
+        }
+        if (typeof apps.ClearCustomArtworkForApp === "function") {
+            try {
+                await apps.ClearCustomArtworkForApp.call(apps, normalizedId, STEAM_ARTWORK_ASSET_TYPE.icon);
+                return;
+            }
+            catch (error) {
+                warn("artwork", "ClearCustomArtworkForApp(icon) failed", error);
+                throw new Error("artwork_clear_failed");
+            }
+        }
+        throw new Error("artwork_api_unavailable");
+    }
+    if (typeof apps.ClearCustomArtworkForApp !== "function") {
+        throw new Error("artwork_api_unavailable");
+    }
+    try {
+        await apps.ClearCustomArtworkForApp.call(apps, normalizedId, STEAM_ARTWORK_ASSET_TYPE[slot]);
+    }
+    catch (error) {
+        warn("artwork", `ClearCustomArtworkForApp(${slot}) failed`, error);
+        throw new Error("artwork_clear_failed");
+    }
+}
+const STEAM_LOGO_ANCHORS = [
+    "UpperLeft",
+    "BottomLeft",
+    "UpperCenter",
+    "CenterCenter",
+    "BottomCenter",
+];
+const DEFAULT_LOGO_POSITION = {
+    pinnedPosition: "BottomLeft",
+    nWidthPct: 50,
+    nHeightPct: 50,
+};
+const hasLogoPositionApi = () => typeof steamInternals().appDetailsStore?.SaveCustomLogoPosition === "function" &&
+    typeof steamInternals().appStore?.GetAppOverviewByAppID === "function";
+function getCustomLogoPosition(appId) {
+    const normalizedId = validAppId(appId);
+    if (!normalizedId)
+        return { ...DEFAULT_LOGO_POSITION };
+    try {
+        const internals = steamInternals();
+        const overview = internals.appStore?.GetAppOverviewByAppID?.(normalizedId);
+        const raw = (overview && internals.appDetailsStore?.GetCustomLogoPosition?.(overview)) ??
+            internals.appDetailsStore?.GetAppData?.(normalizedId)?.customImageInfo?.logoPosition ??
+            internals.appDetailsStore?.GetAppDetails?.(normalizedId)?.libraryAssets?.logoPosition;
+        if (!raw || typeof raw !== "object")
+            return { ...DEFAULT_LOGO_POSITION };
+        const anchor = STEAM_LOGO_ANCHORS.includes(raw.pinnedPosition)
+            ? raw.pinnedPosition
+            : DEFAULT_LOGO_POSITION.pinnedPosition;
+        const nWidthPct = typeof raw.nWidthPct === "number" && Number.isFinite(raw.nWidthPct)
+            ? Math.min(100, Math.max(10, Math.round(raw.nWidthPct)))
+            : DEFAULT_LOGO_POSITION.nWidthPct;
+        const nHeightPct = typeof raw.nHeightPct === "number" && Number.isFinite(raw.nHeightPct)
+            ? Math.min(100, Math.max(10, Math.round(raw.nHeightPct)))
+            : DEFAULT_LOGO_POSITION.nHeightPct;
+        return { pinnedPosition: anchor, nWidthPct, nHeightPct };
+    }
+    catch {
+        return { ...DEFAULT_LOGO_POSITION };
+    }
+}
+async function saveCustomLogoPosition(appId, position) {
+    const normalizedId = validAppId(appId);
+    if (!normalizedId)
+        throw new Error("invalid_shortcut_app_id");
+    const overview = steamInternals().appStore?.GetAppOverviewByAppID?.(normalizedId);
+    const save = steamInternals().appDetailsStore?.SaveCustomLogoPosition;
+    if (!overview || typeof save !== "function") {
+        throw new Error("artwork_logo_position_unavailable");
+    }
+    await save.call(steamInternals().appDetailsStore, overview, {
+        pinnedPosition: position.pinnedPosition,
+        nWidthPct: Math.min(100, Math.max(10, Math.round(position.nWidthPct))),
+        nHeightPct: Math.min(100, Math.max(10, Math.round(position.nHeightPct))),
+    });
+}
+async function clearCustomLogoPosition(appId) {
+    const normalizedId = validAppId(appId);
+    if (!normalizedId)
+        throw new Error("invalid_shortcut_app_id");
+    const overview = steamInternals().appStore?.GetAppOverviewByAppID?.(normalizedId);
+    const clear = steamInternals().appDetailsStore?.ClearCustomLogoPosition;
+    if (!overview || typeof clear !== "function") {
+        throw new Error("artwork_logo_position_unavailable");
+    }
+    await clear.call(steamInternals().appDetailsStore, overview);
+}
+
+const ARTWORK_TAB_ORDER = [
+    "cover",
+    "wide",
+    "hero",
+    "logo",
+    "icon",
+    "manage",
+];
+const SGDB_DIMENSION_OPTIONS = {
+    cover: ["600x900", "342x482", "660x930", "512x512", "1024x1024"],
+    wide: ["460x215", "920x430", "512x512", "1024x1024"],
+    hero: ["1920x620", "3840x1240", "1600x650"],
+    logo: [],
+    icon: ["16x16", "24x24", "32x32", "48x48", "64x64", "96x96", "128x128", "192x192", "256x256", "512x512", "1024x1024"],
+};
+const SGDB_STYLE_OPTIONS = {
+    cover: ["alternate", "blurred", "white_logo", "material", "no_logo"],
+    wide: ["alternate", "blurred", "white_logo", "material", "no_logo"],
+    hero: ["alternate", "blurred", "material"],
+    logo: ["official", "white", "black", "custom"],
+    icon: ["official", "custom"],
+};
+const SGDB_MIME_OPTIONS = {
+    cover: ["image/png", "image/jpeg", "image/webp"],
+    wide: ["image/png", "image/jpeg", "image/webp"],
+    hero: ["image/png", "image/jpeg", "image/webp"],
+    logo: ["image/png", "image/webp"],
+    icon: ["image/png", "image/vnd.microsoft.icon"],
+};
+const defaultSlotFilter = (slot) => ({
+    dimensions: slot === "cover"
+        ? ["600x900", "342x482", "660x930"]
+        : slot === "wide"
+            ? ["460x215", "920x430"]
+            : slot === "hero"
+                ? ["1920x620", "3840x1240", "1600x650"]
+                : [],
+    styles: [],
+    mimes: [],
+    types: ["static"],
+    nsfw: false,
+    humor: true,
+    epilepsy: false,
+});
+const defaultArtworkFilters = () => ({
+    cover: defaultSlotFilter("cover"),
+    wide: defaultSlotFilter("wide"),
+    hero: defaultSlotFilter("hero"),
+    logo: defaultSlotFilter("logo"),
+    icon: defaultSlotFilter("icon"),
+});
+const DEFAULT_ARTWORK_SETTINGS = {
+    autoApply: false,
+    preserveExisting: true,
+    slots: {
+        cover: true,
+        wide: true,
+        hero: true,
+        logo: true,
+        icon: true,
+    },
+    sgdbApiKey: "",
+    defaultTab: "cover",
+    tabOrder: [...ARTWORK_TAB_ORDER],
+    hiddenTabs: [],
+    filters: defaultArtworkFilters(),
+};
+function normalizeArtworkSettings(raw) {
+    const defaults = structuredClone(DEFAULT_ARTWORK_SETTINGS);
+    if (!raw || typeof raw !== "object")
+        return defaults;
+    const tabOrder = [];
+    if (Array.isArray(raw.tabOrder)) {
+        for (const tab of raw.tabOrder) {
+            if (ARTWORK_TAB_ORDER.includes(tab) && !tabOrder.includes(tab)) {
+                tabOrder.push(tab);
+            }
+        }
+    }
+    for (const tab of ARTWORK_TAB_ORDER) {
+        if (!tabOrder.includes(tab))
+            tabOrder.push(tab);
+    }
+    const hiddenTabs = Array.isArray(raw.hiddenTabs)
+        ? raw.hiddenTabs.filter((tab, idx, arr) => ARTWORK_SLOT_ORDER.includes(tab) && arr.indexOf(tab) === idx)
+        : [];
+    const filters = defaultArtworkFilters();
+    if (raw.filters && typeof raw.filters === "object") {
+        for (const slot of ARTWORK_SLOT_ORDER) {
+            const saved = raw.filters[slot];
+            if (!saved || typeof saved !== "object")
+                continue;
+            filters[slot] = {
+                dimensions: Array.isArray(saved.dimensions)
+                    ? saved.dimensions.filter((d) => SGDB_DIMENSION_OPTIONS[slot].includes(d))
+                    : filters[slot].dimensions,
+                styles: Array.isArray(saved.styles)
+                    ? saved.styles.filter((s) => SGDB_STYLE_OPTIONS[slot].includes(s))
+                    : filters[slot].styles,
+                mimes: Array.isArray(saved.mimes)
+                    ? saved.mimes.filter((m) => SGDB_MIME_OPTIONS[slot].includes(m))
+                    : filters[slot].mimes,
+                types: Array.isArray(saved.types)
+                    ? saved.types.filter((item) => item === "static" || item === "animated")
+                    : filters[slot].types,
+                nsfw: typeof saved.nsfw === "boolean" ? saved.nsfw : filters[slot].nsfw,
+                humor: typeof saved.humor === "boolean" ? saved.humor : filters[slot].humor,
+                epilepsy: typeof saved.epilepsy === "boolean" ? saved.epilepsy : filters[slot].epilepsy,
+            };
+        }
+    }
+    return {
+        autoApply: typeof raw.autoApply === "boolean" ? raw.autoApply : defaults.autoApply,
+        preserveExisting: typeof raw.preserveExisting === "boolean" ? raw.preserveExisting : defaults.preserveExisting,
+        slots: {
+            cover: typeof raw.slots?.cover === "boolean" ? raw.slots.cover : defaults.slots.cover,
+            wide: typeof raw.slots?.wide === "boolean" ? raw.slots.wide : defaults.slots.wide,
+            hero: typeof raw.slots?.hero === "boolean" ? raw.slots.hero : defaults.slots.hero,
+            logo: typeof raw.slots?.logo === "boolean" ? raw.slots.logo : defaults.slots.logo,
+            icon: typeof raw.slots?.icon === "boolean" ? raw.slots.icon : defaults.slots.icon,
+        },
+        sgdbApiKey: typeof raw.sgdbApiKey === "string" ? raw.sgdbApiKey.trim() : "",
+        defaultTab: raw.defaultTab && ARTWORK_TAB_ORDER.includes(raw.defaultTab) ? raw.defaultTab : "cover",
+        tabOrder,
+        hiddenTabs,
+        filters,
+    };
+}
+const EMPTY_SGDB_KEY_STATUS = {
+    hasUserKey: false,
+    hasBuiltInKey: false,
+    configured: false,
+};
+const EMPTY_ARTWORK_SUMMARY = {
+    matched: 0,
+    complete: 0,
+    missing_games: 0,
+    missing_slots: 0,
+    existing_enabled_slots: 0,
+    locked_games: 0,
+};
+class ArtworkController {
+    constructor(deps) {
+        Object.defineProperty(this, "deps", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: deps
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "settingsLoadPromise", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: null
+        });
+        Object.defineProperty(this, "lastGames", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: []
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        this.snapshot = {
+            settings: structuredClone(DEFAULT_ARTWORK_SETTINGS),
+            settingsLoaded: false,
+            settingsError: "",
+            sgdbKeyStatus: { ...EMPTY_SGDB_KEY_STATUS },
+            summary: { ...EMPTY_ARTWORK_SUMMARY },
+            summaryLoaded: false,
+            busy: false,
+            progress: null,
+            sgdbInstalled: deps.isSteamGridDbActive(),
+            revision: 0,
+        };
+    }
+    getSnapshot() {
+        return this.snapshot;
+    }
+    subscribe(listener) {
+        this.listeners.add(listener);
+        if (!this.snapshot.settingsLoaded && !this.settingsLoadPromise) {
+            void this.ensureSettingsLoaded();
+        }
+        return () => this.listeners.delete(listener);
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        this.unsubscribeConflicts = this.deps.subscribePluginConflicts(() => {
+            const sgdbInstalled = this.deps.isSteamGridDbActive();
+            if (sgdbInstalled !== this.snapshot.sgdbInstalled) {
+                this.publish({ sgdbInstalled });
+            }
+        });
+        this.publish({ sgdbInstalled: this.deps.isSteamGridDbActive() });
+        void this.ensureSettingsLoaded();
+    }
+    stop() {
+        this.mounted = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = null;
+    }
+    async ensureSettingsLoaded() {
+        if (this.snapshot.settingsLoaded)
+            return this.snapshot.settings;
+        if (!this.settingsLoadPromise) {
+            this.settingsLoadPromise = this.deps
+                .getArtworkSettings()
+                .then((raw) => {
+                const settings = normalizeArtworkSettings(raw);
+                this.publish({ settings, settingsLoaded: true, settingsError: "" });
+                void this.refreshKeyStatus();
+                return settings;
+            })
+                .catch((error) => {
+                warn("artwork", "artwork settings load failed", error);
+                this.publish({ settingsError: translateBackendError(error) });
+                return this.snapshot.settings;
+            })
+                .finally(() => {
+                this.settingsLoadPromise = null;
+            });
+        }
+        return this.settingsLoadPromise;
+    }
+    async refreshKeyStatus() {
+        if (!this.deps.getSgdbKeyStatus)
+            return this.snapshot.sgdbKeyStatus;
+        try {
+            const sgdbKeyStatus = await this.deps.getSgdbKeyStatus();
+            this.publish({ sgdbKeyStatus });
+            return sgdbKeyStatus;
+        }
+        catch (error) {
+            warn("artwork", "sgdb key status load failed", error);
+            return this.snapshot.sgdbKeyStatus;
+        }
+    }
+    async setSettings(next) {
+        // While idle, the snapshot is what the backend last confirmed.
+        if (!this.saving)
+            this.confirmed = this.snapshot.settings;
+        const requested = normalizeArtworkSettings(next);
+        this.publish({ settings: requested, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time, so an older response can never overwrite a newer change. */
+    async drainSaves() {
+        while (this.queued) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            const previousKey = this.confirmed?.sgdbApiKey;
+            let saved = false;
+            try {
+                const confirmed = normalizeArtworkSettings(await this.deps.setArtworkSettings(settings));
+                this.confirmed = confirmed;
+                saved = true;
+                if (confirmed.sgdbApiKey !== previousKey)
+                    void this.refreshKeyStatus();
+                // A newer request is queued; showing this value first would flash it.
+                if (!this.queued) {
+                    this.publish({ settings: confirmed, settingsLoaded: true, settingsError: "" });
+                    if (this.lastGames.length > 0)
+                        void this.refreshSummary(this.lastGames);
+                }
+            }
+            catch (error) {
+                warn("artwork", "artwork settings save failed", error);
+                // A newer queued change carries the full settings and supersedes this one; save it instead of rolling back.
+                if (!this.queued) {
+                    this.publish({ settings: this.confirmed ?? this.snapshot.settings, settingsError: translateBackendError(error) });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        this.saving = false;
+    }
+    async updateSlotFilter(slot, filter) {
+        const current = await this.ensureSettingsLoaded();
+        return this.setSettings({
+            ...current,
+            filters: {
+                ...current.filters,
+                [slot]: filter,
+            },
+        });
+    }
+    async refreshSummary(games) {
+        this.lastGames = games;
+        try {
+            const summary = await this.deps.getArtworkSummary(games);
+            this.publish({ summary, summaryLoaded: true });
+            return summary;
+        }
+        catch (error) {
+            warn("artwork", "artwork summary load failed", error);
+            return this.snapshot.summary;
+        }
+    }
+    async setGameLocked(appId, locked) {
+        const saved = await this.deps.setArtworkLocked(appId, locked);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+        return saved;
+    }
+    async applySingleSlot(appId, steamAppId, slot) {
+        const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+    }
+    async applySgdbAsset(appId, slot, url) {
+        if (!this.deps.sgdbFetchAsset)
+            throw new Error("artwork_download_failed");
+        const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
+        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+    }
+    async applyLocalFile(appId, slot, filePath) {
+        if (!this.deps.readLocalArtworkFile)
+            throw new Error("artwork_file_unreadable");
+        const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
+        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+    }
+    async applyTransparentSlot(appId, slot) {
+        if (!this.deps.getTransparentArtworkAsset)
+            throw new Error("artwork_apply_failed");
+        const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
+        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+    }
+    async clearSingleSlot(appId, slot) {
+        await this.deps.clearSteamArtworkSlot(appId, slot);
+        await this.deps.clearLocalArtworkFile(appId, slot).catch(() => undefined);
+        this.bumpRevision();
+        if (this.lastGames.length > 0)
+            void this.refreshSummary(this.lastGames);
+    }
+    /**
+     * Apply enabled Steam artwork slots for one matched game.
+     * `mode = "policy"` uses `settings.preserveExisting`; `"fill-missing"` and `"replace-all"` override it.
+     */
+    async applyForGame(appId, steamAppId, mode, options) {
+        const settings = await this.ensureSettingsLoaded();
+        const state = await this.deps.getGameArtworkState(appId, steamAppId);
+        if (!options?.ignoreLock && state.locked) {
+            return { applied: 0, failed: 0, skippedLocked: true };
+        }
+        const preserveExisting = mode === "fill-missing" || (mode === "policy" && settings.preserveExisting);
+        let applied = 0;
+        let failed = 0;
+        for (const slot of ARTWORK_SLOT_ORDER) {
+            if (!settings.slots[slot])
+                continue;
+            const slotState = state.slots[slot];
+            if (!slotState?.available)
+                continue;
+            if (preserveExisting && slotState.present)
+                continue;
+            try {
+                const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+                await this.deps.applySteamArtworkSlot(appId, slot, asset);
+                applied += 1;
+            }
+            catch (error) {
+                failed += 1;
+                warn("artwork", `failed applying ${slot} for ${appId}`, error);
+            }
+        }
+        if (applied > 0) {
+            this.bumpRevision();
+            if (this.lastGames.length > 0)
+                void this.refreshSummary(this.lastGames);
+        }
+        return { applied, failed, skippedLocked: false };
+    }
+    async autoApplyForMatchedGame(appId, steamAppId, gameName) {
+        const settings = await this.ensureSettingsLoaded();
+        if (!settings.autoApply)
+            return;
+        if (this.snapshot.busy)
+            return;
+        try {
+            const result = await this.applyForGame(appId, steamAppId, "policy");
+            if (result.applied > 0) {
+                this.deps.toastSuccess(t("artwork.toast.appliedTitle"), t("artwork.toast.appliedGameBody", { count: result.applied, game: gameName }));
+            }
+        }
+        catch (error) {
+            warn("artwork", "auto-apply after steam match failed", error);
+        }
+    }
+    async runBulk(games, mode) {
+        if (this.snapshot.busy)
+            return;
+        // Claim the run before the first await so overlapping calls cannot both start.
+        this.publish({ busy: true });
+        try {
+            const settings = await this.ensureSettingsLoaded();
+            if (mode === "auto" && !settings.autoApply)
+                return;
+            const anySlotEnabled = ARTWORK_SLOT_ORDER.some((slot) => settings.slots[slot]);
+            if (!anySlotEnabled)
+                return;
+            const cache = this.deps.getMetadataCache();
+            let locks = {};
+            try {
+                locks = await this.deps.getAllArtworkLocks();
+            }
+            catch (error) {
+                warn("artwork", "artwork locks load failed", error);
+            }
+            const targets = games
+                .map((game) => ({ game, steamAppId: matchedSteamAppId(cache[String(game.appid)]) }))
+                .filter((entry) => entry.steamAppId !== null && locks[String(entry.game.appid)] !== true);
+            if (targets.length === 0) {
+                if (mode !== "auto") {
+                    this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+                }
+                return;
+            }
+            let totalApplied = 0;
+            let totalFailed = 0;
+            let gamesUpdated = 0;
+            const gameMode = mode === "auto" ? "policy" : mode;
+            for (let index = 0; index < targets.length; index += 1) {
+                const { game, steamAppId } = targets[index];
+                this.publish({
+                    progress: {
+                        running: true,
+                        mode,
+                        completed: index,
+                        total: targets.length,
+                        current: game.name,
+                    },
+                });
+                // applyForGame re-checks the per-game lock, which also covers a failed lock-list load.
+                const result = await this.applyForGame(game.appid, steamAppId, gameMode);
+                totalApplied += result.applied;
+                totalFailed += result.failed;
+                if (result.applied > 0)
+                    gamesUpdated += 1;
+            }
+            await this.refreshSummary(games);
+            if (totalApplied > 0) {
+                this.deps.toastSuccess(t("artwork.toast.appliedTitle"), totalFailed > 0
+                    ? t("artwork.toast.bulkPartialBody", {
+                        slots: totalApplied,
+                        games: gamesUpdated,
+                        failed: totalFailed,
+                    })
+                    : t("artwork.toast.bulkCompleteBody", {
+                        slots: totalApplied,
+                        games: gamesUpdated,
+                    }));
+            }
+            else if (totalFailed > 0 && mode !== "auto") {
+                this.deps.toastError(t("artwork.toast.failedTitle"), t("artwork.toast.bulkFailedBody", { failed: totalFailed }));
+            }
+            else if (mode !== "auto") {
+                this.deps.toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+            }
+        }
+        catch (error) {
+            if (mode !== "auto") {
+                this.deps.toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+            }
+            else {
+                warn("artwork", "auto bulk artwork failed", error);
+            }
+        }
+        finally {
+            this.publish({ busy: false, progress: null });
+        }
+    }
+    bumpRevision() {
+        this.publish({ revision: this.snapshot.revision + 1 });
+    }
+    publish(update) {
+        this.snapshot = { ...this.snapshot, ...update };
+        for (const listener of this.listeners)
+            listener();
+    }
+}
+const artworkController = new ArtworkController({
+    getArtworkSettings,
+    setArtworkSettings,
+    getSgdbKeyStatus,
+    getArtworkSummary,
+    getAllArtworkLocks,
+    setArtworkLocked,
+    getGameArtworkState,
+    fetchSteamArtworkAsset,
+    sgdbFetchAsset,
+    readLocalArtworkFile,
+    getTransparentArtworkAsset,
+    clearLocalArtworkFile,
+    applySteamArtworkSlot,
+    clearSteamArtworkSlot,
+    getMetadataCache: () => metadataCache,
+    isSteamGridDbActive: () => pluginConflicts.isPluginActive("SteamGridDB"),
+    subscribePluginConflicts: (listener) => pluginConflicts.subscribe(listener),
+    toastSuccess,
+    toastError,
+});
+
 const steamUiWindow = () => {
     const candidates = [globalThis];
     try {
@@ -22595,860 +30275,6 @@ const createActivityRefreshGate = (intervalMs = ACTIVITY_REFRESH_INTERVAL_MS) =>
     };
 };
 
-const patchInstallStatus = {
-    activity: "pending",
-    partnerEvents: "pending",
-    contextMenu: "pending"};
-/** Typed accessor for the Steam internals exposed on `globalThis`. */
-const steamInternals = () => globalThis;
-const hasSteamInternals = () => !!steamInternals().SteamClient && typeof appStore !== "undefined" && !!appStore && typeof appDetailsStore !== "undefined" && !!appDetailsStore;
-const steamPatchTargetsReady = () => {
-    try {
-        return hasSteamInternals() && !!appStore?.allApps?.[0]?.__proto__ && !!appDetailsStore?.__proto__;
-    }
-    catch (_error) {
-        return false;
-    }
-};
-const hasActivityStore = () => !!steamInternals().appActivityStore;
-const NON_STEAM_APP_TYPE = 1073741824;
-/** EAppType bitmask for playable Steam titles (Game, Demo, Beta); excludes Tools/Proton, Videos, Music, Apps. */
-const NATIVE_STEAM_GAME_APP_TYPE_MASK = 1 | 8 | 65536;
-const GAME_DETAIL_ROUTES = [
-    "/library/app/:appid",
-    "/library/details/:appid",
-    "/library/:collection/app/:appid",
-];
-const GAME_ACTIVITY_ROUTES = [
-    "/library/app/:appid/activity",
-    "/library/app/:appid/activity/:rest",
-    "/library/details/:appid/activity",
-    "/library/details/:appid/activity/:rest",
-    "/library/:collection/app/:appid/activity",
-    "/library/:collection/app/:appid/activity/:rest",
-];
-const COMPATIBILITY_RUNTIME_KEY = "__deckyMetadataCompatibilityRuntime";
-const newCompatibilityMetadataState = () => ({
-    bypassCounter: 0,
-    metadataLoaded: false,
-    metadataLoadPromise: null,
-    metadataRequestOwners: new Map(),
-    screenshotRequestOwners: new Map(),
-    loadingMetadata: new Set(),
-    loadingScreenshots: new Set(),
-    appliedMetadataRef: {},
-    compatibilityBaselines: {},
-    compatibilityBaselineBits: 10,
-    compatibilityPendingLegacyBits: new Set(),
-    deferredCompatibilityUpdates: new Map(),
-    deferredEditorCompatibilityPublications: new Set(),
-    compatibilityDefault: null,
-    compatibilityDefaultLoaded: false,
-    compatibilityDefaultScope: "all",
-    compatibilityDefaultGeneration: 0,
-    compatibilityLifecycleGeneration: 0,
-    compatibilityDefaultLoadPromise: null,
-    compatibilityRevision: 0,
-    metadataMatchRevision: 0,
-    lastObservedGameDetailAppId: 0,
-    routeShield: null,
-});
-/**
- * Decky loads a new module bundle during an in-place plugin import, while a
- * mounted route can still hold callbacks from the retiring bundle. Keep the
- * mutable compatibility runtime on SteamUI's global host for that handoff.
- * A lifecycle change makes old asynchronous work inert; the shared object
- * ensures a surviving editor observes the current cache, policy, and revision.
- */
-const compatibilityRuntime = () => {
-    const host = globalThis;
-    const existing = host[COMPATIBILITY_RUNTIME_KEY];
-    if (existing &&
-        typeof existing === "object" &&
-        existing.metadataCache &&
-        existing.metadataState &&
-        existing.revisionListeners instanceof Set) {
-        const state = existing.metadataState;
-        // Older bundles do not have the reload-owned maps. Keep their public Set
-        // fields for callbacks that still hold the retiring import, but make this
-        // import's authoritative guards and compatibility queues shared.
-        if (!(state.metadataRequestOwners instanceof Map)) {
-            state.metadataRequestOwners = new Map();
-        }
-        if (!(state.screenshotRequestOwners instanceof Map)) {
-            state.screenshotRequestOwners = new Map();
-        }
-        if (!(state.deferredCompatibilityUpdates instanceof Map)) {
-            state.deferredCompatibilityUpdates = new Map();
-        }
-        if (!(state.deferredEditorCompatibilityPublications instanceof Set)) {
-            state.deferredEditorCompatibilityPublications = new Set();
-        }
-        if (!(state.compatibilityPendingLegacyBits instanceof Set)) {
-            state.compatibilityPendingLegacyBits = new Set();
-        }
-        if (typeof state.metadataMatchRevision !== "number")
-            state.metadataMatchRevision = 0;
-        if (!(existing.matchRevisionListeners instanceof Set)) {
-            existing.matchRevisionListeners = new Set();
-        }
-        return existing;
-    }
-    const runtime = {
-        metadataCache: {},
-        metadataState: newCompatibilityMetadataState(),
-        revisionListeners: new Set(),
-        matchRevisionListeners: new Set(),
-    };
-    host[COMPATIBILITY_RUNTIME_KEY] = runtime;
-    return runtime;
-};
-const runtime$1 = compatibilityRuntime();
-const metadataCache = runtime$1.metadataCache;
-const metadataState = runtime$1.metadataState;
-const metadataMatchRevisionSnapshot = () => metadataState.metadataMatchRevision;
-const subscribeMetadataMatchChanges = (listener) => {
-    metadataMatchRevisionListeners.add(listener);
-    return () => metadataMatchRevisionListeners.delete(listener);
-};
-const normalizedSavedSteamAppId = (value) => {
-    if (typeof value !== "number" && !(typeof value === "string" && /^\d{1,10}$/.test(value)))
-        return null;
-    const appId = Number(value);
-    return Number.isSafeInteger(appId) && appId > 0 && appId < 0x80000000 ? appId : null;
-};
-const notifyMetadataMatchChanged = (appId) => {
-    const revision = ++metadataState.metadataMatchRevision;
-    metadataMatchRevisionListeners.forEach((listener) => {
-        try {
-            listener(appId, revision);
-        }
-        catch { /* A trailer update cannot block metadata. */ }
-    });
-    return revision;
-};
-const setMetadataCacheEntry = (appId, value) => {
-    const key = String(appId);
-    const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
-    metadataCache[key] = value;
-    const nextMatch = normalizedSavedSteamAppId(value?.steam_appid);
-    if (previousMatch !== nextMatch)
-        notifyMetadataMatchChanged(appId);
-};
-// Plugin replies can arrive out of commit order, so a background result taken before a removal
-// checks this per-app count before it writes the cache.
-const metadataRemovals = new Map();
-const metadataRemovalSnapshot = (appId) => metadataRemovals.get(String(appId)) ?? 0;
-const countRemoval = (key) => metadataRemovals.set(key, (metadataRemovals.get(key) ?? 0) + 1);
-const removeMetadataCacheEntry = (appId) => {
-    const key = String(appId);
-    const previousMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
-    delete metadataCache[key];
-    countRemoval(key);
-    if (previousMatch !== null)
-        notifyMetadataMatchChanged(appId);
-};
-const replaceMetadataCacheEntries = (records) => {
-    const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
-    Object.keys(metadataCache).forEach((key) => {
-        if (!(key in (records || {})))
-            countRemoval(key);
-        delete metadataCache[key];
-    });
-    Object.assign(metadataCache, records || {});
-    const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
-    for (const key of appIds) {
-        const previousMatch = previous.get(key) ?? null;
-        const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
-        if (previousMatch !== nextMatch) {
-            const appId = Number(key);
-            if (Number.isInteger(appId) && appId > 0)
-                notifyMetadataMatchChanged(appId);
-        }
-    }
-};
-const compatibilityRevisionListeners = runtime$1.revisionListeners;
-const metadataMatchRevisionListeners = runtime$1.matchRevisionListeners;
-const compatibilityRevisionSnapshot = () => metadataState.compatibilityRevision;
-const compatibilityDefaultSnapshot = () => metadataState.compatibilityDefault;
-const compatibilityDefaultLoadedSnapshot = () => metadataState.compatibilityDefaultLoaded;
-const compatibilityDefaultScopeSnapshot = () => metadataState.compatibilityDefaultScope;
-const compatibilityLifecycleSnapshot = () => metadataState.compatibilityLifecycleGeneration;
-const isCompatibilityLifecycleCurrent = (generation) => generation === metadataState.compatibilityLifecycleGeneration;
-const subscribeCompatibilityRevision = (listener) => {
-    compatibilityRevisionListeners.add(listener);
-    return () => {
-        compatibilityRevisionListeners.delete(listener);
-    };
-};
-const notifyCompatibilityRevision = () => {
-    const revision = ++metadataState.compatibilityRevision;
-    compatibilityRevisionListeners.forEach((listener) => {
-        try {
-            listener();
-        }
-        catch {
-            // One failed card update must not block other compatibility indicators.
-        }
-    });
-    return revision;
-};
-/**
- * Trademark, registered, and copyright marks appear in official Steam store
- * names but not in persisted metadata titles, which are already stripped.
- * Every title comparison must erase them, so `cleanTitle` and
- * `normalizedTabText` share this one definition instead of drifting apart.
- */
-const TRADEMARK_MARKS = /[\u2122\u00ae\u00a9]/g;
-const cleanTitle = (value) => String(value || "")
-    .replace(TRADEMARK_MARKS, "")
-    .replace(/\s+/g, " ")
-    .trim();
-const isNonSteamAppWithoutPatchedMethod = (overview) => {
-    if (!overview)
-        return false;
-    if (Number(overview?.app_type) === NON_STEAM_APP_TYPE)
-        return true;
-    try {
-        if (overview?.BIsShortcut?.())
-            return true;
-    }
-    catch (_error) {
-        return false;
-    }
-    const appId = Number(overview?.appid);
-    return Number.isFinite(appId) && !!metadataCache[String(appId)];
-};
-const currentRoutePath = () => {
-    const steamRouter = steamInternals().Router;
-    const location = steamRouter?.WindowStore?.GamepadUIMainWindowInstance?.m_history?.location;
-    const windowLocation = steamInternals().window;
-    const browserLocation = windowLocation?.location;
-    return [
-        location?.pathname,
-        location?.search,
-        location?.hash,
-        windowLocation?.pathname,
-        windowLocation?.search,
-        windowLocation?.hash,
-        windowLocation?.href,
-        browserLocation?.pathname,
-        browserLocation?.search,
-        browserLocation?.hash,
-        browserLocation?.href,
-    ]
-        .filter(Boolean)
-        .join(" ");
-};
-const isNonSteamApp = (overview) => {
-    if (isNonSteamAppWithoutPatchedMethod(overview))
-        return true;
-    try {
-        if (overview?.BIsModOrShortcut?.())
-            return true;
-    }
-    catch (_error) {
-        return false;
-    }
-    return false;
-};
-/**
- * Require Steam's native shortcut identity for operations that write back to
- * an overview. Cached metadata alone must never make an official app eligible.
- */
-const isNativeNonSteamShortcut = (overview) => {
-    if (!isNonSteamApp(overview))
-        return false;
-    if (Number(overview?.app_type) === NON_STEAM_APP_TYPE)
-        return true;
-    try {
-        return overview?.BIsShortcut?.() === true;
-    }
-    catch (_error) {
-        return false;
-    }
-};
-/**
- * True for native Steam games (Game, Demo, Beta) — never shortcuts, Tools/Proton,
- * Soundtracks, Videos, or Applications.
- */
-const isNativeSteamGame = (overview) => {
-    if (!overview || isNativeNonSteamShortcut(overview))
-        return false;
-    const appId = Number(overview?.appid);
-    if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000)
-        return false;
-    const appType = Number(overview?.app_type);
-    return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
-};
-const getOverview = (appId) => {
-    try {
-        return appStore?.GetAppOverviewByAppID?.(appId) ?? null;
-    }
-    catch (_error) {
-        return null;
-    }
-};
-/** Steam's own icon URL for an app; null until a shortcut's icon data has loaded. */
-const getAppIconUrl = (appId) => {
-    try {
-        const overview = getOverview(appId);
-        return (overview && appStore?.GetIconURLForApp?.(overview)) || null;
-    }
-    catch {
-        return null;
-    }
-};
-/**
- * Resolve an overview by its own AppID without passing through plugin patches.
- * This is required for writes: GetAppOverviewByAppID intentionally aliases a
- * matched Steam AppID to its shortcut on the rich-details path.
- */
-const getNativeOverview = (appId) => {
-    const nativeAppId = Number(appId);
-    if (!Number.isFinite(nativeAppId) || nativeAppId <= 0)
-        return null;
-    try {
-        const allApps = appStore?.allApps;
-        const entries = Array.isArray(allApps)
-            ? allApps
-            : allApps && typeof allApps === "object"
-                ? Object.values(allApps)
-                : [];
-        return entries.find((overview) => Number(overview?.appid) === nativeAppId) ?? null;
-    }
-    catch (_error) {
-        return null;
-    }
-};
-const steamAppIdForApp = (appId) => Number(metadataCache[String(appId)]?.steam_appid) || 0;
-const safeDecodeURIComponent = (value) => {
-    try {
-        return decodeURIComponent(value);
-    }
-    catch (_error) {
-        return value;
-    }
-};
-const steamWebLinkTarget = (url) => {
-    const match = url.match(/(?:https?:\/\/)?store\.steampowered\.com\/app\/(\d+)/i) ||
-        url.match(/(?:https?:\/\/)?steamcommunity\.com\/app\/(\d+)/i);
-    const queryMatch = match ||
-        url.match(/(?:https?:\/\/)?(?:store\.steampowered\.com|steamcommunity\.com)\/[^?#]*\?(?:[^#&]*&)*appid=(\d+)/i);
-    if (!queryMatch?.[1])
-        return null;
-    const appId = Number(queryMatch[1]);
-    if (!Number.isFinite(appId) || appId <= 0)
-        return null;
-    const kind = /steamcommunity\.com/i.test(queryMatch[0]) ? "community" : "store";
-    const idIndex = queryMatch.index === undefined ? -1 : queryMatch.index + queryMatch[0].lastIndexOf(queryMatch[1]);
-    if (idIndex < 0)
-        return null;
-    return {
-        kind,
-        appId,
-        replace: (mappedAppId) => `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + queryMatch[1].length)}`,
-    };
-};
-const steamProtocolLinkTarget = (url) => {
-    const storeMatch = url.match(/^steam:\/\/store\/(\d+)/i) ||
-        url.match(/^steam:\/\/url\/StoreAppPage\/(\d+)/i);
-    if (storeMatch?.[1]) {
-        const appId = Number(storeMatch[1]);
-        const idIndex = storeMatch.index === undefined ? -1 : storeMatch.index + storeMatch[0].lastIndexOf(storeMatch[1]);
-        if (Number.isFinite(appId) && appId > 0 && idIndex >= 0) {
-            return {
-                kind: "store",
-                appId,
-                replace: (mappedAppId) => `${url.slice(0, idIndex)}${mappedAppId}${url.slice(idIndex + storeMatch[1].length)}`,
-            };
-        }
-    }
-    const openUrlMatch = url.match(/^steam:\/\/openurl\/(.+)$/i);
-    if (!openUrlMatch?.[1])
-        return null;
-    const rawTarget = openUrlMatch[1];
-    const decodedTarget = safeDecodeURIComponent(rawTarget);
-    const nested = steamWebLinkTarget(decodedTarget) || steamWebLinkTarget(rawTarget);
-    if (!nested)
-        return null;
-    return {
-        kind: nested.kind,
-        appId: nested.appId,
-        replace: (mappedAppId) => `steam://openurl/${nested.replace(mappedAppId)}`,
-    };
-};
-const steamLinkTarget = (url) => {
-    try {
-        const rawUrl = String(url || "");
-        return steamProtocolLinkTarget(rawUrl) || steamWebLinkTarget(rawUrl);
-    }
-    catch (_error) {
-        return null;
-    }
-};
-const rewriteSteamLinkToMatchedApp = (url) => {
-    try {
-        const rawUrl = String(url || "");
-        const target = steamLinkTarget(rawUrl);
-        if (!target)
-            return { url: rawUrl, rewrote: false };
-        const mapped = steamAppIdForApp(target.appId);
-        if (mapped > 0 && mapped !== target.appId) {
-            return {
-                url: target.replace(mapped),
-                rewrote: true,
-                fromAppId: target.appId,
-                toAppId: mapped,
-            };
-        }
-        return { url: rawUrl, rewrote: false };
-    }
-    catch (_error) {
-        return { url: String(url || ""), rewrote: false };
-    }
-};
-const rewriteSteamwebNavState = (state) => {
-    try {
-        if (!state || typeof state !== "object")
-            return { state, rewrote: false };
-        let clone;
-        try {
-            clone = structuredClone(state);
-        }
-        catch (_error) {
-            return { state, rewrote: false };
-        }
-        let rewrote = false;
-        const seen = new WeakSet();
-        const walk = (value, depth) => {
-            if (!value || typeof value !== "object" || depth < 0)
-                return;
-            if (seen.has(value))
-                return;
-            seen.add(value);
-            const keys = Array.isArray(value) ? value.keys() : Object.keys(value);
-            for (const key of keys) {
-                const item = value[key];
-                if (typeof item === "string") {
-                    const rewritten = rewriteSteamLinkToMatchedApp(item);
-                    if (rewritten.rewrote) {
-                        value[key] = rewritten.url;
-                        rewrote = true;
-                    }
-                    continue;
-                }
-                if (item && typeof item === "object") {
-                    walk(item, depth - 1);
-                }
-            }
-        };
-        walk(clone, 6);
-        return { state: clone, rewrote };
-    }
-    catch (_error) {
-        return { state, rewrote: false };
-    }
-};
-const appName = (appId) => {
-    const overview = getOverview(appId);
-    return cleanTitle(overview?.display_name ||
-        overview?.localized_name ||
-        overview?.name ||
-        `App ${appId}`);
-};
-const DECKY_NATIVE_ACTIVITY_WINDOW_KEY = "__deckyNativeActivityCache";
-const DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY = "__deckyNativePartnerEvents";
-const DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY = "__deckyNativePartnerEventStore";
-const deckyNativeActivityCache = () => {
-    const host = steamInternals();
-    if (!host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY])
-        host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] = new Map();
-    return host[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
-};
-const deckyNativePartnerEventCache = () => {
-    const host = steamInternals();
-    if (!host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY])
-        host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY] = new Map();
-    return host[DECKY_NATIVE_PARTNER_EVENTS_WINDOW_KEY];
-};
-const deckyNativePartnerEventStore = () => steamInternals()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
-const activityAppIdFromUrl = (url) => {
-    const decoded = decodeURIComponent(String(url || ""));
-    const patterns = [
-        /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
-        /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
-        /(?:appid|app_id|appId)=(\d+).*?(?:appactivity|activity|appnews|appupdates)/i,
-    ];
-    for (const pattern of patterns) {
-        const match = decoded.match(pattern);
-        if (match)
-            return Number(match[1]);
-    }
-    return 0;
-};
-const gameDetailAppIdFromPath = (path) => {
-    const decoded = decodeURIComponent(String(path || ""));
-    const patterns = [
-        /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
-        /(?:^|[?#&\s])appid=(\d+)/i,
-        /(?:^|[?#&\s])app_id=(\d+)/i,
-        /\bapp\/(\d+)\b/i,
-    ];
-    for (const pattern of patterns) {
-        const match = decoded.match(pattern);
-        if (match)
-            return Number(match[1] || 0);
-    }
-    return 0;
-};
-/**
- * True only when a joined Steam route context identifies this exact app's
- * Library detail page.  `currentRoutePath` joins pathname, search, hash, and
- * href tokens, while `gameDetailAppIdFromPath` deliberately accepts broader
- * discovery hints.  Identity spoofing needs this stricter boundary: a query,
- * a sidebar item, or a different app must not turn a shortcut into a native
- * app for unrelated Steam consumers.
- */
-const isCurrentGameDetailRoute = (routeContext, appId) => {
-    if (!Number.isSafeInteger(appId) || appId <= 0)
-        return false;
-    const tokens = String(routeContext || "").trim().split(/\s+/);
-    // `currentRoutePath` currently contributes at most eleven values. Keep this
-    // hot-path parser bounded even if a malformed host object appends noise.
-    // Every authoritative route token must agree. A stale detail path must not
-    // override a current Home, controller, or other-app path during navigation.
-    let foundCurrentDetail = false;
-    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
-        const token = tokens[index];
-        if (!token)
-            continue;
-        let pathname = token;
-        try {
-            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
-                pathname = new URL(token).pathname;
-            else if (!token.startsWith("/"))
-                continue;
-            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
-        }
-        catch (_error) {
-            continue;
-        }
-        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
-            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
-            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
-            return false;
-        }
-        const match = pathname.match(/^\/(?:routes\/)?library\/(?:(?:app|details)\/(\d+)|[^/?#\s]+\/app\/(\d+))(?:\/[^?#\s]*)?$/i);
-        if (!match)
-            return false;
-        const routeAppId = Number(match[1] || match[2]);
-        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
-            return false;
-        foundCurrentDetail = true;
-    }
-    return foundCurrentDetail;
-};
-/**
- * The metadata editor is a separate route, but Steam keeps the selected
- * game's Game Info tree mounted beneath it. For that exact app only, render
- * identity must stay matched while the editor saves a changed packed value.
- * This is intentionally separate from Game Info deferral: entering the editor
- * still releases any held compatibility update.
- */
-const isCurrentMetadataEditorRoute = (routeContext, appId) => {
-    if (!Number.isSafeInteger(appId) || appId <= 0)
-        return false;
-    const tokens = String(routeContext || "").trim().split(/\s+/);
-    let foundCurrentEditor = false;
-    for (let index = 0; index < Math.min(tokens.length, 12); index += 1) {
-        const token = tokens[index];
-        if (!token)
-            continue;
-        let pathname = token;
-        try {
-            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
-                pathname = new URL(token).pathname;
-            else if (!token.startsWith("/"))
-                continue;
-            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
-        }
-        catch (_error) {
-            continue;
-        }
-        const match = pathname.match(/^\/(?:routes\/)?decky-metadata\/(\d+)\/?$/i);
-        if (!match)
-            return false;
-        const routeAppId = Number(match[1]);
-        if (!Number.isSafeInteger(routeAppId) || routeAppId !== appId)
-            return false;
-        foundCurrentEditor = true;
-    }
-    return foundCurrentEditor;
-};
-/**
- * Render identity has one more valid route than compatibility deferral. The
- * exact plugin editor is part of its selected app's still-mounted detail tree;
- * ordinary Game Info protection remains limited to `isCurrentGameInfoRoute`.
- */
-const isCurrentMatchedRenderRoute = (routeContext, appId) => isCurrentGameDetailRoute(routeContext, appId) || isCurrentMetadataEditorRoute(routeContext, appId);
-/**
- * True only for the exact Game Info tab of this app. Other detail tabs share
- * the app route, but leaving Game Info must release a held compatibility
- * update instead of treating the whole app page as protected.
- */
-const isCurrentGameInfoRoute = (routeContext, appId) => {
-    if (!isCurrentGameDetailRoute(routeContext, appId))
-        return false;
-    return String(routeContext || "").split(/\s+/).some((token) => /(?:\/tab\/|[?&#](?:tab|section)=)gameinfo(?:[/?#&\s]|$)/i.test(token));
-};
-/**
- * A history listener can confirm an exact Game Info return before Steam's
- * window and browser route tokens leave the metadata editor.  Let that short
- * re-entry shield cover only this app and only when the current tokens contain
- * no explicit destination that conflicts with it.  Generic route templates
- * and a shield for another app cannot recover a stale route.
- */
-const canRecoverStaleGameDetailRoute = (routeContext, appId) => {
-    const shield = metadataState.routeShield;
-    if (!shield || shield.appId !== appId)
-        return false;
-    if (!isCurrentGameDetailRoute(shield.path, appId))
-        return false;
-    for (const token of String(routeContext || "").trim().split(/\s+/)) {
-        if (!token)
-            continue;
-        let pathname = token;
-        try {
-            if (/^[a-z][a-z0-9+.-]*:\/\//i.test(token))
-                pathname = new URL(token).pathname;
-            else if (!token.startsWith("/"))
-                continue;
-            pathname = decodeURIComponent(pathname).split(/[?#]/, 1)[0];
-        }
-        catch (_error) {
-            continue;
-        }
-        if (/^\/(?:routes\/)?(?:library\/home|controllerconfig)(?:\/|$)/i.test(pathname) ||
-            /^\/(?:routes\/)?library\/collections(?:\/|$)/i.test(pathname) ||
-            /^\/(?:routes\/)?app\/\d+\/controllerconfigurator(?:\/|$)/i.test(pathname)) {
-            return false;
-        }
-        const routeAppId = gameDetailAppIdFromPath(pathname);
-        if (routeAppId && routeAppId !== appId)
-            return false;
-    }
-    return true;
-};
-const appIdFromDom = () => {
-    const attributes = ["href", "data-appid", "data-app-id", "data-appid64", "data-ds-appid", "aria-label", "title"];
-    const candidates = deepQuerySelectorAll("a, button, [role='button'], [role='tab'], [data-appid], [data-app-id], [data-ds-appid]");
-    for (const element of candidates) {
-        if (!visibleElement(element))
-            continue;
-        for (const attribute of attributes) {
-            const value = element.getAttribute(attribute) || "";
-            const appId = gameDetailAppIdFromPath(value);
-            if (appId)
-                return appId;
-        }
-    }
-    return 0;
-};
-const appIdFromVisibleMetadataTitle = () => {
-    try {
-        const pageText = normalizedTabText(document.body?.textContent || "");
-        if (!pageText || !metadataCache)
-            return 0;
-        const candidates = Object.entries(metadataCache)
-            .map(([key, metadata]) => {
-            const appId = Number(key);
-            const title = normalizedTabText(metadata?.title || appName(appId));
-            return { appId, title };
-        })
-            .filter((candidate) => candidate.appId && candidate.title && candidate.title.length >= 3)
-            .sort((a, b) => b.title.length - a.title.length);
-        for (const candidate of candidates) {
-            if (pageText.includes(candidate.title))
-                return candidate.appId;
-        }
-    }
-    catch (_error) {
-        // Best-effort fallback only.
-    }
-    return 0;
-};
-const currentGameDetailAppId = () => {
-    const routeAppId = gameDetailAppIdFromPath(currentRoutePath());
-    if (routeAppId)
-        return routeAppId;
-    if (metadataState.lastObservedGameDetailAppId)
-        return metadataState.lastObservedGameDetailAppId;
-    const titleAppId = appIdFromVisibleMetadataTitle();
-    if (titleAppId)
-        return titleAppId;
-    const domAppId = appIdFromDom();
-    if (domAppId && (metadataCache[String(domAppId)] || isNonSteamAppWithoutPatchedMethod(getOverview(domAppId))))
-        return domAppId;
-    return domAppId || 0;
-};
-const visibleElement = (element) => {
-    if (!(element instanceof HTMLElement))
-        return false;
-    const rect = element.getBoundingClientRect();
-    if (rect.width < 2 || rect.height < 2)
-        return false;
-    const style = window.getComputedStyle(element);
-    return style.display !== "none" && style.visibility !== "hidden" && Number(style.opacity || 1) > 0;
-};
-const deepQuerySelectorAll = (selector, root = document) => {
-    const results = [];
-    const seen = new Set();
-    const visit = (scope) => {
-        let elements = [];
-        try {
-            elements = Array.from(scope.querySelectorAll?.(selector) || []);
-        }
-        catch (_error) {
-            elements = [];
-        }
-        elements.forEach((element) => {
-            if (!seen.has(element)) {
-                seen.add(element);
-                results.push(element);
-            }
-            const shadowRoot = element.shadowRoot;
-            if (shadowRoot)
-                visit(shadowRoot);
-        });
-    };
-    visit(root);
-    return results;
-};
-const normalizedTabText = (value) => String(value || "")
-    .replace(TRADEMARK_MARKS, "")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLocaleLowerCase();
-const patchMethod = (target, methodName, replacement) => {
-    if (!target?.[methodName])
-        return () => undefined;
-    const original = target[methodName];
-    target[methodName] = function patchedMethod(...args) {
-        const boundOriginal = original.bind(this);
-        try {
-            return replacement(this, boundOriginal, args);
-        }
-        catch (_error) {
-            // A patch replacement must never break the Steam method it wraps.
-            try {
-                return boundOriginal(...args);
-            }
-            catch (_originalError) {
-                return undefined;
-            }
-        }
-    };
-    return () => {
-        target[methodName] = original;
-    };
-};
-const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
-    try {
-        return handler.call(this, args, ret);
-    }
-    catch (_error) {
-        // An afterPatch handler must never break the Steam method it augments.
-        return ret;
-    }
-});
-const overviewFromReactTree = (tree) => {
-    try {
-        const holder = DFL.findInReactTree(tree, (node) => {
-            const overview = node?.props?.overview || node?.overview;
-            return overview?.appid ? true : undefined;
-        });
-        return holder?.props?.overview || holder?.overview || null;
-    }
-    catch (_error) {
-        return null;
-    }
-};
-const appIdFromReactTree = (tree) => {
-    const overview = overviewFromReactTree(tree);
-    const appId = Number(overview?.appid || 0);
-    return Number.isFinite(appId) ? appId : 0;
-};
-const historyPathFromArgs = (args) => {
-    const first = args?.[0];
-    if (typeof first === "string")
-        return first;
-    if (first && typeof first === "object") {
-        return String(first.pathname || first.path || first.href || first.url || "");
-    }
-    return "";
-};
-const historyStateFromArgs = (args) => {
-    const first = args?.[0];
-    const second = args?.[1];
-    // React Router / Steam history may call push(path, { state }), push(path, state),
-    // push({ pathname, state }), replace(location, state), or the raw browser
-    // history API with the state as first argument. The previous build only handled
-    // the direct state shapes, so Steam's Navigator.App(appid, { gidPartnerEvent })
-    // slipped through as args[1].state and kept polluting the back stack.
-    if (first && typeof first === "object") {
-        if (first.state?.event_to_show)
-            return first.state;
-        if (first.event_to_show)
-            return first;
-        if ("state" in first && first.state)
-            return first.state;
-    }
-    if (second && typeof second === "object") {
-        if (second.state?.event_to_show)
-            return second.state;
-        if (second.event_to_show)
-            return second;
-        if ("state" in second && second.state)
-            return second.state;
-    }
-    return second;
-};
-// The hit budget is only a runaway backstop; the 2000 ms TTL is the real expiry required by launch flows.
-const ROUTE_SHIELD_MAX_HITS = 64;
-const ROUTE_SHIELD_TTL_MS = 2000;
-let shieldSeq = 0;
-const armRouteShield = (appId, path, trigger) => {
-    if (appId <= 0)
-        return;
-    shieldSeq += 1;
-    metadataState.routeShield = {
-        appId,
-        path,
-        trigger,
-        armedAt: Date.now(),
-        remaining: ROUTE_SHIELD_MAX_HITS,
-        seqId: shieldSeq,
-    };
-};
-const consumeRouteShield = (appId) => {
-    const shield = metadataState.routeShield;
-    if (!shield)
-        return false;
-    if (shield.appId !== appId)
-        return false;
-    const age = Date.now() - shield.armedAt;
-    if (age > ROUTE_SHIELD_TTL_MS || shield.remaining <= 0) {
-        metadataState.routeShield = null; // Stale or exhausted
-        return false;
-    }
-    shield.remaining -= 1;
-    return true;
-};
-const clearRouteShield = () => {
-    metadataState.routeShield = null;
-};
-
 let ensureMetadataCacheFn = async () => undefined;
 let applyMetadataFn = () => false;
 const configureActivityMetadataLoader = (ensureMetadataCache, applyMetadata) => {
@@ -23823,7 +30649,7 @@ const deckyNativePartnerEventKeys = (event) => {
     ]);
 };
 const collectNativePartnerEventStores = () => {
-    const host = steamInternals();
+    const host = steamInternals$1();
     const stores = [];
     const add = (candidate) => {
         if (!candidate || typeof candidate !== "object")
@@ -24984,120 +31810,6 @@ const withInCallTruth = (state, run) => {
     finally {
         state.bypassCounter = previous;
     }
-};
-
-const matchedSteamAppId = (metadata) => {
-    const raw = metadata?.steam_appid;
-    if (typeof raw === "boolean" || raw === null || raw === undefined)
-        return null;
-    const steamAppId = typeof raw === "string" ? Number(raw.trim()) : raw;
-    return typeof steamAppId === "number" && Number.isSafeInteger(steamAppId) && steamAppId > 0
-        ? steamAppId
-        : null;
-};
-const hasMatchedSteamAppId = (metadata) => matchedSteamAppId(metadata) !== null;
-const associationsMatch = (current, people) => {
-    if (!Array.isArray(current) || current.length !== (people?.length || 0))
-        return false;
-    for (let index = 0; index < current.length; index += 1) {
-        const person = people[index];
-        if (current[index]?.strName !== person.name || current[index]?.strURL !== (person.url || ""))
-            return false;
-    }
-    return true;
-};
-const associationValues = (current, native, people) => {
-    if (associationsMatch(current, people))
-        return current;
-    if (associationsMatch(native, people))
-        return native;
-    return people?.map((person) => ({ strName: person.name, strURL: person.url || "" })) || [];
-};
-const SCREENSHOT_FIELDS = [
-    "appid", "id", "nScreenshotID", "strCaption", "strImageURL", "strThumbnailURL",
-    "strURL", "url", "nWidth", "nHeight", "width", "height", "bSpoiler",
-];
-const screenshotsMatch = (current, expected) => {
-    if (current === expected)
-        return true;
-    if (!Array.isArray(current) || current.length !== expected.length)
-        return false;
-    for (let index = 0; index < expected.length; index += 1) {
-        for (const field of SCREENSHOT_FIELDS) {
-            if (current[index]?.[field] !== expected[index]?.[field])
-                return false;
-        }
-    }
-    return true;
-};
-/**
- * Reapply Decky's matched-game fields to a native app-data replacement.
- *
- * Steam rebuilds appData.details when another cache category arrives. The
- * replacement must be populated before GetAppData returns it to SteamUI;
- * otherwise observers can render the transient shortcut-only details and stay
- * there until a later navigation.
- */
-const reassertMatchedAppData = (appData, metadata, screenshots) => {
-    const details = appData?.details;
-    if (!details)
-        return false;
-    const description = metadata.short_description?.trim() ? metadata.short_description : metadata.description || "";
-    if (appData.descriptionsData?.strFullDescription !== description ||
-        appData.descriptionsData?.strSnippet !== description) {
-        appData.descriptionsData = { strFullDescription: description, strSnippet: description };
-    }
-    const previousAssociations = appData.associationData;
-    const developers = associationValues(previousAssociations?.rgDevelopers, details.rgDevelopers, metadata.developers);
-    const publishers = associationValues(previousAssociations?.rgPublishers, details.rgPublishers, metadata.publishers);
-    const franchises = Array.isArray(previousAssociations?.rgFranchises) && previousAssociations.rgFranchises.length === 0
-        ? previousAssociations.rgFranchises
-        : Array.isArray(details.rgFranchises) && details.rgFranchises.length === 0
-            ? details.rgFranchises
-            : [];
-    if (previousAssociations?.rgDevelopers !== developers ||
-        previousAssociations?.rgPublishers !== publishers ||
-        previousAssociations?.rgFranchises !== franchises) {
-        appData.associationData = { rgDevelopers: developers, rgPublishers: publishers, rgFranchises: franchises };
-    }
-    // Peer getters can read these observables inside Steam's DLC autorun. New
-    // equivalent arrays would invalidate that autorun and re-render this page.
-    if (details.strFullDescription !== description)
-        details.strFullDescription = description;
-    if (details.strSnippet !== description)
-        details.strSnippet = description;
-    if (!associationsMatch(details.rgDevelopers, metadata.developers))
-        details.rgDevelopers = developers;
-    if (!associationsMatch(details.rgPublishers, metadata.publishers))
-        details.rgPublishers = publishers;
-    if (!Array.isArray(details.rgFranchises) || details.rgFranchises.length !== 0)
-        details.rgFranchises = franchises;
-    // A matched shortcut can inherit Steam screenshot metadata without becoming
-    // the real Steam application. Never advertise the shortcut appid as a
-    // Community Market target; the quick-link policy independently removes any
-    // stale native descriptor that SteamUI may already have rendered.
-    if (hasMatchedSteamAppId(metadata) && details.bCommunityMarketPresence !== false) {
-        details.bCommunityMarketPresence = false;
-    }
-    if (screenshots.length) {
-        if (details.nScreenshots !== screenshots.length)
-            details.nScreenshots = screenshots.length;
-        if (!screenshotsMatch(details.vecScreenShots, screenshots))
-            details.vecScreenShots = screenshots;
-        const previousScreenshots = appData.screenshots;
-        if (!screenshotsMatch(previousScreenshots?.rgScreenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.screenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.vecScreenshots, screenshots) ||
-            !screenshotsMatch(previousScreenshots?.vecScreenShots, screenshots)) {
-            appData.screenshots = {
-                rgScreenshots: screenshots,
-                screenshots,
-                vecScreenshots: screenshots,
-                vecScreenShots: screenshots,
-            };
-        }
-    }
-    return true;
 };
 
 /** Project a calendar date into the running SteamUI JavaScript timezone.
@@ -26816,7 +33528,7 @@ const nativeShortcutName = (appId) => {
     return typeof overview.display_name === "string" ? overview.display_name : null;
 };
 /** True only when Steam exposes the native shortcut rename method. */
-const hasShortcutNameApi = () => typeof steamInternals().SteamClient?.Apps?.SetShortcutName === "function";
+const hasShortcutNameApi = () => typeof steamInternals$1().SteamClient?.Apps?.SetShortcutName === "function";
 const classifyShortcutNameState = (currentName, state) => {
     if (!state)
         return "unmanaged";
@@ -26844,7 +33556,7 @@ const setShortcutNameAndWait = (appId, expectedCurrent, target) => {
         return Promise.reject(new Error("native_shortcut_unavailable"));
     if (current !== expected)
         return Promise.reject(new Error("shortcut_name_changed"));
-    const apps = steamInternals().SteamClient?.Apps;
+    const apps = steamInternals$1().SteamClient?.Apps;
     if (!apps || typeof apps.SetShortcutName !== "function") {
         return Promise.reject(new Error("shortcut_name_api_unavailable"));
     }
@@ -29478,1288 +36190,6 @@ const installHistoryInstanceTrace = (unpatchers) => {
     });
 };
 
-const UNAVAILABLE = Object.freeze({ pluginName: null, detectionAvailable: false });
-const CLEAR = Object.freeze({ pluginName: null, detectionAvailable: true });
-const KNOWN_CONFLICTS = {
-    protondb: Object.freeze({ pluginName: "ProtonDB Badges", detectionAvailable: true }),
-    trailers: Object.freeze({ pluginName: "TrailerHero", detectionAvailable: true }),
-    miniAchievements: Object.freeze({ pluginName: "Decky UI Restored", detectionAvailable: true }),
-    hltb: Object.freeze({ pluginName: "HLTB for Deck", detectionAvailable: true }),
-};
-const FEATURES = ["protondb", "trailers", "miniAchievements", "hltb"];
-const FALLBACK_POLL_MS = 1000;
-const isPluginList = (value) => Array.isArray(value) && value.every((entry) => entry !== null && typeof entry === "object" && "name" in entry && typeof entry.name === "string");
-const isStateEvents = (value) => value !== null && typeof value === "object" && "addEventListener" in value &&
-    typeof value.addEventListener === "function" && "removeEventListener" in value &&
-    typeof value.removeEventListener === "function";
-const currentLoader = () => "DeckyPluginLoader" in globalThis ? globalThis.DeckyPluginLoader : undefined;
-/** Read-only adapter for Loader internals; no peer-plugin settings are accessed. */
-class PluginConflictMonitor {
-    constructor(getLoader = currentLoader) {
-        Object.defineProperty(this, "getLoader", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: getLoader
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "events", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "pollTimer", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: {
-                protondb: UNAVAILABLE,
-                trailers: UNAVAILABLE,
-                miniAchievements: UNAVAILABLE,
-                hltb: UNAVAILABLE,
-            }
-        });
-        Object.defineProperty(this, "handleUpdate", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.refresh()
-        });
-    }
-    getConflict(feature) {
-        return this.conflicts[feature];
-    }
-    subscribe(listener) {
-        this.listeners.add(listener);
-        return () => { this.listeners.delete(listener); };
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        this.refresh();
-    }
-    stop() {
-        this.mounted = false;
-        this.attachEvents(undefined);
-        this.setPolling(false);
-        this.publish(undefined, undefined);
-        this.listeners.clear();
-    }
-    attachEvents(events) {
-        if (events === this.events)
-            return;
-        try {
-            this.events?.removeEventListener("update", this.handleUpdate);
-        }
-        catch { /* Loader may be unloading. */ }
-        this.events = undefined;
-        try {
-            if (isStateEvents(events)) {
-                events.addEventListener("update", this.handleUpdate);
-                this.events = events;
-            }
-        }
-        catch { /* Poll when Loader state notifications are unavailable. */ }
-    }
-    setPolling(enabled) {
-        if (enabled && this.pollTimer === undefined) {
-            this.pollTimer = window.setInterval(this.handleUpdate, FALLBACK_POLL_MS);
-        }
-        else if (!enabled && this.pollTimer !== undefined) {
-            window.clearInterval(this.pollTimer);
-            this.pollTimer = undefined;
-        }
-    }
-    refresh() {
-        if (!this.mounted)
-            return;
-        let plugins;
-        let disabled;
-        try {
-            const loader = this.getLoader();
-            const state = loader !== null && typeof loader === "object" && "deckyState" in loader
-                ? loader.deckyState : undefined;
-            if (state !== null && typeof state === "object") {
-                this.attachEvents("eventBus" in state ? state.eventBus : undefined);
-                const inventory = "publicState" in state && typeof state.publicState === "function"
-                    ? state.publicState() : undefined;
-                if (inventory !== null && typeof inventory === "object" && "plugins" in inventory &&
-                    "disabledPlugins" in inventory && isPluginList(inventory.plugins) && isPluginList(inventory.disabledPlugins)) {
-                    plugins = inventory.plugins;
-                    disabled = inventory.disabledPlugins;
-                }
-            }
-            else {
-                this.attachEvents(undefined);
-            }
-        }
-        catch {
-            this.attachEvents(undefined);
-        }
-        this.publish(plugins, disabled);
-        this.setPolling(!this.events || !plugins || !disabled);
-    }
-    publish(plugins, disabled) {
-        let changed = false;
-        for (const feature of FEATURES) {
-            const conflict = KNOWN_CONFLICTS[feature];
-            const next = !plugins || !disabled ? UNAVAILABLE
-                : plugins.some(plugin => plugin.name === conflict.pluginName) &&
-                    !disabled.some(plugin => plugin.name === conflict.pluginName) ? conflict : CLEAR;
-            if (next === this.conflicts[feature])
-                continue;
-            this.conflicts[feature] = next;
-            changed = true;
-        }
-        if (!changed)
-            return;
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch { /* One feature must not block another subscriber. */ }
-        }
-    }
-}
-function featureConflictNotice(conflict, feature, savedEnabled) {
-    if (conflict.pluginName) {
-        const notice = t("conflicts.pluginConflict", {
-            pluginName: conflict.pluginName,
-            feature,
-        });
-        return savedEnabled ? `${notice} ${t("conflicts.pluginConflictSaved")}` : notice;
-    }
-    return conflict.detectionAvailable ? ""
-        : t("conflicts.detectionUnavailable", { feature });
-}
-const pluginConflicts = new PluginConflictMonitor();
-function startPluginConflicts() {
-    pluginConflicts.mount();
-    return () => pluginConflicts.stop();
-}
-
-let pending;
-/** One saved-cache read shared by the features that seed from it at startup. */
-const loadProviderCache = () => {
-    pending ?? (pending = getProviderCache());
-    return pending;
-};
-/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
-const releaseProviderCache = () => {
-    pending = undefined;
-};
-
-const DEFAULT_HLTB_SETTINGS = {
-    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
-    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
-    nativeDetailsCorners: false,
-    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
-};
-const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
-const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
-const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
-function normalizeHltbSettings(value) {
-    const stored = object(value);
-    const appearance = object(stored.appearance);
-    const defaults = DEFAULT_HLTB_SETTINGS;
-    const defaultAppearance = defaults.appearance;
-    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
-        ? stored.style : defaults.style;
-    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
-        ? appearance.blur : defaultAppearance.blur;
-    return {
-        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
-        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
-        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
-        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
-        showMain: bool(stored.showMain, defaults.showMain),
-        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
-        showComplete: bool(stored.showComplete, defaults.showComplete),
-        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
-        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
-        appearance: {
-            custom: bool(appearance.custom, defaultAppearance.custom),
-            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
-            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
-            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
-            border: bool(appearance.border, defaultAppearance.border),
-            blur,
-        },
-    };
-}
-
-const MAX_STEAM_APP_ID$1 = 0x7fffffff;
-const validPositiveId = (value) => {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id <= MAX_STEAM_APP_ID$1 ? id : null;
-};
-const overrides = new Map();
-const listeners = new Set();
-const notify = () => {
-    for (const listener of listeners) {
-        try {
-            listener();
-        }
-        catch {
-            // One unmounting view cannot block other listeners.
-        }
-    }
-};
-const getSteamOverrideCached = (appId) => {
-    const id = validPositiveId(appId);
-    return id === null ? undefined : overrides.get(id);
-};
-const getSteamHltbOverride = (appId) => validPositiveId(getSteamOverrideCached(appId)?.hltb_game_id);
-const setSteamOverrideCached = (appId, value) => {
-    const id = validPositiveId(appId);
-    if (id === null)
-        return;
-    const hltbId = validPositiveId(value?.hltb_game_id);
-    if (hltbId === null) {
-        if (!overrides.delete(id))
-            return;
-    }
-    else {
-        const previous = overrides.get(id);
-        if (previous?.hltb_game_id === hltbId)
-            return;
-        overrides.set(id, { hltb_game_id: hltbId });
-    }
-    notify();
-};
-const replaceSteamOverrides = (entries) => {
-    overrides.clear();
-    if (entries && typeof entries === "object") {
-        for (const [key, entry] of Object.entries(entries)) {
-            const appId = validPositiveId(key);
-            const hltbId = validPositiveId(entry?.hltb_game_id);
-            if (appId !== null && hltbId !== null) {
-                overrides.set(appId, { hltb_game_id: hltbId });
-            }
-        }
-    }
-    notify();
-};
-const clearSteamOverrideCache = () => {
-    if (overrides.size === 0)
-        return;
-    overrides.clear();
-    notify();
-};
-const subscribeSteamOverrides = (listener) => {
-    listeners.add(listener);
-    return () => {
-        listeners.delete(listener);
-    };
-};
-
-const DAY_MS = 86400000;
-const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
-const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
-const isEntry = (value) => value.status === "matched" || value.status === "no_match";
-const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
-/** Isolates pinned Library lookups from automatic Store lookups for the same Steam app. */
-const slotKey = (appId, pinned) => `${appId}:${pinned ?? ""}`;
-/** Saved HLTB results by app ID, available synchronously while a game page renders. */
-class HltbStore {
-    constructor(fetchStats = getHltbStats) {
-        Object.defineProperty(this, "fetchStats", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: fetchStats
-        });
-        Object.defineProperty(this, "entries", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "blocked", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "inFlight", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "retryAt", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Map()
-        });
-    }
-    /** Load saved entries; a result fetched during this session wins. */
-    seed(entries) {
-        for (const [id, entry] of Object.entries(entries)) {
-            const appId = Number(id);
-            if (Number.isSafeInteger(appId) && appId > 0) {
-                const key = slotKey(appId, entry.pinned_id_used ?? null);
-                if (!this.entries.has(key))
-                    this.entries.set(key, entry);
-            }
-        }
-    }
-    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
-    view(appId, inputs, now = Date.now()) {
-        const key = slotKey(appId, inputs.pinned);
-        if (this.blocked.get(key) === inputsKey(inputs))
-            return { entry: null, needsFetch: false };
-        const entry = this.entries.get(key);
-        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
-            entry.pinned_id_used !== inputs.pinned)
-            return { entry: null, needsFetch: true };
-        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
-        return { entry, needsFetch: now - entry.fetched_at >= ttl };
-    }
-    /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
-    request(appId, isShortcut, inputs, now = Date.now(), usePinned = true) {
-        const key = slotKey(appId, inputs.pinned);
-        if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now)
-            return;
-        const request = {};
-        this.inFlight.set(key, request);
-        const ownsRequest = () => this.inFlight.get(key) === request;
-        const call = usePinned
-            ? this.fetchStats(appId, isShortcut, inputs.title)
-            : this.fetchStats(appId, isShortcut, inputs.title, false);
-        void call.then((result) => {
-            if (!ownsRequest())
-                return;
-            if (isEntry(result)) {
-                const resultKey = slotKey(appId, result.pinned_id_used ?? null);
-                this.entries.set(resultKey, result);
-                this.blocked.delete(resultKey);
-            }
-            else if (result.status === "error") {
-                this.retryAt.set(key, Date.now() + Math.max(1000, result.retry_after_ms));
-            }
-            else {
-                this.blocked.set(key, inputsKey(inputs));
-            }
-            this.notify(appId);
-        }, () => {
-            if (ownsRequest())
-                this.retryAt.set(key, Date.now() + 30000);
-        }).finally(() => {
-            if (ownsRequest())
-                this.inFlight.delete(key);
-        });
-    }
-    subscribe(appId, listener) {
-        let set = this.listeners.get(appId);
-        if (!set)
-            this.listeners.set(appId, set = new Set());
-        set.add(listener);
-        return () => {
-            set.delete(listener);
-            if (set.size === 0)
-                this.listeners.delete(appId);
-        };
-    }
-    /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
-    forget(appId) {
-        const prefix = `${appId}:`;
-        for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
-            for (const key of [...map.keys()]) {
-                if (key.startsWith(prefix))
-                    map.delete(key);
-            }
-        }
-        this.notify(appId);
-    }
-    /** Forget everything, e.g. after Clear cache or when the feature stops. */
-    reset() {
-        this.entries.clear();
-        this.blocked.clear();
-        this.inFlight.clear();
-        this.retryAt.clear();
-        for (const appId of [...this.listeners.keys()])
-            this.notify(appId);
-    }
-    notify(appId) {
-        for (const listener of this.listeners.get(appId) ?? []) {
-            try {
-                listener();
-            }
-            catch {
-                // One unmounting page must not block others.
-            }
-        }
-    }
-}
-const hltbStore = new HltbStore();
-
-/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
-class HltbController {
-    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }, loadSteamOverrides = () => typeof getAllSteamOverrides === "function" ? getAllSteamOverrides() : Promise.resolve({})) {
-        Object.defineProperty(this, "runtime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: runtime
-        });
-        Object.defineProperty(this, "store", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: store
-        });
-        Object.defineProperty(this, "conflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: conflicts
-        });
-        Object.defineProperty(this, "loadCache", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadCache
-        });
-        Object.defineProperty(this, "settingsStore", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: settingsStore
-        });
-        Object.defineProperty(this, "loadSteamOverrides", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: loadSteamOverrides
-        });
-        Object.defineProperty(this, "mounted", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "generation", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: 0
-        });
-        Object.defineProperty(this, "snapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "disposeRuntime", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "unsubscribeConflicts", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "listeners", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: new Set()
-        });
-        /** Last settings the backend confirmed; a failed save shows these again. */
-        Object.defineProperty(this, "confirmed", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        /** Latest requested settings waiting for the in-flight save, plus their callers. */
-        Object.defineProperty(this, "queued", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: void 0
-        });
-        Object.defineProperty(this, "saving", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: false
-        });
-        Object.defineProperty(this, "getSnapshot", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: () => this.snapshot
-        });
-        Object.defineProperty(this, "subscribe", {
-            enumerable: true,
-            configurable: true,
-            writable: true,
-            value: (listener) => {
-                this.listeners.add(listener);
-                return () => { this.listeners.delete(listener); };
-            }
-        });
-        this.snapshot = this.initialSnapshot();
-    }
-    mount() {
-        if (this.mounted)
-            return;
-        this.mounted = true;
-        const generation = ++this.generation;
-        this.snapshot = { ...this.initialSnapshot(), busy: true };
-        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
-            this.publish({ conflict: this.conflicts.getConflict("hltb") });
-        });
-        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
-            this.store.seed(cache.hltb.entries); }, () => undefined);
-        const overridesReady = this.loadSteamOverrides().then((entries) => { if (this.isCurrent(generation))
-            replaceSteamOverrides(entries); }, () => undefined);
-        void Promise.all([this.settingsStore.get(), overridesReady]).then(([settings]) => {
-            if (!this.isCurrent(generation))
-                return;
-            const saved = normalizeHltbSettings(settings);
-            this.confirmed = saved;
-            this.publish({ settings: saved, settingsLoaded: true, busy: false });
-        }, (error) => {
-            if (!this.isCurrent(generation))
-                return;
-            warn("bridge", "HLTB settings load failed", error);
-            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
-        });
-    }
-    stop() {
-        if (!this.mounted)
-            return;
-        this.mounted = false;
-        this.generation += 1;
-        this.queued?.settles.forEach((settle) => settle(false));
-        this.queued = undefined;
-        this.saving = false;
-        this.unsubscribeConflicts?.();
-        this.unsubscribeConflicts = undefined;
-        this.publish({ settingsLoaded: false, busy: false });
-        this.store.reset();
-        clearSteamOverrideCache();
-        this.listeners.clear();
-    }
-    async setSettings(next) {
-        const current = this.snapshot;
-        if (!this.mounted || !current.settingsLoaded)
-            return false;
-        const requested = normalizeHltbSettings(next);
-        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
-            return false;
-        // Publish optimistically: the section builds its next change from the snapshot,
-        // and controls must not dim while a save is in flight.
-        this.publish({ settings: requested, busy: true, settingsError: "" });
-        return new Promise((resolve) => {
-            if (this.queued) {
-                // Latest wins; earlier callers settle with this newer value's save.
-                this.queued.settings = requested;
-                this.queued.settles.push(resolve);
-            }
-            else {
-                this.queued = { settings: requested, settles: [resolve] };
-            }
-            if (this.saving)
-                return;
-            this.saving = true;
-            void this.drainSaves();
-        });
-    }
-    /** Saves one request at a time so a toggle pressed during a save is not lost. */
-    async drainSaves() {
-        const generation = this.generation;
-        while (this.queued && this.isCurrent(generation)) {
-            const { settings, settles } = this.queued;
-            this.queued = undefined;
-            let saved = false;
-            try {
-                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
-                if (this.isCurrent(generation)) {
-                    this.confirmed = confirmed;
-                    saved = true;
-                    // A newer request is queued; showing this value first would flash it.
-                    if (!this.queued)
-                        this.publish({ settings: confirmed, busy: false });
-                }
-            }
-            catch (error) {
-                if (this.isCurrent(generation)) {
-                    warn("bridge", "HLTB settings save failed", error);
-                    this.queued?.settles.forEach((settle) => settle(false));
-                    this.queued = undefined;
-                    this.publish({
-                        settings: this.confirmed ?? this.snapshot.settings,
-                        busy: false,
-                        settingsError: t("hltb.settingsError.saveFailed"),
-                    });
-                }
-            }
-            for (const settle of settles)
-                settle(saved);
-        }
-        // A remount may already own the save state; only the current generation clears it.
-        if (this.isCurrent(generation))
-            this.saving = false;
-    }
-    async clearCache() {
-        if (!this.mounted)
-            return false;
-        this.publish({ cacheStatus: "clearing" });
-        try {
-            await this.settingsStore.clear();
-            this.store.reset();
-            this.publish({ cacheStatus: "cleared" });
-            return true;
-        }
-        catch (error) {
-            warn("bridge", "HLTB cache clear failed", error);
-            this.publish({ cacheStatus: "failed" });
-            return false;
-        }
-    }
-    initialSnapshot() {
-        return Object.freeze({
-            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
-            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
-        });
-    }
-    isCurrent(generation) {
-        return this.mounted && generation === this.generation;
-    }
-    publish(update) {
-        const next = { ...this.snapshot, ...update };
-        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
-        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
-        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
-        if (changed)
-            this.applyRuntime(effectiveEnabled);
-        for (const listener of this.listeners) {
-            try {
-                listener();
-            }
-            catch {
-                // A closing QAM panel cannot block the feature.
-            }
-        }
-    }
-    applyRuntime(enabled) {
-        try {
-            if (enabled) {
-                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
-            }
-            else {
-                const dispose = this.disposeRuntime;
-                this.disposeRuntime = undefined;
-                dispose?.();
-            }
-        }
-        catch (error$1) {
-            error("patch", "HLTB runtime transition failed", error$1);
-            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
-        }
-    }
-}
-
-// Steam may register these CSS modules after the plugin loads.
-let detailsClassesCache;
-let menuButtonClassesCache;
-const detailsClasses = () => {
-    if (!detailsClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
-            if (found && typeof found === "object")
-                detailsClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return detailsClassesCache ?? {};
-};
-const menuButtonClasses = () => {
-    if (!menuButtonClassesCache) {
-        try {
-            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
-            if (found && typeof found === "object")
-                menuButtonClassesCache = found;
-        }
-        catch { /* Retry on the next render. */ }
-    }
-    return menuButtonClassesCache ?? {};
-};
-const css$2 = `
-/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
-#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
-.decky-metadata-hltb-info {
-  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
-  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
-  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
-}
-/* Sit on the bottom of the header instead of pushing the Play section down. */
-.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
-/* "Push Play button down": take layout height below the header so Play moves down. */
-#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
-.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
-.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
-.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
-  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
-}
-.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
-/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
-.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
-.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
-.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
-.decky-metadata-hltb-info li { text-align: center; }
-.decky-metadata-hltb-info p { margin: 0; }
-.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
-.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
-.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
-.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
-:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
-:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
-:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
-:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
-.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
-.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
-`;
-function HltbStats({ stats, hltbId, settings, launching }) {
-    const t = useT();
-    if (!stats || launching || Object.values(stats).every(value => value <= 0))
-        return null;
-    const { appearance, style } = settings;
-    const vars = {};
-    if (appearance.custom) {
-        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
-        if (appearance.textShadow)
-            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
-        if (appearance.textScale !== 100)
-            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
-        if (!appearance.border)
-            vars["--hltb-border-width"] = "0";
-    }
-    const items = [
-        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
-        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
-        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
-        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
-    ];
-    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
-    const classes = [
-        style === "default" ? "decky-metadata-hltb-default" : "",
-        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
-        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
-        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
-        flow ? "decky-metadata-hltb-flow" : "",
-    ].filter(Boolean).join(" ");
-    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
-    const nativeDetailsClasses = detailsClasses();
-    const nativeMenuButtonClasses = menuButtonClasses();
-    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
-    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
-    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
-    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
-    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
-                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
-                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
-}
-
-const ROW_KEY = "decky-metadata-hltb-row";
-const JOINED_CLASS = "decky-metadata-hltb-joined";
-const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
-const px = (value) => String(Math.round(value * 100) / 100);
-/** One blur surface: the Play section's own, grown up over the HLTB bar. */
-const joinedRule = (height, paddingTop) => {
-    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
-    if (inner && playSection)
-        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
-    if (playSection)
-        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
-    return `.${JOINED_CLASS} + * ${rule}`;
-};
-const findHeaderElement = (row) => {
-    const container = row.parentElement;
-    if (!container)
-        return undefined;
-    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
-    if (headerClass) {
-        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
-        if (matched)
-            return matched;
-    }
-    return row.previousElementSibling ?? undefined;
-};
-const findPlaySectionElement = (row) => {
-    const next = row.nextElementSibling;
-    if (!next)
-        return null;
-    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
-    if (playSectionClass) {
-        return next.querySelector(`.${playSectionClass}`);
-    }
-    return next.firstElementChild ?? next;
-};
-const positiveId = (value, maximum) => {
-    const id = Number(value);
-    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
-};
-/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
-const hltbInputs = (appId, isShortcut, title) => {
-    if (!isShortcut) {
-        return { steam: positiveId(appId, 0x7fffffff), title, pinned: getSteamHltbOverride(appId) };
-    }
-    const record = metadataCache[String(appId)];
-    return {
-        steam: positiveId(record?.steam_appid, 0x7fffffff),
-        title,
-        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
-    };
-};
-function useHltbSnapshot() {
-    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
-    SP_REACT.useEffect(() => {
-        const refresh = () => setSnapshot(hltbController.getSnapshot());
-        const unsubscribe = hltbController.subscribe(refresh);
-        refresh();
-        return unsubscribe;
-    }, []);
-    return snapshot;
-}
-/** Hide the row while Steam's header animates into a game launch. */
-function useLaunching(ref, active) {
-    const [launching, setLaunching] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        if (!active || !ref.current)
-            return;
-        const header = findHeaderElement(ref.current);
-        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
-        const capsule = topCapsuleClass
-            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
-            : header?.firstElementChild ?? undefined;
-        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
-        if (!capsule || !View)
-            return;
-        const observer = new View(() => {
-            const name = capsule.className;
-            const entering = [
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
-                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
-            ].some((value) => value && name.includes(value));
-            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
-            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
-        });
-        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
-        return () => observer.disconnect();
-    }, [active]);
-    return launching;
-}
-/**
- * The HLTB game a page shows for this app, looked up when missing or stale.
- * Nothing is looked up or returned unless `wanted` and the game has a title.
- */
-function useHltbMatch(appId, wanted) {
-    const [, rerender] = SP_REACT.useState(0);
-    const native = getNativeOverview(appId);
-    const isShortcut = isNativeNonSteamShortcut(native);
-    const title = String(native?.display_name ?? "").trim();
-    const inputs = hltbInputs(appId, isShortcut, title);
-    const active = wanted && title !== "";
-    const view = hltbStore.view(appId, inputs);
-    SP_REACT.useEffect(() => {
-        const refresh = () => rerender((value) => value + 1);
-        const unsubscribeStore = hltbStore.subscribe(appId, refresh);
-        const unsubscribeOverrides = isShortcut ? undefined : subscribeSteamOverrides(refresh);
-        return () => {
-            unsubscribeStore();
-            unsubscribeOverrides?.();
-        };
-    }, [appId, isShortcut]);
-    SP_REACT.useEffect(() => {
-        if (active && view.needsFetch)
-            hltbStore.request(appId, isShortcut, inputs);
-    });
-    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
-}
-/**
- * Copy the native Play section's surface onto the row for the "Clean" styles, or
- * with clean-default on a blurred Play bar, extend that one blur over both rows:
- * the bar and underlay stay transparent and the Play rule supplies the surface.
- */
-function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
-    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
-    const padding = SP_REACT.useRef(0);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
-            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-            return;
-        }
-        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
-        const resize = { element: null, observer: null };
-        function update() {
-            const section = findPlaySectionElement(row);
-            const bar = row.querySelector(".decky-metadata-hltb-info");
-            if (!section) {
-                for (const name of names)
-                    row.style.removeProperty(name);
-                resize.observer?.disconnect();
-                resize.element = null;
-                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
-                return;
-            }
-            const computed = view.getComputedStyle(section);
-            // Native padding is only readable while our own rule is not applied.
-            if (!row.classList.contains(JOINED_CLASS))
-                padding.current = parseFloat(computed.paddingTop) || 0;
-            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
-            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
-            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
-            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
-            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
-            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
-            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
-            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
-            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
-            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
-            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
-            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
-            if (bar !== resize.element) {
-                resize.observer?.disconnect();
-                resize.element = bar;
-                if (bar) {
-                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
-                    resize.observer.observe(bar);
-                }
-            }
-            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
-            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
-        }
-        update();
-        const observer = new view.MutationObserver(update);
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        observer.observe(row.parentElement, { childList: true, subtree: true });
-        return () => {
-            observer.disconnect();
-            resize.observer?.disconnect();
-            for (const name of names)
-                row.style.removeProperty(name);
-        };
-    }, [enabled, style, blur, pushPlayDown]);
-    return surface;
-}
-/**
- * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
- * the header art: pushing Play down would leave that bar without its backdrop.
- */
-function useStatusBandOverlay(ref, wanted) {
-    const [overlay, setOverlay] = SP_REACT.useState(false);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setOverlay(false);
-            return;
-        }
-        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
-        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
-        let frame = 0;
-        const touching = () => {
-            const header = findHeaderElement(row);
-            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
-            const art = headerBgClass
-                ? header?.querySelector(`.${headerBgClass}`)
-                : header?.querySelector("img")?.parentElement ?? undefined;
-            if (!art)
-                return false;
-            const bounds = art.getBoundingClientRect();
-            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
-            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
-                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
-                .map((rect) => rect.bottom));
-            // Rect, not layout: Steam scales the page while it animates in.
-            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
-            const displacement = flow?.getBoundingClientRect().height ?? 0;
-            for (const bar of Array.from(container.querySelectorAll(selector))) {
-                const rect = bar.getBoundingClientRect();
-                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
-                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
-                    rect.top - bottom > displacement + 1)
-                    continue;
-                const own = view.getComputedStyle(bar);
-                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
-                    continue;
-                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
-                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
-                let visible = true;
-                for (let element = bar; element; element = element.parentElement) {
-                    const style = view.getComputedStyle(element);
-                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
-                        (!suppressed && Number(style.opacity) <= 0)) {
-                        visible = false;
-                        break;
-                    }
-                    if (element === container)
-                        break;
-                }
-                if (visible)
-                    return true;
-            }
-            return false;
-        };
-        const update = () => {
-            frame = 0;
-            const next = touching();
-            setOverlay((previous) => previous === next ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, {
-            childList: true, subtree: true, attributes: true,
-            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
-        });
-        // CSS Loader themes restyle the page from the head and the root element alone.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        const resize = new view.ResizeObserver(schedule);
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        schedule();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            view.removeEventListener("resize", schedule);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted && overlay;
-}
-/** A border box's layout top: unaffected by transforms and scroll position. */
-function layoutTop(element) {
-    let top = 0;
-    for (let node = element; node; node = node.offsetParent)
-        top += node.offsetTop;
-    return top;
-}
-/**
- * How far Play can move down before its button would go under Big Picture's footer.
- * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
- */
-function usePushRoom(ref, wanted) {
-    const [room, setRoom] = SP_REACT.useState(null);
-    SP_REACT.useEffect(() => {
-        const row = ref.current;
-        const container = row?.parentElement;
-        const document = row?.ownerDocument;
-        const view = document?.defaultView;
-        if (!wanted || !row || !container || !document || !view) {
-            setRoom((previous) => previous === null ? previous : null);
-            return;
-        }
-        let frame = 0;
-        let footer = null;
-        const resize = new view.ResizeObserver(() => schedule());
-        const footerResize = new view.ResizeObserver(() => schedule());
-        const measure = () => {
-            // The whole surface that moves Play down in flow mode, margins included. Never
-            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
-            const surface = row.querySelector("#decky-metadata-hltb");
-            const surfaceStyle = surface && view.getComputedStyle(surface);
-            const rowHeight = surface
-                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
-                : 0;
-            const section = findPlaySectionElement(row);
-            if (!rowHeight || !section)
-                return null;
-            let scroller = container.parentElement;
-            while (scroller) {
-                const style = view.getComputedStyle(scroller);
-                if (/(auto|scroll)/.test(style.overflowY))
-                    break;
-                scroller = scroller.parentElement;
-            }
-            if (!scroller || scroller.clientHeight <= 0)
-                return null;
-            const nextFooter = document.querySelector("#Footer");
-            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
-            if (nextFooter !== footer) {
-                footerResize.disconnect();
-                footer = nextFooter;
-                if (footer)
-                    footerResize.observe(footer);
-            }
-            const header = findHeaderElement(row);
-            if (!header)
-                return null;
-            // Layout, not rects: Steam scales and translates the page while it animates in,
-            // and a rect read mid-animation would stick until something else moved.
-            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
-            const artBottom = layoutTop(header) + header.offsetHeight;
-            // The visible bar's border box; the labels may overhang it but Play clears the bar.
-            const footerTop = footer && footer.offsetHeight > 0
-                ? layoutTop(footer)
-                : layoutTop(scroller) + scroller.clientHeight;
-            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
-            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
-            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
-            // The button face; the wrapper's AppActionButton class is the fallback.
-            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
-                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
-            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
-            const buttonBottom = button
-                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
-                : section.offsetHeight - lift;
-            const free = footerTop - 4 - artBottom - buttonBottom;
-            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
-        };
-        const update = () => {
-            frame = 0;
-            const next = measure();
-            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
-        };
-        const schedule = () => {
-            if (!frame)
-                frame = view.requestAnimationFrame(update);
-        };
-        const observer = new view.MutationObserver(schedule);
-        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
-        // Themes restyle the page and the footer from the head and the root element.
-        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
-        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
-        if (document.body)
-            observer.observe(document.body, { childList: true, subtree: true });
-        resize.observe(container);
-        view.addEventListener("resize", schedule);
-        // Steam animates the page in without any resize or mutation: re-measure when it ends.
-        document.addEventListener("transitionend", schedule, true);
-        document.addEventListener("animationend", schedule, true);
-        update();
-        return () => {
-            observer.disconnect();
-            resize.disconnect();
-            footerResize.disconnect();
-            view.removeEventListener("resize", schedule);
-            document.removeEventListener("transitionend", schedule, true);
-            document.removeEventListener("animationend", schedule, true);
-            if (frame)
-                view.cancelAnimationFrame(frame);
-        };
-    }, [wanted]);
-    return wanted ? room : null;
-}
-function HltbGameRow({ appId }) {
-    const snapshot = useHltbSnapshot();
-    const ref = SP_REACT.useRef(null);
-    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
-    const launching = useLaunching(ref, active);
-    const { settings } = snapshot;
-    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
-    const overlay = useStatusBandOverlay(ref, pushWanted);
-    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
-    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
-    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
-    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
-    if (!active)
-        return null;
-    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
-}
-/** True for the child that holds Steam's Play section (the row goes right above it). */
-const isPlaySection = (child) => {
-    const props = (child?.props ?? {});
-    const inner = props.children?.props ?? {};
-    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
-        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
-};
-function installHltbGameView() {
-    const unpatchers = [];
-    for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-            if (!routeProps)
-                return tree;
-            let appId = 0;
-            const handler = DFL.createReactTreePatcher([
-                (inner) => {
-                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                    appId = Number(children?.props?.overview?.appid) || 0;
-                    return children ?? null;
-                },
-            ], (_args, ret) => {
-                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                    node.props.children.some(isPlaySection)))?.props?.children;
-                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                    return ret;
-                const index = children.findIndex(isPlaySection);
-                if (index >= 0)
-                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
-                return ret;
-            });
-            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-            unpatchers.push(() => renderPatch.unpatch());
-            return tree;
-        });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
-    }
-    return () => {
-        for (const unpatch of unpatchers.splice(0)) {
-            try {
-                unpatch();
-            }
-            catch {
-                // Steam may already have released the route.
-            }
-        }
-    };
-}
-const hltbController = new HltbController({ install: installHltbGameView });
-
 // The edit key is inserted for shortcuts. Keep the legacy keys in the removal
 // set because Steam can reuse menu arrays created by older builds.
 const ENTRY_KEY = "decky-metadata-edit";
@@ -30886,8 +36316,7 @@ const visibleText = (children) => {
 };
 const insertOurEntry = (items, appId) => {
     const nativeOverview = getNativeOverview(appId);
-    const eligible = isNativeNonSteamShortcut(nativeOverview) ||
-        (hltbController.getSnapshot().effectiveEnabled && isNativeSteamGame(nativeOverview));
+    const eligible = isNativeNonSteamShortcut(nativeOverview) || isNativeSteamGame(nativeOverview);
     if (!eligible)
         return null;
     const entry = (SP_JSX.jsx(DFL.MenuItem, { onSelected: () => DFL.Navigation.Navigate(`/decky-metadata/${appId}`), children: t("contextMenu.editMetadata") }, ENTRY_KEY));
@@ -32891,6 +38320,7 @@ class MetadataScanStore {
         this.pollInFlight = false;
         this.publish({ busy: false, completedRevision: this.snapshot.completedRevision + 1 });
         this.deps.toastSuccess(t("panel.toast.metadata"), scanCompleteMessage(progress));
+        this.deps.onScanComplete?.(this.scanGames);
     }
     fail(error) {
         this.publish({ busy: false });
@@ -32911,6 +38341,7 @@ const metadataScanStore = new MetadataScanStore({
     toastError,
     setTimeout: (fn, ms) => window.setTimeout(fn, ms),
     clearTimeout: (id) => window.clearTimeout(id),
+    onScanComplete: (games) => void artworkController.runBulk(games, "auto"),
 });
 function useMetadataScan() {
     const [snapshot, setSnapshot] = SP_REACT.useState(metadataScanStore.getSnapshot());
@@ -33086,7 +38517,11 @@ const refreshOpenSettingsRoute = (routes) => {
         removeSentinel();
     };
 };
-const openSettings = () => {
+const openSettings = (tab) => {
+    if (tab) {
+        const host = globalThis;
+        host[RELOAD_TAB_GLOBAL_KEY] = { tab, savedAt: Date.now() };
+    }
     DFL.Navigation.CloseSideMenus();
     // A second Navigate to the open route pushes a duplicate history entry, and one B would not leave.
     if (!isSettingsRouteOpen())
@@ -33113,7 +38548,7 @@ function SettingsTitleView() {
                     width: "40px",
                     minWidth: 0,
                     padding: 0,
-                }, onClick: openSettings, children: SP_JSX.jsx(FaGear, {}) })] }));
+                }, onClick: () => openSettings(), children: SP_JSX.jsx(FaGear, {}) })] }));
 }
 
 const takeNativeFocus = (element) => {
@@ -33154,6 +38589,18 @@ const takeNativeFocus = (element) => {
     }
     return false;
 };
+/** The element Steam's gamepad focus is on, or null when no navigation context is active. */
+const nativeFocusedElement = () => {
+    try {
+        const element = DFL.getFocusNavController()?.m_ActiveContext?.m_LastActiveFocusNavTree?.GetLastFocusedNode?.()?.m_element;
+        // The element lives in Big Picture's window, so `instanceof Element` from this context would be false.
+        return typeof element?.closest === "function" ? element : null;
+    }
+    catch {
+        return null;
+    }
+};
+
 const findScrollViewport = (element) => {
     let node = element.parentElement;
     while (node) {
@@ -33215,6 +38662,1013 @@ const Content = () => {
 // THIS FILE IS AUTO GENERATED
 function SiSteamdeck (props) {
   return GenIcon({"attr":{"role":"img","viewBox":"0 0 24 24"},"child":[{"tag":"path","attr":{"d":"M8.999 0v4.309c4.242 0 7.694 3.45 7.694 7.691s-3.452 7.691-7.694 7.691V24c6.617 0 12-5.383 12-12s-5.383-12-12-12Zm0 6.011c-3.313 0-6 2.687-5.998 6a5.999 5.999 0 1 0 5.998-6z"},"child":[]}]})(props);
+}
+
+const artworkBrowserClass = "decky-metadata-artwork-browser";
+const SLOT_ASPECT_RATIO = {
+    cover: "2 / 3",
+    wide: "460 / 215",
+    hero: "1920 / 620",
+    logo: "16 / 9",
+    icon: "1 / 1",
+};
+const SLOT_GRID_MIN_WIDTH = {
+    cover: 140,
+    wide: 215,
+    hero: 300,
+    logo: 205,
+    icon: 108,
+};
+const mimeLabel = (mime) => {
+    if (mime === "image/png")
+        return "PNG";
+    if (mime === "image/jpeg")
+        return "JPEG";
+    if (mime === "image/webp")
+        return "WebP";
+    if (mime === "image/vnd.microsoft.icon")
+        return "ICO";
+    return mime;
+};
+const artworkBrowserCss = `
+.${artworkBrowserClass} {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-bottom: 18px;
+}
+
+.${artworkBrowserClass}__tabs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  background: rgba(14, 20, 27, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.${artworkBrowserClass}__bumper {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  color: ${colors.textSecondary};
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  flex: 0 0 auto;
+}
+
+.${artworkBrowserClass}__tab-list {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.${artworkBrowserClass}__tab {
+  padding: 5px 9px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: ${colors.textSecondary};
+  background: transparent;
+  white-space: nowrap;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: background 120ms ease, color 120ms ease, border-color 120ms ease;
+}
+
+.${artworkBrowserClass}__tab.is-active {
+  background: rgba(26, 159, 255, 0.24);
+  color: #ffffff;
+  border-color: rgba(26, 159, 255, 0.65);
+}
+
+.${artworkBrowserClass}__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.${artworkBrowserClass}__game-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex: 1 1 220px;
+}
+
+.${artworkBrowserClass}__game-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: ${colors.text};
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.${artworkBrowserClass}__pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: rgba(26, 159, 255, 0.22);
+  color: #8fd2ff;
+  flex: 0 0 auto;
+}
+
+.${artworkBrowserClass}__toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.${artworkBrowserClass}__action-btn.DialogButton {
+  padding: 5px 12px !important;
+  min-width: 0 !important;
+  width: auto !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+
+.${artworkBrowserClass}__grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.${artworkBrowserClass}__card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  border-radius: 6px;
+  overflow: hidden;
+  background: rgba(16, 22, 30, 0.85);
+  border: 2px solid rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  transition: transform 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.${artworkBrowserClass}__card.gpfocus,
+.${artworkBrowserClass}__card:focus {
+  transform: scale(1.03);
+  border-color: #ffffff;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.55);
+  outline: none;
+  z-index: 2;
+}
+
+.${artworkBrowserClass}__card-media {
+  position: relative;
+  width: 100%;
+  background: rgba(8, 12, 18, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.${artworkBrowserClass}__card-media.is-transparent-bg {
+  background-image:
+    linear-gradient(45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(255, 255, 255, 0.06) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(255, 255, 255, 0.06) 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+.${artworkBrowserClass}__card-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.${artworkBrowserClass}__badges {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  right: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.${artworkBrowserClass}__badge {
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: rgba(10, 15, 22, 0.85);
+  color: #ffffff;
+}
+
+.${artworkBrowserClass}__badge--official {
+  background: rgba(26, 159, 255, 0.92);
+  color: #06131f;
+}
+
+.${artworkBrowserClass}__badge--animated {
+  background: rgba(164, 92, 255, 0.92);
+  color: #ffffff;
+}
+
+.${artworkBrowserClass}__card-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: ${colors.textSecondary};
+  background: rgba(12, 17, 24, 0.92);
+}
+
+.${artworkBrowserClass}__card-author {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.${artworkBrowserClass}__notice {
+  padding: 14px 16px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.${artworkBrowserClass}__chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.${artworkBrowserClass}__chip {
+  padding: 5px 10px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.08);
+  color: ${colors.textSecondary};
+  border: 2px solid transparent;
+  cursor: pointer;
+}
+
+.${artworkBrowserClass}__chip.is-selected {
+  background: rgba(26, 159, 255, 0.28);
+  color: #ffffff;
+  border-color: rgba(26, 159, 255, 0.8);
+}
+
+.${artworkBrowserClass}__chip.gpfocus,
+.${artworkBrowserClass}__chip:focus {
+  border-color: #ffffff;
+  outline: none;
+}
+
+.${artworkBrowserClass}__manage-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.${artworkBrowserClass}__manage-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.${artworkBrowserClass}__manage-thumb {
+  width: 96px;
+  height: 58px;
+  border-radius: 4px;
+  background: rgba(10, 15, 22, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex: 0 0 96px;
+}
+
+.${artworkBrowserClass}__manage-thumb img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+}
+
+.${artworkBrowserClass}__manage-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.${artworkBrowserClass}__logo-stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1920 / 620;
+  border-radius: 6px;
+  overflow: hidden;
+  background: linear-gradient(135deg, #162231 0%, #0d141d 100%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.${artworkBrowserClass}__anchor-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+`;
+
+function ArtworkDetailsModal({ slot, asset, applying, onApply, closeModal, }) {
+    const t = useT();
+    const transparentBg = slot === "logo" || slot === "icon";
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, onEscKeypress: closeModal, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [SP_JSX.jsx("div", { style: { fontSize: 18, fontWeight: 700, color: "#ffffff" }, children: t("editor.artwork.detailsTitle") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__card-media${transparentBg ? " is-transparent-bg" : ""}`, style: { maxHeight: 280, borderRadius: 6, border: "1px solid rgba(255,255,255,0.1)" }, children: SP_JSX.jsx("img", { src: asset.url, alt: "", style: { maxWidth: "100%", maxHeight: 280, objectFit: "contain", display: "block" } }) }), SP_JSX.jsxs("div", { style: { display: "flex", flexWrap: "wrap", gap: 6 }, children: [asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null, asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: `${asset.width}x${asset.height}` })) : null, asset.style ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: asset.style.replace("_", " ") })) : null, asset.mime ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge`, children: mimeLabel(asset.mime) })) : null] }), SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 4, fontSize: 13, color: colors.textSecondary }, children: [SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsAuthor"), ": "] }), asset.author.name || t("editor.artwork.unknownAuthor")] }), asset.notes ? (SP_JSX.jsxs("div", { children: [SP_JSX.jsxs("strong", { style: { color: colors.text }, children: [t("editor.artwork.detailsNotes"), ": "] }), asset.notes] })) : null] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: applying, onClick: () => {
+                                onApply();
+                                closeModal?.();
+                            }, children: t("editor.artwork.applyAction") })] })] }) }));
+}
+
+const toggleArrayItem = (items, value) => items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
+function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery, initialFilter, onApplyFilter, onGameChanged, closeModal, }) {
+    const t = useT();
+    const [searchQuery, setSearchQuery] = SP_REACT.useState(currentGame?.name || initialQuery);
+    const [searching, setSearching] = SP_REACT.useState(false);
+    const [searchResults, setSearchResults] = SP_REACT.useState(null);
+    const [searchError, setSearchError] = SP_REACT.useState("");
+    const [draft, setDraft] = SP_REACT.useState(() => ({
+        dimensions: [...initialFilter.dimensions],
+        styles: [...initialFilter.styles],
+        mimes: [...initialFilter.mimes],
+        types: [...initialFilter.types],
+        nsfw: initialFilter.nsfw,
+        humor: initialFilter.humor,
+        epilepsy: initialFilter.epilepsy,
+    }));
+    const [saving, setSaving] = SP_REACT.useState(false);
+    const dimensionOptions = SGDB_DIMENSION_OPTIONS[slot];
+    const styleOptions = SGDB_STYLE_OPTIONS[slot];
+    const mimeOptions = SGDB_MIME_OPTIONS[slot];
+    const runSearch = async () => {
+        const trimmed = searchQuery.trim();
+        if (!trimmed)
+            return;
+        setSearching(true);
+        setSearchError("");
+        try {
+            const results = await sgdbSearchGames(trimmed);
+            setSearchResults(results);
+        }
+        catch (error) {
+            setSearchError(translateBackendError(error));
+        }
+        finally {
+            setSearching(false);
+        }
+    };
+    const selectGame = async (game) => {
+        setSaving(true);
+        try {
+            await setSgdbGameOverride(appId, game.id, game.name);
+            onGameChanged({ ...game, source: "override" }, true);
+            toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.gameChangedBody", { game: game.name }));
+            closeModal?.();
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    const resetGameOverride = async () => {
+        setSaving(true);
+        try {
+            await clearSgdbGameOverride(appId);
+            onGameChanged(null, false);
+            closeModal?.();
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    const applyFilters = async () => {
+        setSaving(true);
+        try {
+            if (await onApplyFilter(draft))
+                closeModal?.();
+        }
+        finally {
+            setSaving(false);
+        }
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, onEscKeypress: closeModal, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12, maxHeight: "75vh", overflowY: "auto" }, children: [SP_JSX.jsx("div", { style: { fontSize: 18, fontWeight: 700, color: "#ffffff" }, children: t("editor.artwork.filterModalTitle", { slot: t(`qam.artwork.slot.${slot}.label`) }) }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.changeGameHeading") }), SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.searchGameLabel"), description: currentGame
+                                ? t("editor.artwork.currentGameDesc", {
+                                    game: currentGame.name,
+                                    source: isOverride ? t("editor.artwork.sourceOverride") : t("editor.artwork.sourceAuto"),
+                                })
+                                : t("editor.artwork.noGameMatched"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8, alignItems: "center", width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: searchQuery, onChange: (e) => setSearchQuery(e.target.value) }) }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: searching || !searchQuery.trim(), onClick: () => void runSearch(), children: searching ? t("editor.searching") : t("editor.search") }), isOverride ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void resetGameOverride(), children: t("editor.artwork.resetGameButton") })) : null] }) }), searchError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: searchError, bottomSeparator: "none" })) : null, searchResults !== null ? (searchResults.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.noSearchResults"), bottomSeparator: "none" })) : (searchResults.slice(0, 8).map((game) => (SP_JSX.jsx(DFL.Field, { label: game.name, description: t("editor.artwork.sgdbIdLabel", { id: game.id }), focusable: true, highlightOnFocus: true, onActivate: () => void selectGame(game), onClick: () => void selectGame(game) }, game.id))))) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.filtersHeading") }), [
+                            {
+                                label: t("editor.artwork.filterDimensions"),
+                                visible: dimensionOptions.length > 0,
+                                options: dimensionOptions,
+                                selected: draft.dimensions,
+                                toggle: (value) => setDraft((prev) => ({ ...prev, dimensions: toggleArrayItem(prev.dimensions, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterStyles"),
+                                visible: styleOptions.length > 0,
+                                options: styleOptions,
+                                selected: draft.styles,
+                                format: (value) => value.replace("_", " "),
+                                toggle: (value) => setDraft((prev) => ({ ...prev, styles: toggleArrayItem(prev.styles, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterFormats"),
+                                visible: true,
+                                options: mimeOptions,
+                                selected: draft.mimes,
+                                format: mimeLabel,
+                                toggle: (value) => setDraft((prev) => ({ ...prev, mimes: toggleArrayItem(prev.mimes, value) })),
+                            },
+                            {
+                                label: t("editor.artwork.filterTypes"),
+                                visible: true,
+                                options: ["static", "animated"],
+                                selected: draft.types,
+                                format: (value) => t(`editor.artwork.type.${value}`),
+                                toggle: (value) => setDraft((prev) => ({ ...prev, types: toggleArrayItem(prev.types, value) })),
+                            },
+                        ].map(({ label, options, selected, format, toggle, visible }) => visible ? (SP_JSX.jsx(DFL.Field, { label: label, childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__chip-row`, children: options.map((value) => {
+                                    const isSelected = selected.includes(value);
+                                    const onToggle = () => toggle(value);
+                                    return (SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__chip${isSelected ? " is-selected" : ""}`, onActivate: onToggle, onClick: onToggle, children: format ? format(value) : value }, value));
+                                }) }) }, label)) : null), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterHumor"), checked: draft.humor, onChange: (humor) => setDraft((prev) => ({ ...prev, humor })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterNsfw"), checked: draft.nsfw, onChange: (nsfw) => setDraft((prev) => ({ ...prev, nsfw })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.filterEpilepsy"), checked: draft.epilepsy, onChange: (epilepsy) => setDraft((prev) => ({ ...prev, epilepsy })) })] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => setDraft(defaultSlotFilter(slot)), children: t("editor.artwork.resetFilters") }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: saving, onClick: () => void applyFilters(), children: t("editor.artwork.applyFilters") })] })] })] }) }));
+}
+
+// Steam supports only these five anchors; the picker places each where it pins the logo (row, column).
+const ANCHOR_CELLS = {
+    UpperLeft: { label: "UL", gridRow: 1, gridColumn: 1 },
+    UpperCenter: { label: "UC", gridRow: 1, gridColumn: 2 },
+    CenterCenter: { label: "CC", gridRow: 2, gridColumn: 2 },
+    BottomLeft: { label: "BL", gridRow: 3, gridColumn: 1 },
+    BottomCenter: { label: "BC", gridRow: 3, gridColumn: 2 },
+};
+function logoPreviewBoxStyle(position) {
+    const style = {
+        position: "absolute",
+        width: `${position.nWidthPct}%`,
+        height: `${position.nHeightPct}%`,
+        display: "flex",
+        pointerEvents: "none",
+        padding: 8,
+        boxSizing: "border-box",
+    };
+    if (position.pinnedPosition.startsWith("Upper")) {
+        style.top = 0;
+        style.alignItems = "flex-start";
+    }
+    else if (position.pinnedPosition.startsWith("Center")) {
+        style.top = "50%";
+        style.transform = "translateY(-50%)";
+        style.alignItems = "center";
+    }
+    else {
+        style.bottom = 0;
+        style.alignItems = "flex-end";
+    }
+    if (position.pinnedPosition.endsWith("Left")) {
+        style.left = 0;
+        style.justifyContent = "flex-start";
+    }
+    else {
+        style.left = "50%";
+        style.transform = style.transform ? "translate(-50%, -50%)" : "translateX(-50%)";
+        style.justifyContent = "center";
+    }
+    return style;
+}
+function LogoPositionerModal({ appId, heroPreviewUrl, logoPreviewUrl, onSaved, closeModal, }) {
+    const t = useT();
+    const [position, setPosition] = SP_REACT.useState(() => getCustomLogoPosition(appId));
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const handleSave = async () => {
+        setBusy(true);
+        try {
+            await saveCustomLogoPosition(appId, position);
+            toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.logoPositionSaved"));
+            onSaved?.();
+            closeModal?.();
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    const handleReset = async () => {
+        setBusy(true);
+        try {
+            await clearCustomLogoPosition(appId);
+            toastSuccess(t("artwork.toast.clearedTitle"), t("editor.artwork.logoPositionReset"));
+            onSaved?.();
+            closeModal?.();
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setBusy(false);
+        }
+    };
+    return (SP_JSX.jsx(DFL.ModalRoot, { onCancel: closeModal, onEscKeypress: closeModal, children: SP_JSX.jsxs("div", { style: { display: "flex", flexDirection: "column", gap: 12 }, children: [SP_JSX.jsx("div", { style: { fontSize: 18, fontWeight: 700, color: "#ffffff" }, children: t("editor.artwork.logoPositionTitle") }), SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__logo-stage`, children: [heroPreviewUrl ? (SP_JSX.jsx("img", { src: heroPreviewUrl, alt: "", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } })) : null, SP_JSX.jsx("div", { style: logoPreviewBoxStyle(position), children: logoPreviewUrl ? (SP_JSX.jsx("img", { src: logoPreviewUrl, alt: "", style: { maxWidth: "100%", maxHeight: "100%", objectFit: "contain", display: "block" } })) : (SP_JSX.jsx("div", { style: {
+                                    width: "100%",
+                                    height: "100%",
+                                    border: "2px dashed rgba(143, 210, 255, 0.85)",
+                                    background: "rgba(26, 159, 255, 0.16)",
+                                    borderRadius: 4,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    color: "#ffffff",
+                                    fontSize: 12,
+                                    fontWeight: 700,
+                                }, children: t("qam.artwork.slot.logo.label") })) })] }), SP_JSX.jsx(DFL.Field, { label: t("editor.artwork.logoAnchorLabel"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsx(DFL.Focusable, { className: `${artworkBrowserClass}__anchor-grid`, children: STEAM_LOGO_ANCHORS.map((anchor) => {
+                            const selected = position.pinnedPosition === anchor;
+                            return (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, style: {
+                                    gridRow: ANCHOR_CELLS[anchor].gridRow,
+                                    gridColumn: ANCHOR_CELLS[anchor].gridColumn,
+                                    ...(selected ? { background: "rgba(26, 159, 255, 0.35)", border: "1px solid #66c0f4" } : {}),
+                                }, onClick: () => setPosition((prev) => ({ ...prev, pinnedPosition: anchor })), children: ANCHOR_CELLS[anchor].label }, anchor));
+                        }) }) }), SP_JSX.jsx(DFL.SliderField, { label: t("editor.artwork.logoWidthLabel"), value: position.nWidthPct, min: 10, max: 100, step: 5, showValue: true, valueSuffix: "%", onChange: (nWidthPct) => setPosition((prev) => ({ ...prev, nWidthPct })) }), SP_JSX.jsx(DFL.SliderField, { label: t("editor.artwork.logoHeightLabel"), value: position.nHeightPct, min: 10, max: 100, step: 5, showValue: true, valueSuffix: "%", onChange: (nHeightPct) => setPosition((prev) => ({ ...prev, nHeightPct })) }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "space-between", gap: 8, paddingTop: 4 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void handleReset(), children: t("editor.artwork.resetLogoPosition") }), SP_JSX.jsxs("div", { style: { display: "flex", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: closeModal, children: t("editor.artwork.cancelAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void handleSave(), children: t("editor.artwork.saveLogoPosition") })] })] })] }) }));
+}
+
+const slotLabelKey$2 = (slot) => `qam.artwork.slot.${slot}.label`;
+function ArtworkManageTab({ appId, gameName, isSteamGame, savedSteamAppId, unsavedSteamAppId, state, busy, onBusyChange, onRefreshState, onSelectSlotTab, onGoToSteamMatch, onSaveMatch, }) {
+    const t = useT();
+    const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
+    // Controller actions bump the snapshot revision, and the editor reloads slot state on that.
+    const runAction = async (work, successTitle, successBody) => {
+        onBusyChange(true);
+        try {
+            await work();
+            if (successTitle && successBody)
+                toastSuccess(successTitle, successBody);
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            onBusyChange(false);
+        }
+    };
+    const handleToggleLock = (locked) => void runAction(async () => {
+        await artworkController.setGameLocked(appId, locked);
+    });
+    const handleApplyOfficialSlot = (slot) => {
+        if (!savedSteamAppId)
+            return;
+        void runAction(() => artworkController.applySingleSlot(appId, savedSteamAppId, slot), t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$2(slot)), game: gameName }));
+    };
+    const handleClearSlot = (slot) => void runAction(() => artworkController.clearSingleSlot(appId, slot), t("artwork.toast.clearedTitle"), t("editor.artwork.clearedSlotBody", { slot: t(slotLabelKey$2(slot)), game: gameName }));
+    const handleTransparentSlot = (slot) => void runAction(() => artworkController.applyTransparentSlot(appId, slot), t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$2(slot)), game: gameName }));
+    const handleLocalFile = async (slot) => {
+        try {
+            const picker = typeof openFilePicker === "function"
+                ? openFilePicker
+                : globalThis
+                    .DeckyPluginLoader?.openFilePicker;
+            if (typeof picker !== "function") {
+                toastError(t("artwork.toast.failedTitle"), t("editor.artwork.filePickerUnavailable"));
+                return;
+            }
+            // FileSelectionType.FILE = 0
+            const selected = await picker(0, "/home/deck", true, false, undefined, ["png", "jpg", "jpeg", "webp", "ico"]);
+            const chosenPath = selected?.realpath || selected?.path;
+            if (!chosenPath)
+                return;
+            await runAction(() => artworkController.applyLocalFile(appId, slot, chosenPath), t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$2(slot)), game: gameName }));
+        }
+        catch (error) {
+            // User cancelling the file picker may reject without a backend error code.
+            const msg = error instanceof Error ? error.message : String(error ?? "");
+            if (msg && !/cancel/i.test(msg)) {
+                toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+            }
+        }
+    };
+    const handleOfficialBulk = (mode) => {
+        if (!savedSteamAppId)
+            return;
+        const execute = () => void runAction(async () => {
+            const result = await artworkController.applyForGame(appId, savedSteamAppId, mode, {
+                ignoreLock: true,
+            });
+            if (result.applied > 0) {
+                toastSuccess(t("artwork.toast.appliedTitle"), t("artwork.toast.appliedGameBody", { count: result.applied, game: gameName }));
+            }
+            else if (result.failed > 0) {
+                toastError(t("artwork.toast.failedTitle"), t("artwork.toast.bulkFailedBody", { failed: result.failed }));
+            }
+            else {
+                toastSuccess(t("artwork.toast.upToDateTitle"), t("artwork.toast.upToDateBody"));
+            }
+        });
+        if (mode === "replace-all") {
+            const existingCount = ARTWORK_SLOT_ORDER.filter((slot) => state?.slots[slot]?.present).length;
+            DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("editor.artwork.replaceConfirm.title", { game: gameName }), strOKButtonText: t("editor.artwork.replaceAllAction"), strDescription: t("editor.artwork.replaceConfirm.body", {
+                    game: gameName,
+                    count: existingCount,
+                }), onOK: execute }));
+        }
+        else {
+            execute();
+        }
+    };
+    const openLogoPositioner = () => {
+        const heroSlot = state?.slots.hero;
+        const logoSlot = state?.slots.logo;
+        DFL.showModal(SP_JSX.jsx(LogoPositionerModal, { appId: appId, heroPreviewUrl: heroSlot?.preview_data_url || heroSlot?.steam_url || null, logoPreviewUrl: logoSlot?.preview_data_url || logoSlot?.steam_url || null, onSaved: () => void onRefreshState() }));
+    };
+    const handleResetLogoPosition = () => void runAction(async () => {
+        await clearCustomLogoPosition(appId);
+        await onRefreshState();
+    }, t("artwork.toast.clearedTitle"), t("editor.artwork.logoPositionReset"));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsx(DFL.DialogControlsSection, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.pendingMatchLabel"), description: t("editor.artwork.pendingMatchDescription"), disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })) : null, SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.manageControlsHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("editor.artwork.lockLabel"), description: t("editor.artwork.lockDescription"), checked: state?.locked ?? false, disabled: busy || !state, onChange: handleToggleLock }), savedSteamAppId !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.fillMissingLabel"), description: t("editor.artwork.fillMissingDescription", {
+                                    missing: ARTWORK_SLOT_ORDER.filter((slot) => state?.slots[slot]?.available && !state?.slots[slot]?.present).length,
+                                }), disabled: busy, onClick: () => handleOfficialBulk("fill-missing"), children: t("editor.artwork.fillMissingAction") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.replaceAllLabel"), description: t("editor.artwork.replaceAllDescription"), disabled: busy, onClick: () => handleOfficialBulk("replace-all"), children: t("editor.artwork.replaceAllAction") })] })) : !isSteamGame ? (SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.noMatchLabel"), description: t("editor.artwork.noMatchManageDescription"), disabled: busy, onClick: onGoToSteamMatch, children: t("editor.artwork.goToSteamMatchAction") })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.slotsHeading") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__manage-grid`, children: ARTWORK_SLOT_ORDER.map((slot) => {
+                            const slotState = state?.slots[slot];
+                            // A Steam game with no custom file shows Steam's official art, so preview that.
+                            // A custom file without a preview (too large or unknown format) must not fall back to official art.
+                            const previewUrl = slotState?.preview_data_url ?? (isSteamGame && !slotState?.present ? slotState?.steam_url ?? null : null);
+                            const statusText = slotState?.present
+                                ? t("editor.artwork.statusPresent")
+                                : slotState?.available
+                                    ? t("editor.artwork.statusAvailable")
+                                    : t("editor.artwork.statusUnavailable");
+                            return (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__manage-row`, children: [SP_JSX.jsx("div", { className: `${artworkBrowserClass}__manage-thumb`, children: previewUrl ? (SP_JSX.jsx("img", { src: previewUrl, alt: "" })) : (SP_JSX.jsx("span", { style: { fontSize: 11, color: colors.textSecondary }, children: t("editor.artwork.noCustomArt") })) }), SP_JSX.jsxs("div", { style: { flex: "1 1 auto", minWidth: 0, display: "flex", flexDirection: "column", gap: 6 }, children: [SP_JSX.jsxs("div", { style: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }, children: [SP_JSX.jsx("span", { style: { fontSize: 14, fontWeight: 600, color: colors.text }, children: t(slotLabelKey$2(slot)) }), SP_JSX.jsx("span", { style: { fontSize: 12, color: colors.textSecondary }, children: statusText })] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__manage-actions`, children: [SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => onSelectSlotTab(slot), children: t("editor.artwork.browseAction") }), savedSteamAppId !== null && slotState?.available ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => handleApplyOfficialSlot(slot), children: t("editor.artwork.applyOfficialAction") })) : null, SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void handleLocalFile(slot), children: t("editor.artwork.localFileAction") }), SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => handleTransparentSlot(slot), children: t("editor.artwork.transparentAction") }), slotState?.present ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => handleClearSlot(slot), children: t("editor.artwork.clearAction") })) : null] })] })] }, slot));
+                        }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("editor.artwork.logoPositionHeading") }), hasLogoPositionApi() ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.adjustLogoPositionLabel"), description: t("editor.artwork.adjustLogoPositionDescription"), disabled: busy, onClick: openLogoPositioner, children: t("editor.artwork.adjustLogoPositionAction") }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("editor.artwork.resetLogoPosition"), description: t("editor.artwork.resetLogoPositionDescription"), disabled: busy, onClick: handleResetLogoPosition, children: t("editor.artwork.resetLogoPositionAction") })] })) : (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.logoPositionUnavailable"), bottomSeparator: "none" }))] })] }));
+}
+
+function computeVisibleArtworkTabs(settings) {
+    const hidden = new Set(settings.hiddenTabs ?? []);
+    const ordered = (settings.tabOrder?.length ? settings.tabOrder : ARTWORK_TAB_ORDER).filter((tab) => tab === "manage" || !hidden.has(tab));
+    if (!ordered.includes("manage"))
+        ordered.push("manage");
+    return ordered;
+}
+function resolveInitialArtworkTab(settings) {
+    const visible = computeVisibleArtworkTabs(settings);
+    if (settings.defaultTab && visible.includes(settings.defaultTab)) {
+        return settings.defaultTab;
+    }
+    return visible[0] ?? "manage";
+}
+function countActiveSlotFilters(slot, filter) {
+    const defaults = defaultSlotFilter(slot);
+    let diffs = 0;
+    if (filter.dimensions.join(",") !== defaults.dimensions.join(","))
+        diffs += 1;
+    if (filter.styles.length > 0)
+        diffs += 1;
+    if (filter.mimes.length > 0)
+        diffs += 1;
+    if (filter.types.join(",") !== defaults.types.join(","))
+        diffs += 1;
+    if (filter.nsfw !== defaults.nsfw)
+        diffs += 1;
+    if (filter.humor !== defaults.humor)
+        diffs += 1;
+    if (filter.epilepsy !== defaults.epilepsy)
+        diffs += 1;
+    return diffs;
+}
+const tabLabelKey$1 = (tab) => tab === "manage" ? "editor.artwork.tab.manage" : `qam.artwork.slot.${tab}.label`;
+const slotLabelKey$1 = (slot) => `qam.artwork.slot.${slot}.label`;
+function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamAppId, unsavedSteamAppId, entryBusy, onGoToSteamMatch, onSaveMatch, onOpenArtworkSettings, }) {
+    const t = useT();
+    const [snapshot, setSnapshot] = SP_REACT.useState(() => artworkController.getSnapshot());
+    const visibleTabs = SP_REACT.useMemo(() => computeVisibleArtworkTabs(snapshot.settings), [snapshot.settings]);
+    const [activeTab, setActiveTab] = SP_REACT.useState(() => resolveInitialArtworkTab(artworkController.getSnapshot().settings));
+    const [artworkState, setArtworkState] = SP_REACT.useState(null);
+    const [sgdbGame, setSgdbGame] = SP_REACT.useState(null);
+    const [sgdbIsOverride, setSgdbIsOverride] = SP_REACT.useState(false);
+    const [resolvingGame, setResolvingGame] = SP_REACT.useState(false);
+    const [missingKey, setMissingKey] = SP_REACT.useState(false);
+    const [assets, setAssets] = SP_REACT.useState([]);
+    const [page, setPage] = SP_REACT.useState(0);
+    const [hasMore, setHasMore] = SP_REACT.useState(false);
+    const [loadingAssets, setLoadingAssets] = SP_REACT.useState(false);
+    const [assetError, setAssetError] = SP_REACT.useState("");
+    const [officialOnly, setOfficialOnly] = SP_REACT.useState(false);
+    const [actionBusy, setActionBusy] = SP_REACT.useState(false);
+    const [gameReloadTick, setGameReloadTick] = SP_REACT.useState(0);
+    const requestSeqRef = SP_REACT.useRef(0);
+    const browserRef = SP_REACT.useRef(null);
+    // Entry focus starts on the toolbar; move it into the artwork once the first cards render.
+    const cardFocusPendingRef = SP_REACT.useRef(true);
+    const stateSeqRef = SP_REACT.useRef(0);
+    // Set when a manual tab switch replaces the content that held focus.
+    const tabRefocusRef = SP_REACT.useRef(false);
+    SP_REACT.useEffect(() => {
+        const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
+        void artworkController.ensureSettingsLoaded();
+        return unsub;
+    }, []);
+    // Keep active tab valid when user changes tab visibility in settings.
+    SP_REACT.useEffect(() => {
+        if (!visibleTabs.includes(activeTab)) {
+            setActiveTab(resolveInitialArtworkTab(snapshot.settings));
+        }
+    }, [activeTab, snapshot.settings, visibleTabs]);
+    // Reset to user's configured default tab when switching games.
+    SP_REACT.useEffect(() => {
+        setActiveTab(resolveInitialArtworkTab(artworkController.getSnapshot().settings));
+        cardFocusPendingRef.current = true;
+        setSgdbGame(null);
+        setSgdbIsOverride(false);
+        setAssets([]);
+        setPage(0);
+        setHasMore(false);
+        setAssetError("");
+        setMissingKey(false);
+        setOfficialOnly(false);
+        setArtworkState(null);
+    }, [appId]);
+    const loadArtworkState = SP_REACT.useCallback(async () => {
+        // The page stays mounted across games; only the newest request may publish its result.
+        const seq = ++stateSeqRef.current;
+        try {
+            const next = await getGameArtworkState(appId, savedSteamAppId);
+            if (seq === stateSeqRef.current)
+                setArtworkState(next);
+        }
+        catch {
+            // Keep previous state on transient failure.
+        }
+    }, [appId, savedSteamAppId]);
+    SP_REACT.useEffect(() => {
+        void loadArtworkState();
+    }, [loadArtworkState, snapshot.revision]);
+    // Resolve SteamGridDB game (persisted override -> Steam AppID -> name search).
+    SP_REACT.useEffect(() => {
+        let cancelled = false;
+        setResolvingGame(true);
+        setMissingKey(false);
+        setAssetError("");
+        void sgdbResolveGame(appId, savedSteamAppId, gameName)
+            .then((res) => {
+            if (cancelled)
+                return;
+            setSgdbGame(res.game);
+            setSgdbIsOverride(res.override);
+        })
+            .catch((error) => {
+            if (cancelled)
+                return;
+            const raw = error instanceof Error ? error.message : String(error ?? "");
+            if (raw.includes("sgdb_missing_api_key")) {
+                setMissingKey(true);
+                setSgdbGame(null);
+                setSgdbIsOverride(false);
+            }
+            else {
+                setAssetError(translateBackendError(error));
+            }
+        })
+            .finally(() => {
+            if (!cancelled)
+                setResolvingGame(false);
+        });
+        return () => {
+            cancelled = true;
+        };
+    }, [appId, savedSteamAppId, gameName, snapshot.settings.sgdbApiKey, gameReloadTick]);
+    const activeSlot = activeTab === "manage" ? null : activeTab;
+    const activeFilter = activeSlot
+        ? snapshot.settings.filters[activeSlot] ?? defaultSlotFilter(activeSlot)
+        : null;
+    const fetchAssetsPage = SP_REACT.useCallback(async (targetPage, append) => {
+        if (!activeSlot || !activeFilter || !sgdbGame || officialOnly)
+            return;
+        const seq = ++requestSeqRef.current;
+        setLoadingAssets(true);
+        setAssetError("");
+        // A new page set replaces the grid; drop the old slot's cards now so focus never sits on them.
+        if (!append)
+            setAssets([]);
+        try {
+            const result = await sgdbListAssets(sgdbGame.id, activeSlot, activeFilter, targetPage);
+            if (seq !== requestSeqRef.current)
+                return;
+            setAssets((prev) => (append ? [...prev, ...result.items] : result.items));
+            setPage(result.page);
+            setHasMore(result.has_more);
+        }
+        catch (error) {
+            if (seq !== requestSeqRef.current)
+                return;
+            const raw = error instanceof Error ? error.message : String(error ?? "");
+            if (raw.includes("sgdb_missing_api_key")) {
+                setMissingKey(true);
+            }
+            else {
+                setAssetError(translateBackendError(error));
+            }
+            if (!append) {
+                setAssets([]);
+                setHasMore(false);
+            }
+        }
+        finally {
+            if (seq === requestSeqRef.current)
+                setLoadingAssets(false);
+        }
+    }, [activeSlot, activeFilter, sgdbGame, officialOnly]);
+    SP_REACT.useEffect(() => {
+        if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+            // Drop any in-flight page so it cannot land on this game or this mode.
+            requestSeqRef.current += 1;
+            setLoadingAssets(false);
+            setAssetError("");
+            setAssets([]);
+            setHasMore(false);
+            return;
+        }
+        void fetchAssetsPage(0, false);
+    }, [activeSlot, sgdbGame, activeFilter, missingKey, officialOnly, fetchAssetsPage]);
+    // Switching tabs replaces the content under the cursor. Remember to put focus back into the new tab.
+    const noteManualTabChange = () => {
+        cardFocusPendingRef.current = false;
+        const browser = browserRef.current;
+        const focused = browser ? nativeFocusedElement() ?? browser.ownerDocument.activeElement : null;
+        tabRefocusRef.current = Boolean(browser && focused && browser.contains(focused));
+        // Drop the old slot's cards in the same render as the tab change, so the new tab's entry
+        // target is never one of them.
+        setAssets([]);
+        setHasMore(false);
+    };
+    const cycleTab = SP_REACT.useCallback((delta) => {
+        if (visibleTabs.length <= 1)
+            return;
+        noteManualTabChange();
+        setActiveTab((current) => {
+            const idx = visibleTabs.indexOf(current);
+            const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
+            return visibleTabs[nextIdx];
+        });
+    }, [visibleTabs]);
+    const selectTab = (tab) => {
+        if (tab !== activeTab)
+            noteManualTabChange();
+        setActiveTab(tab);
+    };
+    const busy = entryBusy || snapshot.busy || actionBusy;
+    const hasUnsavedSteamMatch = !isSteamGame && unsavedSteamAppId !== savedSteamAppId;
+    const applySgdb = async (slot, asset) => {
+        if (busy)
+            return;
+        setActionBusy(true);
+        try {
+            await artworkController.applySgdbAsset(appId, slot, asset.url);
+            toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$1(slot)), game: gameName }));
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setActionBusy(false);
+        }
+    };
+    const applyOfficial = async (slot) => {
+        if (busy || savedSteamAppId === null)
+            return;
+        setActionBusy(true);
+        try {
+            await artworkController.applySingleSlot(appId, savedSteamAppId, slot);
+            toastSuccess(t("artwork.toast.appliedTitle"), t("editor.artwork.appliedSlotBody", { slot: t(slotLabelKey$1(slot)), game: gameName }));
+        }
+        catch (error) {
+            toastError(t("artwork.toast.failedTitle"), translateBackendError(error));
+        }
+        finally {
+            setActionBusy(false);
+        }
+    };
+    const openFilterModal = () => {
+        if (!activeSlot || !activeFilter)
+            return;
+        DFL.showModal(SP_JSX.jsx(ArtworkFilterModal, { appId: appId, slot: activeSlot, currentGame: sgdbGame, isOverride: sgdbIsOverride, initialQuery: gameName, initialFilter: activeFilter, onApplyFilter: async (nextFilter) => {
+                const saved = await artworkController.updateSlotFilter(activeSlot, nextFilter);
+                if (!saved)
+                    toastError(t("artwork.toast.failedTitle"), artworkController.getSnapshot().settingsError);
+                return saved;
+            }, onGameChanged: (game, isOverride) => {
+                if (game) {
+                    setSgdbGame(game);
+                    setSgdbIsOverride(isOverride);
+                }
+                else {
+                    setSgdbIsOverride(false);
+                    setGameReloadTick((tick) => tick + 1);
+                }
+            } }));
+    };
+    const openDetailsModal = (slot, asset) => {
+        DFL.showModal(SP_JSX.jsx(ArtworkDetailsModal, { slot: slot, asset: asset, applying: busy, onApply: () => void applySgdb(slot, asset) }));
+    };
+    const handleBrowserButtonDown = (evt) => {
+        const button = evt?.detail?.button;
+        if (button === DFL.GamepadButton.BUMPER_LEFT) {
+            cycleTab(-1);
+        }
+        else if (button === DFL.GamepadButton.BUMPER_RIGHT) {
+            cycleTab(1);
+        }
+    };
+    const officialSlotState = activeSlot ? artworkState?.slots[activeSlot] ?? null : null;
+    const showOfficialCard = activeSlot !== null &&
+        savedSteamAppId !== null &&
+        Boolean(officialSlotState?.available && officialSlotState?.steam_url);
+    const activeFilterCount = activeSlot && activeFilter ? countActiveSlotFilters(activeSlot, activeFilter) : 0;
+    const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
+    // The editor's entry focus targets this marker: the first artwork card, or the first toolbar button until cards exist.
+    const cardsFocusTarget = showOfficialCard || showAssetCards;
+    // After a manual switch, focus the new tab's entry target: the official card, the first toolbar
+    // button, or the Manage panel. SteamGridDB cards that arrive later may take it from the toolbar.
+    SP_REACT.useEffect(() => {
+        if (!tabRefocusRef.current)
+            return;
+        tabRefocusRef.current = false;
+        cardFocusPendingRef.current = activeSlot !== null;
+        takeNativeFocus(browserRef.current?.querySelector("[data-artwork-initial-focus]") ?? null);
+    }, [activeTab]);
+    SP_REACT.useEffect(() => {
+        if (!cardFocusPendingRef.current)
+            return;
+        if (activeSlot === null) {
+            cardFocusPendingRef.current = false;
+            return;
+        }
+        const browser = browserRef.current;
+        if (!cardsFocusTarget || !browser)
+            return;
+        cardFocusPendingRef.current = false;
+        // Steam's gamepad focus, else DOM focus in the editor's own window (plugin code runs in another window).
+        const focused = nativeFocusedElement() ?? browser.ownerDocument.activeElement;
+        // Never take focus the user already moved off the toolbar where entry focus starts.
+        if (focused && focused !== browser.ownerDocument.body && !focused.closest(`.${artworkBrowserClass}__toolbar`))
+            return;
+        takeNativeFocus(browser.querySelector(`.${artworkBrowserClass}__grid [data-artwork-initial-focus]`));
+    }, [activeSlot, cardsFocusTarget]);
+    return (SP_JSX.jsxs(DFL.Focusable, { ref: browserRef, className: artworkBrowserClass, onButtonDown: handleBrowserButtonDown, onSecondaryButton: activeSlot ? openFilterModal : undefined, onSecondaryActionDescription: activeSlot ? t("editor.artwork.filterActionHint") : undefined, children: [SP_JSX.jsx("style", { children: artworkBrowserCss }), SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__tabs`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperLeft") }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__tab-list`, children: visibleTabs.map((tab) => (SP_JSX.jsx("div", { "data-artwork-tab": tab, className: `${artworkBrowserClass}__tab${tab === activeTab ? " is-active" : ""}`, onClick: () => selectTab(tab), children: t(tabLabelKey$1(tab)) }, tab))) }), SP_JSX.jsx("span", { className: `${artworkBrowserClass}__bumper`, "aria-hidden": "true", children: t("editor.artwork.bumperRight") })] }), activeSlot !== null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [hasUnsavedSteamMatch ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.text }, children: t("editor.artwork.pendingMatchDescription") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: onSaveMatch, children: t("editor.artwork.saveMatchAction") }) })] })) : null, SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__toolbar`, children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__game-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__game-title`, children: resolvingGame
+                                            ? t("editor.artwork.resolvingGame")
+                                            : sgdbGame
+                                                ? sgdbGame.name
+                                                : gameName }), sgdbIsOverride ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__pill`, children: t("editor.artwork.sourceOverride") })) : null, activeFilterCount > 0 ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__pill`, children: t("editor.artwork.filtersActiveCount", { count: activeFilterCount }) })) : null] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__toolbar-actions`, children: [!missingKey ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": cardsFocusTarget ? undefined : "", disabled: busy, onClick: openFilterModal, children: t("editor.artwork.filterButton") })) : null, savedSteamAppId !== null ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": !cardsFocusTarget && missingKey ? "" : undefined, disabled: busy, onClick: () => setOfficialOnly((prev) => !prev), children: officialOnly
+                                            ? t("editor.artwork.showAllSources")
+                                            : t("editor.artwork.officialOnlyButton") })) : null] })] }), missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 14, fontWeight: 600, color: colors.text }, children: t("editor.artwork.missingKeyTitle") }), SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: t("editor.artwork.missingKeyDescription") }), onOpenArtworkSettings ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": !cardsFocusTarget && savedSteamAppId === null ? "" : undefined, onClick: onOpenArtworkSettings, children: t("editor.artwork.openSettingsAction") }) })) : null] })) : null, assetError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: assetError }), bottomSeparator: "none" })) : null, showOfficialCard || assets.length > 0 ? (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__grid`, style: {
+                            gridTemplateColumns: `repeat(auto-fill, minmax(${SLOT_GRID_MIN_WIDTH[activeSlot]}px, 1fr))`,
+                        }, children: [showOfficialCard && officialSlotState?.steam_url ? (SP_JSX.jsxs(DFL.Focusable, { "data-artwork-initial-focus": "", className: `${artworkBrowserClass}__card`, onActivate: () => void applyOfficial(activeSlot), onClick: () => void applyOfficial(activeSlot), onOKActionDescription: t("editor.artwork.applyAction"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: officialSlotState.steam_url, alt: "", style: {
+                                                    objectFit: activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
+                                                } }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__badges`, children: SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--official`, children: t("editor.artwork.badgeOfficial") }) })] }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__card-meta`, children: SP_JSX.jsx("span", { className: `${artworkBrowserClass}__card-author`, children: t("editor.artwork.officialSourceLabel") }) })] }, "official-steam")) : null, !officialOnly && !missingKey
+                                ? assets.map((asset, idx) => (SP_JSX.jsxs(DFL.Focusable, { "data-artwork-initial-focus": idx === 0 && !showOfficialCard ? "" : undefined, className: `${artworkBrowserClass}__card`, onActivate: () => void applySgdb(activeSlot, asset), onClick: () => void applySgdb(activeSlot, asset), onOKActionDescription: t("editor.artwork.applyAction"), onSecondaryButton: openFilterModal, onSecondaryActionDescription: t("editor.artwork.filterActionHint"), onOptionsButton: () => openDetailsModal(activeSlot, asset), onOptionsActionDescription: t("editor.artwork.detailsActionHint"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: asset.thumb, alt: "", loading: "lazy", style: {
+                                                        objectFit: activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
+                                                    } }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__badges`, children: asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null })] }), SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__card-author`, children: asset.author.name || t("editor.artwork.unknownAuthor") }), asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { children: `${asset.width}x${asset.height}` })) : null] })] }, asset.id)))
+                                : null] })) : !resolvingGame && !loadingAssets && !missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: !sgdbGame
+                                    ? t("editor.artwork.noGameMatched")
+                                    : t("editor.artwork.noAssetsForFilter") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, onClick: openFilterModal, children: t("editor.artwork.filterButton") }) })] })) : null, loadingAssets ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.loading"), bottomSeparator: "none" })) : null, !officialOnly && !missingKey && hasMore && !loadingAssets ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "center" }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void fetchAssetsPage(page + 1, true), children: t("editor.artwork.loadMore") }) })) : null] })) : (
+            // A container target, so entry and tab switches can land focus inside the Manage panel.
+            SP_JSX.jsx(DFL.Focusable, { "data-artwork-initial-focus": "", children: SP_JSX.jsx(ArtworkManageTab, { appId: appId, gameName: gameName, isSteamGame: isSteamGame, savedSteamAppId: savedSteamAppId, unsavedSteamAppId: unsavedSteamAppId, state: artworkState, busy: busy, onBusyChange: setActionBusy, onRefreshState: loadArtworkState, onSelectSlotTab: selectTab, onGoToSteamMatch: onGoToSteamMatch, onSaveMatch: onSaveMatch }) }))] }));
 }
 
 /*
@@ -33581,6 +40035,1109 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
 
+let pending;
+/** One saved-cache read shared by the features that seed from it at startup. */
+const loadProviderCache = () => {
+    pending ?? (pending = getProviderCache());
+    return pending;
+};
+/** Drop the shared read once every consumer has started, so the snapshot can be freed. */
+const releaseProviderCache = () => {
+    pending = undefined;
+};
+
+const DEFAULT_HLTB_SETTINGS = {
+    enabled: false, store: true, style: "default", pushPlayDown: false, respectMenuBar: true, hideViewDetails: false,
+    showMain: true, showMainPlus: true, showComplete: true, showAllStyles: true,
+    nativeDetailsCorners: false,
+    appearance: { custom: false, barAlpha: 25, textShadow: false, textScale: 100, border: true, blur: "match" },
+};
+const object = (value) => value !== null && typeof value === "object" && !Array.isArray(value) ? value : {};
+const bool = (value, fallback) => typeof value === "boolean" ? value : fallback;
+const stepped = (value, min, max, fallback) => typeof value === "number" && Number.isFinite(value) ? Math.round(Math.min(max, Math.max(min, value)) / 5) * 5 : fallback;
+function normalizeHltbSettings(value) {
+    const stored = object(value);
+    const appearance = object(stored.appearance);
+    const defaults = DEFAULT_HLTB_SETTINGS;
+    const defaultAppearance = defaults.appearance;
+    const style = stored.style === "default" || stored.style === "clean" || stored.style === "clean-left" || stored.style === "clean-default"
+        ? stored.style : defaults.style;
+    const blur = appearance.blur === "match" || appearance.blur === "blur" || appearance.blur === "none"
+        ? appearance.blur : defaultAppearance.blur;
+    return {
+        enabled: bool(stored.enabled, defaults.enabled), store: bool(stored.store, defaults.store), style,
+        pushPlayDown: bool(stored.pushPlayDown, defaults.pushPlayDown),
+        respectMenuBar: bool(stored.respectMenuBar, defaults.respectMenuBar),
+        hideViewDetails: bool(stored.hideViewDetails, defaults.hideViewDetails),
+        showMain: bool(stored.showMain, defaults.showMain),
+        showMainPlus: bool(stored.showMainPlus, defaults.showMainPlus),
+        showComplete: bool(stored.showComplete, defaults.showComplete),
+        showAllStyles: bool(stored.showAllStyles, defaults.showAllStyles),
+        nativeDetailsCorners: bool(stored.nativeDetailsCorners, defaults.nativeDetailsCorners),
+        appearance: {
+            custom: bool(appearance.custom, defaultAppearance.custom),
+            barAlpha: stepped(appearance.barAlpha, 0, 100, defaultAppearance.barAlpha),
+            textShadow: bool(appearance.textShadow, defaultAppearance.textShadow),
+            textScale: stepped(appearance.textScale, 75, 150, defaultAppearance.textScale),
+            border: bool(appearance.border, defaultAppearance.border),
+            blur,
+        },
+    };
+}
+
+const MAX_STEAM_APP_ID$1 = 0x7fffffff;
+const validPositiveId = (value) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= MAX_STEAM_APP_ID$1 ? id : null;
+};
+const overrides = new Map();
+const listeners = new Set();
+const notify = () => {
+    for (const listener of listeners) {
+        try {
+            listener();
+        }
+        catch {
+            // One unmounting view cannot block other listeners.
+        }
+    }
+};
+const getSteamOverrideCached = (appId) => {
+    const id = validPositiveId(appId);
+    return id === null ? undefined : overrides.get(id);
+};
+const getSteamHltbOverride = (appId) => validPositiveId(getSteamOverrideCached(appId)?.hltb_game_id);
+const setSteamOverrideCached = (appId, value) => {
+    const id = validPositiveId(appId);
+    if (id === null)
+        return;
+    const hltbId = validPositiveId(value?.hltb_game_id);
+    if (hltbId === null) {
+        if (!overrides.delete(id))
+            return;
+    }
+    else {
+        const previous = overrides.get(id);
+        if (previous?.hltb_game_id === hltbId)
+            return;
+        overrides.set(id, { hltb_game_id: hltbId });
+    }
+    notify();
+};
+const replaceSteamOverrides = (entries) => {
+    overrides.clear();
+    if (entries && typeof entries === "object") {
+        for (const [key, entry] of Object.entries(entries)) {
+            const appId = validPositiveId(key);
+            const hltbId = validPositiveId(entry?.hltb_game_id);
+            if (appId !== null && hltbId !== null) {
+                overrides.set(appId, { hltb_game_id: hltbId });
+            }
+        }
+    }
+    notify();
+};
+const clearSteamOverrideCache = () => {
+    if (overrides.size === 0)
+        return;
+    overrides.clear();
+    notify();
+};
+const subscribeSteamOverrides = (listener) => {
+    listeners.add(listener);
+    return () => {
+        listeners.delete(listener);
+    };
+};
+
+const DAY_MS = 86400000;
+const HLTB_MATCHED_TTL_MS = 14 * DAY_MS;
+const HLTB_NO_MATCH_TTL_MS = 7 * DAY_MS;
+const isEntry = (value) => value.status === "matched" || value.status === "no_match";
+const inputsKey = (inputs) => JSON.stringify([inputs.steam, inputs.title, inputs.pinned]);
+/** Isolates pinned Library lookups from automatic Store lookups for the same Steam app. */
+const slotKey = (appId, pinned) => `${appId}:${pinned ?? ""}`;
+/** Saved HLTB results by app ID, available synchronously while a game page renders. */
+class HltbStore {
+    constructor(fetchStats = getHltbStats) {
+        Object.defineProperty(this, "fetchStats", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: fetchStats
+        });
+        Object.defineProperty(this, "entries", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "blocked", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "inFlight", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "retryAt", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+    }
+    /** Load saved entries; a result fetched during this session wins. */
+    seed(entries) {
+        for (const [id, entry] of Object.entries(entries)) {
+            const appId = Number(id);
+            if (Number.isSafeInteger(appId) && appId > 0) {
+                const key = slotKey(appId, entry.pinned_id_used ?? null);
+                if (!this.entries.has(key))
+                    this.entries.set(key, entry);
+            }
+        }
+    }
+    /** Fresh: show, no request. Expired: show and refresh. Missing or other inputs: show nothing and look up. */
+    view(appId, inputs, now = Date.now()) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.blocked.get(key) === inputsKey(inputs))
+            return { entry: null, needsFetch: false };
+        const entry = this.entries.get(key);
+        if (!entry || entry.steam_appid_used !== inputs.steam || entry.title_used !== inputs.title ||
+            entry.pinned_id_used !== inputs.pinned)
+            return { entry: null, needsFetch: true };
+        const ttl = entry.status === "matched" ? HLTB_MATCHED_TTL_MS : HLTB_NO_MATCH_TTL_MS;
+        return { entry, needsFetch: now - entry.fetched_at >= ttl };
+    }
+    /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
+    request(appId, isShortcut, inputs, now = Date.now(), usePinned = true) {
+        const key = slotKey(appId, inputs.pinned);
+        if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now)
+            return;
+        const request = {};
+        this.inFlight.set(key, request);
+        const ownsRequest = () => this.inFlight.get(key) === request;
+        const call = usePinned
+            ? this.fetchStats(appId, isShortcut, inputs.title)
+            : this.fetchStats(appId, isShortcut, inputs.title, false);
+        void call.then((result) => {
+            if (!ownsRequest())
+                return;
+            if (isEntry(result)) {
+                const resultKey = slotKey(appId, result.pinned_id_used ?? null);
+                this.entries.set(resultKey, result);
+                this.blocked.delete(resultKey);
+            }
+            else if (result.status === "error") {
+                this.retryAt.set(key, Date.now() + Math.max(1000, result.retry_after_ms));
+            }
+            else {
+                this.blocked.set(key, inputsKey(inputs));
+            }
+            this.notify(appId);
+        }, () => {
+            if (ownsRequest())
+                this.retryAt.set(key, Date.now() + 30000);
+        }).finally(() => {
+            if (ownsRequest())
+                this.inFlight.delete(key);
+        });
+    }
+    subscribe(appId, listener) {
+        let set = this.listeners.get(appId);
+        if (!set)
+            this.listeners.set(appId, set = new Set());
+        set.add(listener);
+        return () => {
+            set.delete(listener);
+            if (set.size === 0)
+                this.listeners.delete(appId);
+        };
+    }
+    /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
+    forget(appId) {
+        const prefix = `${appId}:`;
+        for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
+            for (const key of [...map.keys()]) {
+                if (key.startsWith(prefix))
+                    map.delete(key);
+            }
+        }
+        this.notify(appId);
+    }
+    /** Forget everything, e.g. after Clear cache or when the feature stops. */
+    reset() {
+        this.entries.clear();
+        this.blocked.clear();
+        this.inFlight.clear();
+        this.retryAt.clear();
+        for (const appId of [...this.listeners.keys()])
+            this.notify(appId);
+    }
+    notify(appId) {
+        for (const listener of this.listeners.get(appId) ?? []) {
+            try {
+                listener();
+            }
+            catch {
+                // One unmounting page must not block others.
+            }
+        }
+    }
+}
+const hltbStore = new HltbStore();
+
+/** Owns the HLTB setting, its conflict state, and its game-page patch outside QAM. */
+class HltbController {
+    constructor(runtime, store = hltbStore, conflicts = pluginConflicts, loadCache = loadProviderCache, settingsStore = { get: getHltbSettings, set: setHltbSettings, clear: clearHltbCache }, loadSteamOverrides = () => typeof getAllSteamOverrides === "function" ? getAllSteamOverrides() : Promise.resolve({})) {
+        Object.defineProperty(this, "runtime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: runtime
+        });
+        Object.defineProperty(this, "store", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: store
+        });
+        Object.defineProperty(this, "conflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: conflicts
+        });
+        Object.defineProperty(this, "loadCache", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadCache
+        });
+        Object.defineProperty(this, "settingsStore", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: settingsStore
+        });
+        Object.defineProperty(this, "loadSteamOverrides", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: loadSteamOverrides
+        });
+        Object.defineProperty(this, "mounted", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "generation", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: 0
+        });
+        Object.defineProperty(this, "snapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "disposeRuntime", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "unsubscribeConflicts", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "listeners", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Set()
+        });
+        /** Last settings the backend confirmed; a failed save shows these again. */
+        Object.defineProperty(this, "confirmed", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        /** Latest requested settings waiting for the in-flight save, plus their callers. */
+        Object.defineProperty(this, "queued", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: void 0
+        });
+        Object.defineProperty(this, "saving", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: false
+        });
+        Object.defineProperty(this, "getSnapshot", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: () => this.snapshot
+        });
+        Object.defineProperty(this, "subscribe", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: (listener) => {
+                this.listeners.add(listener);
+                return () => { this.listeners.delete(listener); };
+            }
+        });
+        this.snapshot = this.initialSnapshot();
+    }
+    mount() {
+        if (this.mounted)
+            return;
+        this.mounted = true;
+        const generation = ++this.generation;
+        this.snapshot = { ...this.initialSnapshot(), busy: true };
+        this.unsubscribeConflicts = this.conflicts.subscribe(() => {
+            this.publish({ conflict: this.conflicts.getConflict("hltb") });
+        });
+        void this.loadCache().then((cache) => { if (this.isCurrent(generation))
+            this.store.seed(cache.hltb.entries); }, () => undefined);
+        const overridesReady = this.loadSteamOverrides().then((entries) => { if (this.isCurrent(generation))
+            replaceSteamOverrides(entries); }, () => undefined);
+        void Promise.all([this.settingsStore.get(), overridesReady]).then(([settings]) => {
+            if (!this.isCurrent(generation))
+                return;
+            const saved = normalizeHltbSettings(settings);
+            this.confirmed = saved;
+            this.publish({ settings: saved, settingsLoaded: true, busy: false });
+        }, (error) => {
+            if (!this.isCurrent(generation))
+                return;
+            warn("bridge", "HLTB settings load failed", error);
+            this.publish({ busy: false, settingsError: t("hltb.settingsError.loadFailed") });
+        });
+    }
+    stop() {
+        if (!this.mounted)
+            return;
+        this.mounted = false;
+        this.generation += 1;
+        this.queued?.settles.forEach((settle) => settle(false));
+        this.queued = undefined;
+        this.saving = false;
+        this.unsubscribeConflicts?.();
+        this.unsubscribeConflicts = undefined;
+        this.publish({ settingsLoaded: false, busy: false });
+        this.store.reset();
+        clearSteamOverrideCache();
+        this.listeners.clear();
+    }
+    async setSettings(next) {
+        const current = this.snapshot;
+        if (!this.mounted || !current.settingsLoaded)
+            return false;
+        const requested = normalizeHltbSettings(next);
+        if (requested.enabled && !current.settings.enabled && current.conflict.pluginName)
+            return false;
+        // Publish optimistically: the section builds its next change from the snapshot,
+        // and controls must not dim while a save is in flight.
+        this.publish({ settings: requested, busy: true, settingsError: "" });
+        return new Promise((resolve) => {
+            if (this.queued) {
+                // Latest wins; earlier callers settle with this newer value's save.
+                this.queued.settings = requested;
+                this.queued.settles.push(resolve);
+            }
+            else {
+                this.queued = { settings: requested, settles: [resolve] };
+            }
+            if (this.saving)
+                return;
+            this.saving = true;
+            void this.drainSaves();
+        });
+    }
+    /** Saves one request at a time so a toggle pressed during a save is not lost. */
+    async drainSaves() {
+        const generation = this.generation;
+        while (this.queued && this.isCurrent(generation)) {
+            const { settings, settles } = this.queued;
+            this.queued = undefined;
+            let saved = false;
+            try {
+                const confirmed = normalizeHltbSettings(await this.settingsStore.set(settings));
+                if (this.isCurrent(generation)) {
+                    this.confirmed = confirmed;
+                    saved = true;
+                    // A newer request is queued; showing this value first would flash it.
+                    if (!this.queued)
+                        this.publish({ settings: confirmed, busy: false });
+                }
+            }
+            catch (error) {
+                if (this.isCurrent(generation)) {
+                    warn("bridge", "HLTB settings save failed", error);
+                    this.queued?.settles.forEach((settle) => settle(false));
+                    this.queued = undefined;
+                    this.publish({
+                        settings: this.confirmed ?? this.snapshot.settings,
+                        busy: false,
+                        settingsError: t("hltb.settingsError.saveFailed"),
+                    });
+                }
+            }
+            for (const settle of settles)
+                settle(saved);
+        }
+        // A remount may already own the save state; only the current generation clears it.
+        if (this.isCurrent(generation))
+            this.saving = false;
+    }
+    async clearCache() {
+        if (!this.mounted)
+            return false;
+        this.publish({ cacheStatus: "clearing" });
+        try {
+            await this.settingsStore.clear();
+            this.store.reset();
+            this.publish({ cacheStatus: "cleared" });
+            return true;
+        }
+        catch (error) {
+            warn("bridge", "HLTB cache clear failed", error);
+            this.publish({ cacheStatus: "failed" });
+            return false;
+        }
+    }
+    initialSnapshot() {
+        return Object.freeze({
+            settings: DEFAULT_HLTB_SETTINGS, settingsLoaded: false, busy: false, settingsError: "",
+            conflict: this.conflicts.getConflict("hltb"), effectiveEnabled: false, cacheStatus: "idle",
+        });
+    }
+    isCurrent(generation) {
+        return this.mounted && generation === this.generation;
+    }
+    publish(update) {
+        const next = { ...this.snapshot, ...update };
+        const effectiveEnabled = this.mounted && next.settingsLoaded && next.settings.enabled && !next.conflict.pluginName;
+        const changed = effectiveEnabled !== this.snapshot.effectiveEnabled;
+        this.snapshot = Object.freeze({ ...next, effectiveEnabled });
+        if (changed)
+            this.applyRuntime(effectiveEnabled);
+        for (const listener of this.listeners) {
+            try {
+                listener();
+            }
+            catch {
+                // A closing QAM panel cannot block the feature.
+            }
+        }
+    }
+    applyRuntime(enabled) {
+        try {
+            if (enabled) {
+                this.disposeRuntime ?? (this.disposeRuntime = this.runtime.install());
+            }
+            else {
+                const dispose = this.disposeRuntime;
+                this.disposeRuntime = undefined;
+                dispose?.();
+            }
+        }
+        catch (error$1) {
+            error("patch", "HLTB runtime transition failed", error$1);
+            this.snapshot = Object.freeze({ ...this.snapshot, settingsError: t("hltb.settingsError.applyFailed") });
+        }
+    }
+}
+
+// Steam may register these CSS modules after the plugin loads.
+let detailsClassesCache;
+let menuButtonClassesCache;
+const detailsClasses = () => {
+    if (!detailsClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.DeckVerifiedInfo && module.Details);
+            if (found && typeof found === "object")
+                detailsClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return detailsClassesCache ?? {};
+};
+const menuButtonClasses = () => {
+    if (!menuButtonClassesCache) {
+        try {
+            const found = DFL.findClassModule((module) => module.MenuButton && module.ControllerConfigButton);
+            if (found && typeof found === "object")
+                menuButtonClassesCache = found;
+        }
+        catch { /* Retry on the next render. */ }
+    }
+    return menuButtonClassesCache ?? {};
+};
+const css$2 = `
+/* Preserve Steam's 3D context through both wrappers for backdrop sampling. */
+#decky-metadata-hltb { background: var(--hltb-native-underlay, none); opacity: var(--hltb-native-underlay-opacity, 1); transform-style: preserve-3d; }
+.decky-metadata-hltb-info {
+  background: rgb(14 20 27 / var(--hltb-bar-alpha, 0.25)); position: relative;
+  border-bottom: var(--hltb-border-width, 2px) solid rgba(61,68,80,.54);
+  padding: 5px 0; color: inherit; text-shadow: var(--hltb-text-shadow, none);
+}
+/* Sit on the bottom of the header instead of pushing the Play section down. */
+.decky-metadata-hltb-default, .decky-metadata-hltb-clean-default { position: absolute; bottom: 0; left: 0; right: 0; z-index: 3; }
+/* "Push Play button down": take layout height below the header so Play moves down. */
+#decky-metadata-hltb.decky-metadata-hltb-flow { position: relative; }
+.decky-metadata-hltb-clean-default, .decky-metadata-hltb-clean { --hltb-bar-alpha: 0.33; position: absolute; z-index: 3; }
+.decky-metadata-hltb-clean { top: -55vh; right: 2.8vw; width: fit-content; height: fit-content; }
+.decky-metadata-hltb-clean-left { right: 0; left: 2.8vw; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-info, .decky-metadata-hltb-clean-default .decky-metadata-hltb-info {
+  border: 0; background: var(--hltb-native-background, rgb(14 20 27 / var(--hltb-bar-alpha, 0.33))); opacity: var(--hltb-native-opacity, 1); backdrop-filter: var(--hltb-native-backdrop, none);
+}
+.decky-metadata-hltb-clean-default .decky-metadata-hltb-info { padding: 0; }
+/* Joined: lift the times above the Play blur; flat (no own backdrop to sample) so the button hit-tests. */
+.decky-metadata-hltb-joined #decky-metadata-hltb { transform: translateZ(1px); transform-style: flat; }
+.decky-metadata-hltb-info ul { list-style: none; padding: 5px 35px; margin: 0; display: flex; justify-content: space-evenly; flex: 0 1 auto; }
+.decky-metadata-hltb-clean ul { display: block; flex-direction: column; }
+.decky-metadata-hltb-info li { text-align: center; }
+.decky-metadata-hltb-info p { margin: 0; }
+.decky-metadata-hltb-gametime { font-size: calc(16px * var(--hltb-text-scale, 1)); font-weight: bold; }
+.decky-metadata-hltb-clean .decky-metadata-hltb-gametime { font-size: calc(20px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-label { text-transform: uppercase; font-size: calc(10px * var(--hltb-text-scale, 1)); }
+.decky-metadata-hltb-info li.decky-metadata-hltb-details-item { align-self: center; }
+.decky-metadata-hltb-info .decky-metadata-hltb-details { background: transparent; padding: 0; margin: 0; gap: 0; justify-content: center; }
+:where(.decky-metadata-hltb-details-button) { display: inline-flex; align-items: center; justify-content: center; padding: 4px 10px; border-radius: 2px; background: rgba(255, 255, 255, 0.12); color: #dcdedf; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
+:where(.decky-metadata-hltb-details-button.gpfocus, .decky-metadata-hltb-details-button:focus) { background: #ffffff; color: #0e141b; }
+:where(.decky-metadata-hltb-menu-button) { align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.15); color: #dcdedf; }
+:where(.decky-metadata-hltb-menu-button.gpfocus, .decky-metadata-hltb-menu-button:focus) { background: #ffffff; color: #0e141b; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button { display: inline-flex; width: auto; height: 32px; margin: 0; padding: 0 12px; border-radius: var(--round-radius-size, 2px); font-size: 12px; font-weight: bold; text-transform: uppercase; text-shadow: none; }
+.decky-metadata-hltb-info .decky-metadata-hltb-menu-button.decky-metadata-hltb-native-corners { border-radius: 2px; }
+.decky-metadata-hltb-clean li.decky-metadata-hltb-details-item { margin-top: 6px; }
+`;
+function HltbStats({ stats, hltbId, settings, launching }) {
+    const t = useT();
+    if (!stats || launching || Object.values(stats).every(value => value <= 0))
+        return null;
+    const { appearance, style } = settings;
+    const vars = {};
+    if (appearance.custom) {
+        vars["--hltb-bar-alpha"] = String(appearance.barAlpha / 100);
+        if (appearance.textShadow)
+            vars["--hltb-text-shadow"] = "0 1px 3px rgba(0, 0, 0, 0.9)";
+        if (appearance.textScale !== 100)
+            vars["--hltb-text-scale"] = String(appearance.textScale / 100);
+        if (!appearance.border)
+            vars["--hltb-border-width"] = "0";
+    }
+    const items = [
+        [settings.showMain, stats.main, t("hltb.stats.mainStory")],
+        [settings.showMainPlus, stats.plus, t("hltb.stats.mainPlusExtras")],
+        [settings.showComplete, stats.complete, t("hltb.stats.completionist")],
+        [settings.showAllStyles, stats.all, t("hltb.stats.allStyles")],
+    ];
+    const flow = settings.pushPlayDown && (style === "default" || style === "clean-default");
+    const classes = [
+        style === "default" ? "decky-metadata-hltb-default" : "",
+        style === "clean-default" ? "decky-metadata-hltb-clean-default" : "",
+        style === "clean" || style === "clean-left" ? "decky-metadata-hltb-clean" : "",
+        style === "clean-left" ? "decky-metadata-hltb-clean-left" : "",
+        flow ? "decky-metadata-hltb-flow" : "",
+    ].filter(Boolean).join(" ");
+    const openDetails = () => DFL.Navigation.NavigateToExternalWeb(`https://howlongtobeat.com/game/${hltbId}`);
+    const nativeDetailsClasses = detailsClasses();
+    const nativeMenuButtonClasses = menuButtonClasses();
+    const deckVerifiedInfoClass = resolveSteamCssClass(nativeDetailsClasses.DeckVerifiedInfo, "deckVerifiedInfo") ?? "";
+    const deckVerifiedDetailsClass = resolveSteamCssClass(nativeDetailsClasses.Details, "deckVerifiedDetails");
+    const deckVerifiedFocusedClass = resolveSteamCssClass(nativeDetailsClasses.Focused, "deckVerifiedFocused");
+    const menuButtonClass = resolveSteamCssClass(nativeMenuButtonClasses.MenuButton, "menuButton") ?? "";
+    return SP_JSX.jsxs("div", { id: "decky-metadata-hltb", className: classes, style: vars, children: [SP_JSX.jsx("style", { children: css$2 }), SP_JSX.jsx("div", { className: "decky-metadata-hltb-info", children: SP_JSX.jsxs("ul", { children: [items.map(([show, seconds, label]) => show && SP_JSX.jsxs("li", { children: [SP_JSX.jsx("p", { className: "decky-metadata-hltb-gametime", children: seconds > 0 ? formatHours(seconds / 3600) : t("hltb.stats.noHours") }), SP_JSX.jsx("p", { className: "decky-metadata-hltb-label", children: label })] }, label)), hltbId && !settings.hideViewDetails ? SP_JSX.jsx("li", { className: "decky-metadata-hltb-details-item", children: style === "default"
+                                ? SP_JSX.jsx(DFL.Focusable, { className: `${deckVerifiedInfoClass} decky-metadata-hltb-details`, focusClassName: deckVerifiedFocusedClass, children: SP_JSX.jsx(DFL.Focusable, { className: [deckVerifiedDetailsClass, "decky-metadata-hltb-details-button"].filter(Boolean).join(" "), noFocusRing: false, onActivate: openDetails, children: t("hltb.details") }) })
+                                : SP_JSX.jsx(DFL.Focusable, { className: `${menuButtonClass} decky-metadata-hltb-menu-button${settings.nativeDetailsCorners ? " decky-metadata-hltb-native-corners" : ""}`, onActivate: openDetails, children: t("hltb.details") }) }) : null] }) })] });
+}
+
+const ROW_KEY = "decky-metadata-hltb-row";
+const JOINED_CLASS = "decky-metadata-hltb-joined";
+const NO_SURFACE = { joined: false, height: 0, paddingTop: 0 };
+const px = (value) => String(Math.round(value * 100) / 100);
+/** One blur surface: the Play section's own, grown up over the HLTB bar. */
+const joinedRule = (height, paddingTop) => {
+    const inner = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+    const playSection = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    const rule = `{ margin-top: calc(0px - ${px(height)}px); padding-top: calc(${px(paddingTop)}px + ${px(height)}px); }`;
+    if (inner && playSection)
+        return `.${inner}:has(> .${JOINED_CLASS}) .${playSection} ${rule}`;
+    if (playSection)
+        return `.${JOINED_CLASS} + * .${playSection} ${rule}`;
+    return `.${JOINED_CLASS} + * ${rule}`;
+};
+const findHeaderElement = (row) => {
+    const container = row.parentElement;
+    if (!container)
+        return undefined;
+    const headerClass = resolveSteamCssClass(DFL.appDetailsClasses?.Header, "appDetailsHeader");
+    if (headerClass) {
+        const matched = Array.from(container.children).find((child) => child.className.includes(headerClass));
+        if (matched)
+            return matched;
+    }
+    return row.previousElementSibling ?? undefined;
+};
+const findPlaySectionElement = (row) => {
+    const next = row.nextElementSibling;
+    if (!next)
+        return null;
+    const playSectionClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.PlaySection, "playSection");
+    if (playSectionClass) {
+        return next.querySelector(`.${playSectionClass}`);
+    }
+    return next.firstElementChild ?? next;
+};
+const positiveId = (value, maximum) => {
+    const id = Number(value);
+    return Number.isSafeInteger(id) && id > 0 && id <= maximum ? id : null;
+};
+/** The Steam ID, title and chosen HLTB game a lookup for this page is based on. */
+const hltbInputs = (appId, isShortcut, title) => {
+    if (!isShortcut) {
+        return { steam: positiveId(appId, 0x7fffffff), title, pinned: getSteamHltbOverride(appId) };
+    }
+    const record = metadataCache[String(appId)];
+    return {
+        steam: positiveId(record?.steam_appid, 0x7fffffff),
+        title,
+        pinned: positiveId(record?.hltb_game_id, 0x7fffffff),
+    };
+};
+function useHltbSnapshot() {
+    const [snapshot, setSnapshot] = SP_REACT.useState(hltbController.getSnapshot());
+    SP_REACT.useEffect(() => {
+        const refresh = () => setSnapshot(hltbController.getSnapshot());
+        const unsubscribe = hltbController.subscribe(refresh);
+        refresh();
+        return unsubscribe;
+    }, []);
+    return snapshot;
+}
+/** Hide the row while Steam's header animates into a game launch. */
+function useLaunching(ref, active) {
+    const [launching, setLaunching] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        if (!active || !ref.current)
+            return;
+        const header = findHeaderElement(ref.current);
+        const topCapsuleClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.TopCapsule, "topCapsule");
+        const capsule = topCapsuleClass
+            ? Array.from(header?.children ?? []).find((child) => child.className.includes(topCapsuleClass))
+            : header?.firstElementChild ?? undefined;
+        const View = ref.current?.ownerDocument.defaultView?.MutationObserver;
+        if (!capsule || !View)
+            return;
+        const observer = new View(() => {
+            const name = capsule.className;
+            const entering = [
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterStart, "fullscreenEnterStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterActive, "fullscreenEnterActive"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenEnterDone, "fullscreenEnterDone"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitStart, "fullscreenExitStart"),
+                resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitActive, "fullscreenExitActive"),
+            ].some((value) => value && name.includes(value));
+            const exitDone = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.FullscreenExitDone, "fullscreenExitDone");
+            setLaunching(entering && (!exitDone || !name.includes(exitDone)));
+        });
+        observer.observe(capsule, { attributes: true, attributeFilter: ["class"] });
+        return () => observer.disconnect();
+    }, [active]);
+    return launching;
+}
+/**
+ * The HLTB game a page shows for this app, looked up when missing or stale.
+ * Nothing is looked up or returned unless `wanted` and the game has a title.
+ */
+function useHltbMatch(appId, wanted) {
+    const [, rerender] = SP_REACT.useState(0);
+    const native = getNativeOverview(appId);
+    const isShortcut = isNativeNonSteamShortcut(native);
+    const title = String(native?.display_name ?? "").trim();
+    const inputs = hltbInputs(appId, isShortcut, title);
+    const active = wanted && title !== "";
+    const view = hltbStore.view(appId, inputs);
+    SP_REACT.useEffect(() => {
+        const refresh = () => rerender((value) => value + 1);
+        const unsubscribeStore = hltbStore.subscribe(appId, refresh);
+        const unsubscribeOverrides = isShortcut ? undefined : subscribeSteamOverrides(refresh);
+        return () => {
+            unsubscribeStore();
+            unsubscribeOverrides?.();
+        };
+    }, [appId, isShortcut]);
+    SP_REACT.useEffect(() => {
+        if (active && view.needsFetch)
+            hltbStore.request(appId, isShortcut, inputs);
+    });
+    return { active, entry: active && view.entry?.status === "matched" ? view.entry : null };
+}
+/**
+ * Copy the native Play section's surface onto the row for the "Clean" styles, or
+ * with clean-default on a blurred Play bar, extend that one blur over both rows:
+ * the bar and underlay stay transparent and the Play rule supplies the surface.
+ */
+function useNativeCleanSurface(ref, enabled, style, blur, pushPlayDown) {
+    const [surface, setSurface] = SP_REACT.useState(NO_SURFACE);
+    const padding = SP_REACT.useRef(0);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!enabled || style === "default" || !row || !document || !view || !row.parentElement) {
+            setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+            return;
+        }
+        const names = ["--hltb-native-background", "--hltb-native-opacity", "--hltb-native-underlay", "--hltb-native-underlay-opacity", "--hltb-native-backdrop"];
+        const resize = { element: null, observer: null };
+        function update() {
+            const section = findPlaySectionElement(row);
+            const bar = row.querySelector(".decky-metadata-hltb-info");
+            if (!section) {
+                for (const name of names)
+                    row.style.removeProperty(name);
+                resize.observer?.disconnect();
+                resize.element = null;
+                setSurface((previous) => previous.joined ? NO_SURFACE : previous);
+                return;
+            }
+            const computed = view.getComputedStyle(section);
+            // Native padding is only readable while our own rule is not applied.
+            if (!row.classList.contains(JOINED_CLASS))
+                padding.current = parseFloat(computed.paddingTop) || 0;
+            // Layout height, not the rect: Steam animates an ancestor transform on page entry.
+            const height = bar ? parseFloat(view.getComputedStyle(bar).height) || 0 : 0;
+            const radius = Number(/blur\(([\d.]+)px\)/.exec(computed.backdropFilter ?? "")?.[1] ?? 0);
+            const joined = !pushPlayDown && style === "clean-default" && blur !== "none" && radius > 0 && height > 0;
+            row.style.setProperty("--hltb-native-background", joined ? "transparent" : computed.background);
+            row.style.setProperty("--hltb-native-opacity", joined ? "1" : computed.opacity);
+            row.style.setProperty("--hltb-native-backdrop", joined ? "none" : blur === "none" ? "none" : blur === "blur" ? "blur(8px)" : computed.backdropFilter);
+            const appDetailsRootClass = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppDetailsRoot, "appDetailsRoot");
+            const root = appDetailsRootClass ? section.closest(`.${appDetailsRootClass}`) : null;
+            const underlay = !joined && root && !root.contains(row) ? view.getComputedStyle(root) : null;
+            row.style.setProperty("--hltb-native-underlay", joined ? "transparent" : underlay?.background ?? "transparent");
+            row.style.setProperty("--hltb-native-underlay-opacity", joined ? "1" : underlay?.opacity ?? "1");
+            if (bar !== resize.element) {
+                resize.observer?.disconnect();
+                resize.element = bar;
+                if (bar) {
+                    resize.observer ?? (resize.observer = new view.ResizeObserver(update));
+                    resize.observer.observe(bar);
+                }
+            }
+            const next = joined ? { joined: true, height, paddingTop: padding.current } : NO_SURFACE;
+            setSurface((previous) => previous.joined === next.joined && previous.height === next.height && previous.paddingTop === next.paddingTop ? previous : next);
+        }
+        update();
+        const observer = new view.MutationObserver(update);
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        observer.observe(row.parentElement, { childList: true, subtree: true });
+        return () => {
+            observer.disconnect();
+            resize.observer?.disconnect();
+            for (const name of names)
+                row.style.removeProperty(name);
+        };
+    }, [enabled, style, blur, pushPlayDown]);
+    return surface;
+}
+/**
+ * True while a Steam Cloud or SDH-Ludusavi save status bar sits on the bottom of
+ * the header art: pushing Play down would leave that bar without its backdrop.
+ */
+function useStatusBandOverlay(ref, wanted) {
+    const [overlay, setOverlay] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setOverlay(false);
+            return;
+        }
+        const status = resolveSteamCssClass(DFL.playSectionClasses?.CloudStatusRow, "cloudStatusRow");
+        const selector = `[data-sdh-ludusavi-status-row="true"]${status ? `, .${status}` : ""}`;
+        let frame = 0;
+        const touching = () => {
+            const header = findHeaderElement(row);
+            const headerBgClass = resolveSteamCssClass(DFL.appDetailsHeaderClasses?.HeaderBackgroundImage, "headerBackgroundImage");
+            const art = headerBgClass
+                ? header?.querySelector(`.${headerBgClass}`)
+                : header?.querySelector("img")?.parentElement ?? undefined;
+            if (!art)
+                return false;
+            const bounds = art.getBoundingClientRect();
+            // Only art-sized images follow the hero bounds; Steam's full-bleed backdrop sits below it.
+            const bottom = Math.max(bounds.bottom, ...Array.from(art.querySelectorAll("img"), (image) => image.getBoundingClientRect())
+                .filter((rect) => Math.abs(rect.width - bounds.width) <= 2)
+                .map((rect) => rect.bottom));
+            // Rect, not layout: Steam scales the page while it animates in.
+            const flow = row.querySelector("#decky-metadata-hltb.decky-metadata-hltb-flow");
+            const displacement = flow?.getBoundingClientRect().height ?? 0;
+            for (const bar of Array.from(container.querySelectorAll(selector))) {
+                const rect = bar.getBoundingClientRect();
+                if (row.contains(bar) || !bar.textContent?.trim() || bar.offsetHeight <= 0 ||
+                    Math.abs(rect.width - bounds.width) > 2 || rect.bottom <= bounds.top ||
+                    rect.top - bottom > displacement + 1)
+                    continue;
+                const own = view.getComputedStyle(bar);
+                if (own.position === "absolute" || own.position === "fixed" || own.position === "sticky")
+                    continue;
+                // SDH keeps its row in layout while suppressing its paint, so opacity 0 still counts.
+                const suppressed = bar.getAttribute("data-sdh-ludusavi-paint-suppressed") === "true";
+                let visible = true;
+                for (let element = bar; element; element = element.parentElement) {
+                    const style = view.getComputedStyle(element);
+                    if (style.display === "none" || style.visibility === "hidden" || style.visibility === "collapse" ||
+                        (!suppressed && Number(style.opacity) <= 0)) {
+                        visible = false;
+                        break;
+                    }
+                    if (element === container)
+                        break;
+                }
+                if (visible)
+                    return true;
+            }
+            return false;
+        };
+        const update = () => {
+            frame = 0;
+            const next = touching();
+            setOverlay((previous) => previous === next ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, {
+            childList: true, subtree: true, attributes: true,
+            attributeFilter: ["class", "style", "hidden", "aria-hidden", "data-sdh-ludusavi-status-row", "data-sdh-ludusavi-paint-suppressed"],
+        });
+        // CSS Loader themes restyle the page from the head and the root element alone.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        const resize = new view.ResizeObserver(schedule);
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        schedule();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            view.removeEventListener("resize", schedule);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted && overlay;
+}
+/** A border box's layout top: unaffected by transforms and scroll position. */
+function layoutTop(element) {
+    let top = 0;
+    for (let node = element; node; node = node.offsetParent)
+        top += node.offsetTop;
+    return top;
+}
+/**
+ * How far Play can move down before its button would go under Big Picture's footer.
+ * Uses layout numbers, so scrolling and Steam's page-entry scale do not change it.
+ */
+function usePushRoom(ref, wanted) {
+    const [room, setRoom] = SP_REACT.useState(null);
+    SP_REACT.useEffect(() => {
+        const row = ref.current;
+        const container = row?.parentElement;
+        const document = row?.ownerDocument;
+        const view = document?.defaultView;
+        if (!wanted || !row || !container || !document || !view) {
+            setRoom((previous) => previous === null ? previous : null);
+            return;
+        }
+        let frame = 0;
+        let footer = null;
+        const resize = new view.ResizeObserver(() => schedule());
+        const footerResize = new view.ResizeObserver(() => schedule());
+        const measure = () => {
+            // The whole surface that moves Play down in flow mode, margins included. Never
+            // the row wrapper: over the art it is 0 tall, so its height would flip the mode.
+            const surface = row.querySelector("#decky-metadata-hltb");
+            const surfaceStyle = surface && view.getComputedStyle(surface);
+            const rowHeight = surface
+                ? surface.offsetHeight + (parseFloat(surfaceStyle?.marginTop ?? "") || 0) + (parseFloat(surfaceStyle?.marginBottom ?? "") || 0)
+                : 0;
+            const section = findPlaySectionElement(row);
+            if (!rowHeight || !section)
+                return null;
+            let scroller = container.parentElement;
+            while (scroller) {
+                const style = view.getComputedStyle(scroller);
+                if (/(auto|scroll)/.test(style.overflowY))
+                    break;
+                scroller = scroller.parentElement;
+            }
+            if (!scroller || scroller.clientHeight <= 0)
+                return null;
+            const nextFooter = document.querySelector("#Footer");
+            // Re-bound every pass: the footer can arrive or be replaced after the page has loaded.
+            if (nextFooter !== footer) {
+                footerResize.disconnect();
+                footer = nextFooter;
+                if (footer)
+                    footerResize.observe(footer);
+            }
+            const header = findHeaderElement(row);
+            if (!header)
+                return null;
+            // Layout, not rects: Steam scales and translates the page while it animates in,
+            // and a rect read mid-animation would stick until something else moved.
+            // Absolute layout space, as for the footer: no rect and no scroller-local offset.
+            const artBottom = layoutTop(header) + header.offsetHeight;
+            // The visible bar's border box; the labels may overhang it but Play clears the bar.
+            const footerTop = footer && footer.offsetHeight > 0
+                ? layoutTop(footer)
+                : layoutTop(scroller) + scroller.clientHeight;
+            const lift = row.classList.contains(JOINED_CLASS) ? rowHeight : 0;
+            const playButton = resolveSteamCssClass(DFL.appActionButtonClasses?.PlayButton, "playButton");
+            const appActionButton = resolveSteamCssClass(DFL.basicAppDetailsSectionStylerClasses?.AppActionButton, "appActionButton");
+            // The button face; the wrapper's AppActionButton class is the fallback.
+            const button = (playButton ? section.querySelector(`.${playButton}`) : null) ??
+                (appActionButton ? section.querySelector(`.${appActionButton}`) : null);
+            // Relative to the section's top, in flow layout space: the joined rule adds `lift` padding.
+            const buttonBottom = button
+                ? layoutTop(button) - layoutTop(section) + button.offsetHeight - lift
+                : section.offsetHeight - lift;
+            const free = footerTop - 4 - artBottom - buttonBottom;
+            return { push: Math.min(rowHeight, Math.max(0, Math.floor(free))), rowHeight };
+        };
+        const update = () => {
+            frame = 0;
+            const next = measure();
+            setRoom((previous) => previous?.push === next?.push && previous?.rowHeight === next?.rowHeight ? previous : next);
+        };
+        const schedule = () => {
+            if (!frame)
+                frame = view.requestAnimationFrame(update);
+        };
+        const observer = new view.MutationObserver(schedule);
+        observer.observe(container, { childList: true, subtree: true, attributes: true, attributeFilter: ["class", "style"] });
+        // Themes restyle the page and the footer from the head and the root element.
+        observer.observe(document.head, { childList: true, subtree: true, characterData: true, attributes: true });
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "style"] });
+        if (document.body)
+            observer.observe(document.body, { childList: true, subtree: true });
+        resize.observe(container);
+        view.addEventListener("resize", schedule);
+        // Steam animates the page in without any resize or mutation: re-measure when it ends.
+        document.addEventListener("transitionend", schedule, true);
+        document.addEventListener("animationend", schedule, true);
+        update();
+        return () => {
+            observer.disconnect();
+            resize.disconnect();
+            footerResize.disconnect();
+            view.removeEventListener("resize", schedule);
+            document.removeEventListener("transitionend", schedule, true);
+            document.removeEventListener("animationend", schedule, true);
+            if (frame)
+                view.cancelAnimationFrame(frame);
+        };
+    }, [wanted]);
+    return wanted ? room : null;
+}
+function HltbGameRow({ appId }) {
+    const snapshot = useHltbSnapshot();
+    const ref = SP_REACT.useRef(null);
+    const { active, entry } = useHltbMatch(appId, snapshot.effectiveEnabled);
+    const launching = useLaunching(ref, active);
+    const { settings } = snapshot;
+    const pushWanted = active && settings.pushPlayDown && (settings.style === "default" || settings.style === "clean-default");
+    const overlay = useStatusBandOverlay(ref, pushWanted);
+    const room = usePushRoom(ref, pushWanted && !overlay && settings.respectMenuBar);
+    const pushPlayDown = settings.pushPlayDown && !overlay && room?.push !== 0;
+    const surface = useNativeCleanSurface(ref, active, settings.style, settings.appearance.blur, pushPlayDown);
+    const shortfall = room && room.push > 0 ? room.rowHeight - room.push : 0;
+    if (!active)
+        return null;
+    return (SP_JSX.jsxs("div", { ref: ref, className: surface.joined ? JOINED_CLASS : undefined, style: { position: "relative", transformStyle: "preserve-3d", marginTop: shortfall ? -shortfall : undefined }, children: [surface.joined && SP_JSX.jsx("style", { children: joinedRule(surface.height, surface.paddingTop) }), SP_JSX.jsx(HltbStats, { stats: entry?.stats ?? null, hltbId: entry?.hltb_id ?? null, settings: { ...settings, pushPlayDown }, launching: launching })] }));
+}
+/** True for the child that holds Steam's Play section (the row goes right above it). */
+const isPlaySection = (child) => {
+    const props = (child?.props ?? {});
+    const inner = props.children?.props ?? {};
+    return props.childFocusDisabled !== undefined && props.navRef !== undefined &&
+        inner.details !== undefined && inner.overview !== undefined && inner.bFastRender !== undefined;
+};
+function installHltbGameView() {
+    const unpatchers = [];
+    for (const route of GAME_DETAIL_ROUTES) {
+        const patch = routerHook.addPatch(route, (tree) => {
+            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
+            if (!routeProps)
+                return tree;
+            let appId = 0;
+            const handler = DFL.createReactTreePatcher([
+                (inner) => {
+                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                    appId = Number(children?.props?.overview?.appid) || 0;
+                    return children ?? null;
+                },
+            ], (_args, ret) => {
+                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                    node.props.children.some(isPlaySection)))?.props?.children;
+                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                    return ret;
+                const index = children.findIndex(isPlaySection);
+                if (index >= 0)
+                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+                return ret;
+            });
+            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
+            unpatchers.push(() => renderPatch.unpatch());
+            return tree;
+        });
+        unpatchers.push(() => routerHook.removePatch(route, patch));
+    }
+    return () => {
+        for (const unpatch of unpatchers.splice(0)) {
+            try {
+                unpatch();
+            }
+            catch {
+                // Steam may already have released the route.
+            }
+        }
+    };
+}
+const hltbController = new HltbController({ install: installHltbGameView });
+
 const parseSteamAppId = (input) => {
     const s = String(input || "").trim();
     if (!s)
@@ -33934,10 +41491,107 @@ const css$1 = `
   object-fit: cover;
 }
 
+.${layout}__header-icon.is-collapsed-only {
+  display: none;
+}
+
 /* Marquee wraps its root in an unstyled div; let that wrapper shrink so long names scroll inside the rail. */
 .${layout}__header > :last-child {
   flex: 1 1 0;
   min-width: 0;
+}
+
+.${layout}__shell {
+  width: 100%;
+  height: 100%;
+  min-height: 100%;
+}
+
+.${layout}__shell.is-collapsible .PageListColumn {
+  transition: width 180ms ease, min-width 180ms ease, max-width 180ms ease, flex-basis 180ms ease;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn {
+  box-sizing: border-box !important;
+  width: 64px !important;
+  min-width: 64px !important;
+  max-width: 64px !important;
+  flex: 0 0 64px !important;
+  overflow: hidden !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > :first-child {
+  padding-left: 8px !important;
+  padding-right: 8px !important;
+  display: flex !important;
+  justify-content: center !important;
+  min-height: 24px !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable {
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div {
+  width: 100% !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  gap: 0 !important;
+  margin: 0 !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :first-child {
+  flex: 0 0 auto !important;
+  width: auto !important;
+  min-width: 24px !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn > .Panel.Focusable > .Panel.Focusable > div > :last-child {
+  display: none !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-title,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__tab-label,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__dirty-dot,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-title,
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header > :last-child {
+  display: none !important;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header {
+  justify-content: center;
+  gap: 0;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__header-icon.is-collapsed-only {
+  display: block;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .PageListColumn .${layout}__save.DialogButton.Secondary {
+  width: 48px !important;
+  min-width: 48px !important;
+  margin: auto 8px 22px !important;
+  padding: 0 4px !important;
+  overflow: hidden;
+  text-overflow: clip;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.${layout}__shell.is-collapsible.is-sidebar-collapsed .DialogContentTransition {
+  flex: 1 1 auto !important;
+  min-width: 0 !important;
 }
 
 `;
@@ -33947,7 +41601,11 @@ function CurrentPageContent$1({ id }) {
     const pages = SP_REACT.useContext(PageContentContext$1);
     return SP_JSX.jsx(SP_JSX.Fragment, { children: pages.find((page) => page.id === id)?.content ?? null });
 }
-function EditorTitle({ title, appId, steamAppId }) {
+/** Whether a resolved icon may show with the sidebar expanded; the collapsed rail always shows it. */
+function headerIconShowsExpanded(settings, ownIcon) {
+    return settings?.gameIcon === true && (ownIcon || settings.steamIconFallback);
+}
+function EditorTitle({ title, appId, steamAppId, collapsible, }) {
     const [settings, setSettings] = SP_REACT.useState(null);
     const [icon, setIcon] = SP_REACT.useState(null);
     SP_REACT.useEffect(() => {
@@ -33957,21 +41615,83 @@ function EditorTitle({ title, appId, steamAppId }) {
         return () => { current = false; };
     }, []);
     const showIcon = settings?.gameIcon === true;
-    const fallbackAppId = settings?.steamIconFallback ? steamAppId : null;
+    // The collapsed rail has no room for the title, so it always shows the icon instead.
+    const resolveIcon = showIcon || collapsible;
+    const fallbackAppId = settings?.steamIconFallback || collapsible ? steamAppId : null;
     SP_REACT.useEffect(() => {
-        setIcon(null);
-        if (!showIcon)
+        if (!resolveIcon) {
+            setIcon(null);
             return;
+        }
+        // The game's own icon does not depend on the page or the fallback setting; keep it across page switches.
+        if (icon?.own && icon.appId === appId)
+            return;
+        setIcon(null);
         let current = true;
-        void resolveEditorIcon(appId, fallbackAppId, () => current).then((url) => { if (current)
-            setIcon(url); });
+        // Start the Steam request early; the own icon can take up to a second to appear.
+        const steamIcon = fallbackAppId ? steamIconUrl(fallbackAppId) : null;
+        void resolveEditorIcon(appId, null, () => current).then(async (own) => {
+            const url = own ?? (steamIcon ? await steamIcon : null);
+            if (current)
+                setIcon(url ? { appId, url, own: own !== null } : null);
+        });
         return () => { current = false; };
-    }, [appId, fallbackAppId, showIcon]);
-    if (!showIcon || !DFL.Marquee)
-        return SP_JSX.jsx(SP_JSX.Fragment, { children: title });
-    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon`, src: icon, alt: "" }) : null, SP_JSX.jsx(DFL.Marquee, { children: title })] }));
+    }, [appId, fallbackAppId, resolveIcon]);
+    if (!resolveIcon)
+        return SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title });
+    const iconClass = icon && headerIconShowsExpanded(settings, icon.own) ? "" : " is-collapsed-only";
+    return (SP_JSX.jsxs("div", { className: `${layout}__header`, children: [icon ? SP_JSX.jsx("img", { className: `${layout}__header-icon${iconClass}`, src: icon.url, alt: "" }) : null, showIcon && DFL.Marquee ? SP_JSX.jsx(DFL.Marquee, { children: title }) : SP_JSX.jsx("span", { className: `${layout}__header-title`, children: title })] }));
 }
-function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageRequested, saveLabel, saveDisabled, onSave, }) {
+function evaluateSidebarCollapseState(currentlyCollapsed, sidebarHasFocus, contentHasFocus) {
+    if (sidebarHasFocus)
+        return false;
+    if (contentHasFocus)
+        return true;
+    return currentlyCollapsed;
+}
+function CollapsibleSidebarShell({ collapsible, children, }) {
+    const shellRef = SP_REACT.useRef(null);
+    // Collapsible pages open with focus in their content, so start collapsed instead of animating closed.
+    const [collapsed, setCollapsed] = SP_REACT.useState(collapsible);
+    SP_REACT.useEffect(() => {
+        if (!collapsible) {
+            setCollapsed(false);
+            return;
+        }
+        const shell = shellRef.current;
+        if (!shell)
+            return;
+        const syncFromDom = () => {
+            const sidebar = shell.querySelector(".PageListColumn");
+            const content = shell.querySelector(".DialogContentTransition");
+            // Plugin code runs in another window; read Steam's gamepad focus, else this window's DOM focus.
+            const active = nativeFocusedElement() ?? shell.ownerDocument.activeElement;
+            const sidebarFocused = Boolean(sidebar && (sidebar.classList.contains("gpfocuswithin") || (active && sidebar.contains(active))));
+            const contentFocused = Boolean(content && (content.classList.contains("gpfocuswithin") || (active && content.contains(active))));
+            setCollapsed((prev) => evaluateSidebarCollapseState(prev, sidebarFocused, contentFocused));
+        };
+        syncFromDom();
+        shell.addEventListener("focusin", syncFromDom, true);
+        let observer = null;
+        if (typeof MutationObserver !== "undefined") {
+            observer = new MutationObserver(syncFromDom);
+            observer.observe(shell, { attributes: true, attributeFilter: ["class"], subtree: true });
+        }
+        return () => {
+            shell.removeEventListener("focusin", syncFromDom, true);
+            observer?.disconnect();
+        };
+    }, [collapsible]);
+    const className = [
+        `${layout}__shell`,
+        collapsible ? "is-collapsible" : "",
+        collapsible && collapsed ? "is-sidebar-collapsed" : "",
+    ]
+        .filter(Boolean)
+        .join(" ");
+    return (SP_JSX.jsx("div", { ref: shellRef, className: className, children: children }));
+}
+function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageRequested, saveLabel, saveDisabled, onSave, collapsibleSidebar = false, }) {
     // Keep descriptors stable as fields edit; context supplies the latest content nodes.
     const pageDependencies = pages.flatMap(({ id, label, icon, dirty, visible, separatorBefore }) => [id, label, icon, dirty, visible, separatorBefore]);
     const nativePages = SP_REACT.useMemo(() => {
@@ -33991,7 +41711,7 @@ function NativeEditorLayout({ title, appId, steamAppId, pages, page, onPageReque
         }
         return mapped;
     }, pageDependencies);
-    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) })] }));
+    return (SP_JSX.jsxs(PageContentContext$1.Provider, { value: pages, children: [SP_JSX.jsx("style", { children: css$1 }), SP_JSX.jsx(CollapsibleSidebarShell, { collapsible: collapsibleSidebar, children: SP_JSX.jsx(NativePagedSettings$1, { pages: nativePages, page: page, onPageRequested: (id) => onPageRequested(id), title: SP_JSX.jsx(EditorTitle, { title: title, appId: appId, steamAppId: steamAppId, collapsible: collapsibleSidebar }), showTitle: true, bottomControls: SP_JSX.jsx(DFL.DialogButton, { className: `${layout}__save`, focusable: !saveDisabled, disabled: saveDisabled, onClick: onSave, children: saveLabel }) }) })] }));
 }
 function EditorLayout(props) {
     const t = useT();
@@ -34005,6 +41725,7 @@ function EditorLayout(props) {
 const EDITOR_PAGE_ORDER = [
     "details",
     "steam-match",
+    "artwork",
     "hltb",
     "compatibility",
     "shortcut-name",
@@ -34167,6 +41888,7 @@ const descriptionTextareaStyle = {
 const PAGE_LABEL_KEYS = {
     details: "editor.page.details",
     "steam-match": "editor.page.steamMatch",
+    artwork: "editor.page.artwork",
     hltb: "editor.page.hltb",
     compatibility: "editor.page.compatibility",
     "shortcut-name": "editor.page.shortcutName",
@@ -34175,6 +41897,7 @@ const PAGE_LABEL_KEYS = {
 const PAGE_ICONS = {
     details: SP_JSX.jsx(FaInfoCircle, { size: 20 }),
     "steam-match": SP_JSX.jsx(FaSteam, { size: 20 }),
+    artwork: SP_JSX.jsx(FaImage, { size: 20 }),
     hltb: SP_JSX.jsx(FaClock, { size: 20 }),
     compatibility: SP_JSX.jsx(SiSteamdeck, { size: 20 }),
     "shortcut-name": SP_JSX.jsx(FaPencilAlt, { size: 20 }),
@@ -34678,7 +42401,7 @@ const MetadataPage = () => {
         setResults(null);
         // An unsaved HLTB draft belongs to the game it was typed on.
         setHltbIdDraft(null);
-        setPage(nonSteam ? "details" : "hltb");
+        setPage(nonSteam ? "details" : "artwork");
     }, [appId, nonSteam]);
     SP_REACT.useEffect(() => {
         const steamAppId = normalizedSteamAppId(metadata.steam_appid);
@@ -34760,9 +42483,16 @@ const MetadataPage = () => {
         if (!root)
             return;
         // Wait for the initial page to mount again when a new entry resets the selected page.
-        const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
+        const selector = nonSteam
+            ? "[data-editor-title] input"
+            : "[data-artwork-initial-focus], [data-editor-hltb-search] input";
         const frame = requestAnimationFrame(() => {
-            root.querySelector(selector)?.focus();
+            const target = root.querySelector(selector);
+            // The artwork marker is a Steam Focusable; DOM focus() from this window does not move gamepad focus.
+            if (target?.matches("[data-artwork-initial-focus]"))
+                takeNativeFocus(target);
+            else
+                target?.focus();
         });
         return () => cancelAnimationFrame(frame);
     }, [editorEntryToken, nonSteam]);
@@ -34820,7 +42550,7 @@ const MetadataPage = () => {
             mountedRef.current = false;
         };
     }, []);
-    const [page, setPage] = SP_REACT.useState(nonSteam ? "details" : "hltb");
+    const [page, setPage] = SP_REACT.useState(nonSteam ? "details" : "artwork");
     // Steam search results outlive the Game Match page, as IGN results do.
     const steamSearchRef = SP_REACT.useRef(null);
     // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -35108,11 +42838,17 @@ const MetadataPage = () => {
                 return true;
             }
             const record = hltb ? { ...normalizedMetadata, hltb_game_id: hltb.id } : normalizedMetadata;
+            const previousSteamAppId = normalizedSteamAppId(savedRecordRef.current?.steam_appid);
             const steamAppId = normalizedSteamAppId(record.steam_appid);
             // Only a trusted save may store the provider fields a preview fetched.
             const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
                 ? await savePreviewedMetadata(appId, record, steamAppId)
                 : await saveMetadata(appId, record);
+            // Apply before the early returns: later saves compare against this record and would never retry.
+            const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
+            if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
+                void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
+            }
             if (!isCurrentEditorEntry(requestedEntry))
                 return false;
             savedRecordRef.current = saved;
@@ -35682,16 +43418,23 @@ const MetadataPage = () => {
                     onConfirm: () => void removeCurrent(),
                 }), bottomSeparator: "none", children: t("editor.removeMetadata") }) }));
     }
+    function renderArtworkPage() {
+        const effectiveSteamAppId = nonSteam ? savedSteamAppId : normalizedSteamAppId(appId);
+        return (SP_JSX.jsx(ArtworkEditorPage, { appId: appId, gameName: appName(appId), isSteamGame: !nonSteam, savedSteamAppId: effectiveSteamAppId, unsavedSteamAppId: nonSteam ? formSteamAppId : effectiveSteamAppId, entryBusy: entryBusy, onGoToSteamMatch: () => setPage("steam-match"), onSaveMatch: () => void saveCurrent(), onOpenArtworkSettings: () => openSettings("artwork") }));
+    }
     const renderPageContent = {
         details: renderDetailsPage,
         "steam-match": renderSteamMatchPage,
+        artwork: renderArtworkPage,
         hltb: renderHltbPage,
         compatibility: renderCompatibilityPage,
         "shortcut-name": renderShortcutNamePage,
         advanced: renderAdvancedPage,
     };
     const pages = EDITOR_PAGE_ORDER.map((id) => {
-        const visible = nonSteam ? true : id === "hltb";
+        const visible = nonSteam
+            ? true
+            : id === "artwork" || (hltbSnapshot.effectiveEnabled && id === "hltb");
         return {
             id,
             label: t(PAGE_LABEL_KEYS[id]),
@@ -35702,12 +43445,123 @@ const MetadataPage = () => {
             content: visible ? renderPageContent[id]() : null,
         };
     });
-    const activePage = nonSteam ? page : "hltb";
+    const activePage = nonSteam
+        ? page
+        : page === "hltb" && hltbSnapshot.effectiveEnabled
+            ? "hltb"
+            : "artwork";
     return (SP_JSX.jsxs(DFL.Focusable, { ref: editorRootRef, className: editorRootClassName, onSecondaryButton: () => {
             if (!saveDisabled)
                 void saveCurrent();
-        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent() })] }));
+        }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent(), collapsibleSidebar: activePage === "artwork" })] }));
 };
+
+const TabVisibilityContext = SP_REACT.createContext({ hidden: new Set(), disabled: true, toggle: () => undefined });
+// Module-level so the list does not remount the toggles on every render. Decky's list toggles
+// reorder mode on any click inside it, so the toggle's own clicks stop at this wrapper.
+const TabVisibilityToggle = ({ entry }) => {
+    const { hidden, disabled, toggle } = SP_REACT.useContext(TabVisibilityContext);
+    const tab = entry.data;
+    if (!tab)
+        return null;
+    return (SP_JSX.jsx("div", { onClick: (evt) => evt.stopPropagation(), children: SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hidden.has(tab), disabled: disabled || tab === "manage", onChange: () => toggle(tab) }) }));
+};
+const ProgressBarField = DFL.ProgressBarWithInfo;
+const slotLabelKey = (slot) => `qam.artwork.slot.${slot}.label`;
+const slotDescKey = (slot) => `qam.artwork.slot.${slot}.description`;
+const tabLabelKey = (tab) => tab === "manage" ? "editor.artwork.tab.manage" : slotLabelKey(tab);
+function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onReplaceAll, }) {
+    const t = useT();
+    const { settings, settingsLoaded, settingsError, sgdbKeyStatus, summary, busy, progress, sgdbInstalled, } = snapshot;
+    const controlsDisabled = !settingsLoaded || busy;
+    const enabledSlots = ARTWORK_SLOT_ORDER.filter((slot) => settings.slots[slot]);
+    const bulkDisabled = !listReady || controlsDisabled || enabledSlots.length === 0 || summary.matched === 0;
+    const [apiKeyDraft, setApiKeyDraft] = SP_REACT.useState(settings.sgdbApiKey ?? "");
+    SP_REACT.useEffect(() => {
+        setApiKeyDraft(settings.sgdbApiKey ?? "");
+    }, [settings.sgdbApiKey]);
+    const tabOrder = settings.tabOrder?.length ? settings.tabOrder : [...ARTWORK_TAB_ORDER];
+    const hiddenTabs = new Set(settings.hiddenTabs ?? []);
+    const visibleTabs = tabOrder.filter((tab) => tab === "manage" || !hiddenTabs.has(tab));
+    const defaultTab = settings.defaultTab ?? "cover";
+    const saveApiKey = () => {
+        const next = apiKeyDraft.trim();
+        if (controlsDisabled || next === (settings.sgdbApiKey ?? "").trim())
+            return;
+        onSettingsChange((current) => ({ ...current, sgdbApiKey: next }));
+    };
+    // Leaving the page while the field still has focus unmounts it without a blur; save then too.
+    const saveApiKeyRef = SP_REACT.useRef(saveApiKey);
+    saveApiKeyRef.current = saveApiKey;
+    SP_REACT.useEffect(() => () => saveApiKeyRef.current(), []);
+    const keyStatusMessage = sgdbKeyStatus?.hasUserKey
+        ? t("qam.artwork.sgdbKeyStatusUser")
+        : sgdbKeyStatus?.hasBuiltInKey
+            ? t("qam.artwork.sgdbKeyStatusBuiltIn")
+            : t("qam.artwork.sgdbKeyStatusMissing");
+    const confirmReplaceAll = () => {
+        const unlockedCount = Math.max(0, summary.matched - summary.locked_games);
+        const slotList = enabledSlots.map((slot) => t(slotLabelKey(slot))).join(", ");
+        DFL.showModal(SP_JSX.jsx(DFL.ConfirmModal, { strTitle: t("qam.artwork.replaceConfirm.title"), strOKButtonText: t("qam.artwork.replaceAllAction"), strDescription: t("qam.artwork.replaceConfirm.body", {
+                unlocked: unlockedCount,
+                locked: summary.locked_games,
+                slots: slotList,
+                missing: summary.missing_slots,
+                existing: summary.existing_enabled_slots,
+            }), onOK: onReplaceAll }));
+    };
+    const toggleTabHidden = (tab) => {
+        if (tab === "manage")
+            return;
+        onSettingsChange((current) => {
+            const nextHidden = new Set(current.hiddenTabs ?? []);
+            if (nextHidden.has(tab)) {
+                nextHidden.delete(tab);
+                return { ...current, hiddenTabs: [...nextHidden] };
+            }
+            nextHidden.add(tab);
+            // A hidden tab cannot stay the default; fall back to the first tab still shown.
+            const order = current.tabOrder?.length ? current.tabOrder : [...ARTWORK_TAB_ORDER];
+            const defaultTab = current.defaultTab === tab
+                ? order.find((other) => other === "manage" || !nextHidden.has(other)) ?? "manage"
+                : current.defaultTab;
+            return { ...current, hiddenTabs: [...nextHidden], defaultTab };
+        });
+    };
+    // ReorderableList resets its working order whenever `entries` changes identity, so the entries
+    // depend on the saved order (plus language and enabled state), never on visibility.
+    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })), [tabOrder.join(","), currentLocale(), controlsDisabled]);
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
+                                        setApiKeyDraft("");
+                                        onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
+                                    }, children: t("qam.artwork.clearApiKeyAction") })) : null] }) }), SP_JSX.jsx(DFL.Field, { focusable: false, description: keyStatusMessage, bottomSeparator: "standard" }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.resetFiltersLabel"), description: t("qam.artwork.resetFiltersDescription"), disabled: controlsDisabled, onClick: () => onSettingsChange((current) => ({
+                            ...current,
+                            filters: defaultArtworkFilters(),
+                        })), children: t("qam.artwork.resetFiltersAction") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.tabOrderLabel") }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: visibleTabs.includes(defaultTab) ? defaultTab : visibleTabs[0], rgOptions: visibleTabs.map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
+                            ...current,
+                            defaultTab: option.data,
+                        })) }), SP_JSX.jsx(DFL.Field, { description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), SP_JSX.jsx(TabVisibilityContext.Provider, { value: { hidden: hiddenTabs, disabled: controlsDisabled, toggle: toggleTabHidden }, children: SP_JSX.jsx(DFL.ReorderableList, { entries: tabEntries, interactables: TabVisibilityToggle, onSave: (entries) => {
+                                const ordered = [...entries]
+                                    .sort((a, b) => a.position - b.position)
+                                    .map((entry) => entry.data)
+                                    .filter((tab) => Boolean(tab));
+                                // Before settings load, a save would write defaults over the stored settings.
+                                if (controlsDisabled || ordered.length === 0 || ordered.join(",") === tabOrder.join(","))
+                                    return;
+                                onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+                            } }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
+                            ? t("qam.artwork.preserveExistingOnDescription")
+                            : t("qam.artwork.preserveExistingOffDescription"), checked: settings.preserveExisting, disabled: controlsDisabled || !settings.autoApply, onChange: (preserveExisting) => onSettingsChange((current) => ({ ...current, preserveExisting })) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.slotsHeading") }), ARTWORK_SLOT_ORDER.map((slot) => (SP_JSX.jsx(DFL.ToggleField, { label: t(slotLabelKey(slot)), description: t(slotDescKey(slot)), checked: settings.slots[slot], disabled: controlsDisabled, onChange: (enabled) => onSettingsChange((current) => ({
+                            ...current,
+                            slots: { ...current.slots, [slot]: enabled },
+                        })) }, slot))), SP_JSX.jsx(DFL.Field, { focusable: false, description: t("qam.artwork.slotsScopeNote"), bottomSeparator: "none" })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.bulkHeading") }), busy && progress ? (SP_JSX.jsx(ProgressBarField, { nProgress: progress.total > 0 ? (progress.completed / progress.total) * 100 : 0, sOperationText: t("qam.artwork.progressStatus", {
+                            completed: progress.completed,
+                            total: progress.total,
+                            game: progress.current,
+                        }), childrenContainerWidth: "max", childrenLayout: "below", focusable: false })) : null, SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.fillMissingLabel"), description: t("qam.artwork.fillMissingDescription", {
+                            missing: summary.missing_slots,
+                        }), disabled: bulkDisabled, onClick: onFillMissing, children: busy ? (SP_JSX.jsx(ButtonLabel, { busy: true, children: t("qam.artwork.working") })) : (t("qam.artwork.fillMissingAction")) }), SP_JSX.jsx(DFL.ButtonItem, { layout: "inline", label: t("qam.artwork.replaceAllLabel"), description: t("qam.artwork.replaceAllDescription"), disabled: bulkDisabled, onClick: confirmReplaceAll, children: t("qam.artwork.replaceAllAction") })] })] }));
+}
 
 const compatibilityDefaultData = [null, 3, 2, 1, 0];
 const compatibilityDefaultScopeData = ["steam", "no-steam", "metadata", "all"];
@@ -42010,6 +49864,7 @@ const css = `.${rootClassName} { height: 100%; }`;
 // Module constants so page descriptors stay stable across renders.
 const icons = {
     metadata: SP_JSX.jsx(FaTags, {}),
+    artwork: SP_JSX.jsx(FaImage, {}),
     compat: SP_JSX.jsx(SiSteamdeck, {}),
     protondb: SP_JSX.jsx(ProtonDbIcon, {}),
     hltb: SP_JSX.jsx(FaClock, {}),
@@ -42030,6 +49885,14 @@ function useStoreSnapshot(store) {
         return unsubscribe;
     }, [store]);
     return snapshot;
+}
+function ArtworkTab({ games, listReady }) {
+    const artwork = useStoreSnapshot(artworkController);
+    SP_REACT.useEffect(() => {
+        if (listReady)
+            void artworkController.refreshSummary(games);
+    }, [games, listReady]);
+    return (SP_JSX.jsx(ArtworkBody, { snapshot: artwork, listReady: listReady, onSettingsChange: (update) => void artworkController.setSettings(update(artworkController.getSnapshot().settings)), onFillMissing: () => void artworkController.runBulk(games, "fill-missing"), onReplaceAll: () => void artworkController.runBulk(games, "replace-all") }));
 }
 // The feature controllers are module singletons, so their state survives a tab switch without a page-level hook.
 function ProtonDbTab() {
@@ -42088,6 +49951,12 @@ function SettingsPage() {
             label: t("qam.metadata.title"),
             icon: icons.metadata,
             content: (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(MetadataScanBody, { inline: true, ...scanView(scan), detectedCount: games.length, savedCount: scan.savedCount, missingCount: scan.missingCount, onRefreshMetadata: () => void metadataScanStore.start(games, currentSteamLanguage), listReady: loaded }), SP_JSX.jsx(MetadataMaintenanceBody, { scanBusy: scan.busy, listReady: loaded, ...maintenance })] })),
+        },
+        {
+            id: "artwork",
+            label: t("qam.artwork.title"),
+            icon: icons.artwork,
+            content: SP_JSX.jsx(ArtworkTab, { games: games, listReady: loaded }),
         },
         { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) },
         { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: SP_JSX.jsx(ProtonDbTab, {}) },
@@ -43628,6 +51497,7 @@ var index = DFL.definePlugin(() => {
     void ensureCompatibilityDefault().catch((error) => warn("bridge", "compatibility default load failed", error));
     resetProtonDbAppIdResolution();
     protonDbBadgeController.mount();
+    artworkController.mount();
     hltbController.mount();
     // Both features started their one shared read of the saved cache.
     releaseProviderCache();
@@ -43669,6 +51539,7 @@ var index = DFL.definePlugin(() => {
             stopStoreInfoRow();
             stopProtonDbGameView();
             protonDbBadgeController.stop();
+            artworkController.stop();
             hltbController.stop();
             stopPluginConflicts();
             resetProtonDbAppIdResolution();

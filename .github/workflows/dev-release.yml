@@ -112,6 +112,7 @@ jobs:
         shell: bash
         env:
           DECKY_PACKAGE_DIR: ${{ github.workspace }}
+          DECKY_SGDB_API_KEY: ${{ secrets.SGDB_API_KEY }}
         run: |
           set -euo pipefail
           ./run.sh node scripts/package.mjs --release \
