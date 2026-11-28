@@ -602,7 +602,7 @@ export const deckyNativePartnerEventCache = () => {
 export const deckyNativePartnerEventStore = () => steamInternals()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 
 export const activityAppIdFromUrl = (url: string) => {
-  const decoded = decodeURIComponent(String(url || ""));
+  const decoded = safeDecodeURIComponent(String(url || ""));
   const patterns = [
     /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
     /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
@@ -617,7 +617,7 @@ export const activityAppIdFromUrl = (url: string) => {
 
 
 export const gameDetailAppIdFromPath = (path: string) => {
-  const decoded = decodeURIComponent(String(path || ""));
+  const decoded = safeDecodeURIComponent(String(path || ""));
   const patterns = [
     /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
     /(?:^|[?#&\s])appid=(\d+)/i,
@@ -858,23 +858,26 @@ export const patchMethod = (
   methodName: string,
   replacement: (thisValue: any, original: (...args: any[]) => any, args: any[]) => any
 ): Unpatch => {
-  if (!target?.[methodName]) return () => undefined;
   const original = target[methodName];
-  target[methodName] = function patchedMethod(...args: any[]) {
+  let active = true;
+  const patched = function patchedMethod(...args: any[]) {
     const boundOriginal = original.bind(this);
+    if (!active) return boundOriginal(...args);
     try {
       return replacement(this, boundOriginal, args);
-    } catch (_error) {
+    } catch {
       // A patch replacement must never break the Steam method it wraps.
       try {
         return boundOriginal(...args);
-      } catch (_originalError) {
+      } catch {
         return undefined;
       }
     }
   };
+  target[methodName] = patched;
   return () => {
-    target[methodName] = original;
+    if (target[methodName] === patched) target[methodName] = original;
+    else active = false;
   };
 };
 

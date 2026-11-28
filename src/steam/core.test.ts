@@ -14,6 +14,26 @@ const isCurrentMatchedRenderRoute = (routeContext: string, appId: number) =>
     | ((context: string, id: number) => boolean)
     | undefined;
 
+describe("app ID parsers", () => {
+  it("ignores malformed percent escapes in route and visible-label text", () => {
+    expect(core.activityAppIdFromUrl("/library/appnews/55150?title=Battery 85%")).toBe(55150);
+    expect(core.gameDetailAppIdFromPath("Battery 85%")).toBe(0);
+  });
+});
+
+describe("patchMethod ownership", () => {
+  it("keeps a later wrapper installed and makes its inner patch pass through on unpatch", () => {
+    const target = { run: (value: string) => `original:${value}` };
+    const unpatch = core.patchMethod(target, "run", (_thisValue, original, args) => `patched:${original(...args)}`);
+    const deckyWrapper = target.run;
+    target.run = (value) => `later:${deckyWrapper(value)}`;
+
+    unpatch();
+
+    expect(target.run("test")).toBe("later:original:test");
+  });
+});
+
 describe("isCurrentGameDetailRoute", () => {
   it.each([
     "/library/app/55150",
