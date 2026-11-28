@@ -144,17 +144,10 @@ export const getMissingMetadataCount = callable<
 export const getScanProgress = callable<[], ScanProgress>(
   "get_scan_progress"
 );
-export const startRefreshSteamActivities = callable<
-  [games: GameOption[], language?: string],
-  ScanProgress
->("start_refresh_steam_activities");
 export const refreshSteamActivityForApp = callable<
   [appId: number, language?: string],
   MetadataData | null
 >("refresh_steam_activity_for_app");
-export const getActivityRefreshProgress = callable<[], ScanProgress>(
-  "get_activity_refresh_progress"
-);
 export const getLocalShortcuts = callable<[], GameOption[]>(
   "get_local_shortcuts"
 );
