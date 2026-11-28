@@ -342,7 +342,7 @@ describe("plugin update controller", () => {
   it("keeps a pending automatic-checks choice when an earlier channel save resolves", async () => {
     const channelSave = deferred<UpdateRpcResult<UpdateSettings>>();
     const automaticSave = deferred<UpdateRpcResult<UpdateSettings>>();
-    const { controller } = createController({
+    const { deps, controller } = createController({
       setUpdateChannel: vi.fn(() => channelSave.promise),
       setAutomaticUpdateChecks: vi.fn(() => automaticSave.promise),
     });
@@ -351,8 +351,10 @@ describe("plugin update controller", () => {
 
     const channel = controller.setUpdateChannel(true);
     const automatic = controller.setAutomaticUpdateChecks(false);
+    expect(deps.setAutomaticUpdateChecks).not.toHaveBeenCalled();
     channelSave.resolve({ update_channel: "development", automatic_update_checks: true, testing_tab_enabled: false });
     await channel;
+    expect(deps.setAutomaticUpdateChecks).toHaveBeenCalledTimes(1);
     expect(controller.getSnapshot()).toMatchObject({ updateChannel: "development", automaticUpdateChecks: false });
 
     automaticSave.resolve({ update_channel: "development", automatic_update_checks: false, testing_tab_enabled: false });

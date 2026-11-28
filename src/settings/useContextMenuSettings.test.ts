@@ -25,6 +25,11 @@ vi.mock("../i18n", () => ({ translateBackendError: (error: unknown) => `translat
 import { useContextMenuSettings } from "./useContextMenuSettings";
 
 const flush = async () => { for (let i = 0; i < 8; i += 1) await Promise.resolve(); };
+const deferred = <T,>() => {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>((done) => { resolve = done; });
+  return { promise, resolve };
+};
 const mount = () => {
   state.values = []; state.effects = []; state.cursor = 0;
   useContextMenuSettings();
@@ -48,8 +53,8 @@ describe("useContextMenuSettings", () => {
 
     render().onChange("gameIcon", true);
     expect(render().settings).toEqual({ gameIcon: true, steamIconFallback: false });
-    expect(deps.setEditorHeaderSettings).toHaveBeenCalledWith({ gameIcon: true, steamIconFallback: false });
     await flush();
+    expect(deps.setEditorHeaderSettings).toHaveBeenCalledWith({ gameIcon: true, steamIconFallback: false });
 
     expect(render()).toMatchObject({ settings: { gameIcon: false, steamIconFallback: false }, error: "translated:disk full" });
   });
@@ -78,5 +83,30 @@ describe("useContextMenuSettings", () => {
     await flush();
 
     expect(render().settings).toEqual({ gameIcon: true, steamIconFallback: false });
+  });
+
+  it("persists quick toggles in order so the latest full settings object wins", async () => {
+    const first = deferred<{ gameIcon: boolean; steamIconFallback: boolean }>();
+    const second = deferred<{ gameIcon: boolean; steamIconFallback: boolean }>();
+    deps.getEditorHeaderSettings.mockResolvedValue({ gameIcon: false, steamIconFallback: false });
+    deps.setEditorHeaderSettings
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementationOnce(() => second.promise);
+    mount();
+    await flush();
+
+    render().onChange("gameIcon", true);
+    render().onChange("steamIconFallback", true);
+    await flush();
+    expect(deps.setEditorHeaderSettings).toHaveBeenCalledTimes(1);
+    expect(deps.setEditorHeaderSettings).toHaveBeenNthCalledWith(1, { gameIcon: true, steamIconFallback: false });
+
+    first.resolve({ gameIcon: true, steamIconFallback: false });
+    await flush();
+    expect(deps.setEditorHeaderSettings).toHaveBeenCalledTimes(2);
+    expect(deps.setEditorHeaderSettings).toHaveBeenNthCalledWith(2, { gameIcon: true, steamIconFallback: true });
+    second.resolve({ gameIcon: true, steamIconFallback: true });
+    await flush();
+    expect(render().settings).toEqual({ gameIcon: true, steamIconFallback: true });
   });
 });

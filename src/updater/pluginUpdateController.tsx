@@ -124,6 +124,7 @@ export class PluginUpdateControllerStore {
   private installOwned = false;
   private settingsLoaded = false;
   private readonly listeners = new Set<() => void>();
+  private settingsSaveQueue: Promise<void> = Promise.resolve();
   private snapshot: PluginUpdateControllerSnapshot = {
     pluginVersion: "",
     updateChannel: "stable",
@@ -180,7 +181,7 @@ export class PluginUpdateControllerStore {
     this.publish();
     let saved: UpdateSettings | null = null;
     try {
-      const result = await this.deps.setUpdateChannel(pending.value);
+      const result = await this.saveSettings(() => this.deps.setUpdateChannel(pending.value));
       if (generation !== this.generation) return;
       if ("status" in result) {
         this.deps.toastError(
@@ -208,7 +209,7 @@ export class PluginUpdateControllerStore {
     this.publish();
     let saved: UpdateSettings | null = null;
     try {
-      const result = await this.deps.setAutomaticUpdateChecks(enabled);
+      const result = await this.saveSettings(() => this.deps.setAutomaticUpdateChecks(enabled));
       if (generation !== this.generation) return;
       if ("status" in result) {
         this.deps.toastError(
@@ -236,7 +237,7 @@ export class PluginUpdateControllerStore {
     this.publish();
     let saved: UpdateSettings | null = null;
     try {
-      const result = await this.deps.setTestingTabEnabled(enabled);
+      const result = await this.saveSettings(() => this.deps.setTestingTabEnabled(enabled));
       if (generation !== this.generation) return;
       if ("status" in result) {
         this.deps.toastError(
@@ -414,13 +415,19 @@ export class PluginUpdateControllerStore {
     this.clearCheckTimeout();
   }
 
+  private saveSettings<T>(save: () => Promise<T>): Promise<T> {
+    const pending = this.settingsSaveQueue.then(save);
+    this.settingsSaveQueue = pending.then(() => undefined, () => undefined);
+    return pending;
+  }
+
   /** Apply settings the backend saved; checks follow the change from the settings saved before. */
   private applySettings(settings: UpdateSettings): void {
     const previous = this.confirmed;
     this.confirmed = settings;
     const channelChanged = previous.update_channel !== settings.update_channel;
     const automaticChecksEnabled =
-      !previous.automatic_update_checks && settings.automatic_update_checks;
+      !previous.automatic_update_checks && settings.automatic_update_checks && this.pendingAutomatic?.value !== false;
     if (channelChanged) {
       this.dropActiveCheck();
       this.dispatch({ type: "CHECK_CANCELLED" });
