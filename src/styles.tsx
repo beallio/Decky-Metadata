@@ -1,44 +1,12 @@
 import { DialogButton, Spinner } from "@decky/ui";
-import {
-  colors,
-  fontFamily,
-  fontSize,
-  fontWeight,
-  space,
-  statusColor,
-  type StatusKind,
-} from "./tokens";
+import { colors, fontFamily, fontSize, fontWeight, space, statusColor, type StatusKind } from "./tokens";
 
 export const FocusableButton = (props: any) => (
   <DialogButton focusable={!props.disabled} {...props} />
 );
 
-export const pageStyle = {
-  padding: 24,
-  paddingTop: 48,
-  paddingBottom: 120,
-  minHeight: "100vh",
-  boxSizing: "border-box",
-  fontFamily,
-} as const;
 
-export const pageTitleStyle = {
-  width: "100%",
-  fontSize: fontSize.xl,
-  fontWeight: fontWeight.bold,
-  paddingBottom: space.md,
-  outline: "none",
-  // Keep the title clear of the SteamOS top bar when the controller scrolls to it.
-  scrollMarginTop: 90,
-} as const;
 
-export const toggleGridStyle = {
-  display: "grid",
-  gridTemplateColumns: "1fr 1fr",
-  columnGap: space.md,
-  width: "100%",
-  minWidth: 0,
-} as const;
 
 export const qamPanelStyle = {
   width: "100%",
@@ -55,10 +23,6 @@ export const rowStackStyle = {
   gap: space.md,
 } as const;
 
-export const resultsStackStyle = {
-  ...rowStackStyle,
-  marginTop: 20,
-} as const;
 
 export const fieldStyle = {
   width: "100%",
@@ -67,10 +31,6 @@ export const fieldStyle = {
   boxSizing: "border-box",
 } as const;
 
-export const flexFieldStyle = {
-  ...fieldStyle,
-  flex: "1 1 224px",
-} as const;
 
 export const compactTextStyle = {
   color: colors.textSecondary,
@@ -90,13 +50,6 @@ export const inlineStatusStyle = (kind: StatusKind) => ({
   color: statusColor(kind),
 });
 
-/** A status shown as a Field value: color only, so Steam's own value font applies. */
-export const statusValueStyle = (kind: StatusKind) => ({
-  display: "flex",
-  alignItems: "center",
-  gap: "10px",
-  color: statusColor(kind),
-});
 
 export const busySpinnerStyle = {
   width: "18px",
@@ -112,11 +65,6 @@ export const buttonLabelStyle = {
   minWidth: 136,
 } as const;
 
-export const focusableBlockStyle = {
-  display: "block",
-  width: "100%",
-  minWidth: 0,
-} as const;
 
 export const BusySpinner = () => (
   <Spinner style={busySpinnerStyle} />

@@ -5,15 +5,11 @@ export const colors = {
   success: "#5ba32b",
   warning: "#ffc53d",
   error: "#ec5d5e",
-  errorIcon: "#ec5d5e",
   text: "#dcdedf",
   textSecondary: "#b8bcbf",
   surfaceKnockout: "#0e141b",
 } as const;
 
-// #1a9fff as rgb components, for CSS that needs alpha (e.g. the overlay).
-export const accentRgb = "26, 159, 255";
-export const accentRgba = (alpha: number): string => `rgba(${accentRgb}, ${alpha})`;
 
 // Spacing scale - px (4-based), aligned with SDH-Ludusavi's px spacing.
 export const space = {
