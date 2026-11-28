@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
+import { useEffect } from "react";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
 const hookState = vi.hoisted(() => ({
@@ -29,6 +30,7 @@ vi.mock("react", () => ({
   },
   createContext: () => ({ Provider: "ContextProvider" }),
   useContext: () => hookState.context,
+  useRef: <T,>(initial: T) => ({ current: initial }),
 }));
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -49,7 +51,7 @@ vi.mock("@decky/ui", () => ({
 vi.mock("../../i18n", () => {
   // Stable like the real `t`, which the list entries depend on.
   const t = (key: string) => key;
-  return { useT: () => t };
+  return { useT: () => t, currentLocale: () => "en-US" };
 });
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
@@ -151,6 +153,21 @@ describe("ArtworkBody", () => {
     expect(update(DEFAULT_ARTWORK_SETTINGS).sgdbApiKey).toBe("new-key");
   });
 
+  it("saves a typed key when the page closes while the field still has focus", () => {
+    const onSettingsChange = vi.fn();
+    const props = { snapshot: makeSnapshot(), listReady: true, onSettingsChange, onFillMissing: vi.fn(), onReplaceAll: vi.fn() };
+    renderBody(props);
+    hookState.slots[0] = "typed-key";
+    hookState.cursor = 0;
+    ArtworkBody(props);
+    // The mount-only effect's cleanup runs on unmount; no blur happens then.
+    const calls = vi.mocked(useEffect).mock.calls;
+    const [mountOnly] = [...calls].reverse().find(([, deps]) => Array.isArray(deps) && deps.length === 0)!;
+    const cleanup = mountOnly() as () => void;
+    cleanup();
+    expect(onSettingsChange.mock.calls[0][0](DEFAULT_ARTWORK_SETTINGS).sgdbApiKey).toBe("typed-key");
+  });
+
   // The list renders each row's toggle through its `interactables` component, which reads
   // visibility from the context provider around the list.
   const tabList = (tree: Node[]) => {
@@ -191,6 +208,22 @@ describe("ArtworkBody", () => {
     const click = { stopPropagation: vi.fn() };
     row("cover").props.onClick(click);
     expect(click.stopPropagation).toHaveBeenCalled();
+  });
+
+  it("does not save the tab order before settings load or when the order did not change", () => {
+    const onSettingsChange = vi.fn();
+    const settings = structuredClone(DEFAULT_ARTWORK_SETTINGS);
+    const base = { listReady: true, onSettingsChange, onFillMissing: vi.fn(), onReplaceAll: vi.fn() };
+    const swap = (entries: { position: number }[]) =>
+      entries.map((entry) => ({ ...entry, position: entry.position === 0 ? 1 : entry.position === 1 ? 0 : entry.position }));
+
+    // X pressed twice without moving: nothing to write.
+    const loaded = tabList(nodes(renderBody({ ...base, snapshot: makeSnapshot({ settings }) })));
+    loaded.list.props!.onSave(loaded.entries);
+    // Settings still loading: a save would write defaults over the stored settings.
+    const loading = tabList(nodes(renderBody({ ...base, snapshot: makeSnapshot({ settings, settingsLoaded: false }) })));
+    loading.list.props!.onSave(swap(loading.entries));
+    expect(onSettingsChange).not.toHaveBeenCalled();
   });
 
   it("keeps the list entries when only visibility changes, so an unsaved reorder survives a toggle", () => {

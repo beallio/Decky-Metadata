@@ -490,10 +490,6 @@ pub async fn sgdb_list_assets(
     Ok(parse_assets_payload(&payload, page))
 }
 
-fn should_save_local_icon(slot: ArtworkSlot, app_id: u32) -> bool {
-    slot == ArtworkSlot::Icon && app_id >= 0x8000_0000
-}
-
 async fn package_image_bytes(
     state: &AppState,
     app_id: u32,
@@ -502,7 +498,7 @@ async fn package_image_bytes(
 ) -> Result<Value, String> {
     let (ext, mime) = artwork::sniff_image_format(&bytes).ok_or("artwork_invalid_image")?;
     let base64 = artwork::encode_base64(&bytes);
-    let file_path = if should_save_local_icon(slot, app_id) {
+    let file_path = if artwork::should_save_local_icon(slot, app_id) {
         let shortcuts = state.local_shortcuts().await?;
         let ext_owned = ext.to_owned();
         tokio::task::spawn_blocking(move || {
@@ -675,13 +671,6 @@ mod tests {
         // SteamGridDB 401s any other User-Agent; see SGDB_USER_AGENT.
         assert!(SGDB_USER_AGENT.starts_with("Decky/"));
         assert!(SGDB_USER_AGENT.ends_with("(https://decky.xyz)"));
-    }
-
-    #[test]
-    fn native_steam_icons_are_not_saved_locally() {
-        assert!(!should_save_local_icon(ArtworkSlot::Icon, 1_090_150));
-        assert!(should_save_local_icon(ArtworkSlot::Icon, 0x8000_0000));
-        assert!(!should_save_local_icon(ArtworkSlot::Cover, 0x8000_0000));
     }
 
     #[test]

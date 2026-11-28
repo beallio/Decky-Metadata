@@ -332,6 +332,15 @@ describe("ArtworkEditorPage", () => {
       tabRefocus();
       expect(nav.takeNativeFocus).not.toHaveBeenCalled();
     });
+
+    it("drops the old slot's cards in the same render as an L1/R1 tab change", () => {
+      const root = renderPage(props);
+      hookState.slots[7] = [{ id: 1, url: "u", thumb: "t", animated: false, author: { name: "a" }, width: 1, height: 1 }];
+      root.props.onButtonDown({ detail: { button: 6 } }); // R1
+      // Otherwise the new tab's entry target is a stale card that is removed a render later.
+      expect(hookState.slots[1]).toBe("wide");
+      expect(hookState.slots[7]).toEqual([]);
+    });
   });
 
   it("keeps the filter modal open and shows an error when saving the filter fails", async () => {

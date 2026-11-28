@@ -210,7 +210,7 @@ function EditorTitle({
   collapsible,
 }: Pick<EditorLayoutProps, "title" | "appId" | "steamAppId"> & { collapsible: boolean }) {
   const [settings, setSettings] = useState<EditorHeaderSettings | null>(null);
-  const [icon, setIcon] = useState<{ url: string; own: boolean } | null>(null);
+  const [icon, setIcon] = useState<{ appId: number; url: string; own: boolean } | null>(null);
   useEffect(() => {
     let current = true;
     getEditorHeaderSettings().then(
@@ -224,14 +224,19 @@ function EditorTitle({
   const resolveIcon = showIcon || collapsible;
   const fallbackAppId = settings?.steamIconFallback || collapsible ? steamAppId : null;
   useEffect(() => {
+    if (!resolveIcon) {
+      setIcon(null);
+      return;
+    }
+    // The game's own icon does not depend on the page or the fallback setting; keep it across page switches.
+    if (icon?.own && icon.appId === appId) return;
     setIcon(null);
-    if (!resolveIcon) return;
     let current = true;
     // Start the Steam request early; the own icon can take up to a second to appear.
     const steamIcon = fallbackAppId ? steamIconUrl(fallbackAppId) : null;
     void resolveEditorIcon(appId, null, () => current).then(async (own) => {
       const url = own ?? (steamIcon ? await steamIcon : null);
-      if (current) setIcon(url ? { url, own: own !== null } : null);
+      if (current) setIcon(url ? { appId, url, own: own !== null } : null);
     });
     return () => { current = false; };
   }, [appId, fallbackAppId, resolveIcon]);

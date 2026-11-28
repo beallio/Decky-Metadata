@@ -211,6 +211,7 @@ export function ArtworkEditorPage({
       if (!activeSlot || !activeFilter || !sgdbGame || officialOnly) return;
       const seq = ++requestSeqRef.current;
       setLoadingAssets(true);
+      setAssetError("");
       // A new page set replaces the grid; drop the old slot's cards now so focus never sits on them.
       if (!append) setAssets([]);
       try {
@@ -243,6 +244,7 @@ export function ArtworkEditorPage({
       // Drop any in-flight page so it cannot land on this game or this mode.
       requestSeqRef.current += 1;
       setLoadingAssets(false);
+      setAssetError("");
       setAssets([]);
       setHasMore(false);
       return;
@@ -256,6 +258,10 @@ export function ArtworkEditorPage({
     const browser = browserRef.current;
     const focused = browser ? nativeFocusedElement() ?? browser.ownerDocument.activeElement : null;
     tabRefocusRef.current = Boolean(browser && focused && browser.contains(focused));
+    // Drop the old slot's cards in the same render as the tab change, so the new tab's entry
+    // target is never one of them.
+    setAssets([]);
+    setHasMore(false);
   };
 
   const cycleTab = useCallback(
@@ -506,6 +512,7 @@ export function ArtworkEditorPage({
                 <Focusable flow-children="horizontal" style={{ display: "flex", gap: 8 }}>
                   <DialogButton
                     className={`${artworkBrowserClass}__action-btn`}
+                    data-artwork-initial-focus={!cardsFocusTarget && savedSteamAppId === null ? "" : undefined}
                     onClick={onOpenArtworkSettings}
                   >
                     {t("editor.artwork.openSettingsAction")}

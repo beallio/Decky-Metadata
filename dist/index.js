@@ -39482,6 +39482,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
             return;
         const seq = ++requestSeqRef.current;
         setLoadingAssets(true);
+        setAssetError("");
         // A new page set replaces the grid; drop the old slot's cards now so focus never sits on them.
         if (!append)
             setAssets([]);
@@ -39518,6 +39519,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
             // Drop any in-flight page so it cannot land on this game or this mode.
             requestSeqRef.current += 1;
             setLoadingAssets(false);
+            setAssetError("");
             setAssets([]);
             setHasMore(false);
             return;
@@ -39530,6 +39532,10 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         const browser = browserRef.current;
         const focused = browser ? nativeFocusedElement() ?? browser.ownerDocument.activeElement : null;
         tabRefocusRef.current = Boolean(browser && focused && browser.contains(focused));
+        // Drop the old slot's cards in the same render as the tab change, so the new tab's entry
+        // target is never one of them.
+        setAssets([]);
+        setHasMore(false);
     };
     const cycleTab = SP_REACT.useCallback((delta) => {
         if (visibleTabs.length <= 1)
@@ -39650,7 +39656,7 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
                                                 ? sgdbGame.name
                                                 : gameName }), sgdbIsOverride ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__pill`, children: t("editor.artwork.sourceOverride") })) : null, activeFilterCount > 0 ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__pill`, children: t("editor.artwork.filtersActiveCount", { count: activeFilterCount }) })) : null] }), SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", className: `${artworkBrowserClass}__toolbar-actions`, children: [!missingKey ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": cardsFocusTarget ? undefined : "", disabled: busy, onClick: openFilterModal, children: t("editor.artwork.filterButton") })) : null, savedSteamAppId !== null ? (SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": !cardsFocusTarget && missingKey ? "" : undefined, disabled: busy, onClick: () => setOfficialOnly((prev) => !prev), children: officialOnly
                                             ? t("editor.artwork.showAllSources")
-                                            : t("editor.artwork.officialOnlyButton") })) : null] })] }), missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 14, fontWeight: 600, color: colors.text }, children: t("editor.artwork.missingKeyTitle") }), SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: t("editor.artwork.missingKeyDescription") }), onOpenArtworkSettings ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, onClick: onOpenArtworkSettings, children: t("editor.artwork.openSettingsAction") }) })) : null] })) : null, assetError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: assetError }), bottomSeparator: "none" })) : null, showOfficialCard || assets.length > 0 ? (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__grid`, style: {
+                                            : t("editor.artwork.officialOnlyButton") })) : null] })] }), missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 14, fontWeight: 600, color: colors.text }, children: t("editor.artwork.missingKeyTitle") }), SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: t("editor.artwork.missingKeyDescription") }), onOpenArtworkSettings ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, "data-artwork-initial-focus": !cardsFocusTarget && savedSteamAppId === null ? "" : undefined, onClick: onOpenArtworkSettings, children: t("editor.artwork.openSettingsAction") }) })) : null] })) : null, assetError ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { style: { color: colors.warning }, children: assetError }), bottomSeparator: "none" })) : null, showOfficialCard || assets.length > 0 ? (SP_JSX.jsxs(DFL.Focusable, { className: `${artworkBrowserClass}__grid`, style: {
                             gridTemplateColumns: `repeat(auto-fill, minmax(${SLOT_GRID_MIN_WIDTH[activeSlot]}px, 1fr))`,
                         }, children: [showOfficialCard && officialSlotState?.steam_url ? (SP_JSX.jsxs(DFL.Focusable, { "data-artwork-initial-focus": "", className: `${artworkBrowserClass}__card`, onActivate: () => void applyOfficial(activeSlot), onClick: () => void applyOfficial(activeSlot), onOKActionDescription: t("editor.artwork.applyAction"), children: [SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-media${activeSlot === "logo" || activeSlot === "icon" ? " is-transparent-bg" : ""}`, style: { aspectRatio: SLOT_ASPECT_RATIO[activeSlot] }, children: [SP_JSX.jsx("img", { className: `${artworkBrowserClass}__card-img`, src: officialSlotState.steam_url, alt: "", style: {
                                                     objectFit: activeSlot === "logo" || activeSlot === "icon" ? "contain" : "cover",
@@ -41613,16 +41619,21 @@ function EditorTitle({ title, appId, steamAppId, collapsible, }) {
     const resolveIcon = showIcon || collapsible;
     const fallbackAppId = settings?.steamIconFallback || collapsible ? steamAppId : null;
     SP_REACT.useEffect(() => {
-        setIcon(null);
-        if (!resolveIcon)
+        if (!resolveIcon) {
+            setIcon(null);
             return;
+        }
+        // The game's own icon does not depend on the page or the fallback setting; keep it across page switches.
+        if (icon?.own && icon.appId === appId)
+            return;
+        setIcon(null);
         let current = true;
         // Start the Steam request early; the own icon can take up to a second to appear.
         const steamIcon = fallbackAppId ? steamIconUrl(fallbackAppId) : null;
         void resolveEditorIcon(appId, null, () => current).then(async (own) => {
             const url = own ?? (steamIcon ? await steamIcon : null);
             if (current)
-                setIcon(url ? { url, own: own !== null } : null);
+                setIcon(url ? { appId, url, own: own !== null } : null);
         });
         return () => { current = false; };
     }, [appId, fallbackAppId, resolveIcon]);
@@ -43475,10 +43486,14 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
     const defaultTab = settings.defaultTab ?? "cover";
     const saveApiKey = () => {
         const next = apiKeyDraft.trim();
-        if (next === (settings.sgdbApiKey ?? "").trim())
+        if (controlsDisabled || next === (settings.sgdbApiKey ?? "").trim())
             return;
         onSettingsChange((current) => ({ ...current, sgdbApiKey: next }));
     };
+    // Leaving the page while the field still has focus unmounts it without a blur; save then too.
+    const saveApiKeyRef = SP_REACT.useRef(saveApiKey);
+    saveApiKeyRef.current = saveApiKey;
+    SP_REACT.useEffect(() => () => saveApiKeyRef.current(), []);
     const keyStatusMessage = sgdbKeyStatus?.hasUserKey
         ? t("qam.artwork.sgdbKeyStatusUser")
         : sgdbKeyStatus?.hasBuiltInKey
@@ -43514,8 +43529,8 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
         });
     };
     // ReorderableList resets its working order whenever `entries` changes identity, so the entries
-    // depend on the saved order alone.
-    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })), [tabOrder.join(","), t]);
+    // depend on the saved order (plus language and enabled state), never on visibility.
+    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })), [tabOrder.join(","), currentLocale(), controlsDisabled]);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
                                         setApiKeyDraft("");
                                         onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
@@ -43530,8 +43545,10 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
                                     .sort((a, b) => a.position - b.position)
                                     .map((entry) => entry.data)
                                     .filter((tab) => Boolean(tab));
-                                if (ordered.length > 0)
-                                    onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+                                // Before settings load, a save would write defaults over the stored settings.
+                                if (controlsDisabled || ordered.length === 0 || ordered.join(",") === tabOrder.join(","))
+                                    return;
+                                onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
                             } }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
                             ? t("qam.artwork.preserveExistingOnDescription")
                             : t("qam.artwork.preserveExistingOffDescription"), checked: settings.preserveExisting, disabled: controlsDisabled || !settings.autoApply, onChange: (preserveExisting) => onSettingsChange((current) => ({ ...current, preserveExisting })) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.slotsHeading") }), ARTWORK_SLOT_ORDER.map((slot) => (SP_JSX.jsx(DFL.ToggleField, { label: t(slotLabelKey(slot)), description: t(slotDescKey(slot)), checked: settings.slots[slot], disabled: controlsDisabled, onChange: (enabled) => onSettingsChange((current) => ({

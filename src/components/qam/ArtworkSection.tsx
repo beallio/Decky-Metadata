@@ -1,5 +1,5 @@
 import type { ComponentProps, ComponentType } from "react";
-import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
 import {
   ButtonItem,
   ConfirmModal,
@@ -23,7 +23,7 @@ import {
   defaultArtworkFilters,
   type ArtworkControllerSnapshot,
 } from "../../artwork/controller";
-import { useT } from "../../i18n";
+import { currentLocale, useT } from "../../i18n";
 import { ARTWORK_SLOT_ORDER } from "../../steam/customArtwork";
 import { ButtonLabel, inlineStatusStyle } from "../../styles";
 import type { ArtworkSettings, ArtworkSlot, ArtworkTabId } from "../../types";
@@ -103,9 +103,13 @@ export function ArtworkBody({
 
   const saveApiKey = () => {
     const next = apiKeyDraft.trim();
-    if (next === (settings.sgdbApiKey ?? "").trim()) return;
+    if (controlsDisabled || next === (settings.sgdbApiKey ?? "").trim()) return;
     onSettingsChange((current) => ({ ...current, sgdbApiKey: next }));
   };
+  // Leaving the page while the field still has focus unmounts it without a blur; save then too.
+  const saveApiKeyRef = useRef(saveApiKey);
+  saveApiKeyRef.current = saveApiKey;
+  useEffect(() => () => saveApiKeyRef.current(), []);
 
   const keyStatusMessage = sgdbKeyStatus?.hasUserKey
     ? t("qam.artwork.sgdbKeyStatusUser")
@@ -151,10 +155,10 @@ export function ArtworkBody({
   };
 
   // ReorderableList resets its working order whenever `entries` changes identity, so the entries
-  // depend on the saved order alone.
+  // depend on the saved order (plus language and enabled state), never on visibility.
   const tabEntries = useMemo<ReorderableEntry<ArtworkTabId>[]>(
     () => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })),
-    [tabOrder.join(","), t],
+    [tabOrder.join(","), currentLocale(), controlsDisabled],
   );
 
   return (
@@ -269,7 +273,9 @@ export function ArtworkBody({
                 .sort((a, b) => a.position - b.position)
                 .map((entry) => entry.data)
                 .filter((tab): tab is ArtworkTabId => Boolean(tab));
-              if (ordered.length > 0) onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+              // Before settings load, a save would write defaults over the stored settings.
+              if (controlsDisabled || ordered.length === 0 || ordered.join(",") === tabOrder.join(",")) return;
+              onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
             }}
           />
         </TabVisibilityContext.Provider>
