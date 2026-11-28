@@ -265,6 +265,10 @@ export const fetchSteamArtworkAsset = callable<
   [appId: number, steamAppId: number, slot: ArtworkSlot],
   FetchedArtworkAsset
 >("fetch_steam_artwork_asset");
+export const saveLocalArtworkIcon = callable<
+  [appId: number, ext: string, base64: string],
+  string | null
+>("save_local_icon_asset");
 export const clearLocalArtworkFile = callable<
   [appId: number, slot: ArtworkSlot],
   { ok: boolean; removed: boolean }

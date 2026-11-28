@@ -8,6 +8,7 @@ import {
   getSgdbKeyStatus,
   getTransparentArtworkAsset,
   readLocalArtworkFile,
+  saveLocalArtworkIcon,
   setArtworkLocked,
   setArtworkSettings,
   sgdbFetchAsset,
@@ -233,6 +234,7 @@ export type ArtworkControllerDeps = {
     steamAppId: number,
     slot: ArtworkSlot,
   ) => Promise<FetchedArtworkAsset>;
+  saveLocalArtworkIcon: (appId: number, ext: string, base64: string) => Promise<string | null>;
   sgdbFetchAsset?: (
     appId: number,
     slot: ArtworkSlot,
@@ -264,6 +266,7 @@ export type ArtworkControllerDeps = {
 export class ArtworkController {
   private snapshot: ArtworkControllerSnapshot;
   private readonly slotGenerations = new Map<number, Partial<Record<ArtworkSlot, number>>>();
+  private readonly slotCommitTails = new Map<string, Promise<void>>();
   private readonly listeners = new Set<() => void>();
   private mounted = false;
   private unsubscribeConflicts: (() => void) | null = null;
@@ -453,43 +456,100 @@ export class ArtworkController {
 
   async applySingleSlot(appId: number, steamAppId: number, slot: ArtworkSlot): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
+    const generation = this.slotGeneration(appId, slot);
     const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
-    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    const didApply = await this.queueSlotCommit(appId, slot, async () => {
+      if (this.slotGeneration(appId, slot) !== generation) return false;
+      await this.applyFetchedSteamAsset(appId, slot, asset);
+      return true;
+    });
+    if (!didApply) return;
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
 
+  private async applyFetchedSteamAsset(
+    appId: number,
+    slot: ArtworkSlot,
+    asset: FetchedArtworkAsset,
+  ): Promise<void> {
+    const filePath =
+      slot === "icon" && appId >= 0x80000000 && !asset.file_path
+        ? await this.deps.saveLocalArtworkIcon(appId, asset.ext, asset.base64)
+        : asset.file_path;
+    await this.deps.applySteamArtworkSlot(appId, slot, { ...asset, file_path: filePath });
+  }
+
+  private queueSlotCommit<T>(
+    appId: number,
+    slot: ArtworkSlot,
+    commit: () => Promise<T>,
+  ): Promise<T> {
+    const key = `${appId}:${slot}`;
+    const previous = this.slotCommitTails.get(key) ?? Promise.resolve();
+    const result = previous.then(commit);
+    const tail = result.then(
+      () => undefined,
+      () => undefined,
+    );
+    this.slotCommitTails.set(key, tail);
+    void tail.then(() => {
+      if (this.slotCommitTails.get(key) === tail) this.slotCommitTails.delete(key);
+    });
+    return result;
+  }
+
   async applySgdbAsset(appId: number, slot: ArtworkSlot, url: string): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
+    const generation = this.slotGeneration(appId, slot);
     if (!this.deps.sgdbFetchAsset) throw new Error("artwork_download_failed");
     const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
-    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    const didApply = await this.queueSlotCommit(appId, slot, async () => {
+      if (this.slotGeneration(appId, slot) !== generation) return false;
+      await this.deps.applySteamArtworkSlot(appId, slot, asset);
+      return true;
+    });
+    if (!didApply) return;
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
 
   async applyLocalFile(appId: number, slot: ArtworkSlot, filePath: string): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
+    const generation = this.slotGeneration(appId, slot);
     if (!this.deps.readLocalArtworkFile) throw new Error("artwork_file_unreadable");
     const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
-    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    const didApply = await this.queueSlotCommit(appId, slot, async () => {
+      if (this.slotGeneration(appId, slot) !== generation) return false;
+      await this.deps.applySteamArtworkSlot(appId, slot, asset);
+      return true;
+    });
+    if (!didApply) return;
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
 
   async applyTransparentSlot(appId: number, slot: ArtworkSlot): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
+    const generation = this.slotGeneration(appId, slot);
     if (!this.deps.getTransparentArtworkAsset) throw new Error("artwork_apply_failed");
     const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
-    await this.deps.applySteamArtworkSlot(appId, slot, asset);
+    const didApply = await this.queueSlotCommit(appId, slot, async () => {
+      if (this.slotGeneration(appId, slot) !== generation) return false;
+      await this.deps.applySteamArtworkSlot(appId, slot, asset);
+      return true;
+    });
+    if (!didApply) return;
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
 
   async clearSingleSlot(appId: number, slot: ArtworkSlot): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
-    await this.deps.clearSteamArtworkSlot(appId, slot);
-    await this.deps.clearLocalArtworkFile(appId, slot);
+    await this.queueSlotCommit(appId, slot, async () => {
+      await this.deps.clearSteamArtworkSlot(appId, slot);
+      await this.deps.clearLocalArtworkFile(appId, slot);
+    });
     this.bumpRevision();
     if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
   }
@@ -535,9 +595,15 @@ export class ArtworkController {
       if (!slotState?.available) continue;
       if (preserveExisting && slotState.present) continue;
       try {
+        if (this.slotGeneration(appId, slot) !== slotGenerations[slot]) continue;
         const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
         if (this.slotGeneration(appId, slot) !== slotGenerations[slot]) continue;
-        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        const didApply = await this.queueSlotCommit(appId, slot, async () => {
+          if (this.slotGeneration(appId, slot) !== slotGenerations[slot]) return false;
+          await this.applyFetchedSteamAsset(appId, slot, asset);
+          return true;
+        });
+        if (!didApply) continue;
         applied += 1;
       } catch (error) {
         failed += 1;
@@ -681,6 +747,7 @@ export const artworkController = new ArtworkController({
   setArtworkLocked,
   getGameArtworkState,
   fetchSteamArtworkAsset,
+  saveLocalArtworkIcon,
   sgdbFetchAsset,
   readLocalArtworkFile,
   getTransparentArtworkAsset,
