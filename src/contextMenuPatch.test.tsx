@@ -302,25 +302,7 @@ describe("contextMenuPatch", () => {
     expect(items.map((item) => item.key)).toEqual(["launch", "properties"]);
   });
 
-  it("does not add the Decky Metadata editor entry for official Steam games when HLTB is off", () => {
-    const officialAppId = 55150;
-    const shortcut = { appid: 2155012430, app_type: 1073741824, BIsShortcut: () => true };
-    const official = { appid: officialAppId, app_type: 1, BIsShortcut: () => false };
-    steam.getOverview.mockReturnValue(shortcut as any);
-    steam.getNativeOverview.mockReturnValue(official as any);
-    const { LibraryContextMenu, MenuBody } = makeMenuStack();
-    contextMenuPatch(LibraryContextMenu);
-
-    const menu = new LibraryContextMenu(officialAppId).render();
-    menu.type();
-    const items = new MenuBody().render().props.children[0];
-
-    expect(items.find((item: any) => item?.key === ENTRY_KEY)).toBeUndefined();
-    expect(steam.getNativeOverview).toHaveBeenCalledWith(officialAppId);
-  });
-
-  it("adds the Decky Metadata editor entry for official Steam games when HLTB is enabled, but never for tools", () => {
-    hltb.effectiveEnabled = true;
+  it("adds the Decky Metadata editor entry for official Steam games even when HLTB is off, and never for tools", () => {
     const steamGameId = 65540;
     const protonToolId = 1493710;
     steam.getNativeOverview.mockImplementation((appId: number) =>
@@ -334,6 +316,7 @@ describe("contextMenuPatch", () => {
     new LibraryContextMenu(steamGameId).render().type();
     const gameItems = new MenuBody().render().props.children[0];
     expect(injectedTarget(gameItems)).toBe(`/decky-metadata/${steamGameId}`);
+    expect(steam.getNativeOverview).toHaveBeenCalledWith(steamGameId);
 
     new LibraryContextMenu(protonToolId).render();
     const toolItems = new MenuBody().render().props.children[0];

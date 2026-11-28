@@ -56,6 +56,7 @@ import {
   subscribeCompatibilityRevision,
 } from "./steam";
 import { getGamepadTextArea } from "./steam/gamepadTextArea";
+import { takeNativeFocus } from "./steam/nativeFocus";
 import {
   CATEGORY_LABELS,
   categoryLabel,
@@ -105,6 +106,7 @@ import { changedDraftFields, changedFormFields } from "./metadataDraft";
 import { EditorScopedStyle } from "./editorScopedStyle";
 import type { DraftFieldKey, DraftFormState } from "./metadataDraft";
 import { EditorLayout } from "./editorLayout";
+import { openSettings } from "./settingsRoute";
 import { dirtyPages, EDITOR_PAGE_ORDER, PAGE_OF_FIELD, type EditorPageId } from "./editorPages";
 import {
   draftFieldLabel,
@@ -717,7 +719,7 @@ export const MetadataPage = () => {
     setResults(null);
     // An unsaved HLTB draft belongs to the game it was typed on.
     setHltbIdDraft(null);
-    setPage(nonSteam ? "details" : "hltb");
+    setPage(nonSteam ? "details" : "artwork");
   }, [appId, nonSteam]);
 
   useEffect(() => {
@@ -804,9 +806,14 @@ export const MetadataPage = () => {
     const root = editorRootRef.current;
     if (!root) return;
     // Wait for the initial page to mount again when a new entry resets the selected page.
-    const selector = nonSteam ? "[data-editor-title] input" : "[data-editor-hltb-search] input";
+    const selector = nonSteam
+      ? "[data-editor-title] input"
+      : "[data-artwork-initial-focus], [data-editor-hltb-search] input";
     const frame = requestAnimationFrame(() => {
-      root.querySelector<HTMLInputElement>(selector)?.focus();
+      const target = root.querySelector<HTMLElement>(selector);
+      // The artwork marker is a Steam Focusable; DOM focus() from this window does not move gamepad focus.
+      if (target?.matches("[data-artwork-initial-focus]")) takeNativeFocus(target);
+      else target?.focus();
     });
     return () => cancelAnimationFrame(frame);
   }, [editorEntryToken, nonSteam]);
@@ -874,7 +881,7 @@ export const MetadataPage = () => {
     },
     [],
   );
-  const [page, setPage] = useState<EditorPageId>(nonSteam ? "details" : "hltb");
+  const [page, setPage] = useState<EditorPageId>(nonSteam ? "details" : "artwork");
   // Steam search results outlive the Game Match page, as IGN results do.
   const steamSearchRef = useRef<{ entry: number; search: SteamSearchSnapshot } | null>(null);
   // The Steam App ID dialog outlives its render; it must apply with the form as it is when Apply is chosen.
@@ -2244,16 +2251,18 @@ export const MetadataPage = () => {
   }
 
   function renderArtworkPage() {
+    const effectiveSteamAppId = nonSteam ? savedSteamAppId : normalizedSteamAppId(appId);
     return (
       <ArtworkEditorPage
         appId={appId}
         gameName={appName(appId)}
-        savedSteamAppId={savedSteamAppId}
-        savedSteamName={savedSteamStoreName}
-        unsavedSteamAppId={formSteamAppId}
+        isSteamGame={!nonSteam}
+        savedSteamAppId={effectiveSteamAppId}
+        unsavedSteamAppId={nonSteam ? formSteamAppId : effectiveSteamAppId}
         entryBusy={entryBusy}
         onGoToSteamMatch={() => setPage("steam-match")}
         onSaveMatch={() => void saveCurrent()}
+        onOpenArtworkSettings={() => openSettings("artwork")}
       />
     );
   }
@@ -2268,7 +2277,9 @@ export const MetadataPage = () => {
     advanced: renderAdvancedPage,
   };
   const pages = EDITOR_PAGE_ORDER.map((id) => {
-    const visible = nonSteam ? true : id === "hltb";
+    const visible = nonSteam
+      ? true
+      : id === "artwork" || (hltbSnapshot.effectiveEnabled && id === "hltb");
     return {
       id,
       label: t(PAGE_LABEL_KEYS[id]),
@@ -2279,7 +2290,11 @@ export const MetadataPage = () => {
       content: visible ? renderPageContent[id]() : null,
     };
   });
-  const activePage: EditorPageId = nonSteam ? page : "hltb";
+  const activePage: EditorPageId = nonSteam
+    ? page
+    : page === "hltb" && hltbSnapshot.effectiveEnabled
+      ? "hltb"
+      : "artwork";
 
   return (
     <Focusable
@@ -2302,6 +2317,7 @@ export const MetadataPage = () => {
         saveLabel={saveLabel}
         saveDisabled={saveDisabled}
         onSave={() => void saveCurrent()}
+        collapsibleSidebar={activePage === "artwork"}
       />
     </Focusable>
   );

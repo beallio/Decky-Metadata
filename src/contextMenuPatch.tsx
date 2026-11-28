@@ -43,7 +43,6 @@ import {
   hasSteamInternals,
 } from "./steam/core";
 import { findSteamVar } from "./steam/steamUiModules";
-import { hltbController } from "./hltb/gameView";
 import * as log from "./log";
 import { frontendLog } from "./backend";
 import { t } from "./i18n";
@@ -213,8 +212,7 @@ const insertOurEntry = (
 ): EntryAnchor | null => {
   const nativeOverview = getNativeOverview(appId);
   const eligible =
-    isNativeNonSteamShortcut(nativeOverview) ||
-    (hltbController.getSnapshot().effectiveEnabled && isNativeSteamGame(nativeOverview));
+    isNativeNonSteamShortcut(nativeOverview) || isNativeSteamGame(nativeOverview);
   if (!eligible) return null;
   const entry = (
     <MenuItem

@@ -1,13 +1,15 @@
 # Edit a game's metadata
 
-For a non-Steam game—or a Steam game while **Show HowLongToBeat times** is
-enabled—select **Edit Metadata...** from either of these menus:
+For any non-Steam shortcut or Steam game, select **Edit Metadata...** from
+either of these menus:
 
 - On the Library card, open **Options** or right-click the card.
 - On the game page, select the gear icon.
 
-For Steam games, **Edit Metadata...** opens only the **HowLongToBeat** page so
-you can choose or clear the HLTB game shown on that game's Library page.
+For Steam games, **Edit Metadata...** opens to **Artwork** (and includes
+**HowLongToBeat** when **Show HowLongToBeat times** is enabled) so you can
+browse SteamGridDB and official Steam artwork, adjust logo positioning, or
+override HLTB matching.
 
 **Edit Metadata...** is near the bottom of the menu, close to **Properties...**.
 If SteamGridDB is installed, it is next to SteamGridDB's **Change Artwork...**.
@@ -32,6 +34,18 @@ Pages in the sidebar:
   until you select **Save**.
 - **Game Match**: Find a Steam game, load details for the current match, enter
   a Steam App ID, load Steam text in your language, or search IGN for details.
+- **Artwork**: Browse community artwork from SteamGridDB or apply official Steam
+  artwork across **Cover**, **Wide cover**, **Hero background**, **Game logo**,
+  and **Game icon** slots (`L1`/`R1` switches tabs, **Y** opens Filter & Change
+  Game, **Menu** opens Asset Details). For a
+  Steam game, the editor opens on Artwork; when the default tab has artwork,
+  focus starts on the first one. The **Manage** tab shows the current artwork
+  for each slot (for a Steam game, Steam's official art when no custom art is
+  set) and lets you pick local image files, apply a transparent placeholder,
+  clear slots, lock artwork from automatic updates, and adjust the **Logo
+  position** over the hero banner. While browsing Artwork, the editor sidebar
+  collapses into a compact icon rail that shows the game icon, and expands when
+  focus returns to it.
 - **HowLongToBeat**: Choose which game's times to show on the Library game page
   for a non-Steam or Steam game.
 - **Compatibility**: Choose a [compatibility status](compatibility-status.md#choose-a-status-for-one-game)

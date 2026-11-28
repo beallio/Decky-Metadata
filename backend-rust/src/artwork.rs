@@ -548,6 +548,36 @@ pub async fn get_game_artwork_state(
     }))
 }
 
+/// Only non-Steam shortcuts need a local icon file (`SetShortcutIcon` takes a path); native Steam
+/// games get their icon through `SetCustomArtworkForApp`, so nothing is written for them.
+pub(crate) fn should_save_local_icon(slot: ArtworkSlot, app_id: u32) -> bool {
+    slot == ArtworkSlot::Icon && app_id >= 0x8000_0000
+}
+
+pub(crate) fn save_local_icon_bytes(
+    app_id: u32,
+    shortcuts: &[Shortcut],
+    ext: &str,
+    bytes: &[u8],
+) -> Result<Option<String>, String> {
+    let Some(grid_dir) = shortcut_grid_dir(app_id, shortcuts) else {
+        return Ok(None);
+    };
+    fs::create_dir_all(&grid_dir).map_err(|_| "artwork_write_failed".to_owned())?;
+    let stem = ArtworkSlot::Icon.grid_stem(app_id);
+    for old_ext in GRID_EXTENSIONS {
+        let old = grid_dir.join(format!("{stem}.{old_ext}"));
+        if old.is_file() {
+            let _ = fs::remove_file(old);
+        }
+    }
+    let target = grid_dir.join(format!("{stem}.{ext}"));
+    let tmp = grid_dir.join(format!(".{stem}.{ext}.tmp"));
+    fs::write(&tmp, bytes).map_err(|_| "artwork_write_failed".to_owned())?;
+    fs::rename(&tmp, &target).map_err(|_| "artwork_write_failed".to_owned())?;
+    Ok(Some(target.to_string_lossy().into_owned()))
+}
+
 pub async fn fetch_steam_artwork_asset(
     state: &AppState,
     app_id_arg: &Value,
@@ -591,27 +621,12 @@ pub async fn fetch_steam_artwork_asset(
         sniff_image_format(&response.body).ok_or("artwork_invalid_image")?;
     let base64 = encode_base64(&response.body);
 
-    let file_path = if slot == ArtworkSlot::Icon {
+    let file_path = if should_save_local_icon(slot, app_id) {
         let shortcuts = state.local_shortcuts().await?;
         let bytes = response.body;
         let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || -> Result<Option<String>, String> {
-            let Some(grid_dir) = shortcut_grid_dir(app_id, &shortcuts) else {
-                return Ok(None);
-            };
-            fs::create_dir_all(&grid_dir).map_err(|_| "artwork_write_failed".to_owned())?;
-            let stem = ArtworkSlot::Icon.grid_stem(app_id);
-            for old_ext in GRID_EXTENSIONS {
-                let old = grid_dir.join(format!("{stem}.{old_ext}"));
-                if old.is_file() {
-                    let _ = fs::remove_file(old);
-                }
-            }
-            let target = grid_dir.join(format!("{stem}.{ext_owned}"));
-            let tmp = grid_dir.join(format!(".{stem}.{ext_owned}.tmp"));
-            fs::write(&tmp, &bytes).map_err(|_| "artwork_write_failed".to_owned())?;
-            fs::rename(&tmp, &target).map_err(|_| "artwork_write_failed".to_owned())?;
-            Ok(Some(target.to_string_lossy().into_owned()))
+        tokio::task::spawn_blocking(move || {
+            save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
         })
         .await
         .map_err(|error| error.to_string())??
@@ -662,6 +677,13 @@ pub async fn clear_local_artwork_file(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn native_steam_icons_are_not_saved_locally() {
+        assert!(!should_save_local_icon(ArtworkSlot::Icon, 1_090_150));
+        assert!(should_save_local_icon(ArtworkSlot::Icon, 0x8000_0000));
+        assert!(!should_save_local_icon(ArtworkSlot::Cover, 0x8000_0000));
+    }
     use crate::http::{Fixture, Response};
     use reqwest::header::HeaderMap;
     use std::sync::atomic::{AtomicU64, Ordering};

@@ -8,8 +8,12 @@ vi.mock("../backend", () => ({
   getArtworkSettings: vi.fn(),
   getArtworkSummary: vi.fn(),
   getGameArtworkState: vi.fn(),
+  getSgdbKeyStatus: vi.fn(),
+  getTransparentArtworkAsset: vi.fn(),
+  readLocalArtworkFile: vi.fn(),
   setArtworkLocked: vi.fn(),
   setArtworkSettings: vi.fn(),
+  sgdbFetchAsset: vi.fn(),
 }));
 vi.mock("../steam/core", () => ({ metadataCache: {} }));
 vi.mock("../toast", () => ({ toastSuccess: vi.fn(), toastError: vi.fn() }));
@@ -72,9 +76,10 @@ const makeGameState = (
   },
 });
 
-const makeDeps = (settings: ArtworkSettings = DEFAULT_ARTWORK_SETTINGS): ArtworkControllerDeps => ({
-  getArtworkSettings: vi.fn().mockResolvedValue(settings),
+const makeDeps = (settings: Partial<ArtworkSettings> = DEFAULT_ARTWORK_SETTINGS): ArtworkControllerDeps => ({
+  getArtworkSettings: vi.fn().mockResolvedValue({ ...DEFAULT_ARTWORK_SETTINGS, ...settings }),
   setArtworkSettings: vi.fn().mockImplementation(async (next) => next),
+  getSgdbKeyStatus: vi.fn().mockResolvedValue({ hasUserKey: false, hasBuiltInKey: true, configured: true }),
   getArtworkSummary: vi.fn().mockResolvedValue({
     matched: 2,
     complete: 1,
@@ -97,6 +102,27 @@ const makeDeps = (settings: ArtworkSettings = DEFAULT_ARTWORK_SETTINGS): Artwork
     ext: "jpg",
     mime: "image/jpeg",
     file_path: slot === "icon" ? "/tmp/icon.jpg" : null,
+  })),
+  sgdbFetchAsset: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "SGDB==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
+  })),
+  readLocalArtworkFile: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "LOCAL==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
+  })),
+  getTransparentArtworkAsset: vi.fn().mockImplementation(async (_appId, slot) => ({
+    slot,
+    base64: "TRANS==",
+    ext: "png",
+    mime: "image/png",
+    file_path: null,
   })),
   clearLocalArtworkFile: vi.fn().mockResolvedValue({ ok: true, removed: true }),
   applySteamArtworkSlot: vi.fn().mockResolvedValue(undefined),
@@ -199,5 +225,72 @@ describe("ArtworkController", () => {
     await ctrl.clearSingleSlot(1001, "cover");
     expect(deps.clearSteamArtworkSlot).toHaveBeenCalledWith(1001, "cover");
     expect(deps.clearLocalArtworkFile).toHaveBeenCalledWith(1001, "cover");
+  });
+
+  it("applies SteamGridDB, local file, and transparent assets and persists per-slot filters globally", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+
+    await ctrl.applySgdbAsset(1091500, "hero", "https://cdn2.steamgriddb.com/hero/1.png");
+    expect(deps.sgdbFetchAsset).toHaveBeenCalledWith(1091500, "hero", "https://cdn2.steamgriddb.com/hero/1.png");
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledWith(1091500, "hero", expect.objectContaining({ base64: "SGDB==" }));
+
+    await ctrl.applyLocalFile(1091500, "cover", "/home/deck/Downloads/poster.png");
+    expect(deps.readLocalArtworkFile).toHaveBeenCalledWith(1091500, "cover", "/home/deck/Downloads/poster.png");
+
+    await ctrl.applyTransparentSlot(1091500, "logo");
+    expect(deps.getTransparentArtworkAsset).toHaveBeenCalledWith(1091500, "logo");
+
+    const ok = await ctrl.updateSlotFilter("cover", {
+      ...DEFAULT_ARTWORK_SETTINGS.filters.cover,
+      nsfw: true,
+    });
+    expect(ok).toBe(true);
+    expect(ctrl.getSnapshot().settings.filters.cover.nsfw).toBe(true);
+  });
+
+  it("saves overlapping settings changes in order so the newest change wins", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+    await ctrl.ensureSettingsLoaded();
+    const first = Promise.withResolvers<ArtworkSettings>();
+    vi.mocked(deps.setArtworkSettings)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementation(async (next) => next);
+
+    const typed = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "typed" });
+    const cleared = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "" });
+    expect(deps.setArtworkSettings).toHaveBeenCalledTimes(1); // the second save waits for the first
+    first.resolve({ ...DEFAULT_ARTWORK_SETTINGS, sgdbApiKey: "typed" });
+
+    await expect(Promise.all([typed, cleared])).resolves.toEqual([true, true]);
+    const saves = vi.mocked(deps.setArtworkSettings).mock.calls;
+    expect(saves[saves.length - 1][0].sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+  });
+
+  it("still saves a newer change when the save before it fails, and rolls back only the last failure", async () => {
+    const deps = makeDeps();
+    const ctrl = new ArtworkController(deps);
+    await ctrl.ensureSettingsLoaded();
+    const first = Promise.withResolvers<ArtworkSettings>();
+    vi.mocked(deps.setArtworkSettings)
+      .mockImplementationOnce(() => first.promise)
+      .mockImplementation(async (next) => next);
+
+    const typed = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "typed" });
+    const cleared = ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "" });
+    first.reject(new Error("disk full"));
+
+    await expect(Promise.all([typed, cleared])).resolves.toEqual([false, true]);
+    expect(deps.setArtworkSettings).toHaveBeenCalledTimes(2);
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settingsError).toBe("");
+
+    // With nothing newer queued, a failure restores the last confirmed settings.
+    vi.mocked(deps.setArtworkSettings).mockRejectedValueOnce(new Error("disk full"));
+    await expect(ctrl.setSettings({ ...ctrl.getSnapshot().settings, sgdbApiKey: "lost" })).resolves.toBe(false);
+    expect(ctrl.getSnapshot().settings.sgdbApiKey).toBe("");
+    expect(ctrl.getSnapshot().settingsError).not.toBe("");
   });
 });

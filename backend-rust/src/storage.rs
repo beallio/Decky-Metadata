@@ -391,6 +391,7 @@ pub fn default_data() -> Value {
         "steam_overrides": {},
         "shortcut_names": {},
         "artwork_locks": {},
+        "sgdb_game_overrides": {},
         "settings": default_settings(),
         "update_settings": {},
         "update_check_cache": {},
@@ -441,6 +442,68 @@ pub fn default_editor_header_settings() -> Value {
     })
 }
 
+pub const ARTWORK_TABS: [&str; 6] = ["cover", "wide", "hero", "logo", "icon", "manage"];
+pub const ARTWORK_FILTER_SLOTS: [&str; 5] = ["cover", "wide", "hero", "logo", "icon"];
+const SGDB_TYPES: [&str; 2] = ["static", "animated"];
+
+pub fn allowed_sgdb_dimensions(slot: &str) -> &'static [&'static str] {
+    match slot {
+        "cover" => &["600x900", "342x482", "660x930", "512x512", "1024x1024"],
+        "wide" => &["460x215", "920x430", "512x512", "1024x1024"],
+        "hero" => &["1920x620", "3840x1240", "1600x650"],
+        "icon" => &[
+            "16x16", "24x24", "32x32", "48x48", "64x64", "96x96", "128x128", "192x192", "256x256",
+            "512x512", "1024x1024",
+        ],
+        _ => &[],
+    }
+}
+
+pub fn allowed_sgdb_styles(slot: &str) -> &'static [&'static str] {
+    match slot {
+        "cover" | "wide" => &["alternate", "blurred", "white_logo", "material", "no_logo"],
+        "hero" => &["alternate", "blurred", "material"],
+        "logo" => &["official", "white", "black", "custom"],
+        "icon" => &["official", "custom"],
+        _ => &[],
+    }
+}
+
+pub fn allowed_sgdb_mimes(slot: &str) -> &'static [&'static str] {
+    match slot {
+        "cover" | "wide" | "hero" => &["image/png", "image/jpeg", "image/webp"],
+        "logo" => &["image/png", "image/webp"],
+        "icon" => &["image/png", "image/vnd.microsoft.icon"],
+        _ => &[],
+    }
+}
+
+pub fn default_slot_filter(slot: &str) -> Value {
+    let dimensions: Vec<&str> = match slot {
+        "cover" => vec!["600x900", "342x482", "660x930"],
+        "wide" => vec!["460x215", "920x430"],
+        "hero" => vec!["1920x620", "3840x1240", "1600x650"],
+        _ => vec![],
+    };
+    json!({
+        "dimensions": dimensions,
+        "styles": [],
+        "mimes": [],
+        "types": ["static"],
+        "nsfw": false,
+        "humor": true,
+        "epilepsy": false,
+    })
+}
+
+pub fn default_artwork_filters() -> Value {
+    let mut filters = Map::new();
+    for slot in ARTWORK_FILTER_SLOTS {
+        filters.insert(slot.to_owned(), default_slot_filter(slot));
+    }
+    Value::Object(filters)
+}
+
 pub fn default_artwork_settings() -> Value {
     json!({
         "autoApply": false,
@@ -451,7 +514,12 @@ pub fn default_artwork_settings() -> Value {
             "hero": true,
             "logo": true,
             "icon": true,
-        }
+        },
+        "sgdbApiKey": "",
+        "defaultTab": "cover",
+        "tabOrder": ARTWORK_TABS,
+        "hiddenTabs": [],
+        "filters": default_artwork_filters(),
     })
 }
 
@@ -638,6 +706,76 @@ pub fn normalize_editor_header_settings(value: &Value) -> Value {
     Value::Object(normalized)
 }
 
+fn normalize_string_list(value: Option<&Value>, allowed: &[&str]) -> Option<Vec<Value>> {
+    let array = value?.as_array()?;
+    let mut seen = Vec::new();
+    for item in array {
+        if let Some(text) = item.as_str() {
+            if allowed.contains(&text) && !seen.iter().any(|existing| existing == text) {
+                seen.push(text.to_owned());
+            }
+        }
+    }
+    Some(seen.into_iter().map(Value::String).collect())
+}
+
+pub fn normalize_slot_filter(slot: &str, value: &Value) -> Value {
+    let mut normalized = default_slot_filter(slot)
+        .as_object()
+        .cloned()
+        .unwrap_or_default();
+    if let Some(source) = value.as_object() {
+        if let Some(dims) =
+            normalize_string_list(source.get("dimensions"), allowed_sgdb_dimensions(slot))
+        {
+            normalized.insert("dimensions".to_owned(), Value::Array(dims));
+        }
+        if let Some(styles) = normalize_string_list(source.get("styles"), allowed_sgdb_styles(slot))
+        {
+            normalized.insert("styles".to_owned(), Value::Array(styles));
+        }
+        if let Some(mimes) = normalize_string_list(source.get("mimes"), allowed_sgdb_mimes(slot)) {
+            normalized.insert("mimes".to_owned(), Value::Array(mimes));
+        }
+        if let Some(types) = normalize_string_list(source.get("types"), &SGDB_TYPES) {
+            normalized.insert("types".to_owned(), Value::Array(types));
+        }
+        for key in ["nsfw", "humor", "epilepsy"] {
+            if let Some(flag) = source.get(key).and_then(Value::as_bool) {
+                normalized.insert(key.to_owned(), Value::Bool(flag));
+            }
+        }
+    }
+    Value::Object(normalized)
+}
+
+fn normalize_tab_order(value: Option<&Value>) -> Vec<Value> {
+    let mut order: Vec<&str> = Vec::with_capacity(ARTWORK_TABS.len());
+    if let Some(array) = value.and_then(Value::as_array) {
+        for item in array {
+            if let Some(tab) = item.as_str() {
+                if ARTWORK_TABS.contains(&tab) && !order.contains(&tab) {
+                    order.push(tab);
+                }
+            }
+        }
+    }
+    for tab in ARTWORK_TABS {
+        if !order.contains(&tab) {
+            order.push(tab);
+        }
+    }
+    order.into_iter().map(|tab| Value::String(tab.to_owned())).collect()
+}
+
+fn sanitize_sgdb_api_key(value: &str) -> Option<String> {
+    let trimmed = value.trim();
+    if trimmed.chars().count() > 256 || trimmed.chars().any(char::is_control) {
+        return None;
+    }
+    Some(trimmed.to_owned())
+}
+
 pub fn normalize_artwork_settings(value: &Value) -> Value {
     let mut normalized = default_artwork_settings()
         .as_object()
@@ -661,6 +799,42 @@ pub fn normalize_artwork_settings(value: &Value) -> Value {
                 }
             }
             normalized.insert("slots".to_owned(), Value::Object(slots));
+        }
+        if let Some(api_key) = source
+            .get("sgdbApiKey")
+            .and_then(Value::as_str)
+            .and_then(sanitize_sgdb_api_key)
+        {
+            normalized.insert("sgdbApiKey".to_owned(), Value::String(api_key));
+        }
+        if let Some(default_tab) = source
+            .get("defaultTab")
+            .and_then(Value::as_str)
+            .filter(|tab| ARTWORK_TABS.contains(tab))
+        {
+            normalized.insert("defaultTab".to_owned(), Value::String(default_tab.to_owned()));
+        }
+        if source.contains_key("tabOrder") {
+            normalized.insert(
+                "tabOrder".to_owned(),
+                Value::Array(normalize_tab_order(source.get("tabOrder"))),
+            );
+        }
+        if let Some(hidden) =
+            normalize_string_list(source.get("hiddenTabs"), &ARTWORK_FILTER_SLOTS)
+        {
+            normalized.insert("hiddenTabs".to_owned(), Value::Array(hidden));
+        }
+        if let Some(saved_filters) = source.get("filters").and_then(Value::as_object) {
+            let mut filters = Map::new();
+            for slot in ARTWORK_FILTER_SLOTS {
+                let entry = saved_filters
+                    .get(slot)
+                    .map(|raw| normalize_slot_filter(slot, raw))
+                    .unwrap_or_else(|| default_slot_filter(slot));
+                filters.insert(slot.to_owned(), entry);
+            }
+            normalized.insert("filters".to_owned(), Value::Object(filters));
         }
     }
     Value::Object(normalized)
@@ -863,32 +1037,140 @@ pub fn validate_editor_header_settings(value: &Value) -> Result<Value, String> {
 }
 
 pub fn validate_artwork_settings(value: &Value) -> Result<Value, String> {
-    let source = value
-        .as_object()
-        .ok_or_else(|| "invalid artwork settings".to_owned())?;
+    let invalid = || "invalid artwork settings".to_owned();
+    let source = value.as_object().ok_or_else(invalid)?;
     let expected = default_artwork_settings()
         .as_object()
         .cloned()
         .unwrap_or_default();
-    if source.len() != expected.len()
+    if source.keys().any(|key| !expected.contains_key(key))
         || !source.get("autoApply").is_some_and(Value::is_boolean)
         || !source.get("preserveExisting").is_some_and(Value::is_boolean)
     {
-        return Err("invalid artwork settings".to_owned());
+        return Err(invalid());
     }
     let slots = source
         .get("slots")
         .and_then(Value::as_object)
-        .ok_or_else(|| "invalid artwork settings".to_owned())?;
+        .ok_or_else(invalid)?;
     let expected_slots = expected["slots"].as_object().cloned().unwrap_or_default();
     if slots.len() != expected_slots.len()
         || expected_slots
             .keys()
             .any(|key| !slots.get(key).is_some_and(Value::is_boolean))
     {
-        return Err("invalid artwork settings".to_owned());
+        return Err(invalid());
+    }
+    if let Some(raw_key) = source.get("sgdbApiKey") {
+        let Some(text) = raw_key.as_str() else {
+            return Err(invalid());
+        };
+        if sanitize_sgdb_api_key(text).is_none() {
+            return Err(invalid());
+        }
+    }
+    if let Some(raw_tab) = source.get("defaultTab") {
+        if !raw_tab
+            .as_str()
+            .is_some_and(|tab| ARTWORK_TABS.contains(&tab))
+        {
+            return Err(invalid());
+        }
+    }
+    if let Some(raw_order) = source.get("tabOrder") {
+        let Some(arr) = raw_order.as_array() else {
+            return Err(invalid());
+        };
+        if arr
+            .iter()
+            .any(|item| !item.as_str().is_some_and(|tab| ARTWORK_TABS.contains(&tab)))
+        {
+            return Err(invalid());
+        }
+    }
+    if let Some(raw_hidden) = source.get("hiddenTabs") {
+        let Some(arr) = raw_hidden.as_array() else {
+            return Err(invalid());
+        };
+        if arr.iter().any(|item| {
+            !item
+                .as_str()
+                .is_some_and(|tab| ARTWORK_FILTER_SLOTS.contains(&tab))
+        }) {
+            return Err(invalid());
+        }
+    }
+    if let Some(raw_filters) = source.get("filters") {
+        let Some(obj) = raw_filters.as_object() else {
+            return Err(invalid());
+        };
+        if obj
+            .keys()
+            .any(|slot| !ARTWORK_FILTER_SLOTS.contains(&slot.as_str()))
+        {
+            return Err(invalid());
+        }
+        for (slot, entry) in obj {
+            let Some(filter_obj) = entry.as_object() else {
+                return Err(invalid());
+            };
+            for key in ["dimensions", "styles", "mimes", "types"] {
+                if let Some(field) = filter_obj.get(key) {
+                    if !field
+                        .as_array()
+                        .is_some_and(|arr| arr.iter().all(Value::is_string))
+                    {
+                        return Err(invalid());
+                    }
+                }
+            }
+            for key in ["nsfw", "humor", "epilepsy"] {
+                if let Some(field) = filter_obj.get(key) {
+                    if !field.is_boolean() {
+                        return Err(invalid());
+                    }
+                }
+            }
+            let _ = slot;
+        }
     }
     Ok(normalize_artwork_settings(value))
+}
+
+pub fn validate_sgdb_game_override(value: &Value) -> Result<Value, String> {
+    let source = value
+        .as_object()
+        .ok_or_else(|| "invalid SteamGridDB game override".to_owned())?;
+    let sgdb_game_id = source
+        .get("sgdb_game_id")
+        .and_then(Value::as_u64)
+        .filter(|id| *id > 0)
+        .ok_or_else(|| "sgdb_invalid_game_id".to_owned())?;
+    let name = source
+        .get("name")
+        .and_then(Value::as_str)
+        .map(str::trim)
+        .filter(|name| !name.is_empty() && !name.contains('\0') && name.chars().count() <= 512)
+        .ok_or_else(|| "sgdb_invalid_game_name".to_owned())?;
+    Ok(json!({
+        "sgdb_game_id": sgdb_game_id,
+        "name": name,
+    }))
+}
+
+fn normalize_sgdb_game_overrides(saved: Option<Value>) -> Value {
+    let mut normalized = Map::new();
+    if let Some(Value::Object(entries)) = saved {
+        for (key, value) in entries {
+            let Some(app_id) = positive_shortcut_app_id(&Value::String(key)) else {
+                continue;
+            };
+            if let Ok(entry) = validate_sgdb_game_override(&value) {
+                normalized.insert(app_id.to_string(), entry);
+            }
+        }
+    }
+    Value::Object(normalized)
 }
 
 pub fn validate_shortcut_name(value: &Value) -> Option<&str> {
@@ -1106,6 +1388,7 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
         ),
         _ => Value::Object(Map::new()),
     };
+    let sgdb_game_overrides = normalize_sgdb_game_overrides(source.remove("sgdb_game_overrides"));
     let settings = normalize_settings_owned(source.remove("settings"));
     let update_settings = truthy_object(source.remove("update_settings"), "update_settings")?;
     let update_check_cache =
@@ -1116,6 +1399,7 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     merged.insert("steam_overrides".to_owned(), steam_overrides);
     merged.insert("shortcut_names".to_owned(), shortcut_names);
     merged.insert("artwork_locks".to_owned(), artwork_locks);
+    merged.insert("sgdb_game_overrides".to_owned(), sgdb_game_overrides);
     merged.insert("settings".to_owned(), settings);
     merged.insert("update_settings".to_owned(), update_settings);
     merged.insert("update_check_cache".to_owned(), update_check_cache);

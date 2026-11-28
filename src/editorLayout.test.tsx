@@ -1,6 +1,12 @@
 import { isValidElement, type ReactElement, type ReactNode } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { EditorLayout, type EditorLayoutPage, type EditorLayoutProps } from "./editorLayout";
+import {
+  EditorLayout,
+  evaluateSidebarCollapseState,
+  headerIconShowsExpanded,
+  type EditorLayoutPage,
+  type EditorLayoutProps,
+} from "./editorLayout";
 
 const mocks = vi.hoisted(() => ({
   findModuleExport: vi.fn(),
@@ -20,7 +26,8 @@ vi.mock("./i18n", () => ({
     : key,
 }));
 vi.mock("./backend", () => ({ getEditorHeaderSettings: vi.fn() }));
-vi.mock("./editorHeaderIcon", () => ({ resolveEditorIcon: vi.fn() }));
+vi.mock("./editorHeaderIcon", () => ({ resolveEditorIcon: vi.fn(), steamIconUrl: vi.fn() }));
+vi.mock("./steam/nativeFocus", () => ({ nativeFocusedElement: vi.fn(() => null) }));
 // Cache like React does so the test can assert that page descriptors stay stable across edits.
 vi.mock("react", async (importOriginal) => ({
   ...await importOriginal<Record<string, unknown>>(),
@@ -153,7 +160,7 @@ describe("EditorLayout", () => {
       typeof entry !== "string" && entry.identifier === "advanced") as Exclude<NativePageEntry, "separator">;
     expect(text(nodes(advancedPage.content).find((node) => node.type === "DialogHeader"))).toBe("Advanced");
     expect(received.page).toBe("advanced");
-    expect(received.title.props).toEqual({ title: "Deadpool", appId: 4107143310, steamAppId: 224060 });
+    expect(received.title.props).toEqual({ title: "Deadpool", appId: 4107143310, steamAppId: 224060, collapsible: false });
     expect(received.showTitle).toBe(true);
     received.onPageRequested("advanced");
     expect(onPageRequested).toHaveBeenCalledExactlyOnceWith("advanced");
@@ -182,5 +189,24 @@ describe("EditorLayout", () => {
         "value" in node.props && node.props.value === nextPages,
     );
     expect(contentProvider?.props.value[0].content).toBe(nextContent);
+  });
+
+  it("keeps sidebar collapsed when focus moves to child modals and expands only when sidebar regains focus", () => {
+    expect(evaluateSidebarCollapseState(false, false, true)).toBe(true);
+    // Focus moves to modal/dropdown/OSK (neither column has focus): stay collapsed without flicker.
+    expect(evaluateSidebarCollapseState(true, false, false)).toBe(true);
+    // Focus returns to sidebar: expand.
+    expect(evaluateSidebarCollapseState(true, true, false)).toBe(false);
+    // Sidebar wins if both ever report true during transition.
+    expect(evaluateSidebarCollapseState(true, true, true)).toBe(false);
+  });
+
+  it("shows the matched Steam icon with the sidebar expanded only when Steam icon fallback is on", () => {
+    // The collapsed rail may borrow the Steam icon; the expanded header keeps the user's settings.
+    expect(headerIconShowsExpanded({ gameIcon: true, steamIconFallback: false }, false)).toBe(false);
+    expect(headerIconShowsExpanded({ gameIcon: true, steamIconFallback: true }, false)).toBe(true);
+    expect(headerIconShowsExpanded({ gameIcon: true, steamIconFallback: false }, true)).toBe(true);
+    expect(headerIconShowsExpanded({ gameIcon: false, steamIconFallback: true }, true)).toBe(false);
+    expect(headerIconShowsExpanded(null, true)).toBe(false);
   });
 });

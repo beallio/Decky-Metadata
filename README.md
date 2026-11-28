@@ -40,9 +40,9 @@ available. Open Settings with the gear in the panel header; the panel
 closes when Settings opens.
 
 Settings is a full-screen page with Steam-style side tabs. The tabs are
-Metadata, Compatibility status, ProtonDB badges, HLTB times, Game trailers,
-Mini achievements, and Context menu. After a separator are Logs, Updates, and
-Versions. Changes apply at once; there is no Save button. Press **B** to return
+Metadata, Artwork, Compatibility status, ProtonDB badges, HLTB times, Game
+trailers, Mini achievements, and Context menu. After a separator are Logs,
+Updates, and Versions. Changes apply at once; there is no Save button. Press **B** to return
 from a settings page to the tab list, then press **B** again to close Settings.
 Opening Settings from a game's page leaves that page. The **Metadata** tab
 includes **Clear cache** and **Delisted Steam games**.
@@ -86,6 +86,18 @@ See [editing games](docs/help/editing-games.md).
 ![Game Info details for Wobbly Life](assets/decky-metadata-gameinfo-top.png?cacheBuster=202611151912)
 
 ![Game Info buttons and SteamOS compatibility for Wobbly Life](assets/decky-metadata-gameinfo-buttons.png?cacheBuster=202611151912)
+
+### Artwork browser
+
+Open **Edit Metadata...** on any Steam or non-Steam game and select **Artwork**
+to browse community artwork from SteamGridDB or apply official Steam artwork
+across **Cover**, **Wide cover**, **Hero background**, **Game logo**, and
+**Game icon** slots. Use **L1**/**R1** to switch tabs, **Y** for filters and
+game search, **Menu** for asset details, and **Manage** for local files,
+transparent placeholders, per-game artwork locks, and **Logo position**
+adjustment. Configure your optional SteamGridDB API key (it saves when you
+leave the field), default tab, tab order (press X on a tab, move it, press X to save) and visibility
+(toggles), and automatic Official Steam artwork under **Settings → Artwork**.
 
 ### Compatibility status
 
