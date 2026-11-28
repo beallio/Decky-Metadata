@@ -1,7 +1,6 @@
 // Page placement and launch hiding follow HLTB for Deck (MIT).
 import { routerHook } from "@decky/api";
 import {
-  afterPatch,
   appActionButtonClasses,
   appDetailsClasses,
   appDetailsHeaderClasses,
@@ -11,7 +10,8 @@ import {
   playSectionClasses,
 } from "@decky/ui";
 import { type ReactElement, useEffect, useRef, useState } from "react";
-import { GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
+import * as log from "../log";
+import { createRouteRenderPatcher, GAME_DETAIL_ROUTES, getNativeOverview, isNativeNonSteamShortcut, metadataCache } from "../steam/core";
 import { resolveSteamCssClass } from "../steam/nativeCssClasses";
 import { HltbController, type HltbSnapshot } from "./controller";
 import { HltbStats } from "./HltbStats";
@@ -443,34 +443,39 @@ const isPlaySection = (child: ReactElement | null) => {
 function installHltbGameView(): () => void {
   const unpatchers: Array<() => void> = [];
   for (const route of GAME_DETAIL_ROUTES) {
-    const patch = routerHook.addPatch(route, (tree: any) => {
-      const routeProps = findInReactTree(tree, (node: any) => node?.renderFunc);
-      if (!routeProps) return tree;
-      let appId = 0;
-      const handler = createReactTreePatcher([
-        (inner: any) => {
-          const children = findInReactTree(inner, (node: any) => node?.props?.children?.props?.overview)?.props?.children;
-          appId = Number(children?.props?.overview?.appid) || 0;
-          return children ?? null;
-        },
-      ], (_args: unknown[], ret: ReactElement) => {
-        const innerContainer = resolveSteamCssClass(appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-        const children = findInReactTree(ret, (node: any) =>
-          Array.isArray(node?.props?.children) && (
-            (innerContainer && node?.props?.className?.includes(innerContainer)) ||
-            node.props.children.some(isPlaySection)
-          ),
-        )?.props?.children as Array<ReactElement | null> | undefined;
-        if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY)) return ret;
-        const index = children.findIndex(isPlaySection);
-        if (index >= 0) children.splice(index, 0, <HltbGameRow key={ROW_KEY} appId={appId} />);
-        return ret;
-      });
-      const renderPatch = afterPatch(routeProps, "renderFunc", handler);
-      unpatchers.push(() => renderPatch.unpatch());
-      return tree;
+    let appId = 0;
+    const handler = createReactTreePatcher([
+      (inner: any) => {
+        const children = findInReactTree(inner, (node: any) => node?.props?.children?.props?.overview)?.props?.children;
+        appId = Number(children?.props?.overview?.appid) || 0;
+        return children ?? null;
+      },
+    ], (_args: unknown[], ret: ReactElement) => {
+      const innerContainer = resolveSteamCssClass(appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+      const children = findInReactTree(ret, (node: any) =>
+        Array.isArray(node?.props?.children) && (
+          (innerContainer && node?.props?.className?.includes(innerContainer)) ||
+          node.props.children.some(isPlaySection)
+        ),
+      )?.props?.children as Array<ReactElement | null> | undefined;
+      if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY)) return ret;
+      const index = children.findIndex(isPlaySection);
+      if (index >= 0) children.splice(index, 0, <HltbGameRow key={ROW_KEY} appId={appId} />);
+      return ret;
     });
-    unpatchers.push(() => routerHook.removePatch(route, patch));
+    const renderPatcher = createRouteRenderPatcher(handler);
+    try {
+      const patch = routerHook.addPatch(route, (tree: any) => {
+        renderPatcher.patch(findInReactTree(tree, (node: any) => node?.renderFunc));
+        return tree;
+      });
+      unpatchers.push(() => {
+        renderPatcher.release();
+        routerHook.removePatch(route, patch);
+      });
+    } catch (error) {
+      log.warn("hltb", "game-page route hook failed", error);
+    }
   }
   return () => {
     for (const unpatch of unpatchers.splice(0)) {

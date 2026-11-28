@@ -119,13 +119,13 @@ function HltbTab() {
   );
 }
 
-function TrailersTab() {
+function TrailersTab({ visible }: { visible: boolean }) {
   const trailers = useStoreSnapshot(trailerController);
   // The tab shows live trailer status, so the controller checks Steam every 2 s while it is open.
   useEffect(() => {
-    trailerController.setPanelVisible(true);
+    trailerController.setPanelVisible(visible);
     return () => trailerController.setPanelVisible(false);
-  }, []);
+  }, [visible]);
   return (
     <GameTrailersBody
       state={trailers}
@@ -179,6 +179,7 @@ export function SettingsPage() {
     return () => setActiveSettingsTab(null);
   }, [page]);
 
+  const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
   // Each body renders its own Steam settings sections.
   const pages: SettingsLayoutPage[] = [
     {
@@ -209,7 +210,7 @@ export function SettingsPage() {
     { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: <CompatibilityBody {...compatibility} /> },
     { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: <ProtonDbTab /> },
     { id: "hltb", label: t("qam.hltb.title"), icon: icons.hltb, content: <HltbTab /> },
-    { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: <TrailersTab /> },
+    { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: <TrailersTab visible={activePage === "trailers"} /> },
     {
       id: "miniAchievements",
       label: t("qam.miniAchievements.title"),
@@ -224,8 +225,6 @@ export function SettingsPage() {
       : []),
     { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: <VersionsTab {...versions} /> },
   ];
-  const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
-
   return (
     <Focusable className={rootClassName} onCancelButton={() => Navigation.NavigateBack()}>
       <style>{css}</style>

@@ -72,7 +72,7 @@ const STORE_CATEGORY: &[(&str, i64)] = &[
     ("online_multiplayer", 36),
     ("local_multiplayer", 37),
     ("online_co_op", 38),
-    ("local_co_op", 392),
+    ("local_co_op", 39),
 ];
 const TRAILER_ALLOWED_TITLE_WORDS: &[&str] = &[
     "ign",
@@ -1590,6 +1590,11 @@ mod tests {
     use super::*;
     use crate::http::{Fixture, Response};
     use reqwest::header::{HeaderMap, HeaderValue};
+    #[test]
+    fn ign_local_co_op_uses_steam_shared_screen_category() {
+        assert!(STORE_CATEGORY.contains(&("local_co_op", 39)));
+    }
+
 
     fn graphql_fixture(status: u16, body: Vec<u8>) -> Fixture {
         graphql_fixture_with_length(status, body, None)

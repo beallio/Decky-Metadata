@@ -1,6 +1,5 @@
-# Mirrors opt-in `test-build` fork PR artifacts (and manually dispatched CI runs)
-# into the rolling `pr-builds` GitHub prerelease without exposing write permissions
-# to untrusted pull_request workflows.
+# Publishes verified PR builds without exposing write permissions to untrusted
+# pull_request workflows. Fork PR builds require explicit maintainer dispatch.
 name: Publish PR Build
 
 on:
@@ -9,8 +8,12 @@ on:
     types: [completed]
   workflow_dispatch:
     inputs:
-      run_id:
-        description: "Passing CI workflow run ID to publish into pr-builds"
+      pr_number:
+        description: "Open fork PR number to publish"
+        required: true
+        type: string
+      head_sha:
+        description: "Exact PR head SHA to publish"
         required: true
         type: string
 
@@ -29,23 +32,106 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: read
     steps:
       - name: Download and publish verified PR build asset
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
           GH_REPO: ${{ github.repository }}
-          RUN_ID: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.run_id || github.event.workflow_run.id }}
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_PR_NUMBER: ${{ github.event.inputs.pr_number }}
+          DISPATCH_HEAD_SHA: ${{ github.event.inputs.head_sha }}
+          WORKFLOW_RUN_ID: ${{ github.event.workflow_run.id }}
+          WORKFLOW_RUN_HEAD_REPO: ${{ github.event.workflow_run.head_repository.full_name }}
           ARTIFACT_DIR: ${{ runner.temp }}/pr-artifact
         run: |
           set -euo pipefail
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            if [[ ! "$DISPATCH_PR_NUMBER" =~ ^[0-9]+$ ]]; then
+              echo "Invalid PR number: $DISPATCH_PR_NUMBER" >&2
+              exit 1
+            fi
+            if [[ ! "$DISPATCH_HEAD_SHA" =~ ^[0-9a-fA-F]{40}$ ]]; then
+              echo "Invalid head SHA: $DISPATCH_HEAD_SHA" >&2
+              exit 1
+            fi
+            DISPATCH_HEAD_SHA="${DISPATCH_HEAD_SHA,,}"
+            pr_number="$DISPATCH_PR_NUMBER"
+            dispatch_pr_json="$RUNNER_TEMP/dispatch-pr.json"
+            gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" > "$dispatch_pr_json"
+            python3 - "$dispatch_pr_json" "$GITHUB_REPOSITORY" "$DISPATCH_HEAD_SHA" <<'PY'
+          import json, sys
+          from pathlib import Path
+          pr = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          repo, expected_sha = sys.argv[2].lower(), sys.argv[3].lower()
+          head = pr.get("head") or {}
+          head_repo = head.get("repo") or {}
+          labels = {str(item.get("name", "")).lower() for item in pr.get("labels") or []}
+          if pr.get("state") != "open":
+              raise SystemExit("PR is not open")
+          if not head_repo.get("fork"):
+              raise SystemExit("PR is not from a fork")
+          if str(head.get("sha", "")).lower() != expected_sha:
+              raise SystemExit("PR head SHA does not match the requested SHA")
+          if "test-build" not in labels:
+              raise SystemExit("PR is missing the test-build label")
+          PY
+            runs_json="$RUNNER_TEMP/ci-runs.json"
+            gh api --method GET "repos/${GITHUB_REPOSITORY}/actions/workflows/ci.yml/runs" \
+              -f head_sha="$DISPATCH_HEAD_SHA" -f event=pull_request -f status=completed -f per_page=100 \
+              > "$runs_json"
+            RUN_ID=""
+            while IFS= read -r candidate_id; do
+              artifacts_json="$RUNNER_TEMP/ci-artifacts-${candidate_id}.json"
+              gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${candidate_id}/artifacts" > "$artifacts_json"
+              if jq -e '.artifacts[]? | select(.name == "decky-metadata-pr")' "$artifacts_json" >/dev/null; then
+                RUN_ID="$candidate_id"
+                break
+              fi
+            done < <(jq -r --arg sha "$DISPATCH_HEAD_SHA" '[.workflow_runs[] | select(.head_sha == $sha and .event == "pull_request" and .conclusion == "success")] | sort_by(.created_at) | reverse | .[].id' "$runs_json")
+            if [[ -z "$RUN_ID" ]]; then
+              echo "No successful CI pull_request run with a decky-metadata-pr artifact exists for $DISPATCH_HEAD_SHA" >&2
+              exit 1
+            fi
+          else
+            if [[ "${WORKFLOW_RUN_HEAD_REPO,,}" != "${GITHUB_REPOSITORY,,}" ]]; then
+              echo "Fork PR workflow_run cannot publish; a maintainer must dispatch the exact head SHA."
+              exit 0
+            fi
+            RUN_ID="$WORKFLOW_RUN_ID"
+          fi
+
           if [[ ! "$RUN_ID" =~ ^[0-9]+$ ]]; then
             echo "Invalid run_id: $RUN_ID" >&2
             exit 1
           fi
+          run_json="$RUNNER_TEMP/ci-run.json"
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" > "$run_json"
+          run_head_sha="$(python3 - "$run_json" "$EVENT_NAME" "$DISPATCH_HEAD_SHA" <<'PY'
+          import json, sys
+          from pathlib import Path
+          run = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
+          event_name, requested_sha = sys.argv[2], sys.argv[3].lower()
+          if run.get("event") != "pull_request" or run.get("conclusion") != "success":
+              raise SystemExit("Selected run is not a successful pull_request CI run")
+          head_sha = str(run.get("head_sha", "")).lower()
+          if event_name == "workflow_dispatch" and head_sha != requested_sha:
+              raise SystemExit("Selected CI run head SHA does not match the requested SHA")
+          print(head_sha)
+          PY
+          )"
 
           mkdir -p "$ARTIFACT_DIR"
           if ! gh run download "$RUN_ID" --name decky-metadata-pr --dir "$ARTIFACT_DIR"; then
+            if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+              echo "Failed to download decky-metadata-pr artifact from run $RUN_ID" >&2
+              exit 1
+            fi
             echo "Run $RUN_ID has no decky-metadata-pr artifact; nothing to publish."
             exit 0
           fi
@@ -53,7 +139,6 @@ jobs:
           cd "$ARTIFACT_DIR"
           sha256sum -c Decky-Metadata.zip.sha256
 
-          run_head_sha="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" --jq '.head_sha')"
           pr_number="$(python3 - Decky-Metadata.manifest.json <<'PY'
           import json, re, sys
           from pathlib import Path
@@ -67,24 +152,30 @@ jobs:
               print(m.group(1))
           PY
           )"
+          if [[ "$EVENT_NAME" == "workflow_dispatch" && "$pr_number" != "$DISPATCH_PR_NUMBER" ]]; then
+            echo "Artifact PR number does not match the requested PR" >&2
+            exit 1
+          fi
 
           pr_json="$RUNNER_TEMP/pr.json"
           gh api "repos/${GITHUB_REPOSITORY}/pulls/${pr_number}" > "$pr_json"
-          python3 - "$pr_json" "$GITHUB_REPOSITORY" "$run_head_sha" <<'PY'
+          python3 - "$pr_json" "$GITHUB_REPOSITORY" "$run_head_sha" "$EVENT_NAME" <<'PY'
           import json, sys
           from pathlib import Path
           pr = json.loads(Path(sys.argv[1]).read_text(encoding="utf-8"))
-          repo = sys.argv[2].lower()
-          run_sha = sys.argv[3].lower()
+          repo, run_sha, event_name = sys.argv[2].lower(), sys.argv[3].lower(), sys.argv[4]
+          head = pr.get("head") or {}
+          head_repo = head.get("repo") or {}
+          labels = {str(item.get("name", "")).lower() for item in pr.get("labels") or []}
           if pr.get("state") != "open":
               raise SystemExit("PR is no longer open; skipping publish")
-          head_sha = (pr.get("head") or {}).get("sha", "").lower()
-          if head_sha != run_sha:
-              raise SystemExit(f"PR head SHA {head_sha} does not match run SHA {run_sha}")
-          head_repo = ((pr.get("head") or {}).get("repo") or {}).get("full_name", "").lower()
-          labels = {str(item.get("name", "")).lower() for item in pr.get("labels") or []}
-          if head_repo != repo and "test-build" not in labels:
-              raise SystemExit("PR is neither same-repo nor labeled test-build")
+          if str(head.get("sha", "")).lower() != run_sha:
+              raise SystemExit("PR head SHA does not match the CI run SHA")
+          if event_name == "workflow_dispatch":
+              if not head_repo.get("fork") or "test-build" not in labels:
+                  raise SystemExit("Dispatch requires an open fork PR with the test-build label")
+          elif head_repo.get("full_name", "").lower() != repo:
+              raise SystemExit("workflow_run publication is limited to same-repository PRs")
           PY
 
           zip_name="Decky-Metadata-pr-${pr_number}.zip"

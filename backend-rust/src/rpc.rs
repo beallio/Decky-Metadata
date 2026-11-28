@@ -40,6 +40,7 @@ pub const METHODS: &[&str] = &[
     "get_artwork_summary",
     "get_game_artwork_state",
     "fetch_steam_artwork_asset",
+    "save_local_icon_asset",
     "clear_local_artwork_file",
     "get_sgdb_key_status",
     "sgdb_search_games",
@@ -468,6 +469,10 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
             arity(&args, 3, 3)?;
             crate::artwork::fetch_steam_artwork_asset(&state, &args[0], &args[1], &args[2]).await
         }
+        "save_local_icon_asset" => {
+            arity(&args, 3, 3)?;
+            crate::artwork::save_local_icon_asset(&state, &args[0], &args[1], &args[2]).await
+        }
         "clear_local_artwork_file" => {
             arity(&args, 2, 2)?;
             crate::artwork::clear_local_artwork_file(&state, &args[0], &args[1]).await
@@ -626,9 +631,10 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         }
         "save_previewed_metadata" => {
             arity(&args, 3, 3)?;
-            // The scan pipeline's trust rule applies: only a positive ID equal to the saved
+            // The scan pipeline's trust rule applies: only a native Steam ID equal to the saved
             // record's steam_appid keeps the sent compat and news fields.
-            let trusted = crate::matching::safe_int(&args[2]).filter(|id| *id > 0);
+            let trusted = crate::matching::safe_int(&args[2])
+                .filter(|id| *id > 0 && *id < 0x8000_0000);
             Ok(json!(
                 metadata::save(&state, &args[0], args[1].clone(), false, trusted).await?
             ))
@@ -990,6 +996,22 @@ mod tests {
             .unwrap()["title"],
             "Plain"
         );
+        for (app_id, trusted_id) in [(10, 0x8000_0000_i64), (11, 9_007_199_254_740_993_i64)] {
+            seed(app_id).await;
+            let rejected = call(
+                "save_previewed_metadata",
+                vec![
+                    json!(app_id),
+                    json!({"title":"Game","steam_appid":20,"deck_compat_category":3,
+                        "steam_news":news("fresh")}),
+                    json!(trusted_id),
+                ],
+            )
+            .await
+            .unwrap();
+            assert!(rejected["deck_compat_category"].is_null());
+            assert_eq!(rejected["steam_news"], json!([]));
+        }
         state.shutdown().await.unwrap();
         let _ = std::fs::remove_dir_all(root);
     }

@@ -109,6 +109,16 @@ impl AssetCache {
     pub fn insert(&mut self, steam_appid: u32, assets: ResolvedSteamAssets) {
         if self.entries.len() >= 512 {
             self.entries.retain(|_, (stored_at, _)| stored_at.elapsed() < ASSET_CACHE_TTL);
+            if self.entries.len() >= 512 && !self.entries.contains_key(&steam_appid) {
+                if let Some(oldest) = self
+                    .entries
+                    .iter()
+                    .min_by_key(|(_, (stored_at, _))| stored_at)
+                    .map(|(appid, _)| *appid)
+                {
+                    self.entries.remove(&oldest);
+                }
+            }
         }
         self.entries.insert(steam_appid, (Instant::now(), assets));
     }
@@ -170,6 +180,56 @@ pub fn encode_base64(input: &[u8]) -> String {
         }
     }
     output
+}
+fn base64_value(value: u8) -> Option<u8> {
+    match value {
+        b'A'..=b'Z' => Some(value - b'A'),
+        b'a'..=b'z' => Some(value - b'a' + 26),
+        b'0'..=b'9' => Some(value - b'0' + 52),
+        b'+' => Some(62),
+        b'/' => Some(63),
+        _ => None,
+    }
+}
+
+fn decode_base64(encoded: &str) -> Result<Vec<u8>, String> {
+    let input = encoded.as_bytes();
+    if input.len() % 4 != 0 || input.len() / 4 > MAX_IMAGE_BYTES.div_ceil(3) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    let mut output = Vec::with_capacity(input.len() / 4 * 3);
+    for (index, chunk) in input.chunks_exact(4).enumerate() {
+        let last = index + 1 == input.len() / 4;
+        let a = base64_value(chunk[0]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        let b = base64_value(chunk[1]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        let pad_c = chunk[2] == b'=';
+        let pad_d = chunk[3] == b'=';
+        if ((pad_c || pad_d) && !last) || (pad_c && !pad_d) {
+            return Err("artwork_invalid_image".to_owned());
+        }
+        if pad_c {
+            if b & 0x0f != 0 {
+                return Err("artwork_invalid_image".to_owned());
+            }
+            output.push((a << 2) | (b >> 4));
+            continue;
+        }
+        let c = base64_value(chunk[2]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        output.push((a << 2) | (b >> 4));
+        output.push((b << 4) | (c >> 2));
+        if pad_d {
+            if c & 0x03 != 0 {
+                return Err("artwork_invalid_image".to_owned());
+            }
+        } else {
+            let d = base64_value(chunk[3]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+            output.push((c << 6) | d);
+        }
+    }
+    if output.len() > MAX_IMAGE_BYTES {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    Ok(output)
 }
 
 fn is_community_icon_hash(value: &str) -> bool {
@@ -249,14 +309,52 @@ async fn probe_url_exists(http: &Http, url: &str) -> bool {
     }
 }
 
-async fn first_existing_cdn(http: &Http, steam_appid: u32, candidates: &[&str]) -> Option<String> {
-    for filename in candidates {
-        let url = format!("{STORE_ASSET_CDN}steam/apps/{steam_appid}/{filename}");
-        if probe_url_exists(http, &url).await {
-            return Some(url);
-        }
+async fn probe_cdn_candidate(
+    http: &Http,
+    steam_appid: u32,
+    filename: &str,
+    needed: bool,
+) -> Option<String> {
+    if !needed {
+        return None;
     }
-    None
+    let url = format!("{STORE_ASSET_CDN}steam/apps/{steam_appid}/{filename}");
+    probe_url_exists(http, &url).await.then_some(url)
+}
+
+async fn probe_missing_cdn_assets(
+    http: &Http,
+    steam_appid: u32,
+    resolved: &mut ResolvedSteamAssets,
+) {
+    // Delisted or hidden titles often omit IStoreBrowseService assets; probe CDN candidates together.
+    let (cover_2x, cover, wide, hero, logo_2x, logo) = tokio::join!(
+        probe_cdn_candidate(
+            http,
+            steam_appid,
+            "library_600x900_2x.jpg",
+            resolved.cover.is_none()
+        ),
+        probe_cdn_candidate(
+            http,
+            steam_appid,
+            "library_600x900.jpg",
+            resolved.cover.is_none()
+        ),
+        probe_cdn_candidate(http, steam_appid, "header.jpg", resolved.wide.is_none()),
+        probe_cdn_candidate(
+            http,
+            steam_appid,
+            "library_hero.jpg",
+            resolved.hero.is_none()
+        ),
+        probe_cdn_candidate(http, steam_appid, "logo_2x.png", resolved.logo.is_none()),
+        probe_cdn_candidate(http, steam_appid, "logo.png", resolved.logo.is_none()),
+    );
+    resolved.cover = resolved.cover.take().or(cover_2x).or(cover);
+    resolved.wide = resolved.wide.take().or(wide);
+    resolved.hero = resolved.hero.take().or(hero);
+    resolved.logo = resolved.logo.take().or(logo_2x).or(logo);
 }
 
 pub async fn resolve_steam_assets(
@@ -282,24 +380,7 @@ pub async fn resolve_steam_assets(
     let mut resolved = browse
         .map(|payload| parse_store_browse_assets(steam_appid, &payload))
         .unwrap_or_default();
-    // Delisted or hidden titles often omit IStoreBrowseService assets; fall back to standard CDN paths.
-    if resolved.cover.is_none() {
-        resolved.cover = first_existing_cdn(
-            http,
-            steam_appid,
-            &["library_600x900_2x.jpg", "library_600x900.jpg"],
-        )
-        .await;
-    }
-    if resolved.wide.is_none() {
-        resolved.wide = first_existing_cdn(http, steam_appid, &["header.jpg"]).await;
-    }
-    if resolved.hero.is_none() {
-        resolved.hero = first_existing_cdn(http, steam_appid, &["library_hero.jpg"]).await;
-    }
-    if resolved.logo.is_none() {
-        resolved.logo = first_existing_cdn(http, steam_appid, &["logo_2x.png", "logo.png"]).await;
-    }
+    probe_missing_cdn_assets(http, steam_appid, &mut resolved).await;
     // A network failure must not hide the game's artwork for the whole TTL.
     if browse_ok || resolved != ResolvedSteamAssets::default() {
         cache.lock().await.insert(steam_appid, resolved.clone());
@@ -310,7 +391,7 @@ pub async fn resolve_steam_assets(
 fn first_user_grid_dir() -> Option<PathBuf> {
     steam_paths::detect_steam_installs(&steam_paths::discover_steam_roots())
         .into_iter()
-        .find_map(|install| install.userdata_dirs.into_iter().next())
+        .find_map(|install| steam_paths::preferred_userdata_dir(&install))
         .map(|user| user.join("config/grid"))
 }
 
@@ -565,18 +646,70 @@ pub(crate) fn save_local_icon_bytes(
     };
     fs::create_dir_all(&grid_dir).map_err(|_| "artwork_write_failed".to_owned())?;
     let stem = ArtworkSlot::Icon.grid_stem(app_id);
+    let target = grid_dir.join(format!("{stem}.{ext}"));
+    let tmp = grid_dir.join(format!(".{stem}.{ext}.tmp"));
+    if fs::write(&tmp, bytes)
+        .and_then(|()| fs::rename(&tmp, &target))
+        .is_err()
+    {
+        let _ = fs::remove_file(&tmp);
+        return Err("artwork_write_failed".to_owned());
+    }
     for old_ext in GRID_EXTENSIONS {
+        if old_ext == ext {
+            continue;
+        }
         let old = grid_dir.join(format!("{stem}.{old_ext}"));
         if old.is_file() {
             let _ = fs::remove_file(old);
         }
     }
-    let target = grid_dir.join(format!("{stem}.{ext}"));
-    let tmp = grid_dir.join(format!(".{stem}.{ext}.tmp"));
-    fs::write(&tmp, bytes).map_err(|_| "artwork_write_failed".to_owned())?;
-    fs::rename(&tmp, &target).map_err(|_| "artwork_write_failed".to_owned())?;
     Ok(Some(target.to_string_lossy().into_owned()))
 }
+fn persist_local_icon_asset(
+    app_id: u32,
+    shortcuts: &[Shortcut],
+    ext: &str,
+    encoded: &str,
+) -> Result<Option<String>, String> {
+    if !should_save_local_icon(ArtworkSlot::Icon, app_id) || !GRID_EXTENSIONS.contains(&ext) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    let bytes = decode_base64(encoded)?;
+    if sniff_image_format(&bytes).map(|(detected, _)| detected) != Some(ext) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    save_local_icon_bytes(app_id, shortcuts, ext, &bytes)
+}
+
+pub async fn save_local_icon_asset(
+    state: &AppState,
+    app_id_arg: &Value,
+    ext_arg: &Value,
+    base64_arg: &Value,
+) -> Result<Value, String> {
+    let app_id =
+        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    if !should_save_local_icon(ArtworkSlot::Icon, app_id) {
+        return Err("invalid_shortcut_app_id".to_owned());
+    }
+    let ext = ext_arg
+        .as_str()
+        .ok_or_else(|| "artwork_invalid_image".to_owned())?
+        .to_owned();
+    let encoded = base64_arg
+        .as_str()
+        .ok_or_else(|| "artwork_invalid_image".to_owned())?
+        .to_owned();
+    let shortcuts = state.local_shortcuts().await?;
+    let file_path = tokio::task::spawn_blocking(move || {
+        persist_local_icon_asset(app_id, &shortcuts, &ext, &encoded)
+    })
+    .await
+    .map_err(|error| error.to_string())??;
+    Ok(json!(file_path))
+}
+
 
 pub async fn fetch_steam_artwork_asset(
     state: &AppState,
@@ -584,8 +717,7 @@ pub async fn fetch_steam_artwork_asset(
     steam_appid_arg: &Value,
     slot_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let steam_appid =
         storage::positive_steam_app_id(steam_appid_arg).ok_or("invalid_steam_app_id")?;
     let slot = slot_arg
@@ -621,25 +753,12 @@ pub async fn fetch_steam_artwork_asset(
         sniff_image_format(&response.body).ok_or("artwork_invalid_image")?;
     let base64 = encode_base64(&response.body);
 
-    let file_path = if should_save_local_icon(slot, app_id) {
-        let shortcuts = state.local_shortcuts().await?;
-        let bytes = response.body;
-        let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || {
-            save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
-        })
-        .await
-        .map_err(|error| error.to_string())??
-    } else {
-        None
-    };
-
     Ok(json!({
         "slot": slot.as_str(),
         "base64": base64,
         "ext": ext,
         "mime": mime,
-        "file_path": file_path,
+        "file_path": null,
     }))
 }
 
@@ -657,21 +776,30 @@ pub async fn clear_local_artwork_file(
     let shortcuts = state.local_shortcuts().await?;
     let removed = tokio::task::spawn_blocking(move || {
         let Some(grid_dir) = shortcut_grid_dir(app_id, &shortcuts) else {
-            return false;
+            return Ok(false);
         };
-        let stem = slot.grid_stem(app_id);
-        let mut any = false;
-        for ext in GRID_EXTENSIONS {
-            let path = grid_dir.join(format!("{stem}.{ext}"));
-            if path.is_file() && fs::remove_file(path).is_ok() {
-                any = true;
-            }
-        }
-        any
+        remove_local_artwork_files(&grid_dir, &slot.grid_stem(app_id))
     })
     .await
-    .map_err(|error| error.to_string())?;
+    .map_err(|error| error.to_string())??;
     Ok(json!({ "ok": true, "removed": removed }))
+}
+
+fn remove_local_artwork_files(grid_dir: &Path, stem: &str) -> Result<bool, String> {
+    let mut removed = false;
+    for ext in GRID_EXTENSIONS {
+        let path = grid_dir.join(format!("{stem}.{ext}"));
+        let metadata = match fs::symlink_metadata(&path) {
+            Ok(metadata) => metadata,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(error.to_string()),
+        };
+        if metadata.is_file() || metadata.file_type().is_symlink() {
+            fs::remove_file(path).map_err(|error| error.to_string())?;
+            removed = true;
+        }
+    }
+    Ok(removed)
 }
 
 #[cfg(test)]
@@ -704,6 +832,9 @@ mod tests {
         assert_eq!(encode_base64(b"fo"), "Zm8=");
         assert_eq!(encode_base64(b"foo"), "Zm9v");
         assert_eq!(encode_base64(b"foobar"), "Zm9vYmFy");
+        assert_eq!(decode_base64("Zm9vYmFy").unwrap(), b"foobar");
+        assert_eq!(decode_base64("Zm9v=").unwrap_err(), "artwork_invalid_image");
+        assert_eq!(decode_base64("Zh==").unwrap_err(), "artwork_invalid_image");
 
         assert_eq!(sniff_image_format(b"\x89PNG\r\n\x1a\n1234"), Some(("png", "image/png")));
         assert_eq!(sniff_image_format(&[0xff, 0xd8, 0xff, 0xe0]), Some(("jpg", "image/jpeg")));
@@ -871,6 +1002,7 @@ mod tests {
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/header.jpg"),
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/library_hero.jpg"),
             ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/logo_2x.png"),
+            ok_head("https://shared.steamstatic.com/store_item_assets/steam/apps/224060/logo.png"),
         ]);
         let cache = Mutex::new(AssetCache::default());
         let first = resolve_steam_assets(&http, &cache, 224060).await;
@@ -925,5 +1057,158 @@ mod tests {
         assert_eq!(resolved, ResolvedSteamAssets::default());
         http.assert_drained();
         assert!(cache.lock().await.get(224060).is_none());
+    }
+    #[test]
+    fn cache_evicts_the_oldest_unexpired_entry_at_capacity() {
+        let mut cache = AssetCache::default();
+        let now = Instant::now();
+        for app_id in 0..512 {
+            cache.entries.insert(
+                app_id,
+                (
+                    now - Duration::from_millis((512 - app_id) as u64),
+                    ResolvedSteamAssets::default(),
+                ),
+            );
+        }
+
+        cache.insert(512, ResolvedSteamAssets::default());
+
+        assert_eq!(cache.entries.len(), 512);
+        assert!(!cache.entries.contains_key(&0));
+        assert!(cache.entries.contains_key(&1));
+        assert!(cache.entries.contains_key(&512));
+    }
+
+    #[test]
+    fn icon_write_failure_preserves_old_icon_and_cleans_tmp_before_replacement() {
+        let root = temp_dir();
+        let config = root.join("userdata/123/config");
+        let grid = config.join("grid");
+        fs::create_dir_all(&grid).unwrap();
+        let shortcut_file = config.join("shortcuts.vdf");
+        let app_id = 0x8000_0001;
+        let stem = ArtworkSlot::Icon.grid_stem(app_id);
+        let old = grid.join(format!("{stem}.jpg"));
+        let target = grid.join(format!("{stem}.png"));
+        let tmp = grid.join(format!(".{stem}.png.tmp"));
+        fs::write(&old, b"old").unwrap();
+        fs::create_dir(&target).unwrap();
+        let shortcuts = [Shortcut {
+            name: "Game".into(),
+            exe: String::new(),
+            exe_raw: String::new(),
+            start_dir: String::new(),
+            launch_options: String::new(),
+            shortcut_path: String::new(),
+            icon: String::new(),
+            appid_raw: None,
+            app_id,
+            source: "test",
+            steam_user_id: "123".into(),
+            shortcut_file,
+        }];
+
+        assert_eq!(
+            save_local_icon_bytes(app_id, &shortcuts, "png", b"new"),
+            Err("artwork_write_failed".to_owned())
+        );
+        assert_eq!(fs::read(&old).unwrap(), b"old");
+        assert!(!tmp.exists());
+
+        fs::remove_dir(&target).unwrap();
+        assert!(save_local_icon_bytes(app_id, &shortcuts, "png", b"new").is_ok());
+        assert!(target.is_file());
+        assert!(!old.exists());
+        let _ = fs::remove_dir_all(root);
+    }
+    #[test]
+    fn explicit_icon_persistence_writes_only_validated_asset_data() {
+        let root = temp_dir();
+        let config = root.join("userdata/123/config");
+        let grid = config.join("grid");
+        fs::create_dir_all(&grid).unwrap();
+        let shortcut_file = config.join("shortcuts.vdf");
+        let app_id = 0x8000_0001;
+        let stem = ArtworkSlot::Icon.grid_stem(app_id);
+        let old = grid.join(format!("{stem}.jpg"));
+        let target = grid.join(format!("{stem}.png"));
+        fs::write(&old, b"old").unwrap();
+        let shortcuts = [Shortcut {
+            name: "Game".into(),
+            exe: String::new(),
+            exe_raw: String::new(),
+            start_dir: String::new(),
+            launch_options: String::new(),
+            shortcut_path: String::new(),
+            icon: String::new(),
+            appid_raw: None,
+            app_id,
+            source: "test",
+            steam_user_id: "123".into(),
+            shortcut_file,
+        }];
+        let bytes = b"\x89PNG\r\n\x1a\nxxxx";
+        let encoded = encode_base64(bytes);
+
+        let saved = persist_local_icon_asset(app_id, &shortcuts, "png", &encoded).unwrap();
+        assert_eq!(saved.as_deref(), Some(target.to_str().unwrap()));
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        assert!(!old.exists());
+        assert!(persist_local_icon_asset(app_id, &shortcuts, "jpg", &encoded).is_err());
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        let _ = fs::remove_dir_all(root);
+    }
+
+
+    #[test]
+    fn local_artwork_removal_distinguishes_absence_from_filesystem_errors() {
+        let root = temp_dir();
+        let grid = root.join("grid");
+        fs::create_dir(&grid).unwrap();
+        assert_eq!(remove_local_artwork_files(&grid, "1p"), Ok(false));
+        fs::write(grid.join("1p.png"), b"art").unwrap();
+        assert_eq!(remove_local_artwork_files(&grid, "1p"), Ok(true));
+
+        let blocked_grid = root.join("not-a-directory");
+        fs::write(&blocked_grid, b"file").unwrap();
+        assert!(remove_local_artwork_files(&blocked_grid, "1p").is_err());
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn fallback_cdn_probes_run_concurrently() {
+        let cdn = "https://shared.steamstatic.com/store_item_assets/steam/apps/224060/";
+        let miss_head = |filename: &str| Fixture {
+            method: Method::HEAD,
+            url: format!("{cdn}{filename}"),
+            result: Ok(Response {
+                status: 404,
+                headers: HeaderMap::new(),
+                body: Vec::new(),
+                url: format!("{cdn}{filename}"),
+            }),
+        };
+        let mut http = Http::fixtures(vec![
+            miss_head("library_600x900_2x.jpg"),
+            miss_head("library_600x900.jpg"),
+            miss_head("header.jpg"),
+            miss_head("library_hero.jpg"),
+            miss_head("logo_2x.png"),
+            miss_head("logo.png"),
+        ]);
+        let gate = http.gate_next_request();
+        let http = http.clone();
+        let probing_http = http.clone();
+        let probing = tokio::spawn(async move {
+            let mut resolved = ResolvedSteamAssets::default();
+            probe_missing_cdn_assets(&probing_http, 224060, &mut resolved).await;
+            resolved
+        });
+
+        gate.started.notified().await;
+        http.assert_drained();
+        gate.resume.notify_one();
+        assert_eq!(probing.await.unwrap(), ResolvedSteamAssets::default());
     }
 }

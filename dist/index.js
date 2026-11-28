@@ -26807,9 +26807,7 @@ const previewSteamMetadata = callable("preview_steam_metadata");
 const startScanMissing = callable("start_scan_missing");
 const getMissingMetadataCount = callable("get_missing_metadata_count");
 const getScanProgress = callable("get_scan_progress");
-const startRefreshSteamActivities = callable("start_refresh_steam_activities");
 const refreshSteamActivityForApp = callable("refresh_steam_activity_for_app");
-const getActivityRefreshProgress = callable("get_activity_refresh_progress");
 const getLocalShortcuts = callable("get_local_shortcuts");
 const getPluginVersion = callable("get_plugin_version");
 const getSystemVersions = callable("get_system_versions");
@@ -26848,6 +26846,7 @@ const getAllArtworkLocks = callable("get_all_artwork_locks");
 const getArtworkSummary = callable("get_artwork_summary");
 const getGameArtworkState = callable("get_game_artwork_state");
 const fetchSteamArtworkAsset = callable("fetch_steam_artwork_asset");
+const saveLocalArtworkIcon = callable("save_local_icon_asset");
 const clearLocalArtworkFile = callable("clear_local_artwork_file");
 const getSgdbKeyStatus = callable("get_sgdb_key_status");
 const sgdbSearchGames = callable("sgdb_search_games");
@@ -26891,7 +26890,6 @@ var backend = /*#__PURE__*/Object.freeze({
     fetchSteamArtworkAsset: fetchSteamArtworkAsset,
     findIgnTrailer: findIgnTrailer,
     frontendLog: frontendLog,
-    getActivityRefreshProgress: getActivityRefreshProgress,
     getAllArtworkLocks: getAllArtworkLocks,
     getAllMetadata: getAllMetadata,
     getAllSteamOverrides: getAllSteamOverrides,
@@ -26936,6 +26934,7 @@ var backend = /*#__PURE__*/Object.freeze({
     refreshSteamActivityForApp: refreshSteamActivityForApp,
     removeMetadata: removeMetadata,
     revalidatePluginUpdate: revalidatePluginUpdate,
+    saveLocalArtworkIcon: saveLocalArtworkIcon,
     saveMetadata: saveMetadata,
     saveMetadataIfUnchanged: saveMetadataIfUnchanged,
     savePreviewedMetadata: savePreviewedMetadata,
@@ -26962,7 +26961,6 @@ var backend = /*#__PURE__*/Object.freeze({
     sgdbListAssets: sgdbListAssets,
     sgdbResolveGame: sgdbResolveGame,
     sgdbSearchGames: sgdbSearchGames,
-    startRefreshSteamActivities: startRefreshSteamActivities,
     startScanMissing: startScanMissing
 });
 
@@ -27298,6 +27296,12 @@ class PluginUpdateControllerStore {
             writable: true,
             value: new Set()
         });
+        Object.defineProperty(this, "settingsSaveQueue", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: Promise.resolve()
+        });
         Object.defineProperty(this, "snapshot", {
             enumerable: true,
             configurable: true,
@@ -27379,7 +27383,7 @@ class PluginUpdateControllerStore {
                 this.publish();
                 let saved = null;
                 try {
-                    const result = await this.deps.setUpdateChannel(pending.value);
+                    const result = await this.saveSettings(() => this.deps.setUpdateChannel(pending.value));
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
@@ -27415,7 +27419,7 @@ class PluginUpdateControllerStore {
                 this.publish();
                 let saved = null;
                 try {
-                    const result = await this.deps.setAutomaticUpdateChecks(enabled);
+                    const result = await this.saveSettings(() => this.deps.setAutomaticUpdateChecks(enabled));
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
@@ -27451,7 +27455,7 @@ class PluginUpdateControllerStore {
                 this.publish();
                 let saved = null;
                 try {
-                    const result = await this.deps.setTestingTabEnabled(enabled);
+                    const result = await this.saveSettings(() => this.deps.setTestingTabEnabled(enabled));
                     if (generation !== this.generation)
                         return;
                     if ("status" in result) {
@@ -27644,12 +27648,17 @@ class PluginUpdateControllerStore {
         this.inFlightCheck = null;
         this.clearCheckTimeout();
     }
+    saveSettings(save) {
+        const pending = this.settingsSaveQueue.then(save);
+        this.settingsSaveQueue = pending.then(() => undefined, () => undefined);
+        return pending;
+    }
     /** Apply settings the backend saved; checks follow the change from the settings saved before. */
     applySettings(settings) {
         const previous = this.confirmed;
         this.confirmed = settings;
         const channelChanged = previous.update_channel !== settings.update_channel;
-        const automaticChecksEnabled = !previous.automatic_update_checks && settings.automatic_update_checks;
+        const automaticChecksEnabled = !previous.automatic_update_checks && settings.automatic_update_checks && this.pendingAutomatic?.value !== false;
         if (channelChanged) {
             this.dropActiveCheck();
             this.dispatch({ type: "CHECK_CANCELLED" });
@@ -28180,6 +28189,11 @@ function startPluginConflicts() {
     return () => pluginConflicts.stop();
 }
 
+const isNativeSteamAppId = (value) => typeof value === "number" &&
+    Number.isSafeInteger(value) &&
+    value > 0 &&
+    value < 0x80000000;
+
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -28334,14 +28348,15 @@ const removeMetadataCacheEntry = (appId) => {
         notifyMetadataMatchChanged(appId);
 };
 const replaceMetadataCacheEntries = (records) => {
+    const nextRecords = records || {};
     const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
     Object.keys(metadataCache).forEach((key) => {
-        if (!(key in (records || {})))
+        if (!(key in nextRecords))
             countRemoval(key);
         delete metadataCache[key];
     });
-    Object.assign(metadataCache, records || {});
-    const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+    Object.assign(metadataCache, nextRecords);
+    const appIds = new Set([...previous.keys(), ...Object.keys(nextRecords)]);
     for (const key of appIds) {
         const previousMatch = previous.get(key) ?? null;
         const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
@@ -28461,7 +28476,7 @@ const isNativeSteamGame = (overview) => {
     if (!overview || isNativeNonSteamShortcut(overview))
         return false;
     const appId = Number(overview?.appid);
-    if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000)
+    if (!isNativeSteamAppId(appId))
         return false;
     const appType = Number(overview?.app_type);
     return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
@@ -28659,7 +28674,7 @@ const deckyNativePartnerEventCache = () => {
 };
 const deckyNativePartnerEventStore = () => steamInternals$1()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 const activityAppIdFromUrl = (url) => {
-    const decoded = decodeURIComponent(String(url || ""));
+    const decoded = safeDecodeURIComponent(String(url || ""));
     const patterns = [
         /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
         /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
@@ -28673,7 +28688,7 @@ const activityAppIdFromUrl = (url) => {
     return 0;
 };
 const gameDetailAppIdFromPath = (path) => {
-    const decoded = decodeURIComponent(String(path || ""));
+    const decoded = safeDecodeURIComponent(String(path || ""));
     const patterns = [
         /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
         /(?:^|[?#&\s])appid=(\d+)/i,
@@ -28916,26 +28931,33 @@ const normalizedTabText = (value) => String(value || "")
     .trim()
     .toLocaleLowerCase();
 const patchMethod = (target, methodName, replacement) => {
-    if (!target?.[methodName])
+    if (typeof target?.[methodName] !== "function")
         return () => undefined;
     const original = target[methodName];
-    target[methodName] = function patchedMethod(...args) {
+    let active = true;
+    const patched = function patchedMethod(...args) {
         const boundOriginal = original.bind(this);
+        if (!active)
+            return boundOriginal(...args);
         try {
             return replacement(this, boundOriginal, args);
         }
-        catch (_error) {
+        catch {
             // A patch replacement must never break the Steam method it wraps.
             try {
                 return boundOriginal(...args);
             }
-            catch (_originalError) {
+            catch {
                 return undefined;
             }
         }
     };
+    target[methodName] = patched;
     return () => {
-        target[methodName] = original;
+        if (target[methodName] === patched)
+            target[methodName] = original;
+        else
+            active = false;
     };
 };
 const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, methodName, function patchedAfter(args, ret) {
@@ -28947,6 +28969,65 @@ const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, m
         return ret;
     }
 });
+const routeRenderPatchInChain = (renderFunc, targetPatch) => {
+    try {
+        let current = renderFunc;
+        while (typeof current === "function") {
+            if (current === targetPatch)
+                return true;
+            const patch = Reflect.get(current, "__deckyPatch");
+            if (!patch || typeof patch !== "object")
+                return false;
+            current = Reflect.get(patch, "original");
+        }
+    }
+    catch {
+        return false;
+    }
+    return false;
+};
+const createRouteRenderPatcher = (handler) => {
+    let renderTarget;
+    let renderPatch;
+    const release = () => {
+        const patch = renderPatch;
+        renderPatch = undefined;
+        renderTarget = undefined;
+        try {
+            patch?.unpatch();
+        }
+        catch {
+            // A foreign non-Decky wrapper does not expose the inner patch chain.
+        }
+    };
+    return {
+        patch: (target) => {
+            if (typeof target?.renderFunc !== "function") {
+                release();
+                return;
+            }
+            if (target === renderTarget)
+                return;
+            if (renderPatch && routeRenderPatchInChain(target.renderFunc, renderPatch.patchedFunction)) {
+                renderPatch.object = target;
+                renderTarget = target;
+                return;
+            }
+            if (renderPatch && target.renderFunc === renderPatch.original) {
+                renderPatch.object = target;
+                target.renderFunc = renderPatch.patchedFunction;
+                renderTarget = target;
+                return;
+            }
+            release();
+            let installed;
+            installed = safeAfterPatch(target, "renderFunc", (args, rendered) => installed === renderPatch ? handler(args, rendered) : rendered);
+            renderPatch = installed;
+            renderTarget = target;
+        },
+        release,
+    };
+};
 const overviewFromReactTree = (tree) => {
     try {
         const holder = DFL.findInReactTree(tree, (node) => {
@@ -29477,6 +29558,18 @@ class ArtworkController {
             writable: true,
             value: void 0
         });
+        Object.defineProperty(this, "slotGenerations", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
+        Object.defineProperty(this, "slotCommitTails", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
         Object.defineProperty(this, "listeners", {
             enumerable: true,
             configurable: true,
@@ -29604,7 +29697,23 @@ class ArtworkController {
             return this.snapshot.sgdbKeyStatus;
         }
     }
+    slotGeneration(appId, slot) {
+        return this.slotGenerations.get(appId)?.[slot] ?? 0;
+    }
+    captureSlotGenerations(appId) {
+        const generations = {};
+        for (const slot of ARTWORK_SLOT_ORDER)
+            generations[slot] = this.slotGeneration(appId, slot);
+        return generations;
+    }
+    invalidateAutomaticSlot(appId, slot) {
+        const generations = this.slotGenerations.get(appId) ?? {};
+        generations[slot] = (generations[slot] ?? 0) + 1;
+        this.slotGenerations.set(appId, generations);
+    }
     async setSettings(next) {
+        if (!this.snapshot.settingsLoaded)
+            return false;
         // While idle, the snapshot is what the backend last confirmed.
         if (!this.saving)
             this.confirmed = this.snapshot.settings;
@@ -29659,6 +29768,8 @@ class ArtworkController {
     }
     async updateSlotFilter(slot, filter) {
         const current = await this.ensureSettingsLoaded();
+        if (!this.snapshot.settingsLoaded)
+            return false;
         return this.setSettings({
             ...current,
             filters: {
@@ -29687,42 +29798,72 @@ class ArtworkController {
         return saved;
     }
     async applySingleSlot(appId, steamAppId, slot) {
-        const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
-        await this.deps.applySteamArtworkSlot(appId, slot, asset);
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
+        return this.applyManualSlot(appId, slot, () => this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot));
     }
     async applySgdbAsset(appId, slot, url) {
-        if (!this.deps.sgdbFetchAsset)
-            throw new Error("artwork_download_failed");
-        const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
-        await this.deps.applySteamArtworkSlot(appId, slot, asset);
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
+        return this.applyManualSlot(appId, slot, () => {
+            const fetchAsset = this.deps.sgdbFetchAsset;
+            if (!fetchAsset)
+                throw new Error("artwork_download_failed");
+            return fetchAsset(appId, slot, url);
+        });
     }
     async applyLocalFile(appId, slot, filePath) {
-        if (!this.deps.readLocalArtworkFile)
-            throw new Error("artwork_file_unreadable");
-        const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
-        await this.deps.applySteamArtworkSlot(appId, slot, asset);
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
+        return this.applyManualSlot(appId, slot, () => {
+            const readFile = this.deps.readLocalArtworkFile;
+            if (!readFile)
+                throw new Error("artwork_file_unreadable");
+            return readFile(appId, slot, filePath);
+        });
     }
     async applyTransparentSlot(appId, slot) {
-        if (!this.deps.getTransparentArtworkAsset)
-            throw new Error("artwork_apply_failed");
-        const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
-        await this.deps.applySteamArtworkSlot(appId, slot, asset);
+        return this.applyManualSlot(appId, slot, () => {
+            const getAsset = this.deps.getTransparentArtworkAsset;
+            if (!getAsset)
+                throw new Error("artwork_apply_failed");
+            return getAsset(appId, slot);
+        });
+    }
+    async applyManualSlot(appId, slot, fetchAsset) {
+        this.invalidateAutomaticSlot(appId, slot);
+        const generation = this.slotGeneration(appId, slot);
+        const asset = await fetchAsset();
+        const didApply = await this.queueSlotCommit(appId, slot, async () => {
+            if (this.slotGeneration(appId, slot) !== generation)
+                return false;
+            await this.applyFetchedSteamAsset(appId, slot, asset);
+            return true;
+        });
+        if (!didApply)
+            return;
         this.bumpRevision();
         if (this.lastGames.length > 0)
             void this.refreshSummary(this.lastGames);
     }
+    async applyFetchedSteamAsset(appId, slot, asset) {
+        const filePath = slot === "icon" && appId >= 0x80000000 && !asset.file_path
+            ? await this.deps.saveLocalArtworkIcon(appId, asset.ext, asset.base64)
+            : asset.file_path;
+        await this.deps.applySteamArtworkSlot(appId, slot, { ...asset, file_path: filePath });
+    }
+    queueSlotCommit(appId, slot, commit) {
+        const key = `${appId}:${slot}`;
+        const previous = this.slotCommitTails.get(key) ?? Promise.resolve();
+        const result = previous.then(commit);
+        const tail = result.then(() => undefined, () => undefined);
+        this.slotCommitTails.set(key, tail);
+        void tail.then(() => {
+            if (this.slotCommitTails.get(key) === tail)
+                this.slotCommitTails.delete(key);
+        });
+        return result;
+    }
     async clearSingleSlot(appId, slot) {
-        await this.deps.clearSteamArtworkSlot(appId, slot);
-        await this.deps.clearLocalArtworkFile(appId, slot).catch(() => undefined);
+        this.invalidateAutomaticSlot(appId, slot);
+        await this.queueSlotCommit(appId, slot, async () => {
+            await this.deps.clearSteamArtworkSlot(appId, slot);
+            await this.deps.clearLocalArtworkFile(appId, slot);
+        });
         this.bumpRevision();
         if (this.lastGames.length > 0)
             void this.refreshSummary(this.lastGames);
@@ -29732,6 +29873,9 @@ class ArtworkController {
      * `mode = "policy"` uses `settings.preserveExisting`; `"fill-missing"` and `"replace-all"` override it.
      */
     async applyForGame(appId, steamAppId, mode, options) {
+        return this.applyForGameWithGenerations(appId, steamAppId, mode, options, this.captureSlotGenerations(appId));
+    }
+    async applyForGameWithGenerations(appId, steamAppId, mode, options, slotGenerations) {
         const settings = await this.ensureSettingsLoaded();
         const state = await this.deps.getGameArtworkState(appId, steamAppId);
         if (!options?.ignoreLock && state.locked) {
@@ -29749,8 +29893,19 @@ class ArtworkController {
             if (preserveExisting && slotState.present)
                 continue;
             try {
+                if (this.slotGeneration(appId, slot) !== slotGenerations[slot])
+                    continue;
                 const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
-                await this.deps.applySteamArtworkSlot(appId, slot, asset);
+                if (this.slotGeneration(appId, slot) !== slotGenerations[slot])
+                    continue;
+                const didApply = await this.queueSlotCommit(appId, slot, async () => {
+                    if (this.slotGeneration(appId, slot) !== slotGenerations[slot])
+                        return false;
+                    await this.applyFetchedSteamAsset(appId, slot, asset);
+                    return true;
+                });
+                if (!didApply)
+                    continue;
                 applied += 1;
             }
             catch (error) {
@@ -29766,13 +29921,14 @@ class ArtworkController {
         return { applied, failed, skippedLocked: false };
     }
     async autoApplyForMatchedGame(appId, steamAppId, gameName) {
+        const slotGenerations = this.captureSlotGenerations(appId);
         const settings = await this.ensureSettingsLoaded();
         if (!settings.autoApply)
             return;
         if (this.snapshot.busy)
             return;
         try {
-            const result = await this.applyForGame(appId, steamAppId, "policy");
+            const result = await this.applyForGameWithGenerations(appId, steamAppId, "policy", undefined, slotGenerations);
             if (result.applied > 0) {
                 this.deps.toastSuccess(t("artwork.toast.appliedTitle"), t("artwork.toast.appliedGameBody", { count: result.applied, game: gameName }));
             }
@@ -29882,6 +30038,7 @@ const artworkController = new ArtworkController({
     setArtworkLocked,
     getGameArtworkState,
     fetchSteamArtworkAsset,
+    saveLocalArtworkIcon,
     sgdbFetchAsset,
     readLocalArtworkFile,
     getTransparentArtworkAsset,
@@ -29959,6 +30116,7 @@ const findSteamUiDocumentMatch = (finder) => {
     return undefined;
 };
 
+const webpackRequires = new WeakMap();
 const isWebpackRequire = (value) => typeof value === "function" && "m" in value &&
     typeof value.m === "object" && value.m !== null && !Array.isArray(value.m);
 const collectSafeFunctionSources = (value) => {
@@ -30023,38 +30181,50 @@ const findViteEsmModulesBySource = (host, fragments) => {
     }
     return matches;
 };
+const webpackRequireFor = (host, chunks) => {
+    const cached = webpackRequires.get(host);
+    if (cached?.chunks === chunks)
+        return cached.require;
+    const capture = { chunks };
+    webpackRequires.set(host, capture);
+    try {
+        chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
+                if (isWebpackRequire(requireFn))
+                    capture.require = requireFn;
+            }]);
+    }
+    catch {
+        // Fall through to Vite ESM registry inspection.
+    }
+    return capture.require;
+};
 /** Inspect webpack factories (or Vite ESM export sources), never observable Steam stores or render-time state. */
 const findSteamModulesBySource = (fragments) => {
     const host = steamUiWindow();
     const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
     if (Array.isArray(chunks)) {
-        let webpackRequire;
-        try {
-            chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn) => {
-                    if (isWebpackRequire(requireFn))
-                        webpackRequire = requireFn;
-                }]);
-            const requireModule = webpackRequire;
-            if (requireModule) {
-                const moduleIds = Object.keys(requireModule.m).filter((id) => {
-                    const factory = requireModule.m[id];
-                    const source = typeof factory === "function" ? factory.toString() : "";
-                    return fragments.every((fragment) => source.includes(fragment));
-                });
-                const found = moduleIds.flatMap((moduleId) => {
-                    try {
-                        return [requireModule(moduleId)];
-                    }
-                    catch {
-                        return [];
-                    }
-                });
-                if (found.length > 0)
-                    return found;
-            }
+        const requireModule = webpackRequireFor(host, chunks);
+        if (fragments.length === 0) {
+            if (requireModule)
+                return Object.values(requireModule.c ?? {}).map((module) => module.exports);
+            return findViteEsmModulesBySource(host, fragments);
         }
-        catch {
-            // Fall through to Vite ESM registry inspection.
+        if (requireModule) {
+            const moduleIds = Object.keys(requireModule.m).filter((id) => {
+                const factory = requireModule.m[id];
+                const source = typeof factory === "function" ? factory.toString() : "";
+                return fragments.every((fragment) => source.includes(fragment));
+            });
+            const found = moduleIds.flatMap((moduleId) => {
+                try {
+                    return [requireModule(moduleId)];
+                }
+                catch {
+                    return [];
+                }
+            });
+            if (found.length > 0)
+                return found;
         }
     }
     return findViteEsmModulesBySource(host, fragments);
@@ -30169,7 +30339,7 @@ const fallbackPageToNativeHub = (appId, fallback) => ({
     hub: fallback.items.map((item, index) => {
         const sourceLabel = fallback.source === "steam-scrape"
             ? item.author ? t("community.steamAuthor", { author: item.author }) : t("community.steamCommunity")
-            : item.author || "Metadata";
+            : item.author || t("qam.metadata.title");
         const providerIcon = communityProviderIcon(fallback.source === "steam-scrape" ? "steam" : sourceLabel);
         const itemLink = item.link || item.image_url;
         const publishedFileId = syntheticCommunityId(appId, fallback.page, index);
@@ -30634,6 +30804,16 @@ const collectSteamNewsImages = (steamAppId, item) => {
     return Array.from(new Set(values.map(cleanSteamImageUrl).filter(Boolean)));
 };
 const uniqueNonEmptyStrings = (values) => Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
+const DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY = "__deckyNativePartnerEventIdsByApp";
+const deckyNativePartnerEventIdsByApp = () => {
+    const host = globalThis;
+    let idsByApp = host[DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY];
+    if (!(idsByApp instanceof Map)) {
+        idsByApp = new Map();
+        host[DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY] = idsByApp;
+    }
+    return idsByApp;
+};
 const deckyNativePartnerEventKeys = (event) => {
     const gid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.announcementGID || event?.gid || event?.GID || event?.url);
     const oldAnnouncementGid = gid ? `old_announce_${gid}` : "";
@@ -30729,9 +30909,79 @@ const registerDeckyNativePartnerEventInSteamStore = (event, partnerStore) => {
         warn("patch", "unable to register native PartnerEvent", error);
     }
 };
-const rememberDeckyNativePartnerEvent = (event) => {
+const clearDeckyNativePartnerEventsForApp = (appId) => {
+    const idsByApp = deckyNativePartnerEventIdsByApp();
+    const ids = new Set(idsByApp.get(appId) || []);
+    const eventGids = new Set();
     const cache = deckyNativePartnerEventCache();
-    deckyNativePartnerEventKeys(event).forEach((key) => cache.set(String(key), event));
+    for (const [key, event] of cache) {
+        if (!event?.__deckyNativePartnerEvent || Number(event.appid) !== appId)
+            continue;
+        ids.add(String(key));
+        deckyNativePartnerEventKeys(event).forEach((id) => ids.add(id));
+        eventGids.add(String(event.GID));
+    }
+    for (const id of ids) {
+        const event = cache.get(id);
+        if (event?.__deckyNativePartnerEvent && Number(event.appid) === appId)
+            cache.delete(id);
+    }
+    const removeFromListMap = (index) => {
+        if (!index)
+            return;
+        index.forEach((values, key) => {
+            if (!Array.isArray(values))
+                return;
+            const remaining = values.filter((value) => !eventGids.has(value));
+            if (remaining.length === values.length)
+                return;
+            if (remaining.length)
+                index.set(key, remaining);
+            else
+                index.delete(key);
+        });
+    };
+    collectNativePartnerEventStores().forEach((store) => {
+        try {
+            const existingEvents = store.m_mapExistingEvents;
+            ids.forEach((id) => {
+                const event = existingEvents?.get(id);
+                if (event &&
+                    typeof event === "object" &&
+                    "__deckyNativePartnerEvent" in event &&
+                    event.__deckyNativePartnerEvent === true &&
+                    "appid" in event &&
+                    Number(event.appid) === appId) {
+                    if ("GID" in event)
+                        eventGids.add(String(event.GID));
+                    existingEvents?.delete(id);
+                }
+            });
+            store.m_mapAnnouncementBodyToEvent?.forEach((eventId, key) => {
+                if (ids.has(key) || ids.has(eventId))
+                    store.m_mapAnnouncementBodyToEvent?.delete(key);
+            });
+            removeFromListMap(store.m_mapAppIDToGIDs);
+            removeFromListMap(store.m_mapClanToGIDs);
+        }
+        catch (error) {
+            warn("patch", "unable to clear native PartnerEvent", error);
+        }
+    });
+    idsByApp.delete(appId);
+};
+const rememberDeckyNativePartnerEvent = (event) => {
+    const keys = deckyNativePartnerEventKeys(event);
+    const appId = Number(event?.appid);
+    if (appId > 0) {
+        const idsByApp = deckyNativePartnerEventIdsByApp();
+        let ids = idsByApp.get(appId);
+        if (!ids)
+            idsByApp.set(appId, (ids = new Set()));
+        keys.forEach((key) => ids.add(key));
+    }
+    const cache = deckyNativePartnerEventCache();
+    keys.forEach((key) => cache.set(String(key), event));
     const stores = collectNativePartnerEventStores();
     if (stores.length)
         stores.forEach((store) => registerDeckyNativePartnerEventInSteamStore(event, store));
@@ -31059,6 +31309,7 @@ const makeDeckyNativeActivityEvent = (appId, metadata, item, index) => {
 const makeDeckyNativeActivity = (appId, metadata) => {
     const items = steamActivityNewsItemsFromMetadata(appId, metadata)
         .filter((item) => numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url));
+    clearDeckyNativePartnerEventsForApp(appId);
     if (!items.length)
         return null;
     const events = items
@@ -31116,6 +31367,7 @@ const makeDeckyNativeActivity = (appId, metadata) => {
 const clearDeckyNativeActivityForApp = (appId, store) => {
     if (!appId)
         return;
+    clearDeckyNativePartnerEventsForApp(appId);
     const cache = globalThis[DECKY_NATIVE_ACTIVITY_WINDOW_KEY];
     if (cache?.has(appId))
         cache.delete(appId);
@@ -31129,6 +31381,14 @@ const clearDeckyNativeActivityForApp = (appId, store) => {
     catch (_error) {
         // A changed Steam store shape can still fall back to the cleared cache.
     }
+};
+const clearAllDeckyNativeActivity = () => {
+    const appIds = new Set(deckyNativePartnerEventIdsByApp().keys());
+    deckyNativePartnerEventCache().forEach((event) => {
+        if (event?.__deckyNativePartnerEvent && Number(event.appid) > 0)
+            appIds.add(Number(event.appid));
+    });
+    appIds.forEach((appId) => clearDeckyNativeActivityForApp(appId));
 };
 const getDeckyNativeActivityForApp = (appId) => {
     const overview = getOverview(appId);
@@ -31255,6 +31515,7 @@ const installNativeActivityStorePatch = (unpatchers) => {
     unpatchers.push(() => window.clearInterval(timer));
 };
 const installNativePartnerEventStorePatch = (unpatchers) => {
+    unpatchers.push(clearAllDeckyNativeActivity);
     let attempts = 0;
     const patchedStores = new WeakSet();
     const patchOneStore = (partnerStore) => {
@@ -31491,16 +31752,62 @@ const shouldBackOutOfDeckyNativeNewsClose = (steamHistory, targetPath, nextState
     const targetAppId = Number(gameDetailAppIdFromPath(targetPath) || currentAppId);
     return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
 };
+let deckyNativeNewsNavigation = null;
+const deckyNativeNewsNavigationFromState = (state, targetPath) => {
+    if (!isDeckyNativeNewsRouteState(state))
+        return null;
+    const eventToShow = state?.event_to_show || {};
+    const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
+    const event = deckyNativePartnerEventForGid(eventId);
+    const appId = deckyNativeNewsRouteAppId(state, targetPath);
+    return event && appId ? { appId, eventGid: String(event.GID) } : null;
+};
+const isTrackedDeckyNativeNewsNavigation = (state, targetPath) => {
+    const navigation = deckyNativeNewsNavigationFromState(state, targetPath);
+    return !!navigation &&
+        navigation.appId === deckyNativeNewsNavigation?.appId &&
+        navigation.eventGid === deckyNativeNewsNavigation?.eventGid;
+};
+const deckyNativeNewsNavigationChanges = (targetPath, state) => {
+    if (!deckyNativeNewsNavigation || !targetPath)
+        return false;
+    const targetAppId = gameDetailAppIdFromPath(targetPath) || deckyNativeNewsRouteAppId(state, targetPath);
+    return targetAppId !== deckyNativeNewsNavigation.appId ||
+        !isTrackedDeckyNativeNewsNavigation(state, targetPath);
+};
 const backSteamHistory = (steamHistory) => {
-    if (typeof steamHistory?.goBack === "function")
-        return steamHistory.goBack();
-    if (typeof steamHistory?.back === "function")
-        return steamHistory.back();
-    if (typeof steamHistory?.go === "function")
-        return steamHistory.go(-1);
-    return undefined;
+    if (typeof steamHistory?.goBack === "function") {
+        steamHistory.goBack();
+        return true;
+    }
+    if (typeof steamHistory?.back === "function") {
+        steamHistory.back();
+        return true;
+    }
+    if (typeof steamHistory?.go === "function") {
+        steamHistory.go(-1);
+        return true;
+    }
+    return false;
 };
 const installNativeNewsHistoryRedirects = (unpatchers) => {
+    unpatchers.push(() => {
+        deckyNativeNewsNavigation = null;
+    });
+    const historyWindow = window;
+    const onPopState = (event) => {
+        const navigation = deckyNativeNewsNavigation;
+        const path = historyWindow.location?.pathname || "";
+        if (navigation &&
+            (gameDetailAppIdFromPath(path) !== navigation.appId ||
+                !isTrackedDeckyNativeNewsNavigation(event.state, path))) {
+            deckyNativeNewsNavigation = null;
+        }
+    };
+    if (typeof historyWindow.addEventListener === "function") {
+        historyWindow.addEventListener("popstate", onPopState);
+        unpatchers.push(() => historyWindow.removeEventListener("popstate", onPopState));
+    }
     try {
         const steamHistory = globalThis.Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
         for (const methodName of ["push", "replace"]) {
@@ -31509,36 +31816,51 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
                     const target = historyPathFromArgs(args);
                     const state = historyStateFromArgs(args);
                     if (methodName === "push" && shouldReplaceDeckyNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
-                        globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-                        return steamHistory.replace(...args);
+                        const navigation = deckyNativeNewsNavigationFromState(state, target);
+                        const result = steamHistory.replace(...args);
+                        if (navigation)
+                            deckyNativeNewsNavigation = navigation;
+                        return result;
                     }
+                    const currentState = currentSteamHistoryState(steamHistory);
+                    let clearNavigationAfterReplace = false;
                     if (methodName === "replace" && shouldBackOutOfDeckyNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
-                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
-                        // If our push->replace interception ran, closing the modal should keep using
-                        // Steam's replace. If Steam opened via a path we did not intercept, use Back
-                        // for the close action so the event entry is removed instead of replaced by a
-                        // duplicate app-detail entry.
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            return backSteamHistory(steamHistory) ?? original(...args);
+                        if (isTrackedDeckyNativeNewsNavigation(currentState, currentRoutePath())) {
+                            clearNavigationAfterReplace = true;
+                        }
+                        else {
+                            deckyNativeNewsNavigation = null;
+                            if (backSteamHistory(steamHistory))
+                                return undefined;
                         }
                     }
+                    const navigation = deckyNativeNewsNavigation;
+                    const navigationChanged = deckyNativeNewsNavigationChanges(target, state);
                     try {
-                        const path = String(target || "").toLowerCase();
-                        if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
-                            const rewritten = rewriteSteamLinkToMatchedApp(state.url);
-                            if (rewritten.rewrote) {
-                                state.url = rewritten.url;
-                                void frontendLog("nav", "steamweb router rewrite", {
-                                    from: rewritten.fromAppId,
-                                    to: rewritten.toAppId,
-                                }).catch(() => undefined);
+                        try {
+                            const path = String(target || "").toLowerCase();
+                            if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
+                                const rewritten = rewriteSteamLinkToMatchedApp(state.url);
+                                if (rewritten.rewrote) {
+                                    state.url = rewritten.url;
+                                    void frontendLog("nav", "steamweb router rewrite", {
+                                        from: rewritten.fromAppId,
+                                        to: rewritten.toAppId,
+                                    }).catch(() => undefined);
+                                }
                             }
                         }
+                        catch {
+                            // Steam navigation must continue even if the redirect probe fails.
+                        }
+                        return original(...args);
                     }
-                    catch (_error) {
-                        // Steam navigation must continue even if the redirect probe fails.
+                    finally {
+                        if (deckyNativeNewsNavigation === navigation &&
+                            (clearNavigationAfterReplace || navigationChanged)) {
+                            deckyNativeNewsNavigation = null;
+                        }
                     }
-                    return original(...args);
                 }));
             }
         }
@@ -31547,43 +31869,67 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
         warn("patch", "history patch skipped", error);
     }
     try {
+        const browserHistory = historyWindow.history;
         for (const methodName of ["pushState", "replaceState"]) {
-            const original = window.history?.[methodName];
+            const original = browserHistory?.[methodName];
             if (typeof original !== "function")
                 continue;
+            let active = true;
             const patched = function (...args) {
+                if (!active)
+                    return original.apply(this, args);
                 const target = String(args[2] || "");
                 const state = historyStateFromArgs(args);
                 if (methodName === "pushState" && shouldReplaceDeckyNativeNewsPush(target, state)) {
-                    globalThis.__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-                    return window.history.replaceState(args[0], args[1], args[2]);
+                    const navigation = deckyNativeNewsNavigationFromState(state, target);
+                    const result = browserHistory.replaceState(args[0], args[1], args[2]);
+                    if (navigation)
+                        deckyNativeNewsNavigation = navigation;
+                    return result;
                 }
+                let clearNavigationAfterReplace = false;
                 if (methodName === "replaceState") {
-                    const currentState = window.history?.state;
+                    const currentState = browserHistory?.state;
                     if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
-                        const replacedAt = Number(globalThis.__deckyNativeNewsOpenedWithReplaceAt || 0);
-                        if (!replacedAt || Date.now() - replacedAt > 15000) {
-                            window.history.back();
+                        if (isTrackedDeckyNativeNewsNavigation(currentState, target || currentRoutePath())) {
+                            clearNavigationAfterReplace = true;
+                        }
+                        else {
+                            deckyNativeNewsNavigation = null;
+                            browserHistory.back();
                             return undefined;
                         }
                     }
                 }
+                const navigation = deckyNativeNewsNavigation;
+                const navigationChanged = deckyNativeNewsNavigationChanges(target, state);
+                let callArgs = args;
                 try {
                     if (target.toLowerCase().includes("steamweb")) {
                         const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
-                        if (rewrote) {
-                            return original.apply(this, [newState, args[1], args[2]]);
-                        }
+                        if (rewrote)
+                            callArgs = [newState, args[1], args[2]];
                     }
                 }
-                catch (_error) {
+                catch {
                     // Steam navigation must continue even if the redirect probe fails.
                 }
-                return original.apply(this, args);
+                try {
+                    return original.apply(this, callArgs);
+                }
+                finally {
+                    if (deckyNativeNewsNavigation === navigation &&
+                        (clearNavigationAfterReplace || navigationChanged)) {
+                        deckyNativeNewsNavigation = null;
+                    }
+                }
             };
-            window.history[methodName] = patched;
+            browserHistory[methodName] = patched;
             unpatchers.push(() => {
-                window.history[methodName] = original;
+                if (browserHistory[methodName] === patched)
+                    browserHistory[methodName] = original;
+                else
+                    active = false;
             });
         }
     }
@@ -32873,6 +33219,13 @@ const applyMetadata = (appId, options = {}) => {
         if (options.publishCompatibility === false) {
             metadataState.deferredEditorCompatibilityPublications.add(appId);
         }
+        else if (options.deferCompatibilityPublication) {
+            const generation = metadataState.compatibilityLifecycleGeneration;
+            queueMicrotask(() => {
+                if (isCompatibilityLifecycleCurrent(generation))
+                    publishCompatibilityReplacements([{ appId, overview }]);
+            });
+        }
         else {
             publishCompatibilityReplacements([{ appId, overview }]);
         }
@@ -33184,7 +33537,7 @@ const installMetadataPatches = (unpatchers) => {
             ensureDetailsOverviewSafeFields(appId);
             const metadata = metadataCache[String(appId)];
             if (metadata) {
-                applyMetadata(appId);
+                applyMetadata(appId, { deferCompatibilityPublication: true });
                 const appData = appDetailsStore?.GetAppData?.(appId);
                 // Keep Steam's first-run detail bootstrap intact. Returning Decky data
                 // before Steam has created the native details object can make SteamUI
@@ -33218,7 +33571,7 @@ const installMetadataPatches = (unpatchers) => {
         if (isNonSteamApp(overview))
             ensureDetailsOverviewSafeFields(appId);
         if (isNonSteamApp(overview) && metadataCache[String(appId)]) {
-            applyMetadata(appId);
+            applyMetadata(appId, { deferCompatibilityPublication: true });
             const appData = appDetailsStore?.GetAppData?.(appId);
             if (appData?.details && appData?.associationData) {
                 return appData.associationData;
@@ -35682,12 +36035,9 @@ const installMainWindowHistoryRedirect = (unpatchers) => {
             }
             return original(...args);
         });
-        const patched = history?.[methodName];
         redirectUnpatchers.push(() => {
             try {
-                if (history?.[methodName] === patched) {
-                    unpatch();
-                }
+                unpatch();
             }
             catch (_error) {
                 // Best effort teardown.
@@ -36871,88 +37221,90 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
     GAME_DETAIL_ROUTES.forEach((route) => {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (routeProps?.renderFunc) {
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
-                    const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
-                    const appOverview = overview || getOverview(appId);
-                    if (appId && isNonSteamApp(appOverview)) {
-                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-                        const previousAppId = metadataState.lastObservedGameDetailAppId;
-                        metadataState.lastObservedGameDetailAppId = appId;
-                        if (metadataCache[String(appId)]) {
-                            // `route` is a Decky template (for example `:appid`), not an
-                            // authoritative path. Replacing a history listener's concrete
-                            // return shield with that template makes stale editor browser
-                            // tokens fail the exact-app check during the first Game Info
-                            // render. Keep the shield's identity concrete.
-                            const shieldPath = route.replace(":appid", String(appId));
-                            armRouteShield(appId, shieldPath, "route-render");
-                            if (isBypassTraceEnabled()) {
-                                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
-                            }
-                        }
-                        else {
-                            if (isBypassTraceEnabled()) {
-                                void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
-                            }
-                        }
-                        // An editor Save or Remove wrote this overview while Steam still
-                        // had editor route tokens. Publish its replacement only after this
-                        // exact Game Info tree has re-entered (under the shield when a
-                        // record exists). Remove deletes the record, but the restored
-                        // non-observable compat nibble still needs this publication.
-                        publishDeferredEditorCompatibility(appId);
-                        void ensureMetadataCache().then(() => {
-                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                                return;
-                            if (applyMetadata(appId))
-                                notifyCompatibilityRevision();
-                            void tryEnrichScreenshotsForApp(appId);
-                            void tryFetchMetadataForApp(appId);
-                        });
-                        if (previousAppId !== appId) {
-                            void refreshDeckyNativeActivityForApp(appId);
-                        }
-                        return ret;
+        const renderPatcher = createRouteRenderPatcher((_args, ret) => {
+            const props = ret && typeof ret === "object" ? Reflect.get(ret, "props") : undefined;
+            const children = props && typeof props === "object" ? Reflect.get(props, "children") : undefined;
+            const childProps = children && typeof children === "object" ? Reflect.get(children, "props") : undefined;
+            const renderedOverview = childProps && typeof childProps === "object" ? Reflect.get(childProps, "overview") : undefined;
+            const overview = renderedOverview || overviewFromReactTree(ret);
+            const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
+            const appOverview = overview || getOverview(appId);
+            if (appId && isNonSteamApp(appOverview)) {
+                const lifecycleGeneration = compatibilityLifecycleSnapshot();
+                const previousAppId = metadataState.lastObservedGameDetailAppId;
+                metadataState.lastObservedGameDetailAppId = appId;
+                if (metadataCache[String(appId)]) {
+                    // `route` is a Decky template (for example `:appid`), not an
+                    // authoritative path. Replacing a history listener's concrete
+                    // return shield with that template makes stale editor browser
+                    // tokens fail the exact-app check during the first Game Info
+                    // render. Keep the shield's identity concrete.
+                    const shieldPath = route.replace(":appid", String(appId));
+                    armRouteShield(appId, shieldPath, "route-render");
+                    if (isBypassTraceEnabled()) {
+                        void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
                     }
-                    return ret;
+                }
+                else {
+                    if (isBypassTraceEnabled()) {
+                        void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
+                    }
+                }
+                // An editor Save or Remove wrote this overview while Steam still
+                // had editor route tokens. Publish its replacement only after this
+                // exact Game Info tree has re-entered (under the shield when a
+                // record exists). Remove deletes the record, but the restored
+                // non-observable compat nibble still needs this publication.
+                publishDeferredEditorCompatibility(appId);
+                void ensureMetadataCache().then(() => {
+                    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                        return;
+                    if (applyMetadata(appId))
+                        notifyCompatibilityRevision();
+                    void tryEnrichScreenshotsForApp(appId);
+                    void tryFetchMetadataForApp(appId);
                 });
-                unpatchers.push(renderPatch.unpatch);
+                if (previousAppId !== appId) {
+                    void refreshDeckyNativeActivityForApp(appId);
+                }
             }
+            return ret;
+        });
+        const patch = routerHook.addPatch(route, (tree) => {
+            renderPatcher.patch(DFL.findInReactTree(tree, (x) => x?.renderFunc));
             return tree;
         });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
+        unpatchers.push(() => {
+            renderPatcher.release();
+            routerHook.removePatch(route, patch);
+        });
     });
     GAME_ACTIVITY_ROUTES.forEach((route) => {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (routeProps?.renderFunc) {
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const treeAppId = appIdFromReactTree(ret);
-                    const appId = currentGameDetailAppId() || treeAppId;
-                    const overview = overviewFromReactTree(ret) || getOverview(appId);
-                    if (appId && isNonSteamApp(overview)) {
-                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-                        metadataState.lastObservedGameDetailAppId = appId;
-                        void ensureMetadataCache().then(() => {
-                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                                return;
-                            if (applyMetadata(appId))
-                                notifyCompatibilityRevision();
-                        });
-                        void refreshDeckyNativeActivityForApp(appId);
-                        return ret;
-                    }
-                    return ret;
+        const renderPatcher = createRouteRenderPatcher((_args, ret) => {
+            const treeAppId = appIdFromReactTree(ret);
+            const appId = currentGameDetailAppId() || treeAppId;
+            const overview = overviewFromReactTree(ret) || getOverview(appId);
+            if (appId && isNonSteamApp(overview)) {
+                const lifecycleGeneration = compatibilityLifecycleSnapshot();
+                metadataState.lastObservedGameDetailAppId = appId;
+                void ensureMetadataCache().then(() => {
+                    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                        return;
+                    if (applyMetadata(appId))
+                        notifyCompatibilityRevision();
                 });
-                unpatchers.push(renderPatch.unpatch);
+                void refreshDeckyNativeActivityForApp(appId);
             }
+            return ret;
+        });
+        const patch = routerHook.addPatch(route, (tree) => {
+            renderPatcher.patch(DFL.findInReactTree(tree, (x) => x?.renderFunc));
             return tree;
         });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
+        unpatchers.push(() => {
+            renderPatcher.release();
+            routerHook.removePatch(route, patch);
+        });
     });
 };
 const installGameDetailReentryShield = (unpatchers) => {
@@ -37026,12 +37378,9 @@ const installGameDetailReentryShield = (unpatchers) => {
             }
             return original(...args);
         });
-        const patched = history?.[methodName];
         shieldUnpatchers.push(() => {
             try {
-                if (history?.[methodName] === patched) {
-                    unpatch();
-                }
+                unpatch();
             }
             catch (_error) {
                 // Best effort teardown.
@@ -39021,6 +39370,7 @@ function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery
     const [searching, setSearching] = SP_REACT.useState(false);
     const [searchResults, setSearchResults] = SP_REACT.useState(null);
     const [searchError, setSearchError] = SP_REACT.useState("");
+    const searchSeqRef = SP_REACT.useRef(0);
     const [draft, setDraft] = SP_REACT.useState(() => ({
         dimensions: [...initialFilter.dimensions],
         styles: [...initialFilter.styles],
@@ -39038,17 +39388,22 @@ function ArtworkFilterModal({ appId, slot, currentGame, isOverride, initialQuery
         const trimmed = searchQuery.trim();
         if (!trimmed)
             return;
+        const seq = ++searchSeqRef.current;
         setSearching(true);
+        setSearchResults(null);
         setSearchError("");
         try {
             const results = await sgdbSearchGames(trimmed);
-            setSearchResults(results);
+            if (seq === searchSeqRef.current)
+                setSearchResults(results);
         }
         catch (error) {
-            setSearchError(translateBackendError(error));
+            if (seq === searchSeqRef.current)
+                setSearchError(translateBackendError(error));
         }
         finally {
-            setSearching(false);
+            if (seq === searchSeqRef.current)
+                setSearching(false);
         }
     };
     const selectGame = async (game) => {
@@ -39516,10 +39871,11 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     }, [activeSlot, activeFilter, sgdbGame, officialOnly]);
     SP_REACT.useEffect(() => {
         if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+            if (officialOnly || missingKey)
+                setAssetError("");
             // Drop any in-flight page so it cannot land on this game or this mode.
             requestSeqRef.current += 1;
             setLoadingAssets(false);
-            setAssetError("");
             setAssets([]);
             setHasMore(false);
             return;
@@ -39737,7 +40093,7 @@ var StoreCategory;
     StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
     StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
     StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
-    StoreCategory[StoreCategory["LocalCoOp"] = 392] = "LocalCoOp";
+    StoreCategory[StoreCategory["LocalCoOp"] = 39] = "LocalCoOp";
 })(StoreCategory || (StoreCategory = {}));
 /** Steam information toggles in display order, mapped to their label keys. */
 const CATEGORY_LABELS = {
@@ -40030,7 +40386,13 @@ function HltbGameSearch({ initialQuery, disabled, onApply }) {
                 setSearching(false);
         }
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, disabled: disabled, onChange: (e) => setQuery(e.target.value), style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }) }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.Field, { label: t("editor.ign.gameName"), childrenLayout: "below", childrenContainerWidth: "max", bottomSeparator: "standard", children: SP_JSX.jsxs("div", { style: editorSearchRowStyle, children: [SP_JSX.jsx("div", { style: editorSearchInputStyle, children: SP_JSX.jsx(DFL.TextField, { className: editorFocusTargetClassName, "aria-label": t("editor.hltbSearchTitle"), value: query, disabled: disabled, onChange: (e) => {
+                                    requestRef.current += 1;
+                                    setQuery(e.target.value);
+                                    setResults(null);
+                                    setError("");
+                                    setSearching(false);
+                                }, style: { ...fieldStyle, width: "100%" } }) }), SP_JSX.jsx(FocusableButton, { className: `DialogButton ${editorFocusTargetClassName}`, disabled: disabled || searching || !query.trim(), onClick: () => void search(), style: editorSearchButtonStyle, children: searching ? t("hltb.search.searching") : t("hltb.search.action") })] }) }), error ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: SP_JSX.jsx("span", { "aria-live": "polite", children: error }), bottomSeparator: "none" })) : null, !searching && results?.length === 0 ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("hltb.search.noGames"), bottomSeparator: "none" })) : null, results?.map((result) => (SP_JSX.jsx(DFL.Field, { className: `decky-metadata-editor__result ${editorFocusTargetClassName}`, label: result.game_name, description: result.main_seconds > 0
                     ? t("hltb.search.mainStory", { hours: formatHours(result.main_seconds / 3600) })
                     : t("hltb.search.noMainStory"), focusable: true, highlightOnFocus: true, bottomSeparator: "standard", disabled: disabled, onActivate: () => void onApply({ id: result.game_id, name: result.game_name }), onClick: () => void onApply({ id: result.game_id, name: result.game_name }) }, result.game_id)))] }));
 }
@@ -40190,6 +40552,12 @@ class HltbStore {
             writable: true,
             value: new Map()
         });
+        Object.defineProperty(this, "retryTimers", {
+            enumerable: true,
+            configurable: true,
+            writable: true,
+            value: new Map()
+        });
         Object.defineProperty(this, "listeners", {
             enumerable: true,
             configurable: true,
@@ -40223,8 +40591,15 @@ class HltbStore {
     /** At most one lookup per game slot at a time, and none while a failed lookup is waiting. */
     request(appId, isShortcut, inputs, now = Date.now(), usePinned = true) {
         const key = slotKey(appId, inputs.pinned);
-        if (this.inFlight.has(key) || (this.retryAt.get(key) ?? 0) > now)
+        if (this.inFlight.has(key))
             return;
+        const retryAt = this.retryAt.get(key) ?? 0;
+        if (retryAt > now) {
+            if (this.listeners.get(appId)?.size && !this.retryTimers.has(key)) {
+                this.scheduleRetry(appId, key, retryAt - now);
+            }
+            return;
+        }
         const request = {};
         this.inFlight.set(key, request);
         const ownsRequest = () => this.inFlight.get(key) === request;
@@ -40241,14 +40616,17 @@ class HltbStore {
             }
             else if (result.status === "error") {
                 this.retryAt.set(key, Date.now() + Math.max(1000, result.retry_after_ms));
+                this.scheduleRetry(appId, key, Math.max(1000, result.retry_after_ms));
             }
             else {
                 this.blocked.set(key, inputsKey(inputs));
             }
             this.notify(appId);
         }, () => {
-            if (ownsRequest())
+            if (ownsRequest()) {
                 this.retryAt.set(key, Date.now() + 30000);
+                this.scheduleRetry(appId, key, 30000);
+            }
         }).finally(() => {
             if (ownsRequest())
                 this.inFlight.delete(key);
@@ -40261,13 +40639,22 @@ class HltbStore {
         set.add(listener);
         return () => {
             set.delete(listener);
-            if (set.size === 0)
+            if (set.size === 0) {
                 this.listeners.delete(appId);
+                for (const key of this.retryTimers.keys()) {
+                    if (key.startsWith(`${appId}:`)) {
+                        this.clearRetry(key);
+                    }
+                }
+            }
         };
     }
     /** Forget one game after Remove metadata or an HLTB override change; its next view asks the backend again. */
     forget(appId) {
         const prefix = `${appId}:`;
+        for (const key of [...this.retryTimers.keys()])
+            if (key.startsWith(prefix))
+                this.clearRetry(key);
         for (const map of [this.entries, this.blocked, this.retryAt, this.inFlight]) {
             for (const key of [...map.keys()]) {
                 if (key.startsWith(prefix))
@@ -40278,12 +40665,30 @@ class HltbStore {
     }
     /** Forget everything, e.g. after Clear cache or when the feature stops. */
     reset() {
+        for (const timer of this.retryTimers.values())
+            clearTimeout(timer);
+        this.retryTimers.clear();
         this.entries.clear();
         this.blocked.clear();
         this.inFlight.clear();
         this.retryAt.clear();
         for (const appId of [...this.listeners.keys()])
             this.notify(appId);
+    }
+    scheduleRetry(appId, key, delay) {
+        this.clearRetry(key);
+        this.retryTimers.set(key, setTimeout(() => {
+            this.retryTimers.delete(key);
+            this.retryAt.delete(key);
+            if (this.listeners.get(appId)?.size)
+                this.notify(appId);
+        }, Math.max(0, delay)));
+    }
+    clearRetry(key) {
+        const timer = this.retryTimers.get(key);
+        if (timer !== undefined)
+            clearTimeout(timer);
+        this.retryTimers.delete(key);
     }
     notify(appId) {
         for (const listener of this.listeners.get(appId) ?? []) {
@@ -41097,33 +41502,38 @@ const isPlaySection = (child) => {
 function installHltbGameView() {
     const unpatchers = [];
     for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-            if (!routeProps)
-                return tree;
-            let appId = 0;
-            const handler = DFL.createReactTreePatcher([
-                (inner) => {
-                    const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                    appId = Number(children?.props?.overview?.appid) || 0;
-                    return children ?? null;
-                },
-            ], (_args, ret) => {
-                const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                    node.props.children.some(isPlaySection)))?.props?.children;
-                if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                    return ret;
-                const index = children.findIndex(isPlaySection);
-                if (index >= 0)
-                    children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+        let appId = 0;
+        const handler = DFL.createReactTreePatcher([
+            (inner) => {
+                const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                appId = Number(children?.props?.overview?.appid) || 0;
+                return children ?? null;
+            },
+        ], (_args, ret) => {
+            const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+            const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                node.props.children.some(isPlaySection)))?.props?.children;
+            if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
                 return ret;
-            });
-            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-            unpatchers.push(() => renderPatch.unpatch());
-            return tree;
+            const index = children.findIndex(isPlaySection);
+            if (index >= 0)
+                children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+            return ret;
         });
-        unpatchers.push(() => routerHook.removePatch(route, patch));
+        const renderPatcher = createRouteRenderPatcher(handler);
+        try {
+            const patch = routerHook.addPatch(route, (tree) => {
+                renderPatcher.patch(DFL.findInReactTree(tree, (node) => node?.renderFunc));
+                return tree;
+            });
+            unpatchers.push(() => {
+                renderPatcher.release();
+                routerHook.removePatch(route, patch);
+            });
+        }
+        catch (error) {
+            warn("hltb", "game-page route hook failed", error);
+        }
     }
     return () => {
         for (const unpatch of unpatchers.splice(0)) {
@@ -41147,9 +41557,7 @@ const parseSteamAppId = (input) => {
         s.match(/[?&]appid=(\d+)/i) ||
         s.match(/\bapp\/(\d+)\b/i);
     const parsed = Number(match?.[1] || 0);
-    return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-        ? parsed
-        : 0;
+    return isNativeSteamAppId(parsed) ? parsed : 0;
 };
 const metadataTemplate = (title) => ({
     title,
@@ -42818,10 +43226,10 @@ const MetadataPage = () => {
             if (!nonSteam) {
                 const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
                 const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
-                if (!isCurrentEditorEntry(requestedEntry))
-                    return false;
                 setSteamOverrideCached(appId, savedOverride);
                 hltbStore.forget(appId);
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return false;
                 const saved = {
                     ...metadataTemplate(appName(appId)),
                     hltb_game_id: savedOverride?.hltb_game_id ?? null,
@@ -42844,7 +43252,11 @@ const MetadataPage = () => {
             const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
                 ? await savePreviewedMetadata(appId, record, steamAppId)
                 : await saveMetadata(appId, record);
-            // Apply before the early returns: later saves compare against this record and would never retry.
+            // Persisted state must reach the runtime even if this editor is stale.
+            setMetadataCacheEntry(appId, saved);
+            hltbStore.forget(appId);
+            applyMetadata(appId, { publishCompatibility: false });
+            refreshCompatibilitySurfaces();
             const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
             if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
                 void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
@@ -42857,12 +43269,9 @@ const MetadataPage = () => {
             if (formRevisionRef.current !== requestedRevision)
                 return false;
             steamPreviewedFieldsRef.current.clear();
-            setMetadataCacheEntry(appId, saved);
             setFormMetadata(saved);
             if (hltb)
                 setHltbIdDraft(null);
-            applyMetadata(appId, { publishCompatibility: false });
-            refreshCompatibilitySurfaces();
             toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
             return true;
         }
@@ -44218,10 +44627,16 @@ const ALGOLIA_APPLICATION_ID = '94HE6YATEI';
 const ALGOLIA_SEARCH_KEY = '9ba0e69fb2974316cdaec8f5f257088f';
 const ALGOLIA_SEARCH_URL = 'https://94he6yatei-dsn.algolia.net/1/indexes/steamdb/query';
 async function fetchWithTimeout(fetchPromise, timeoutMs = FETCH_TIMEOUT_MS$1) {
+    let timeout = 0;
     const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
+        timeout = setTimeout(() => reject(new Error('Request timeout')), timeoutMs);
     });
-    return Promise.race([fetchPromise, timeoutPromise]);
+    try {
+        return await Promise.race([fetchPromise, timeoutPromise]);
+    }
+    finally {
+        clearTimeout(timeout);
+    }
 }
 async function findAlgoliaAppIdByName(gameName, query, queryMarkers) {
     const res = await fetchWithTimeout(fetchNoCors(ALGOLIA_SEARCH_URL, {
@@ -44563,8 +44978,10 @@ class ProtonDbRatingCache {
         this.loadIfNeeded(steamAppId, entry);
         return () => {
             entry.listeners.delete(listener);
-            if (entry.listeners.size === 0)
+            if (entry.listeners.size === 0) {
                 this.clearExpiry(entry);
+                this.clearRetry(entry);
+            }
         };
     }
     mount() {
@@ -44583,6 +45000,7 @@ class ProtonDbRatingCache {
         if (!enabled) {
             for (const entry of this.entries.values()) {
                 this.clearExpiry(entry);
+                this.clearRetry(entry);
                 this.cancelRequest(entry, true);
             }
             return;
@@ -44598,6 +45016,7 @@ class ProtonDbRatingCache {
         this.enabled = false;
         for (const entry of this.entries.values()) {
             this.clearExpiry(entry);
+            this.clearRetry(entry);
             entry.listeners.clear();
             this.cancelRequest(entry, false);
             entry.retryAfter = 0;
@@ -44624,18 +45043,21 @@ class ProtonDbRatingCache {
                 this.scheduleExpiry(steamAppId, entry);
                 return;
             }
-            if (status === "error" && now < entry.retryAfter)
+            if (status === "error" && now < entry.retryAfter) {
+                this.scheduleRetry(steamAppId, entry);
                 return;
+            }
             if (status !== "error")
                 return;
         }
         else if (status === "error" && now < entry.retryAfter) {
+            this.scheduleRetry(steamAppId, entry);
             return;
         }
         this.clearExpiry(entry);
         const request = {
             lifecycle: this.lifecycle,
-            timeout: globalThis.setTimeout(() => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
+            timeout: globalThis.setTimeout(() => this.failRequest(steamAppId, entry, request, new Error("ProtonDB summary request timed out")), FETCH_TIMEOUT_MS),
         };
         entry.request = request;
         this.setRating(entry, entry.rating.tier, "loading", entry.rating.updatedAt);
@@ -44644,10 +45066,10 @@ class ProtonDbRatingCache {
             pending = this.fetchTier(steamAppId);
         }
         catch (error) {
-            this.failRequest(entry, request, error);
+            this.failRequest(steamAppId, entry, request, error);
             return;
         }
-        void Promise.resolve(pending).then((tier) => this.completeRequest(steamAppId, entry, request, tier), (error) => this.failRequest(entry, request, error));
+        void Promise.resolve(pending).then((tier) => this.completeRequest(steamAppId, entry, request, tier), (error) => this.failRequest(steamAppId, entry, request, error));
     }
     completeRequest(steamAppId, entry, request, tier) {
         if (!this.isCurrentRequest(entry, request))
@@ -44664,13 +45086,14 @@ class ProtonDbRatingCache {
         }
         this.scheduleExpiry(steamAppId, entry);
     }
-    failRequest(entry, request, _error) {
+    failRequest(steamAppId, entry, request, _error) {
         if (!this.isCurrentRequest(entry, request))
             return;
         globalThis.clearTimeout(request.timeout);
         entry.request = undefined;
         entry.retryAfter = Date.now() + RETRY_COOLDOWN_MS;
         this.setRating(entry, entry.rating.tier, "error", entry.rating.updatedAt);
+        this.scheduleRetry(steamAppId, entry);
     }
     isCurrentRequest(entry, request) {
         return this.lifecycle === request.lifecycle && entry.request === request && this.mounted && this.enabled;
@@ -44683,6 +45106,20 @@ class ProtonDbRatingCache {
             entry.expiryTimer = undefined;
             this.loadIfNeeded(steamAppId, entry);
         }, remaining);
+    }
+    scheduleRetry(steamAppId, entry) {
+        if (!this.isActive(entry) || entry.retryTimer !== undefined)
+            return;
+        entry.retryTimer = globalThis.setTimeout(() => {
+            entry.retryTimer = undefined;
+            this.loadIfNeeded(steamAppId, entry);
+        }, Math.max(0, entry.retryAfter - Date.now()));
+    }
+    clearRetry(entry) {
+        if (entry.retryTimer !== undefined) {
+            globalThis.clearTimeout(entry.retryTimer);
+            entry.retryTimer = undefined;
+        }
     }
     clearExpiry(entry) {
         if (entry.expiryTimer !== undefined) {
@@ -45224,6 +45661,7 @@ function useCompatibilityPolicy() {
 function useContextMenuSettings() {
     const [settings, setSettings] = SP_REACT.useState(null);
     const [error, setError] = SP_REACT.useState("");
+    const saveQueue = SP_REACT.useRef(Promise.resolve());
     // Each save sends the whole object; build it from the latest choice so quick toggles do not undo each other.
     const latest = SP_REACT.useRef(null);
     // The last settings the backend has; a failed save goes back to these, never to another unsaved toggle.
@@ -45247,7 +45685,9 @@ function useContextMenuSettings() {
         latest.current = next;
         setSettings(next);
         setError("");
-        setEditorHeaderSettings(next).then(() => { saved.current = next; }, (saveError) => {
+        const save = saveQueue.current.then(() => setEditorHeaderSettings(next));
+        saveQueue.current = save.then(() => undefined, () => undefined);
+        save.then(() => { saved.current = next; }, (saveError) => {
             if (latest.current !== next)
                 return;
             latest.current = saved.current;
@@ -45683,24 +46123,24 @@ function installMiniAchievementsPatch() {
     unpatchers.push(unsubscribeClasses);
     requestSync();
     for (const route of GAME_DETAIL_ROUTES) {
+        const renderPatcher = createRouteRenderPatcher((_args, rendered) => {
+            requestSync();
+            return rendered;
+        });
         try {
             const patch = routerHook.addPatch(route, (tree) => {
                 try {
-                    const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-                    if (typeof routeProps?.renderFunc === "function") {
-                        const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, rendered) => {
-                            requestSync();
-                            return rendered;
-                        });
-                        unpatchers.push(() => renderPatch.unpatch());
-                    }
+                    renderPatcher.patch(DFL.findInReactTree(tree, (node) => node?.renderFunc));
                 }
                 catch (error) {
                     warn("miniAchievements", "achievement stat patch failed", error);
                 }
                 return tree;
             });
-            unpatchers.push(() => routerHook.removePatch(route, patch));
+            unpatchers.push(() => {
+                renderPatcher.release();
+                routerHook.removePatch(route, patch);
+            });
         }
         catch (error) {
             warn("miniAchievements", "achievement stat route hook failed", error);
@@ -49908,13 +50348,13 @@ function HltbTab() {
             return hltbController.setSettings({ ...current, appearance: { ...current.appearance, blur } });
         } }));
 }
-function TrailersTab() {
+function TrailersTab({ visible }) {
     const trailers = useStoreSnapshot(trailerController);
     // The tab shows live trailer status, so the controller checks Steam every 2 s while it is open.
     SP_REACT.useEffect(() => {
-        trailerController.setPanelVisible(true);
+        trailerController.setPanelVisible(visible);
         return () => trailerController.setPanelVisible(false);
-    }, []);
+    }, [visible]);
     return (SP_JSX.jsx(GameTrailersBody, { state: trailers, onEnabledChange: (enabled) => void trailerController.setEnabled(enabled), onDetailEnabledChange: (enabled) => void trailerController.setDetailEnabled(enabled), onHomeEnabledChange: (enabled) => void trailerController.setHomeEnabled(enabled), onAudioChange: (enabled) => void trailerController.setAudioEnabled(enabled), onHideLogoChange: (hide) => void trailerController.setHideLogoDuringTrailer(hide), onDetailFadeInDelayChange: (seconds) => void trailerController.setDetailFadeInDelaySeconds(seconds), onHomeFadeInDelayChange: (seconds) => void trailerController.setHomeFadeInDelaySeconds(seconds), onQualityChange: (quality) => trailerController.setQuality(quality) }));
 }
 function MiniAchievementsTab() {
@@ -49944,6 +50384,7 @@ function SettingsPage() {
         setActiveSettingsTab(page);
         return () => setActiveSettingsTab(null);
     }, [page]);
+    const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
     // Each body renders its own Steam settings sections.
     const pages = [
         {
@@ -49961,7 +50402,7 @@ function SettingsPage() {
         { id: "compat", label: t("qam.compat.title"), icon: icons.compat, content: SP_JSX.jsx(CompatibilityBody, { ...compatibility }) },
         { id: "protondb", label: t("qam.protondb.title"), icon: icons.protondb, content: SP_JSX.jsx(ProtonDbTab, {}) },
         { id: "hltb", label: t("qam.hltb.title"), icon: icons.hltb, content: SP_JSX.jsx(HltbTab, {}) },
-        { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: SP_JSX.jsx(TrailersTab, {}) },
+        { id: "trailers", label: t("qam.trailers.title"), icon: icons.trailers, content: SP_JSX.jsx(TrailersTab, { visible: activePage === "trailers" }) },
         {
             id: "miniAchievements",
             label: t("qam.miniAchievements.title"),
@@ -49976,7 +50417,6 @@ function SettingsPage() {
             : []),
         { id: "versions", label: t("qam.versions.title"), icon: icons.versions, content: SP_JSX.jsx(VersionsTab, { ...versions }) },
     ];
-    const activePage = !testingTabEnabled && page === "testing" ? "updates" : page;
     return (SP_JSX.jsxs(DFL.Focusable, { className: rootClassName, onCancelButton: () => DFL.Navigation.NavigateBack(), children: [SP_JSX.jsx("style", { children: css }), SP_JSX.jsx(SettingsLayout, { pages: pages, page: activePage, onPageRequested: setPage })] }));
 }
 
@@ -50452,6 +50892,7 @@ function actionRowType(fiber, appButtonsClass) {
 /** Capture the private forwardRef from its real DOM fiber; it is not a webpack export. */
 function installProtonDbGameView() {
     let stopped = false;
+    let enabled = protonDbBadgeController.getSnapshot().effectiveEnabled;
     let targets;
     const observers = new Map();
     let captureQueued = false;
@@ -50461,16 +50902,23 @@ function installProtonDbGameView() {
     const refreshTargets = new Set();
     const routeCleanups = [];
     const capture = () => {
-        if (stopped)
+        if (stopped || !enabled)
             return;
         const documents = steamUiDocuments();
+        const currentDocuments = new Set(documents);
+        for (const [owner, observer] of observers) {
+            if (currentDocuments.has(owner))
+                continue;
+            observer.disconnect();
+            observers.delete(owner);
+        }
         for (const document of documents) {
             const body = document.querySelector("body");
             const owner = body?.ownerDocument;
             if (!owner || observers.has(owner))
                 continue;
             const observer = new MutationObserver(() => {
-                if (stopped || captureQueued)
+                if (stopped || !enabled || captureQueued)
                     return;
                 captureQueued = true;
                 queueMicrotask(() => { captureQueued = false; capture(); });
@@ -50530,7 +50978,7 @@ function installProtonDbGameView() {
         }
     };
     const scheduleCapture = () => {
-        if (stopped)
+        if (stopped || !enabled)
             return;
         generation += 1;
         const current = generation;
@@ -50552,12 +51000,36 @@ function installProtonDbGameView() {
             captureTimers.add(timer);
         }
     };
+    const clearCapture = () => {
+        generation += 1;
+        for (const timer of captureTimers)
+            clearTimeout(timer);
+        captureTimers.clear();
+        for (const observer of observers.values())
+            observer.disconnect();
+        observers.clear();
+    };
+    const unsubscribeSettings = protonDbBadgeController.subscribe(() => {
+        const nextEnabled = protonDbBadgeController.getSnapshot().effectiveEnabled;
+        if (enabled === nextEnabled)
+            return;
+        enabled = nextEnabled;
+        if (enabled)
+            scheduleCapture();
+        else
+            clearCapture();
+    });
     for (const route of GAME_DETAIL_ROUTES) {
-        const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
-        routeCleanups.push(() => routerHook.removePatch(route, patch));
+        try {
+            const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
+            routeCleanups.push(() => routerHook.removePatch(route, patch));
+        }
+        catch (error) {
+            warn("protondb", "game button route hook failed", error);
+        }
     }
     const unsubscribeClasses = subscribeNativeCssClasses(() => {
-        if (!stopped && !targets)
+        if (!stopped && enabled && !targets)
             scheduleCapture();
     });
     scheduleCapture();
@@ -50565,13 +51037,9 @@ function installProtonDbGameView() {
         if (stopped)
             return;
         stopped = true;
+        unsubscribeSettings();
         unsubscribeClasses();
-        generation += 1;
-        for (const observer of observers.values())
-            observer.disconnect();
-        for (const timer of captureTimers)
-            clearTimeout(timer);
-        captureTimers.clear();
+        clearCapture();
         for (const dispose of routeCleanups)
             dispose();
         for (const patch of patches.values())
@@ -51434,6 +51902,19 @@ const installStoreInfoRow = () => {
 };
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
+const noCleanup = () => undefined;
+const setupOptional = (name, setup, fallback) => {
+    try {
+        return setup();
+    }
+    catch (error) {
+        warn("bridge", `${name} failed`, error);
+        void frontendLog("patch", `${name} failed`, {
+            error: error instanceof Error ? error.stack || error.message : String(error),
+        }, "error").catch(() => undefined);
+        return fallback;
+    }
+};
 const installInPlaceReloadGuard = (onFailedReload) => {
     const loader = globalThis.DeckyPluginLoader;
     if (!loader || typeof loader.importPlugin !== "function") {
@@ -51512,15 +51993,15 @@ var index = DFL.definePlugin(() => {
         }, "error").catch(() => undefined);
     }
     const stopMetadataBootstrap = startMetadataBootstrap();
-    const stopTrailerController = startTrailerController();
-    const stopMiniAchievementsController = startMiniAchievementsController();
-    const stopProtonDbCovers = installProtonDbCoverBadges();
-    const stopProtonDbGameView = installProtonDbGameView();
-    const stopStoreInfoRow = installStoreInfoRow();
-    const menuPatch = contextMenuPatch(LibraryContextMenu);
-    routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true });
-    routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true });
-    const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
+    const stopTrailerController = setupOptional("startTrailerController", startTrailerController, noCleanup);
+    const stopMiniAchievementsController = setupOptional("startMiniAchievementsController", startMiniAchievementsController, noCleanup);
+    const stopProtonDbCovers = setupOptional("installProtonDbCoverBadges", installProtonDbCoverBadges, noCleanup);
+    const stopProtonDbGameView = setupOptional("installProtonDbGameView", installProtonDbGameView, noCleanup);
+    const stopStoreInfoRow = setupOptional("installStoreInfoRow", installStoreInfoRow, noCleanup);
+    const menuPatch = setupOptional("contextMenuPatch", () => contextMenuPatch(LibraryContextMenu), undefined);
+    setupOptional("metadata route registration", () => routerHook.addRoute(METADATA_ROUTE, () => SP_JSX.jsx(MetadataPage, {}), { exact: true }), undefined);
+    setupOptional("settings route registration", () => routerHook.addRoute(SETTINGS_ROUTE, () => SP_JSX.jsx(SettingsPage, {}), { exact: true }), undefined);
+    const cancelSettingsRefresh = setupOptional("settings route refresh", () => refreshOpenSettingsRoute(routerHook), noCleanup);
     return {
         // Plugin identity used by Decky Loader (must match plugin.json "name" so
         // find_plugin_folder resolves this install for in-place self-update, and

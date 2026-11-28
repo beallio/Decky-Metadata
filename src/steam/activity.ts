@@ -420,6 +420,17 @@ const collectSteamNewsImages = (steamAppId: number, item: any) => {
 const uniqueNonEmptyStrings = (values: unknown[]) =>
   Array.from(new Set(values.map((value) => String(value || "").trim()).filter(Boolean)));
 
+const DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY = "__deckyNativePartnerEventIdsByApp";
+const deckyNativePartnerEventIdsByApp = () => {
+  const host = globalThis as Record<string, unknown>;
+  let idsByApp = host[DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY] as Map<number, Set<string>> | undefined;
+  if (!(idsByApp instanceof Map)) {
+    idsByApp = new Map<number, Set<string>>();
+    host[DECKY_NATIVE_PARTNER_EVENT_IDS_WINDOW_KEY] = idsByApp;
+  }
+  return idsByApp;
+};
+
 const deckyNativePartnerEventKeys = (event: any) => {
   const gid = numericSteamNewsGid(event?.AnnouncementGID || event?.announcement_gid || event?.announcementGID || event?.gid || event?.GID || event?.url);
   const oldAnnouncementGid = gid ? `old_announce_${gid}` : "";
@@ -516,9 +527,72 @@ const registerDeckyNativePartnerEventInSteamStore = (event: any, partnerStore?: 
   }
 };
 
-const rememberDeckyNativePartnerEvent = (event: any) => {
+const clearDeckyNativePartnerEventsForApp = (appId: number) => {
+  const idsByApp = deckyNativePartnerEventIdsByApp();
+  const ids = new Set(idsByApp.get(appId) || []);
+  const eventGids = new Set<string>();
   const cache = deckyNativePartnerEventCache();
-  deckyNativePartnerEventKeys(event).forEach((key) => cache.set(String(key), event));
+  for (const [key, event] of cache) {
+    if (!event?.__deckyNativePartnerEvent || Number(event.appid) !== appId) continue;
+    ids.add(String(key));
+    deckyNativePartnerEventKeys(event).forEach((id) => ids.add(id));
+    eventGids.add(String(event.GID));
+  }
+
+  for (const id of ids) {
+    const event = cache.get(id);
+    if (event?.__deckyNativePartnerEvent && Number(event.appid) === appId) cache.delete(id);
+  }
+  const removeFromListMap = (index: Map<number, string[]> | undefined) => {
+    if (!index) return;
+    index.forEach((values, key) => {
+      if (!Array.isArray(values)) return;
+      const remaining = values.filter((value) => !eventGids.has(value));
+      if (remaining.length === values.length) return;
+      if (remaining.length) index.set(key, remaining);
+      else index.delete(key);
+    });
+  };
+  collectNativePartnerEventStores().forEach((store) => {
+    try {
+      const existingEvents = store.m_mapExistingEvents;
+      ids.forEach((id) => {
+        const event = existingEvents?.get(id);
+        if (
+          event &&
+          typeof event === "object" &&
+          "__deckyNativePartnerEvent" in event &&
+          event.__deckyNativePartnerEvent === true &&
+          "appid" in event &&
+          Number(event.appid) === appId
+        ) {
+          if ("GID" in event) eventGids.add(String(event.GID));
+          existingEvents?.delete(id);
+        }
+      });
+      store.m_mapAnnouncementBodyToEvent?.forEach((eventId, key) => {
+        if (ids.has(key) || ids.has(eventId)) store.m_mapAnnouncementBodyToEvent?.delete(key);
+      });
+      removeFromListMap(store.m_mapAppIDToGIDs);
+      removeFromListMap(store.m_mapClanToGIDs);
+    } catch (error) {
+      log.warn("patch", "unable to clear native PartnerEvent", error);
+    }
+  });
+  idsByApp.delete(appId);
+};
+
+const rememberDeckyNativePartnerEvent = (event: any) => {
+  const keys = deckyNativePartnerEventKeys(event);
+  const appId = Number(event?.appid);
+  if (appId > 0) {
+    const idsByApp = deckyNativePartnerEventIdsByApp();
+    let ids = idsByApp.get(appId);
+    if (!ids) idsByApp.set(appId, (ids = new Set<string>()));
+    keys.forEach((key) => ids!.add(key));
+  }
+  const cache = deckyNativePartnerEventCache();
+  keys.forEach((key) => cache.set(String(key), event));
   const stores = collectNativePartnerEventStores();
   if (stores.length) stores.forEach((store) => registerDeckyNativePartnerEventInSteamStore(event, store));
   else registerDeckyNativePartnerEventInSteamStore(event);
@@ -850,6 +924,7 @@ const makeDeckyNativeActivityEvent = (appId: number, metadata: MetadataData, ite
 const makeDeckyNativeActivity = (appId: number, metadata: MetadataData) => {
   const items = steamActivityNewsItemsFromMetadata(appId, metadata)
     .filter((item: any) => numericSteamNewsGid(item.gid || item.news_id || item.announcement_gid || item.id || item.url));
+  clearDeckyNativePartnerEventsForApp(appId);
   if (!items.length) return null;
   const events = items
     .map((item, index) => makeDeckyNativeActivityEvent(appId, metadata, item, index))
@@ -905,6 +980,7 @@ const makeDeckyNativeActivity = (appId: number, metadata: MetadataData) => {
 
 export const clearDeckyNativeActivityForApp = (appId: number, store?: any) => {
   if (!appId) return;
+  clearDeckyNativePartnerEventsForApp(appId);
   const cache = (globalThis as any)[DECKY_NATIVE_ACTIVITY_WINDOW_KEY] as Map<number, unknown> | undefined;
   if (cache?.has(appId)) cache.delete(appId);
   const appActivityStore = store || (globalThis as any).appActivityStore;
@@ -915,6 +991,14 @@ export const clearDeckyNativeActivityForApp = (appId: number, store?: any) => {
   } catch (_error) {
     // A changed Steam store shape can still fall back to the cleared cache.
   }
+};
+
+const clearAllDeckyNativeActivity = () => {
+  const appIds = new Set(deckyNativePartnerEventIdsByApp().keys());
+  deckyNativePartnerEventCache().forEach((event) => {
+    if (event?.__deckyNativePartnerEvent && Number(event.appid) > 0) appIds.add(Number(event.appid));
+  });
+  appIds.forEach((appId) => clearDeckyNativeActivityForApp(appId));
 };
 
 const getDeckyNativeActivityForApp = (appId: number) => {
@@ -1032,6 +1116,7 @@ export const installNativeActivityStorePatch = (unpatchers: Unpatch[]) => {
 };
 
 export const installNativePartnerEventStorePatch = (unpatchers: Unpatch[]) => {
+  unpatchers.push(clearAllDeckyNativeActivity);
   let attempts = 0;
   const patchedStores = new WeakSet<object>();
 
@@ -1251,14 +1336,69 @@ const shouldBackOutOfDeckyNativeNewsClose = (steamHistory: any, targetPath: stri
   return !!currentAppId && (!targetAppId || currentAppId === targetAppId);
 };
 
+type DeckyNativeNewsNavigation = { appId: number; eventGid: string };
+let deckyNativeNewsNavigation: DeckyNativeNewsNavigation | null = null;
+
+const deckyNativeNewsNavigationFromState = (state: any, targetPath: string): DeckyNativeNewsNavigation | null => {
+  if (!isDeckyNativeNewsRouteState(state)) return null;
+  const eventToShow = state?.event_to_show || {};
+  const eventId = eventToShow.eventid || eventToShow.gidPartnerEvent || eventToShow.gid || eventToShow.GID;
+  const event = deckyNativePartnerEventForGid(eventId);
+  const appId = deckyNativeNewsRouteAppId(state, targetPath);
+  return event && appId ? { appId, eventGid: String(event.GID) } : null;
+};
+
+const isTrackedDeckyNativeNewsNavigation = (state: any, targetPath: string) => {
+  const navigation = deckyNativeNewsNavigationFromState(state, targetPath);
+  return !!navigation &&
+    navigation.appId === deckyNativeNewsNavigation?.appId &&
+    navigation.eventGid === deckyNativeNewsNavigation?.eventGid;
+};
+
+const deckyNativeNewsNavigationChanges = (targetPath: string, state: any) => {
+  if (!deckyNativeNewsNavigation || !targetPath) return false;
+  const targetAppId = gameDetailAppIdFromPath(targetPath) || deckyNativeNewsRouteAppId(state, targetPath);
+  return targetAppId !== deckyNativeNewsNavigation.appId ||
+    !isTrackedDeckyNativeNewsNavigation(state, targetPath);
+};
+
 const backSteamHistory = (steamHistory: any) => {
-  if (typeof steamHistory?.goBack === "function") return steamHistory.goBack();
-  if (typeof steamHistory?.back === "function") return steamHistory.back();
-  if (typeof steamHistory?.go === "function") return steamHistory.go(-1);
-  return undefined;
+  if (typeof steamHistory?.goBack === "function") {
+    steamHistory.goBack();
+    return true;
+  }
+  if (typeof steamHistory?.back === "function") {
+    steamHistory.back();
+    return true;
+  }
+  if (typeof steamHistory?.go === "function") {
+    steamHistory.go(-1);
+    return true;
+  }
+  return false;
 };
 
 export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
+  unpatchers.push(() => {
+    deckyNativeNewsNavigation = null;
+  });
+  const historyWindow = window;
+  const onPopState = (event: PopStateEvent) => {
+    const navigation = deckyNativeNewsNavigation;
+    const path = historyWindow.location?.pathname || "";
+    if (
+      navigation &&
+      (gameDetailAppIdFromPath(path) !== navigation.appId ||
+        !isTrackedDeckyNativeNewsNavigation(event.state, path))
+    ) {
+      deckyNativeNewsNavigation = null;
+    }
+  };
+  if (typeof historyWindow.addEventListener === "function") {
+    historyWindow.addEventListener("popstate", onPopState);
+    unpatchers.push(() => historyWindow.removeEventListener("popstate", onPopState));
+  }
+
   try {
     const steamHistory = (globalThis as any).Router?.WindowStore?.GamepadUIMainWindowInstance?.m_history;
     for (const methodName of ["push", "replace"]) {
@@ -1268,35 +1408,50 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
             const target = historyPathFromArgs(args);
             const state = historyStateFromArgs(args);
             if (methodName === "push" && shouldReplaceDeckyNativeNewsPush(target, state) && typeof steamHistory.replace === "function") {
-              (globalThis as any).__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-              return steamHistory.replace(...args);
+              const navigation = deckyNativeNewsNavigationFromState(state, target);
+              const result = steamHistory.replace(...args);
+              if (navigation) deckyNativeNewsNavigation = navigation;
+              return result;
             }
+
+            const currentState = currentSteamHistoryState(steamHistory);
+            let clearNavigationAfterReplace = false;
             if (methodName === "replace" && shouldBackOutOfDeckyNativeNewsClose(steamHistory, target || currentRoutePath(), state)) {
-              const replacedAt = Number((globalThis as any).__deckyNativeNewsOpenedWithReplaceAt || 0);
-              // If our push->replace interception ran, closing the modal should keep using
-              // Steam's replace. If Steam opened via a path we did not intercept, use Back
-              // for the close action so the event entry is removed instead of replaced by a
-              // duplicate app-detail entry.
-              if (!replacedAt || Date.now() - replacedAt > 15000) {
-                return backSteamHistory(steamHistory) ?? original(...args);
+              if (isTrackedDeckyNativeNewsNavigation(currentState, currentRoutePath())) {
+                clearNavigationAfterReplace = true;
+              } else {
+                deckyNativeNewsNavigation = null;
+                if (backSteamHistory(steamHistory)) return undefined;
               }
             }
+
+            const navigation = deckyNativeNewsNavigation;
+            const navigationChanged = deckyNativeNewsNavigationChanges(target, state);
             try {
-              const path = String(target || "").toLowerCase();
-              if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
-                const rewritten = rewriteSteamLinkToMatchedApp(state.url);
-                if (rewritten.rewrote) {
-                  state.url = rewritten.url;
-                  void frontendLog("nav", "steamweb router rewrite", {
-                    from: rewritten.fromAppId,
-                    to: rewritten.toAppId,
-                  }).catch(() => undefined);
+              try {
+                const path = String(target || "").toLowerCase();
+                if (path.includes("steamweb") && state && typeof state === "object" && typeof state.url === "string") {
+                  const rewritten = rewriteSteamLinkToMatchedApp(state.url);
+                  if (rewritten.rewrote) {
+                    state.url = rewritten.url;
+                    void frontendLog("nav", "steamweb router rewrite", {
+                      from: rewritten.fromAppId,
+                      to: rewritten.toAppId,
+                    }).catch(() => undefined);
+                  }
                 }
+              } catch {
+                // Steam navigation must continue even if the redirect probe fails.
               }
-            } catch (_error) {
-              // Steam navigation must continue even if the redirect probe fails.
+              return original(...args);
+            } finally {
+              if (
+                deckyNativeNewsNavigation === navigation &&
+                (clearNavigationAfterReplace || navigationChanged)
+              ) {
+                deckyNativeNewsNavigation = null;
+              }
             }
-            return original(...args);
           })
         );
       }
@@ -1306,41 +1461,62 @@ export const installNativeNewsHistoryRedirects = (unpatchers: Unpatch[]) => {
   }
 
   try {
+    const browserHistory = historyWindow.history;
     for (const methodName of ["pushState", "replaceState"] as const) {
-      const original = window.history?.[methodName];
+      const original = browserHistory?.[methodName];
       if (typeof original !== "function") continue;
+      let active = true;
       const patched = function (this: History, ...args: any[]) {
+        if (!active) return original.apply(this, args as any);
         const target = String(args[2] || "");
         const state = historyStateFromArgs(args);
         if (methodName === "pushState" && shouldReplaceDeckyNativeNewsPush(target, state)) {
-          (globalThis as any).__deckyNativeNewsOpenedWithReplaceAt = Date.now();
-          return window.history.replaceState(args[0], args[1], args[2]);
+          const navigation = deckyNativeNewsNavigationFromState(state, target);
+          const result = browserHistory.replaceState(args[0], args[1], args[2]);
+          if (navigation) deckyNativeNewsNavigation = navigation;
+          return result;
         }
+
+        let clearNavigationAfterReplace = false;
         if (methodName === "replaceState") {
-          const currentState = (window.history as any)?.state;
+          const currentState = (browserHistory as any)?.state;
           if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
-            const replacedAt = Number((globalThis as any).__deckyNativeNewsOpenedWithReplaceAt || 0);
-            if (!replacedAt || Date.now() - replacedAt > 15000) {
-              window.history.back();
+            if (isTrackedDeckyNativeNewsNavigation(currentState, target || currentRoutePath())) {
+              clearNavigationAfterReplace = true;
+            } else {
+              deckyNativeNewsNavigation = null;
+              browserHistory.back();
               return undefined;
             }
           }
         }
+
+        const navigation = deckyNativeNewsNavigation;
+        const navigationChanged = deckyNativeNewsNavigationChanges(target, state);
+        let callArgs = args;
         try {
           if (target.toLowerCase().includes("steamweb")) {
             const { state: newState, rewrote } = rewriteSteamwebNavState(args[0]);
-            if (rewrote) {
-              return original.apply(this, [newState, args[1], args[2]] as any);
-            }
+            if (rewrote) callArgs = [newState, args[1], args[2]];
           }
-        } catch (_error) {
+        } catch {
           // Steam navigation must continue even if the redirect probe fails.
         }
-        return original.apply(this, args as any);
+        try {
+          return original.apply(this, callArgs as any);
+        } finally {
+          if (
+            deckyNativeNewsNavigation === navigation &&
+            (clearNavigationAfterReplace || navigationChanged)
+          ) {
+            deckyNativeNewsNavigation = null;
+          }
+        }
       };
-      (window.history as any)[methodName] = patched;
+      (browserHistory as any)[methodName] = patched;
       unpatchers.push(() => {
-        (window.history as any)[methodName] = original;
+        if ((browserHistory as any)[methodName] === patched) (browserHistory as any)[methodName] = original;
+        else active = false;
       });
     }
   } catch (error) {

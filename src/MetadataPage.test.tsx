@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type * as I18n from "./i18n";
 import { hltbStore } from "./hltb/store";
 import type { HltbEntry } from "./backend";
+import { getSteamOverrideCached, clearSteamOverrideCache } from "./hltb/steamOverrides";
 import { setVerboseLogging } from "./log";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
@@ -510,6 +511,25 @@ describe("MetadataPage compatibility status", () => {
     expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
     expect(toast.toastSuccess).toHaveBeenCalledWith("Metadata saved", "Shortcut");
     expect(dropdown(renderPage()).props.selectedOption).toBe(0);
+  });
+  it("applies a saved record to runtime while preserving edits made during the save", async () => {
+    const saved = makeMetadata({ title: "Saved title" });
+    const pendingSave = deferred<MetadataData>();
+    backend.saveMetadata.mockReturnValue(pendingSave.promise);
+    const forgetHltb = vi.spyOn(hltbStore, "forget");
+    hydrateMetadata(makeMetadata());
+
+    editTitle(renderPage(), "Pending save");
+    await clickSave();
+    editTitle(renderPage(), "Unsaved edit");
+    pendingSave.resolve(saved);
+    await flushAsyncWork();
+
+    expect(steam.metadataCache["100"]).toBe(saved);
+    expect(forgetHltb).toHaveBeenCalledWith(100);
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
+    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
+    expect(state.values[0].title).toBe("Unsaved edit");
   });
 
   it("does not change cache or runtime compatibility when save fails", async () => {
@@ -2678,6 +2698,31 @@ describe("Draft field markers and editor actions", () => {
     await flushAsyncWork();
     expect(backend.saveSteamOverride).toHaveBeenCalledWith(65540, { hltb_game_id: 4031 });
     expect(backend.saveMetadata).not.toHaveBeenCalled();
+  });
+  it("refreshes the Steam HLTB cache when a delayed save finishes after navigation", async () => {
+    route.appid = "65540";
+    steam.isNonSteamApp.mockReturnValue(false);
+    steam.getOverview.mockReturnValue({ app_type: 1, BIsShortcut: () => false });
+    clearSteamOverrideCache();
+    const forgetHltb = vi.spyOn(hltbStore, "forget");
+    const pending = deferred<{ hltb_game_id: number }>();
+    backend.checkHltbGameId.mockResolvedValue({ found: true, game_id: 4031, game_name: "Gothic" });
+    backend.saveSteamOverride.mockReturnValue(pending.promise);
+    hydrateMetadata(makeMetadata({ hltb_game_id: null }));
+
+    textField(openPage("HowLongToBeat"), "HowLongToBeat game").props.onChange({
+      target: { value: "4031" },
+    });
+    saveButton(renderPage()).props.onClick();
+    route.appid = "200";
+    pending.resolve({ hltb_game_id: 4031 });
+    await flushAsyncWork();
+    route.appid = "100";
+
+    expect(getSteamOverrideCached(65540)).toEqual({ hltb_game_id: 4031 });
+    expect(forgetHltb).toHaveBeenCalledWith(65540);
+    forgetHltb.mockRestore();
+    clearSteamOverrideCache();
   });
 });
 

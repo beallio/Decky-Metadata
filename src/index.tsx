@@ -42,6 +42,19 @@ import {
 } from "./steam";
 
 const METADATA_ROUTE = "/decky-metadata/:appid";
+const noCleanup = () => undefined;
+
+const setupOptional = <T,>(name: string, setup: () => T, fallback: T): T => {
+  try {
+    return setup();
+  } catch (error) {
+    log.warn("bridge", `${name} failed`, error);
+    void frontendLog("patch", `${name} failed`, {
+      error: error instanceof Error ? error.stack || error.message : String(error),
+    }, "error").catch(() => undefined);
+    return fallback;
+  }
+};
 
 const installInPlaceReloadGuard = (onFailedReload: () => void) => {
   const loader = (globalThis as any).DeckyPluginLoader;
@@ -116,16 +129,26 @@ export default definePlugin(() => {
     }, "error").catch(() => undefined);
   }
   const stopMetadataBootstrap = startMetadataBootstrap();
-  const stopTrailerController = startTrailerController();
-  const stopMiniAchievementsController = startMiniAchievementsController();
-  const stopProtonDbCovers = installProtonDbCoverBadges();
-  const stopProtonDbGameView = installProtonDbGameView();
-  const stopStoreInfoRow = installStoreInfoRow();
-  const menuPatch = contextMenuPatch(LibraryContextMenu);
+  const stopTrailerController = setupOptional("startTrailerController", startTrailerController, noCleanup);
+  const stopMiniAchievementsController = setupOptional(
+    "startMiniAchievementsController",
+    startMiniAchievementsController,
+    noCleanup,
+  );
+  const stopProtonDbCovers = setupOptional("installProtonDbCoverBadges", installProtonDbCoverBadges, noCleanup);
+  const stopProtonDbGameView = setupOptional("installProtonDbGameView", installProtonDbGameView, noCleanup);
+  const stopStoreInfoRow = setupOptional("installStoreInfoRow", installStoreInfoRow, noCleanup);
+  const menuPatch = setupOptional("contextMenuPatch", () => contextMenuPatch(LibraryContextMenu), undefined);
 
-  routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true });
-  routerHook.addRoute(SETTINGS_ROUTE, () => <SettingsPage />, { exact: true });
-  const cancelSettingsRefresh = refreshOpenSettingsRoute(routerHook);
+  setupOptional("metadata route registration", () =>
+    routerHook.addRoute(METADATA_ROUTE, () => <MetadataPage />, { exact: true }), undefined);
+  setupOptional("settings route registration", () =>
+    routerHook.addRoute(SETTINGS_ROUTE, () => <SettingsPage />, { exact: true }), undefined);
+  const cancelSettingsRefresh = setupOptional(
+    "settings route refresh",
+    () => refreshOpenSettingsRoute(routerHook),
+    noCleanup,
+  );
 
   return {
     // Plugin identity used by Decky Loader (must match plugin.json "name" so

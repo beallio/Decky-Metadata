@@ -51,6 +51,8 @@ const ctrl = vi.hoisted(() => ({
 }));
 const hookState = vi.hoisted(() => ({
   cursor: 0,
+  effectCursor: 0,
+  effectDeps: [] as (readonly unknown[] | undefined)[],
   slots: [] as unknown[],
   refs: [] as { current: unknown }[],
   effects: [] as (() => void)[],
@@ -74,9 +76,14 @@ vi.mock("react", () => ({
     hookState.refs.push(ref);
     return ref;
   },
-  // Recorded, not run: tests call only the focus effects (the others need live backend promises).
-  useEffect: (effect: () => void) => {
-    hookState.effects.push(effect);
+  // Recorded so tests can explicitly run effects and control their async work.
+  useEffect: (effect: () => void, deps?: readonly unknown[]) => {
+    const idx = hookState.effectCursor++;
+    const previous = hookState.effectDeps[idx];
+    const changed = deps === undefined || !previous || deps.length !== previous.length ||
+      deps.some((dep, i) => !Object.is(dep, previous[i]));
+    hookState.effectDeps[idx] = deps;
+    hookState.effects.push(changed ? effect : () => undefined);
   },
 }));
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
@@ -117,6 +124,7 @@ vi.mock("../../steam/nativeFocus", () => nav);
 
 import { DEFAULT_ARTWORK_SETTINGS, defaultSlotFilter } from "../../artwork/controller";
 import { toastError } from "../../toast";
+import { sgdbListAssets, sgdbResolveGame } from "../../backend";
 
 import {
   ArtworkEditorPage,
@@ -136,12 +144,30 @@ const nodes = (node: unknown): Node[] => {
 
 const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   hookState.cursor = 0;
+  hookState.effectCursor = 0;
+  hookState.effectDeps = [];
   hookState.slots = [];
   hookState.refs = [];
   hookState.effects = [];
   return ArtworkEditorPage(props) as ReactElement;
 };
 
+const rerenderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
+  hookState.cursor = 0;
+  hookState.effectCursor = 0;
+  hookState.refs = [];
+  hookState.effects = [];
+  return ArtworkEditorPage(props) as ReactElement;
+};
+const hasRenderedAssetError = (root: unknown, message: string) =>
+  nodes(root).some((node) =>
+    node.type === "Field" &&
+    nodes(node.props?.description).some((description) =>
+      description.type === "span" && description.props?.children === message,
+    ),
+  );
+
+const flushEffects = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 describe("ArtworkEditorPage", () => {
   it("computes visible tabs respecting tabOrder, hiddenTabs, and keeping manage visible", () => {
     const custom = {
@@ -271,6 +297,7 @@ describe("ArtworkEditorPage", () => {
       renderPage(props);
       hookState.slots[7] = [{ id: 1, url: "u", thumb: "t", animated: false, author: { name: "a" }, width: 1, height: 1 }];
       hookState.cursor = 0;
+      hookState.effectCursor = 0;
       hookState.refs = [];
       hookState.effects = [];
       ArtworkEditorPage(props);
@@ -363,6 +390,76 @@ describe("ArtworkEditorPage", () => {
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
+  it("clears a SteamGridDB list error when switching to Official Steam only", async () => {
+    const props = {
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    };
+    vi.mocked(sgdbResolveGame).mockResolvedValue({
+      game: { id: 1, name: "Cyberpunk 2077" },
+      override: false,
+    } as never);
+    vi.mocked(sgdbListAssets).mockRejectedValue(new Error("list failed"));
+    renderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+    let root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+
+    root = rerenderPage(props);
+    expect(hasRenderedAssetError(root, "Error: list failed")).toBe(true);
+    const officialOnly = nodes(root).find((node) =>
+      node.type === "DialogButton" && node.props?.children === "editor.artwork.officialOnlyButton",
+    );
+    expect(officialOnly).toBeDefined();
+    officialOnly!.props!.onClick();
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    root = rerenderPage(props);
+
+    expect(hasRenderedAssetError(root, "Error: list failed")).toBe(false);
+  });
+
+  it("keeps a SteamGridDB resolve error when changing tabs without a match", async () => {
+    const props = {
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    };
+    vi.mocked(sgdbResolveGame).mockRejectedValue(new Error("resolve failed"));
+    renderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+    let root = rerenderPage(props);
+    const manageTab = nodes(root).find((node) =>
+      node.props?.["data-artwork-tab"] === "manage",
+    );
+    expect(manageTab).toBeDefined();
+    manageTab!.props!.onClick();
+
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    const coverTab = nodes(root).find((node) => node.props?.["data-artwork-tab"] === "cover");
+    expect(coverTab).toBeDefined();
+    coverTab!.props!.onClick();
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    root = rerenderPage(props);
+
+    expect(hasRenderedAssetError(root, "Error: resolve failed")).toBe(true);
+  });
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {
     expect(
       logoPreviewBoxStyle({ pinnedPosition: "UpperLeft", nWidthPct: 40, nHeightPct: 30 }),

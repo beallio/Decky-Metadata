@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
+const controller = vi.hoisted(() => ({ clearSingleSlot: vi.fn() }));
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -13,7 +14,7 @@ vi.mock("@decky/ui", () => ({
   showModal: vi.fn(),
   ToggleField: "ToggleField",
 }));
-vi.mock("../../../artwork/controller", () => ({ artworkController: {} }));
+vi.mock("../../../artwork/controller", () => ({ artworkController: controller }));
 vi.mock("../../../i18n", () => ({ useT: () => (key: string) => key, translateBackendError: String }));
 vi.mock("../../../steam/customArtwork", () => ({
   ARTWORK_SLOT_ORDER: ["cover", "wide", "hero", "logo", "icon"],
@@ -23,6 +24,8 @@ vi.mock("../../../steam/customArtwork", () => ({
 vi.mock("../../../toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 vi.mock("./LogoPositionerModal", () => ({ LogoPositionerModal: "LogoPositionerModal" }));
 
+import { artworkController } from "../../../artwork/controller";
+import { toastError, toastSuccess } from "../../../toast";
 import type { GameArtworkState } from "../../../types";
 import { ArtworkManageTab } from "./ArtworkManageTab";
 
@@ -71,5 +74,36 @@ describe("ArtworkManageTab current artwork", () => {
 
   it("does not show official art for a non-Steam game", () => {
     expect(heroPreview(false, { present: false, preview_data_url: null, steam_url: OFFICIAL, available: true })).toEqual([]);
+  });
+  it("shows a clear error instead of a success toast when clearing fails", async () => {
+    vi.mocked(artworkController.clearSingleSlot).mockRejectedValueOnce(new Error("file could not be removed"));
+    vi.mocked(toastError).mockClear();
+    vi.mocked(toastSuccess).mockClear();
+    const state = {
+      locked: false,
+      slots: { cover: { ...empty, present: true }, wide: empty, hero: empty, logo: empty, icon: empty },
+    } as GameArtworkState;
+    const root = ArtworkManageTab({
+      appId: 7,
+      gameName: "Game",
+      isSteamGame: false,
+      savedSteamAppId: null,
+      unsavedSteamAppId: null,
+      state,
+      busy: false,
+      onBusyChange: vi.fn(),
+      onRefreshState: vi.fn(),
+      onSelectSlotTab: vi.fn(),
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    }) as ReactElement;
+    const clear = nodes(root).find((node) => node.type === "DialogButton" && node.props?.children === "editor.artwork.clearAction")!;
+
+    clear.props!.onClick();
+    await Promise.resolve();
+
+    expect(artworkController.clearSingleSlot).toHaveBeenCalledWith(7, "cover");
+    expect(toastError).toHaveBeenCalledWith("artwork.toast.failedTitle", "Error: file could not be removed");
+    expect(toastSuccess).not.toHaveBeenCalled();
   });
 });

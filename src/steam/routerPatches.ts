@@ -22,6 +22,7 @@ import {
   notifyCompatibilityRevision,
   overviewFromReactTree,
   patchMethod,
+  createRouteRenderPatcher,
   safeAfterPatch,
   armRouteShield,
   clearRouteShield,
@@ -289,85 +290,88 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
     refreshDeckyNativeActivityForApp,
   } = deps;
   GAME_DETAIL_ROUTES.forEach((route) => {
-    const patch = routerHook.addPatch(route, (tree: any) => {
-      const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
-      if (routeProps?.renderFunc) {
-        const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
-          const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
-          const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
-          const appOverview = overview || getOverview(appId);
-          if (appId && isNonSteamApp(appOverview)) {
-            const lifecycleGeneration = compatibilityLifecycleSnapshot();
-            const previousAppId = metadataState.lastObservedGameDetailAppId;
-            metadataState.lastObservedGameDetailAppId = appId;
-            if (metadataCache[String(appId)]) {
-              // `route` is a Decky template (for example `:appid`), not an
-              // authoritative path. Replacing a history listener's concrete
-              // return shield with that template makes stale editor browser
-              // tokens fail the exact-app check during the first Game Info
-              // render. Keep the shield's identity concrete.
-              const shieldPath = route.replace(":appid", String(appId));
-              armRouteShield(appId, shieldPath, "route-render");
-              if (isBypassTraceEnabled()) {
-                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
-              }
-            } else {
-              if (isBypassTraceEnabled()) {
-                void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
-              }
-            }
-            // An editor Save or Remove wrote this overview while Steam still
-            // had editor route tokens. Publish its replacement only after this
-            // exact Game Info tree has re-entered (under the shield when a
-            // record exists). Remove deletes the record, but the restored
-            // non-observable compat nibble still needs this publication.
-            publishDeferredEditorCompatibility(appId);
-            void ensureMetadataCache().then(() => {
-              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-              if (applyMetadata(appId)) notifyCompatibilityRevision();
-              void tryEnrichScreenshotsForApp(appId);
-              void tryFetchMetadataForApp(appId);
-            });
-            if (previousAppId !== appId) {
-              void refreshDeckyNativeActivityForApp(appId);
-            }
-            return ret;
+    const renderPatcher = createRouteRenderPatcher<unknown[], unknown>((_args, ret) => {
+      const props = ret && typeof ret === "object" ? Reflect.get(ret, "props") : undefined;
+      const children = props && typeof props === "object" ? Reflect.get(props, "children") : undefined;
+      const childProps = children && typeof children === "object" ? Reflect.get(children, "props") : undefined;
+      const renderedOverview = childProps && typeof childProps === "object" ? Reflect.get(childProps, "overview") : undefined;
+      const overview = renderedOverview || overviewFromReactTree(ret);
+      const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
+      const appOverview = overview || getOverview(appId);
+      if (appId && isNonSteamApp(appOverview)) {
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        const previousAppId = metadataState.lastObservedGameDetailAppId;
+        metadataState.lastObservedGameDetailAppId = appId;
+        if (metadataCache[String(appId)]) {
+          // `route` is a Decky template (for example `:appid`), not an
+          // authoritative path. Replacing a history listener's concrete
+          // return shield with that template makes stale editor browser
+          // tokens fail the exact-app check during the first Game Info
+          // render. Keep the shield's identity concrete.
+          const shieldPath = route.replace(":appid", String(appId));
+          armRouteShield(appId, shieldPath, "route-render");
+          if (isBypassTraceEnabled()) {
+            void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
           }
-          return ret;
+        } else {
+          if (isBypassTraceEnabled()) {
+            void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
+          }
+        }
+        // An editor Save or Remove wrote this overview while Steam still
+        // had editor route tokens. Publish its replacement only after this
+        // exact Game Info tree has re-entered (under the shield when a
+        // record exists). Remove deletes the record, but the restored
+        // non-observable compat nibble still needs this publication.
+        publishDeferredEditorCompatibility(appId);
+        void ensureMetadataCache().then(() => {
+          if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+          if (applyMetadata(appId)) notifyCompatibilityRevision();
+          void tryEnrichScreenshotsForApp(appId);
+          void tryFetchMetadataForApp(appId);
         });
-        unpatchers.push(renderPatch.unpatch);
+        if (previousAppId !== appId) {
+          void refreshDeckyNativeActivityForApp(appId);
+        }
       }
+      return ret;
+    });
+    const patch = routerHook.addPatch(route, (tree: any) => {
+      renderPatcher.patch(findInReactTree(tree, (x: any) => x?.renderFunc));
       return tree;
     });
-    unpatchers.push(() => routerHook.removePatch(route, patch));
+    unpatchers.push(() => {
+      renderPatcher.release();
+      routerHook.removePatch(route, patch);
+    });
   });
 
   GAME_ACTIVITY_ROUTES.forEach((route) => {
-    const patch = routerHook.addPatch(route, (tree: any) => {
-      const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
-      if (routeProps?.renderFunc) {
-        const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
-          const treeAppId = appIdFromReactTree(ret);
-          const appId = currentGameDetailAppId() || treeAppId;
-          const overview = overviewFromReactTree(ret) || getOverview(appId);
-          if (appId && isNonSteamApp(overview)) {
-            const lifecycleGeneration = compatibilityLifecycleSnapshot();
-            metadataState.lastObservedGameDetailAppId = appId;
-            void ensureMetadataCache().then(() => {
-              if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
-              if (applyMetadata(appId)) notifyCompatibilityRevision();
-            });
-            void refreshDeckyNativeActivityForApp(appId);
-            return ret;
-          }
-          return ret;
+    const renderPatcher = createRouteRenderPatcher<unknown[], unknown>((_args, ret) => {
+      const treeAppId = appIdFromReactTree(ret);
+      const appId = currentGameDetailAppId() || treeAppId;
+      const overview = overviewFromReactTree(ret) || getOverview(appId);
+      if (appId && isNonSteamApp(overview)) {
+        const lifecycleGeneration = compatibilityLifecycleSnapshot();
+        metadataState.lastObservedGameDetailAppId = appId;
+        void ensureMetadataCache().then(() => {
+          if (!isCompatibilityLifecycleCurrent(lifecycleGeneration)) return;
+          if (applyMetadata(appId)) notifyCompatibilityRevision();
         });
-        unpatchers.push(renderPatch.unpatch);
+        void refreshDeckyNativeActivityForApp(appId);
       }
+      return ret;
+    });
+    const patch = routerHook.addPatch(route, (tree: any) => {
+      renderPatcher.patch(findInReactTree(tree, (x: any) => x?.renderFunc));
       return tree;
     });
-    unpatchers.push(() => routerHook.removePatch(route, patch));
+    unpatchers.push(() => {
+      renderPatcher.release();
+      routerHook.removePatch(route, patch);
+    });
   });
+
 };
 
 export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
@@ -444,12 +448,9 @@ export const installGameDetailReentryShield = (unpatchers: Unpatch[]) => {
       }
       return original(...args);
     });
-    const patched = history?.[methodName];
     shieldUnpatchers.push(() => {
       try {
-        if (history?.[methodName] === patched) {
-          unpatch();
-        }
+        unpatch();
       } catch (_error) {
         // Best effort teardown.
       }

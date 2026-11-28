@@ -9,7 +9,6 @@
     "test:backend": "./run.sh cargo test --locked --manifest-path backend-rust/Cargo.toml",
     "watch": "rollup -c -w",
     "package": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
-    "package:linux": "./run.sh npm run build && ./run.sh node ./scripts/package.mjs",
     "test": "vitest run"
   },
   "keywords": [
@@ -24,9 +23,9 @@
   "devDependencies": {
     "@decky/rollup": "^1.0.1",
     "@decky/ui": "^4.7.2",
+    "@types/node": "^25.9.2",
     "@types/react": "18.3.3",
     "@types/react-dom": "18.3.0",
-    "@types/webpack": "^5.28.5",
     "mobx": "6.16.1",
     "rollup": "^4.22.5",
     "typescript": "^5.6.2",
@@ -36,8 +35,7 @@
     "@decky/api": "^1.1.2",
     "i18next": "^27.0.1",
     "react-i18next": "^18.0.0",
-    "react-icons": "^5.3.0",
-    "tslib": "^2.7.0"
+    "react-icons": "^5.3.0"
   },
   "overrides": {
     "@decky/rollup": {

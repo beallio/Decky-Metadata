@@ -53,6 +53,7 @@ type RatingEntry = {
   listeners: Set<() => void>;
   request?: InFlightRequest;
   expiryTimer?: TimerHandle;
+  retryTimer?: TimerHandle;
   retryAfter: number;
 };
 
@@ -110,7 +111,10 @@ export class ProtonDbRatingCache {
     this.loadIfNeeded(steamAppId, entry);
     return () => {
       entry.listeners.delete(listener);
-      if (entry.listeners.size === 0) this.clearExpiry(entry);
+      if (entry.listeners.size === 0) {
+        this.clearExpiry(entry);
+        this.clearRetry(entry);
+      }
     };
   }
 
@@ -129,6 +133,7 @@ export class ProtonDbRatingCache {
     if (!enabled) {
       for (const entry of this.entries.values()) {
         this.clearExpiry(entry);
+        this.clearRetry(entry);
         this.cancelRequest(entry, true);
       }
       return;
@@ -146,6 +151,7 @@ export class ProtonDbRatingCache {
 
     for (const entry of this.entries.values()) {
       this.clearExpiry(entry);
+      this.clearRetry(entry);
       entry.listeners.clear();
       this.cancelRequest(entry, false);
       entry.retryAfter = 0;
@@ -175,9 +181,13 @@ export class ProtonDbRatingCache {
         this.scheduleExpiry(steamAppId, entry);
         return;
       }
-      if (status === "error" && now < entry.retryAfter) return;
+      if (status === "error" && now < entry.retryAfter) {
+        this.scheduleRetry(steamAppId, entry);
+        return;
+      }
       if (status !== "error") return;
     } else if (status === "error" && now < entry.retryAfter) {
+      this.scheduleRetry(steamAppId, entry);
       return;
     }
 
@@ -185,7 +195,7 @@ export class ProtonDbRatingCache {
     const request: InFlightRequest = {
       lifecycle: this.lifecycle,
       timeout: globalThis.setTimeout(
-        () => this.failRequest(entry, request, new Error("ProtonDB summary request timed out")),
+        () => this.failRequest(steamAppId, entry, request, new Error("ProtonDB summary request timed out")),
         FETCH_TIMEOUT_MS,
       ),
     };
@@ -196,13 +206,13 @@ export class ProtonDbRatingCache {
     try {
       pending = this.fetchTier(steamAppId);
     } catch (error) {
-      this.failRequest(entry, request, error);
+      this.failRequest(steamAppId, entry, request, error);
       return;
     }
 
     void Promise.resolve(pending).then(
       (tier) => this.completeRequest(steamAppId, entry, request, tier),
-      (error: unknown) => this.failRequest(entry, request, error),
+      (error: unknown) => this.failRequest(steamAppId, entry, request, error),
     );
   }
 
@@ -225,12 +235,13 @@ export class ProtonDbRatingCache {
     this.scheduleExpiry(steamAppId, entry);
   }
 
-  private failRequest(entry: RatingEntry, request: InFlightRequest, _error: unknown): void {
+  private failRequest(steamAppId: number, entry: RatingEntry, request: InFlightRequest, _error: unknown): void {
     if (!this.isCurrentRequest(entry, request)) return;
     globalThis.clearTimeout(request.timeout);
     entry.request = undefined;
     entry.retryAfter = Date.now() + RETRY_COOLDOWN_MS;
     this.setRating(entry, entry.rating.tier, "error", entry.rating.updatedAt);
+    this.scheduleRetry(steamAppId, entry);
   }
 
   private isCurrentRequest(entry: RatingEntry, request: InFlightRequest): boolean {
@@ -244,6 +255,21 @@ export class ProtonDbRatingCache {
       entry.expiryTimer = undefined;
       this.loadIfNeeded(steamAppId, entry);
     }, remaining);
+  }
+
+  private scheduleRetry(steamAppId: number, entry: RatingEntry): void {
+    if (!this.isActive(entry) || entry.retryTimer !== undefined) return;
+    entry.retryTimer = globalThis.setTimeout(() => {
+      entry.retryTimer = undefined;
+      this.loadIfNeeded(steamAppId, entry);
+    }, Math.max(0, entry.retryAfter - Date.now()));
+  }
+
+  private clearRetry(entry: RatingEntry): void {
+    if (entry.retryTimer !== undefined) {
+      globalThis.clearTimeout(entry.retryTimer);
+      entry.retryTimer = undefined;
+    }
   }
 
   private clearExpiry(entry: RatingEntry): void {

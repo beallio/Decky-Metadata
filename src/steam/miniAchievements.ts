@@ -2,9 +2,9 @@
 // page passes no onSeek, and Valve's MiniAchievements row renders nothing without
 // it (ValveSoftware/steam-for-linux#13540), so one is supplied here. See NOTICE.
 import { routerHook } from "@decky/api";
-import { afterPatch, findClassModule, findInReactTree } from "@decky/ui";
+import { findClassModule, findInReactTree } from "@decky/ui";
 import * as log from "../log";
-import { GAME_DETAIL_ROUTES } from "./core";
+import { createRouteRenderPatcher, GAME_DETAIL_ROUTES } from "./core";
 import { getNativeCssClass, subscribeNativeCssClasses } from "./nativeCssClasses";
 import { steamUiDocuments } from "./steamUiHost";
 
@@ -213,23 +213,23 @@ export function installMiniAchievementsPatch(): () => void {
   requestSync();
 
   for (const route of GAME_DETAIL_ROUTES) {
+    const renderPatcher = createRouteRenderPatcher<unknown[], unknown>((_args, rendered) => {
+      requestSync();
+      return rendered;
+    });
     try {
       const patch = routerHook.addPatch(route, (tree) => {
         try {
-          const routeProps = findInReactTree(tree, (node) => node?.renderFunc);
-          if (typeof routeProps?.renderFunc === "function") {
-            const renderPatch = afterPatch(routeProps, "renderFunc", (_args: unknown[], rendered: unknown) => {
-              requestSync();
-              return rendered;
-            });
-            unpatchers.push(() => renderPatch.unpatch());
-          }
+          renderPatcher.patch(findInReactTree(tree, (node) => node?.renderFunc));
         } catch (error) {
           log.warn("miniAchievements", "achievement stat patch failed", error);
         }
         return tree;
       });
-      unpatchers.push(() => routerHook.removePatch(route, patch));
+      unpatchers.push(() => {
+        renderPatcher.release();
+        routerHook.removePatch(route, patch);
+      });
     } catch (error) {
       log.warn("miniAchievements", "achievement stat route hook failed", error);
     }

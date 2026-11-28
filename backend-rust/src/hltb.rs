@@ -182,7 +182,10 @@ pub async fn stats(
                     ERROR_RETRY
                 }
             };
-            state.hltb_retry.lock().await.insert(app_id, tokio::time::Instant::now() + wait);
+            let mut retries = state.hltb_retry.lock().await;
+            let now = tokio::time::Instant::now();
+            retries.retain(|_, until| *until > now);
+            retries.insert(app_id, now + wait);
             Ok(retry_error(wait))
         }
     }
@@ -239,8 +242,9 @@ pub async fn clear(state: &AppState) -> Result<Value, String> {
     state.hltb_retry.lock().await.clear();
     let mut cache = state.provider_cache.lock().await;
     cache.hltb.clear();
-    state.provider_cache_dirty.store(false, Ordering::SeqCst);
+    state.provider_cache_dirty.store(true, Ordering::SeqCst);
     provider_cache::save(&state.env.plugin_settings_dir.join(provider_cache::FILENAME), &cache).await?;
+    state.provider_cache_dirty.store(false, Ordering::SeqCst);
     Ok(json!({"ok": true}))
 }
 
@@ -468,11 +472,24 @@ mod tests {
         #[tokio::test]
         async fn failures_are_not_cached_and_wait_before_retrying() {
             let (_root, state) = state(vec![init(), reply(Method::POST, "https://howlongtobeat.com/api/search/site", 500, b"".to_vec())], true).await;
+            let expired = tokio::time::Instant::now() - Duration::from_secs(1);
+            state.hltb_retry.lock().await.insert(999, expired);
             let failed = stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap();
             assert_eq!(failed["status"], "error");
             assert!(failed["retry_after_ms"].as_u64().unwrap() > 0);
             assert!(stats(&state, &json!(620), &json!(false), &json!("Portal 2"), None).await.unwrap()["status"] == "error");
             assert!(!state.provider_cache.lock().await.hltb.contains_key(&620));
+            assert!(!state.hltb_retry.lock().await.contains_key(&999));
+        }
+
+        #[tokio::test]
+        async fn clear_keeps_dirty_after_save_failure() {
+            let (_root, state) = state(vec![], true).await;
+            let path = state.env.plugin_settings_dir.join(provider_cache::FILENAME);
+            std::fs::create_dir(&path).unwrap();
+            state.provider_cache_dirty.store(true, Ordering::SeqCst);
+            assert!(clear(&state).await.is_err());
+            assert!(state.provider_cache_dirty.load(Ordering::SeqCst));
         }
     }
 }

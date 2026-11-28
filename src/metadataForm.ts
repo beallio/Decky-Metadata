@@ -1,3 +1,4 @@
+import { isNativeSteamAppId } from "./steam/appId";
 import { MetadataData, StoreCategory } from "./types";
 
 export const parseSteamAppId = (input: string): number => {
@@ -9,9 +10,7 @@ export const parseSteamAppId = (input: string): number => {
     s.match(/[?&]appid=(\d+)/i) ||
     s.match(/\bapp\/(\d+)\b/i);
   const parsed = Number(match?.[1] || 0);
-  return Number.isFinite(parsed) && Number.isInteger(parsed) && parsed > 0
-    ? parsed
-    : 0;
+  return isNativeSteamAppId(parsed) ? parsed : 0;
 };
 
 export const metadataTemplate = (title: string): MetadataData => ({

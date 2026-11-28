@@ -20,6 +20,7 @@ pub struct AppState {
     pub delisted: Mutex<Option<Arc<Value>>>,
     pub provider_cache: Mutex<crate::provider_cache::ProviderCache>,
     pub provider_cache_dirty: std::sync::atomic::AtomicBool,
+    pub provider_cache_save_scheduled: std::sync::atomic::AtomicBool,
     /// Bumped by HLTB Clear cache and Remove metadata; a lookup that saw another value is not saved.
     pub hltb_epoch: std::sync::atomic::AtomicU64,
     pub hltb: crate::providers::hltb::HltbClient,
@@ -33,7 +34,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(env: Env) -> Result<Arc<Self>, String> {
         let cancel = CancellationToken::new();
-        let http = Http::new(cancel.clone(), &env.plugin_version)?;
+        let http = Http::new(cancel.clone())?;
         let cef = crate::cef_bridge::BigPictureEvaluator::new(cancel.child_token())?;
         Ok(Arc::new(Self {
             env,
@@ -44,6 +45,7 @@ impl AppState {
             delisted: Mutex::new(None),
             provider_cache: Mutex::new(Default::default()),
             provider_cache_dirty: std::sync::atomic::AtomicBool::new(false),
+            provider_cache_save_scheduled: std::sync::atomic::AtomicBool::new(false),
             hltb_epoch: std::sync::atomic::AtomicU64::new(0),
             hltb: crate::providers::hltb::HltbClient::default(),
             hltb_retry: Mutex::new(std::collections::HashMap::new()),

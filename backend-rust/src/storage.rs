@@ -64,6 +64,9 @@ impl Storage {
     /// `stamp` is read before loading, so a change during the read causes another reload.
     async fn adopt(&mut self, (mut data, persist): (Value, Persist), stamp: Stamp) -> Result<(), String> {
         let migrated = migrate_release_dates(&mut data)?;
+        if let Some(metadata) = data.get_mut("metadata") {
+            normalize_store_categories(metadata);
+        }
         if migrated || persist == Persist::All {
             write_all(&self.dir, &data).await?;
         } else if persist == Persist::Envelope {
@@ -194,8 +197,7 @@ impl Storage {
         }
     }
 
-    /// `records: None` rewrites every record file. A failed write leaves the stamp stale, so the
-    /// next refresh reloads whatever reached the disk.
+    /// `records: None` rewrites every record file. Failed saves restore those files.
     async fn persist(&mut self, envelope: bool, records: Option<&[String]>) -> Result<(), String> {
         if self.legacy_exported {
             // Until the next load, the single settings file stays the complete store: an older
@@ -205,19 +207,32 @@ impl Storage {
             self.stamp = read_stamp(&self.dir).await?;
             return Ok(());
         }
-        match records {
-            None => write_records_dir(&self.dir, &self.data).await?,
-            Some(keys) => {
-                for key in keys {
-                    write_record(&self.dir, key, self.data["metadata"].get(key)).await?;
+        let snapshot = snapshot_record_files(&self.dir, records, &self.data).await?;
+        let result = async {
+            match records {
+                None => write_records_dir(&self.dir, &self.data).await?,
+                Some(keys) => {
+                    for key in keys {
+                        write_record(&self.dir, key, self.data["metadata"].get(key)).await?;
+                    }
                 }
             }
+            if envelope {
+                write_envelope(&self.dir, &self.data).await?;
+            }
+            read_stamp(&self.dir).await
         }
-        if envelope {
-            write_envelope(&self.dir, &self.data).await?;
+        .await;
+        match result {
+            Ok(stamp) => {
+                self.stamp = stamp;
+                Ok(())
+            }
+            Err(error) => match restore_record_files(&self.dir, snapshot).await {
+                Ok(()) => Err(error),
+                Err(restore_error) => Err(format!("{error}; {restore_error}")),
+            },
         }
-        self.stamp = read_stamp(&self.dir).await?;
-        Ok(())
     }
 
     /// Store normalization remains visible in memory even when its best-effort save fails.
@@ -1363,6 +1378,32 @@ pub fn migrate_release_dates(payload: &mut Value) -> Result<bool, String> {
     Ok(true)
 }
 
+fn normalize_store_categories(metadata: &mut Value) {
+    let Some(records) = metadata.as_object_mut() else {
+        return;
+    };
+    for record in records.values_mut().filter_map(Value::as_object_mut) {
+        let Some(categories) = record
+            .get_mut("store_categories")
+            .and_then(Value::as_array_mut)
+        else {
+            continue;
+        };
+        let mut normalized = Vec::with_capacity(categories.len());
+        for category in categories.drain(..) {
+            let category = if category.as_i64() == Some(392) {
+                json!(39)
+            } else {
+                category
+            };
+            if !normalized.contains(&category) {
+                normalized.push(category);
+            }
+        }
+        *categories = normalized;
+    }
+}
+
 fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     let Value::Object(mut source) = payload else {
         return Err("metadata settings must be a JSON object".to_owned());
@@ -1370,7 +1411,8 @@ fn normalize_loaded_data(payload: Value) -> Result<Value, String> {
     let release_date_format = source
         .remove("release_date_format")
         .unwrap_or_else(|| Value::String(RELEASE_DATE_FORMAT.to_owned()));
-    let metadata = truthy_object(source.remove("metadata"), "metadata")?;
+    let mut metadata = truthy_object(source.remove("metadata"), "metadata")?;
+    normalize_store_categories(&mut metadata);
     let steam_overrides = normalize_steam_overrides(source.remove("steam_overrides"));
     let shortcut_names = match source.remove("shortcut_names") {
         Some(Value::Object(shortcut_names)) => Value::Object(shortcut_names),
@@ -1774,6 +1816,91 @@ async fn write_records_dir(dir: &Path, data: &Value) -> Result<(), String> {
     .await
     .map_err(|error| format!("failed replacing metadata records: {error}"))?
 }
+struct RecordFilesSnapshot {
+    directory_existed: bool,
+    files: Vec<(PathBuf, Option<Vec<u8>>)>,
+}
+
+async fn snapshot_record_files(
+    dir: &Path,
+    records: Option<&[String]>,
+    data: &Value,
+) -> Result<RecordFilesSnapshot, String> {
+    let records_dir = dir.join(RECORDS_DIR_NAME);
+    let directory_existed = match tokio::fs::metadata(&records_dir).await {
+        Ok(metadata) if metadata.is_dir() => true,
+        Ok(_) => return Err("metadata records path is not a directory".to_owned()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => false,
+        Err(error) => return Err(format!("failed reading metadata records: {error}")),
+    };
+    let mut paths = Vec::new();
+    if records.is_none() && directory_existed {
+        let mut entries = tokio::fs::read_dir(&records_dir)
+            .await
+            .map_err(|error| format!("failed reading metadata records: {error}"))?;
+        while let Some(entry) = entries
+            .next_entry()
+            .await
+            .map_err(|error| format!("failed reading metadata records: {error}"))?
+        {
+            paths.push(entry.path());
+        }
+    }
+    let keys = records
+        .map(|keys| keys.iter().map(String::as_str).collect::<Vec<_>>())
+        .unwrap_or_else(|| {
+            data.get("metadata")
+                .and_then(Value::as_object)
+                .into_iter()
+                .flat_map(|metadata| metadata.keys().map(String::as_str))
+                .collect()
+        });
+    for key in keys {
+        let path = records_dir.join(record_file_name(key));
+        if !paths.contains(&path) {
+            paths.push(path);
+        }
+    }
+    let mut files = Vec::with_capacity(paths.len());
+    for path in paths {
+        let previous = match tokio::fs::read(&path).await {
+            Ok(bytes) => Some(bytes),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => None,
+            Err(error) => return Err(format!("failed reading metadata record backup: {error}")),
+        };
+        files.push((path, previous));
+    }
+    Ok(RecordFilesSnapshot { directory_existed, files })
+}
+
+async fn restore_record_files(dir: &Path, snapshot: RecordFilesSnapshot) -> Result<(), String> {
+    let records_dir = dir.join(RECORDS_DIR_NAME);
+    let mut failure = None;
+    for (path, previous) in snapshot.files {
+        let result = match previous {
+            Some(bytes) => match tokio::fs::create_dir_all(&records_dir).await {
+                Ok(()) => write_atomic(path, bytes).await,
+                Err(error) => Err(format!("failed restoring metadata record directory: {error}")),
+            },
+            None => match tokio::fs::remove_file(&path).await {
+                Ok(()) => Ok(()),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+                Err(error) => Err(format!("failed removing metadata record during rollback: {error}")),
+            },
+        };
+        if let Err(error) = result {
+            failure.get_or_insert(error);
+        }
+    }
+    if !snapshot.directory_existed {
+        if let Err(error) = tokio::fs::remove_dir(&records_dir).await {
+            if error.kind() != std::io::ErrorKind::NotFound {
+                failure.get_or_insert_with(|| format!("failed removing metadata records directory during rollback: {error}"));
+            }
+        }
+    }
+    failure.map_or(Ok(()), |error| Err(format!("failed restoring metadata records: {error}")))
+}
 
 fn log_load_failure(path: &Path, error: &str) {
     logging::event(
@@ -1811,13 +1938,22 @@ async fn write_atomic(path: PathBuf, encoded: Vec<u8>) -> Result<(), String> {
             .file_name()
             .ok_or_else(|| "metadata settings path has no file name".to_owned())?;
         let temp_path = path.with_file_name(format!("{}.tmp", name.to_string_lossy()));
-        if let Err(error) = std::fs::write(&temp_path, encoded) {
+        if let Err(error) = std::fs::write(&temp_path, encoded)
+            .and_then(|()| std::fs::OpenOptions::new().write(true).open(&temp_path)?.sync_all())
+        {
             let _ = std::fs::remove_file(&temp_path);
             return Err(format!("failed writing metadata settings: {error}"));
         }
         if let Err(error) = std::fs::rename(&temp_path, &path) {
             let _ = std::fs::remove_file(&temp_path);
             return Err(format!("failed replacing metadata settings: {error}"));
+        }
+        #[cfg(unix)]
+        {
+            let parent = path.parent().filter(|p| !p.as_os_str().is_empty()).unwrap_or(Path::new("."));
+            std::fs::File::open(parent)
+                .and_then(|directory| directory.sync_all())
+                .map_err(|error| format!("failed syncing metadata settings directory: {error}"))?;
         }
         Ok(())
     })
@@ -1934,6 +2070,36 @@ mod tests {
         object.insert("metadata".to_owned(), Value::Object(records));
         data
     }
+
+    #[tokio::test]
+    async fn loaded_records_normalize_legacy_local_coop_categories() {
+        let dir = TempDir::new();
+        std::fs::write(
+            dir.0.join(SETTINGS_FILE_NAME),
+            serde_json::to_vec(&json!({
+                "metadata": {
+                    "1": {"store_categories": [392, 39]},
+                    "2": {"store_categories": [392]}
+                }
+            }))
+            .unwrap(),
+        )
+        .unwrap();
+
+        let store = Storage::open(dir.0.clone()).await.unwrap();
+        for id in ["1", "2"] {
+            assert_eq!(
+                store.data()["metadata"][id]["store_categories"],
+                json!([39])
+            );
+            let saved: Value = serde_json::from_slice(
+                &std::fs::read(dir.0.join(RECORDS_DIR_NAME).join(format!("{id}.json"))).unwrap(),
+            )
+            .unwrap();
+            assert_eq!(saved["store_categories"], json!([39]));
+        }
+    }
+
 
     #[test]
     fn settings_normalize_per_field_and_validate_strictly() {
@@ -2483,6 +2649,34 @@ mod tests {
         assert_eq!(reopened.data()["metadata"]["../escape"]["title"], "../escape");
         assert_eq!(reopened.data()["metadata"]["2"]["title"], "changed");
     }
+
+
+    #[tokio::test]
+    async fn failed_envelope_write_restores_changed_record_files() {
+        let dir = TempDir::new();
+        let mut store = Storage::open(dir.0.clone()).await.unwrap();
+        store
+            .transaction(|tx| tx.set(&["metadata", "1"], json!({"title": "Before"})))
+            .await
+            .unwrap();
+        let record = dir.0.join(RECORDS_DIR_NAME).join("1.json");
+        let previous_record = std::fs::read(&record).unwrap();
+        let previous_data = store.data().clone();
+        let settings = dir.0.join(SETTINGS_FILE_NAME);
+        std::fs::remove_file(&settings).unwrap();
+        std::fs::create_dir(&settings).unwrap();
+
+        let result = store
+            .transaction(|tx| {
+                tx.set(&["metadata", "1", "title"], json!("After"))?;
+                tx.set(&["transaction_test"], json!(true))
+            })
+            .await;
+        assert!(result.is_err());
+        assert_eq!(std::fs::read(record).unwrap(), previous_record);
+        assert_eq!(store.data(), &previous_data);
+    }
+
 
     #[tokio::test]
     async fn legacy_export_serves_an_older_reader_and_converts_back() {

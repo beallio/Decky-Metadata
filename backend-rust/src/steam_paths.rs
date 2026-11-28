@@ -153,6 +153,73 @@ pub fn detect_steam_installs(roots: &[PathBuf]) -> Vec<SteamInstall> {
     installs
 }
 
+const STEAM_ID64_BASE: u64 = 76_561_197_960_265_728;
+
+pub(crate) fn preferred_userdata_dir(install: &SteamInstall) -> Option<PathBuf> {
+    let active_id = fs::read_to_string(install.root.join("config/loginusers.vdf"))
+        .ok()
+        .and_then(|contents| active_userdata_folder_id(&contents));
+    if let Some(active_id) = active_id {
+        if let Some(userdata) = install.userdata_dirs.iter().find(|userdata| {
+            userdata
+                .file_name()
+                .and_then(|name| name.to_str())
+                .and_then(|name| name.parse::<u64>().ok())
+                == Some(active_id)
+        }) {
+            return Some(userdata.clone());
+        }
+    }
+
+    install
+        .userdata_dirs
+        .iter()
+        .filter_map(|userdata| {
+            let id = userdata.file_name()?.to_str()?.parse::<u64>().ok()?;
+            if id == 0 {
+                return None;
+            }
+            let modified = fs::metadata(userdata.join("config"))
+                .ok()?
+                .modified()
+                .ok()?;
+            Some((modified, userdata))
+        })
+        .max_by_key(|(modified, _)| *modified)
+        .map(|(_, userdata)| userdata.clone())
+}
+
+fn active_userdata_folder_id(loginusers: &str) -> Option<u64> {
+    let mut steam_id = None;
+    for line in loginusers.lines().map(str::trim) {
+        if line == "}" {
+            steam_id = None;
+            continue;
+        }
+        if let Some(value) = line.strip_prefix('"').and_then(|value| value.strip_suffix('"')) {
+            if !value.contains('"') {
+                steam_id = value
+                    .parse::<u64>()
+                    .ok()
+                    .filter(|id| *id > STEAM_ID64_BASE);
+                continue;
+            }
+        }
+        if line
+            .strip_prefix('"')
+            .and_then(|line| line.split_once('"'))
+            .is_some_and(|(key, value)| {
+                key.eq_ignore_ascii_case("MostRecent") && value.trim() == "\"1\""
+            })
+        {
+            if let Some(folder_id) = steam_id.and_then(|id| id.checked_sub(STEAM_ID64_BASE)) {
+                return Some(folder_id);
+            }
+        }
+    }
+    None
+}
+
 pub fn userdata_roots_from_candidates(roots: &[PathBuf]) -> Vec<PathBuf> {
     let candidates = roots.iter().map(|root| root.join("userdata"));
     let mut seen = HashSet::new();
@@ -289,5 +356,71 @@ mod tests {
             userdata_roots_from_candidates(&[root.clone()]),
             vec![root.join("userdata").canonicalize().unwrap()]
         );
+    }
+
+    #[test]
+    fn preferred_userdata_dir_uses_most_recent_loginusers_account() {
+        let temp = TempDir::new();
+        let root = temp.0.join("Steam");
+        let user_zero = root.join("userdata/0");
+        let inactive = root.join("userdata/98765");
+        let active_id = 123456;
+        let active = root.join(format!("userdata/{active_id}"));
+        for user in [&user_zero, &inactive, &active] {
+            fs::create_dir_all(user.join("config")).unwrap();
+        }
+        let steam_id = STEAM_ID64_BASE + active_id;
+        let loginusers = root.join("config/loginusers.vdf");
+        fs::create_dir_all(loginusers.parent().unwrap()).unwrap();
+        fs::write(
+            loginusers,
+            format!(
+                "\"users\"\n{{\n\t\"{steam_id}\"\n\t{{\n\t\t\"mostrecent\"\t\"1\"\n\t}}\n}}\n"
+            ),
+        )
+        .unwrap();
+        let install = SteamInstall {
+            root,
+            userdata_dirs: vec![user_zero, inactive, active.clone()],
+            shortcut_files: vec![],
+            libraryfolders_files: vec![],
+            appmanifest_dirs: vec![],
+        };
+
+        assert_eq!(preferred_userdata_dir(&install), Some(active));
+    }
+
+    #[test]
+    fn userdata_fallback_ignores_zero_and_non_numeric_ids() {
+        let temp = TempDir::new();
+        let root = temp.0.join("Steam");
+        let user_zero = root.join("userdata/0");
+        let invalid = root.join("userdata/active");
+        let older = root.join("userdata/123");
+        let newest = root.join("userdata/456");
+        for user in [&user_zero, &invalid, &older, &newest] {
+            fs::create_dir_all(user.join("config")).unwrap();
+        }
+        let set_modified = |path: &Path, seconds| {
+            std::fs::File::open(path)
+                .unwrap()
+                .set_times(std::fs::FileTimes::new().set_modified(
+                    std::time::UNIX_EPOCH + std::time::Duration::from_secs(seconds),
+                ))
+                .unwrap();
+        };
+        set_modified(&user_zero.join("config"), 4);
+        set_modified(&invalid.join("config"), 5);
+        set_modified(&older.join("config"), 1);
+        set_modified(&newest.join("config"), 2);
+        let install = SteamInstall {
+            root,
+            userdata_dirs: vec![user_zero, invalid, older, newest.clone()],
+            shortcut_files: vec![],
+            libraryfolders_files: vec![],
+            appmanifest_dirs: vec![],
+        };
+
+        assert_eq!(preferred_userdata_dir(&install), Some(newest));
     }
 }

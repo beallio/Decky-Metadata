@@ -19,9 +19,12 @@ vi.mock("../backend", () => ({
 vi.mock("../log", () => ({ error: vi.fn(), info: vi.fn(), warn: vi.fn() }));
 
 import {
+  clearDeckyNativeActivityForApp,
   configureActivityMetadataLoader,
   deckyNativePartnerEventDiscussionUrl,
   installNativeActivityStorePatch,
+  installNativeNewsHistoryRedirects,
+  installNativePartnerEventStorePatch,
   refreshDeckyNativeActivityForApp,
   steamHttpHelperFromModule,
   steamActivityPayloadForApp,
@@ -29,12 +32,12 @@ import {
 import {
   compatibilityRevisionSnapshot,
   deckyNativeActivityCache,
+  deckyNativePartnerEventCache,
   metadataCache,
   metadataState,
   patchInstallStatus,
   removeMetadataCacheEntry,
 } from "./core";
-
 const makeMetadata = (
   compatibilityOverride: number | null,
   compatibilityCategory: number | null,
@@ -87,8 +90,13 @@ const installShortcut = (appId: number) => {
 };
 
 afterEach(() => {
+  const host = globalThis as Record<string, unknown>;
+  const eventIdsByApp = host.__deckyNativePartnerEventIdsByApp as Map<number, Set<string>> | undefined;
+  eventIdsByApp?.forEach((_ids, appId) => clearDeckyNativeActivityForApp(appId));
   Object.keys(metadataCache).forEach((key) => delete metadataCache[key]);
   deckyNativeActivityCache().clear();
+  deckyNativePartnerEventCache().clear();
+  eventIdsByApp?.clear();
   metadataState.compatibilityRevision = 0;
   metadataState.compatibilityLifecycleGeneration = 0;
   patchInstallStatus.activity = "pending";
@@ -96,8 +104,12 @@ afterEach(() => {
   mocks.currentSteamLanguage.mockReset();
   mocks.currentSteamLanguage.mockResolvedValue("english");
   configureActivityMetadataLoader(async () => undefined, () => false);
-  delete (globalThis as Record<string, unknown>).appStore;
-  delete (globalThis as Record<string, unknown>).appActivityStore;
+  delete host.appStore;
+  delete host.appActivityStore;
+  delete host.appDetailsStore;
+  delete host.SteamClient;
+  delete host.partnerEventStore;
+  delete host.__deckyNativePartnerEventStore;
 });
 
 describe("activity compatibility refresh", () => {
@@ -463,6 +475,225 @@ describe("native Activity metadata removal", () => {
       unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
       expect(store.GetAppActivity).toBe(originalGetAppActivity);
     }
+  });
+});
+
+describe("native news history navigation", () => {
+  it("uses the replacement close for its tracked news entry after fifteen seconds", async () => {
+    const appId = 9710;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Tracked news", "42345678901234567");
+    const activity = await refreshDeckyNativeActivityForApp(appId) as {
+      appActivityByDay?: Array<{ events?: Array<{ eventModel?: { GID?: string } }> }>;
+    } | null;
+    const eventId = activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GID;
+    expect(eventId).toBeTruthy();
+
+    const host = globalThis as Record<string, unknown>;
+    const originalRouter = host.Router;
+    const originalWindow = host.window;
+    const path = `/library/app/${appId}`;
+    const browserWindow = {
+      history: null,
+      location: { pathname: path },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    const history: {
+      location: { pathname: string; state: unknown };
+      push: (target: string, state: unknown) => unknown;
+      back: () => unknown;
+      replace: (target: string, state: unknown) => unknown;
+    } = {
+      location: { pathname: path, state: null },
+      push: vi.fn((_target: string, _state: unknown) => undefined),
+      back: vi.fn(() => undefined),
+      replace: vi.fn((_target: string, _state: unknown) => undefined),
+    };
+    history.replace = vi.fn((target: string, state: unknown) => {
+      history.location = { pathname: target, state };
+      browserWindow.location.pathname = target;
+      return "replaced";
+    });
+    const originalReplace = history.replace;
+    host.Router = { WindowStore: { GamepadUIMainWindowInstance: { m_history: history } } };
+    host.window = browserWindow as unknown as Window;
+    const state = { event_to_show: { appid: appId, eventid: eventId } };
+    const unpatchers: Array<() => void> = [];
+    vi.useFakeTimers();
+    try {
+      installNativeNewsHistoryRedirects(unpatchers);
+      history.push(path, state);
+      vi.advanceTimersByTime(16_000);
+      history.replace(path, {});
+
+      expect(history.back).not.toHaveBeenCalled();
+      expect(originalReplace).toHaveBeenCalledTimes(2);
+
+      history.push(path, state);
+      history.replace("/library/app/9711", {});
+      history.location = { pathname: path, state };
+      history.replace(path, {});
+
+      expect(history.back).toHaveBeenCalledTimes(1);
+    } finally {
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      vi.useRealTimers();
+      if (originalRouter === undefined) delete host.Router;
+      else host.Router = originalRouter;
+      if (originalWindow === undefined) delete host.window;
+      else host.window = originalWindow;
+    }
+  });
+
+  it("uses the current browser route when replaceState omits its URL", async () => {
+    const appId = 9712;
+    installShortcut(appId);
+    metadataCache[String(appId)] = makeNewsMetadata("Tracked browser news", "42345678901234568");
+    const activity = await refreshDeckyNativeActivityForApp(appId) as {
+      appActivityByDay?: Array<{ events?: Array<{ eventModel?: { GID?: string } }> }>;
+    } | null;
+    const eventId = activity?.appActivityByDay?.[0]?.events?.[0]?.eventModel?.GID;
+    expect(eventId).toBeTruthy();
+
+    const host = globalThis as Record<string, unknown>;
+    const originalRouter = host.Router;
+    const originalWindow = host.window;
+    const path = `/library/app/${appId}`;
+    const browserWindow = {
+      history: null as unknown,
+      location: { pathname: path },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    };
+    let state: unknown = null;
+    const browserHistory = {
+      get state() { return state; },
+      back: vi.fn(),
+      pushState: (_state: unknown, _title: string, _url?: string | URL | null) => undefined,
+      replaceState: (nextState: unknown, _title: string, url?: string | URL | null) => {
+        state = nextState;
+        if (url) browserWindow.location.pathname = String(url);
+      },
+    };
+    browserWindow.history = browserHistory;
+    host.Router = undefined;
+    host.window = browserWindow as unknown as Window;
+    const unpatchers: Array<() => void> = [];
+    try {
+      installNativeNewsHistoryRedirects(unpatchers);
+      browserHistory.pushState({ event_to_show: { eventid: eventId } }, "", path);
+      browserHistory.replaceState({}, "");
+
+      expect(browserHistory.back).not.toHaveBeenCalled();
+    } finally {
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      if (originalRouter === undefined) delete host.Router;
+      else host.Router = originalRouter;
+      if (originalWindow === undefined) delete host.window;
+      else host.window = originalWindow;
+    }
+  });
+
+  it("keeps a later window.history wrapper installed on unpatch", () => {
+    const host = globalThis as Record<string, unknown>;
+    const originalRouter = host.Router;
+    const originalWindow = host.window;
+    const originalPushState = vi.fn((_state: unknown, _title: string, _url?: string | URL | null) => "original");
+    const browserHistory = {
+      state: null as unknown,
+      back: vi.fn(),
+      pushState: originalPushState,
+      replaceState: vi.fn(),
+    };
+    host.Router = undefined;
+    host.window = {
+      history: browserHistory,
+      location: { pathname: "/library/home" },
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    } as unknown as Window;
+    const unpatchers: Array<() => void> = [];
+    try {
+      installNativeNewsHistoryRedirects(unpatchers);
+      const pluginWrapper = browserHistory.pushState;
+      const laterWrapper = vi.fn((state: unknown, title: string, url?: string | URL | null) =>
+        pluginWrapper.call(browserHistory, state, title, url),
+      );
+      browserHistory.pushState = laterWrapper;
+
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      (browserHistory as any).pushState(null, "", "/library/home");
+
+      expect(laterWrapper).toHaveBeenCalledTimes(1);
+      expect(originalPushState).toHaveBeenCalledTimes(1);
+    } finally {
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+      if (originalRouter === undefined) delete host.Router;
+      else host.Router = originalRouter;
+      if (originalWindow === undefined) delete host.window;
+      else host.window = originalWindow;
+    }
+  });
+});
+
+describe("synthetic PartnerEvent lifecycle", () => {
+  it("drops superseded and cleared app events from Steam indexes and unload", async () => {
+    const appId = 9701;
+    const otherAppId = 9702;
+    const oldGid = "12345678901234567";
+    const replacementGid = "22345678901234567";
+    const otherGid = "32345678901234567";
+    const shortcuts = new Map([
+      [appId, { appid: appId, app_type: 1073741824, BIsShortcut: () => true }],
+      [otherAppId, { appid: otherAppId, app_type: 1073741824, BIsShortcut: () => true }],
+    ]);
+    const partnerStore = {
+      m_mapExistingEvents: new Map<string, unknown>(),
+      m_mapAnnouncementBodyToEvent: new Map<string, string>(),
+      m_mapAppIDToGIDs: new Map<number, string[]>(),
+      m_mapClanToGIDs: new Map<number, string[]>(),
+    };
+    const host = globalThis as Record<string, unknown>;
+    host.appStore = { GetAppOverviewByAppID: (candidate: number) => shortcuts.get(candidate) };
+    host.partnerEventStore = partnerStore;
+    metadataCache[String(appId)] = makeNewsMetadata("First old", oldGid);
+    metadataCache[String(otherAppId)] = makeNewsMetadata("Other", otherGid);
+
+    await refreshDeckyNativeActivityForApp(appId);
+    await refreshDeckyNativeActivityForApp(otherAppId);
+    expect(partnerStore.m_mapExistingEvents.has(`old_announce_${oldGid}`)).toBe(true);
+    expect(partnerStore.m_mapAppIDToGIDs.get(55150)).toEqual(
+      expect.arrayContaining([`old_announce_${oldGid}`, `old_announce_${otherGid}`]),
+    );
+
+    metadataCache[String(appId)] = makeNewsMetadata("First replacement", replacementGid);
+    await refreshDeckyNativeActivityForApp(appId);
+    expect(deckyNativePartnerEventCache().has(`old_announce_${oldGid}`)).toBe(false);
+    expect(partnerStore.m_mapExistingEvents.has(`old_announce_${oldGid}`)).toBe(false);
+    expect(partnerStore.m_mapAnnouncementBodyToEvent.has(`old_announce_${oldGid}`)).toBe(false);
+    expect(partnerStore.m_mapAppIDToGIDs.get(55150)).toEqual(
+      expect.arrayContaining([`old_announce_${replacementGid}`, `old_announce_${otherGid}`]),
+    );
+    expect(partnerStore.m_mapAppIDToGIDs.get(55150)).not.toContain(`old_announce_${oldGid}`);
+
+    clearDeckyNativeActivityForApp(appId);
+    expect(deckyNativePartnerEventCache().has(`old_announce_${replacementGid}`)).toBe(false);
+    expect(partnerStore.m_mapAppIDToGIDs.get(55150)).toEqual([`old_announce_${otherGid}`]);
+
+    host.SteamClient = {};
+    host.appDetailsStore = {};
+    const unpatchers: Array<() => void> = [];
+    try {
+      installNativePartnerEventStorePatch(unpatchers);
+    } finally {
+      unpatchers.splice(0).reverse().forEach((unpatch) => unpatch());
+    }
+    expect(deckyNativePartnerEventCache().size).toBe(0);
+    expect(partnerStore.m_mapExistingEvents.size).toBe(0);
+    expect(partnerStore.m_mapAnnouncementBodyToEvent.size).toBe(0);
+    expect(partnerStore.m_mapAppIDToGIDs.size).toBe(0);
+    expect(partnerStore.m_mapClanToGIDs.size).toBe(0);
   });
 });
 

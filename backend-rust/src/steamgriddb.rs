@@ -17,6 +17,9 @@ const SGDB_API_BASE: &str = "https://www.steamgriddb.com/api/v2";
 const SGDB_USER_AGENT: &str = "Decky/3 (https://decky.xyz)";
 const SGDB_API_TIMEOUT: Duration = Duration::from_secs(15);
 const SGDB_ASSET_TIMEOUT: Duration = Duration::from_secs(20);
+
+// Keep the Steam-AppID-only 401 distinct from a rejected key at other endpoints.
+const SGDB_UNAUTHORIZED: &str = "sgdb_unauthorized";
 const MAX_API_BYTES: usize = 2 * 1024 * 1024;
 const MAX_IMAGE_BYTES: usize = 10 * 1024 * 1024;
 
@@ -208,7 +211,8 @@ async fn sgdb_get_json(state: &AppState, url: &str, api_key: &str) -> Result<Val
         200..=299 => response
             .json()
             .map_err(|_| "sgdb_invalid_response".to_owned()),
-        401 | 403 => Err("sgdb_invalid_api_key".to_owned()),
+        401 => Err(SGDB_UNAUTHORIZED.to_owned()),
+        403 => Err("sgdb_invalid_api_key".to_owned()),
         404 => Ok(json!({ "success": false, "data": [] })),
         429 => Err("sgdb_rate_limited".to_owned()),
         status => {
@@ -220,6 +224,14 @@ async fn sgdb_get_json(state: &AppState, url: &str, api_key: &str) -> Result<Val
             );
             Err("sgdb_request_failed".to_owned())
         }
+    }
+}
+
+fn public_sgdb_error(error: String) -> String {
+    if error == SGDB_UNAUTHORIZED {
+        "sgdb_invalid_api_key".to_owned()
+    } else {
+        error
     }
 }
 
@@ -375,7 +387,9 @@ pub async fn sgdb_search_games(state: &AppState, query_arg: &Value) -> Result<Va
         .ok_or("sgdb_missing_api_key")?;
     let encoded = percent_encode_segment(query);
     let url = format!("{SGDB_API_BASE}/search/autocomplete/{encoded}");
-    let payload = sgdb_get_json(state, &url, &api_key).await?;
+    let payload = sgdb_get_json(state, &url, &api_key)
+        .await
+        .map_err(public_sgdb_error)?;
     Ok(Value::Array(parse_search_games_payload(&payload)))
 }
 
@@ -415,25 +429,30 @@ pub async fn sgdb_resolve_game(
     };
 
     // 2. Try Steam AppID lookup if available.
+    let mut steam_unauthorized = false;
     if let Some(steam_appid) = storage::positive_steam_app_id(steam_appid_arg) {
         let url = format!("{SGDB_API_BASE}/games/steam/{steam_appid}");
-        if let Ok(payload) = sgdb_get_json(state, &url, &api_key).await {
-            if let Some(data) = payload.get("data").and_then(Value::as_object) {
-                if let (Some(id), Some(name)) = (
-                    data.get("id").and_then(Value::as_u64).filter(|id| *id > 0),
-                    data.get("name").and_then(Value::as_str),
-                ) {
-                    return Ok(json!({
-                        "game": {
-                            "id": id,
-                            "name": name,
-                            "verified": data.get("verified").and_then(Value::as_bool).unwrap_or(false),
-                            "source": "steam",
-                        },
-                        "override": false,
-                    }));
+        match sgdb_get_json(state, &url, &api_key).await {
+            Ok(payload) => {
+                if let Some(data) = payload.get("data").and_then(Value::as_object) {
+                    if let (Some(id), Some(name)) = (
+                        data.get("id").and_then(Value::as_u64).filter(|id| *id > 0),
+                        data.get("name").and_then(Value::as_str),
+                    ) {
+                        return Ok(json!({
+                            "game": {
+                                "id": id,
+                                "name": name,
+                                "verified": data.get("verified").and_then(Value::as_bool).unwrap_or(false),
+                                "source": "steam",
+                            },
+                            "override": false,
+                        }));
+                    }
                 }
             }
+            Err(error) if error == SGDB_UNAUTHORIZED => steam_unauthorized = true,
+            Err(error) => return Err(public_sgdb_error(error)),
         }
     }
 
@@ -445,7 +464,9 @@ pub async fn sgdb_resolve_game(
     {
         let encoded = percent_encode_segment(name);
         let url = format!("{SGDB_API_BASE}/search/autocomplete/{encoded}");
-        let payload = sgdb_get_json(state, &url, &api_key).await?;
+        let payload = sgdb_get_json(state, &url, &api_key)
+            .await
+            .map_err(public_sgdb_error)?;
         let matches = parse_search_games_payload(&payload);
         if let Some(first) = matches.into_iter().next() {
             let mut game = first.as_object().cloned().unwrap_or_else(Map::new);
@@ -455,6 +476,8 @@ pub async fn sgdb_resolve_game(
                 "override": false,
             }));
         }
+    } else if steam_unauthorized {
+        return Err("sgdb_invalid_api_key".to_owned());
     }
 
     Ok(json!({
@@ -486,35 +509,21 @@ pub async fn sgdb_list_assets(
         .await?
         .ok_or("sgdb_missing_api_key")?;
     let url = build_assets_url(sgdb_game_id, slot, filters_arg, page)?;
-    let payload = sgdb_get_json(state, &url, &api_key).await?;
+    let payload = sgdb_get_json(state, &url, &api_key)
+        .await
+        .map_err(public_sgdb_error)?;
     Ok(parse_assets_payload(&payload, page))
 }
 
-async fn package_image_bytes(
-    state: &AppState,
-    app_id: u32,
-    slot: ArtworkSlot,
-    bytes: Vec<u8>,
-) -> Result<Value, String> {
+fn package_image_bytes(slot: ArtworkSlot, bytes: Vec<u8>) -> Result<Value, String> {
     let (ext, mime) = artwork::sniff_image_format(&bytes).ok_or("artwork_invalid_image")?;
     let base64 = artwork::encode_base64(&bytes);
-    let file_path = if artwork::should_save_local_icon(slot, app_id) {
-        let shortcuts = state.local_shortcuts().await?;
-        let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || {
-            artwork::save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
-        })
-        .await
-        .map_err(|error| error.to_string())??
-    } else {
-        None
-    };
     Ok(json!({
         "slot": slot.as_str(),
         "base64": base64,
         "ext": ext,
         "mime": mime,
-        "file_path": file_path,
+        "file_path": null,
     }))
 }
 
@@ -524,8 +533,7 @@ pub async fn sgdb_fetch_asset(
     slot_arg: &Value,
     url_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
@@ -545,24 +553,23 @@ pub async fn sgdb_fetch_asset(
             None,
             SGDB_ASSET_TIMEOUT,
             MAX_IMAGE_BYTES,
-            Redirects::Default,
+            Redirects::None,
         )
         .await
         .map_err(|_| "artwork_download_failed".to_owned())?;
     if !(200..300).contains(&response.status) {
         return Err("artwork_download_failed".to_owned());
     }
-    package_image_bytes(state, app_id, slot, response.body).await
+    package_image_bytes(slot, response.body)
 }
 
 pub async fn read_local_artwork_file(
-    state: &AppState,
+    _state: &AppState,
     app_id_arg: &Value,
     slot_arg: &Value,
     file_path_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
@@ -588,21 +595,20 @@ pub async fn read_local_artwork_file(
     .await
     .map_err(|error| error.to_string())??;
 
-    package_image_bytes(state, app_id, slot, bytes).await
+    package_image_bytes(slot, bytes)
 }
 
 pub async fn get_transparent_artwork_asset(
-    state: &AppState,
+    _state: &AppState,
     app_id_arg: &Value,
     slot_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
         .ok_or("artwork_invalid_slot")?;
-    package_image_bytes(state, app_id, slot, TRANSPARENT_PNG.to_vec()).await
+    package_image_bytes(slot, TRANSPARENT_PNG.to_vec())
 }
 
 pub async fn set_sgdb_game_override(
@@ -644,6 +650,60 @@ pub async fn clear_sgdb_game_override(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::http::{Fixture, Http, Response};
+    use reqwest::header::HeaderMap;
+    use std::sync::{
+        Arc,
+        atomic::{AtomicU64, Ordering},
+    };
+
+    static TEST_SEQ: AtomicU64 = AtomicU64::new(0);
+
+    fn status_fixture(url: &str, status: u16) -> Fixture {
+        Fixture {
+            method: Method::GET,
+            url: url.to_owned(),
+            result: Ok(Response {
+                status,
+                headers: HeaderMap::new(),
+                body: Vec::new(),
+                url: url.to_owned(),
+            }),
+        }
+    }
+
+    async fn test_state(fixtures: Vec<Fixture>) -> (std::path::PathBuf, Arc<AppState>) {
+        let id = TEST_SEQ.fetch_add(1, Ordering::Relaxed);
+        let root = std::env::temp_dir().join(format!(
+            "dm-sgdb-resolve-{}-{id}",
+            std::process::id()
+        ));
+        let settings = root.join("settings");
+        fs::create_dir_all(&settings).unwrap();
+        let http = Http::fixtures(fixtures);
+        let cancel = http.cancel.clone();
+        let mut state = AppState::new(decky_plugin::Env {
+            plugin_settings_dir: settings,
+            plugin_runtime_dir: root.join("runtime"),
+            plugin_log_dir: root.join("logs"),
+            plugin_version: "test".into(),
+            ..Default::default()
+        })
+        .unwrap();
+        let inner = Arc::get_mut(&mut state).unwrap();
+        inner.cancel = cancel;
+        inner.http = http;
+        state.initialize().await.unwrap();
+        state
+            .set_setting("steam_artwork", json!({"sgdbApiKey": "test-key"}))
+            .await
+            .unwrap();
+        (root, state)
+    }
+
+    async fn resolve_test_game(state: &AppState) -> Result<Value, String> {
+        sgdb_resolve_game(state, &json!(0x8000_0001_u32), &json!(1145350), &json!("Game")).await
+    }
 
     #[test]
     fn resolves_user_key_before_built_in_and_trims() {
@@ -771,5 +831,86 @@ mod tests {
             artwork::sniff_image_format(TRANSPARENT_PNG),
             Some(("png", "image/png"))
         );
+    }
+    #[test]
+    fn packaged_shortcut_icon_defers_local_write_until_apply() {
+        let asset = package_image_bytes(ArtworkSlot::Icon, TRANSPARENT_PNG.to_vec()).unwrap();
+        assert_eq!(asset["slot"], "icon");
+        assert!(asset["file_path"].is_null());
+    }
+
+    #[tokio::test]
+    async fn steam_lookup_401_and_404_fall_back_to_title_search() {
+        let steam_url = format!("{SGDB_API_BASE}/games/steam/1145350");
+        let search_url = format!("{SGDB_API_BASE}/search/autocomplete/Game");
+        let search_result = json!({
+            "success": true,
+            "data": [{"id": 7, "name": "Game"}]
+        });
+        let (root, state) = test_state(vec![
+            status_fixture(&steam_url, 401),
+            Fixture::json(&search_url, search_result.clone()),
+            status_fixture(&steam_url, 404),
+            Fixture::json(&search_url, search_result),
+        ])
+        .await;
+
+        for _ in 0..2 {
+            let resolved = resolve_test_game(&state).await.unwrap();
+            assert_eq!(resolved["game"]["source"], "search");
+            assert_eq!(resolved["game"]["id"], 7);
+        }
+
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_lookup_401_with_blank_name_reports_invalid_key() {
+        let steam_url = format!("{SGDB_API_BASE}/games/steam/1145350");
+        let (root, state) = test_state(vec![status_fixture(&steam_url, 401)]).await;
+
+        assert_eq!(
+            sgdb_resolve_game(
+                &state,
+                &json!(0x8000_0001_u32),
+                &json!(1145350),
+                &json!(" \t "),
+            )
+            .await
+            .unwrap_err(),
+            "sgdb_invalid_api_key"
+        );
+
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+        let _ = fs::remove_dir_all(root);
+    }
+
+    #[tokio::test]
+    async fn steam_lookup_propagates_other_http_and_transport_errors() {
+        let steam_url = format!("{SGDB_API_BASE}/games/steam/1145350");
+        let (root, state) = test_state(vec![
+            status_fixture(&steam_url, 403),
+            status_fixture(&steam_url, 429),
+            Fixture::failure(steam_url.clone()),
+        ])
+        .await;
+
+        for expected in [
+            "sgdb_invalid_api_key",
+            "sgdb_rate_limited",
+            "sgdb_request_failed",
+        ] {
+            assert_eq!(
+                resolve_test_game(&state).await.unwrap_err(),
+                expected
+            );
+        }
+
+        state.http.assert_drained();
+        state.shutdown().await.unwrap();
+        let _ = fs::remove_dir_all(root);
     }
 }

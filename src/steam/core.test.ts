@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
-vi.mock("@decky/ui", () => ({ afterPatch: vi.fn(), findInReactTree: vi.fn() }));
+const mocks = vi.hoisted(() => ({ afterPatch: vi.fn() }));
+vi.mock("@decky/ui", () => ({ afterPatch: mocks.afterPatch, findInReactTree: vi.fn() }));
 
 import * as core from "./core";
 
@@ -13,6 +14,132 @@ const isCurrentMatchedRenderRoute = (routeContext: string, appId: number) =>
   (core as Record<string, unknown>).isCurrentMatchedRenderRoute as
     | ((context: string, id: number) => boolean)
     | undefined;
+
+describe("app ID parsers", () => {
+  it("ignores malformed percent escapes in route and visible-label text", () => {
+    expect(core.activityAppIdFromUrl("/library/appnews/55150?title=Battery 85%")).toBe(55150);
+    expect(core.gameDetailAppIdFromPath("Battery 85%")).toBe(0);
+  });
+});
+
+describe("patchMethod ownership", () => {
+  it("keeps a later wrapper installed and makes its inner patch pass through on unpatch", () => {
+    const target = { run: (value: string) => `original:${value}` };
+    const unpatch = core.patchMethod(target, "run", (_thisValue, original, args) => `patched:${original(...args)}`);
+    const deckyWrapper = target.run;
+    target.run = (value) => `later:${deckyWrapper(value)}`;
+
+    unpatch();
+
+    expect(target.run("test")).toBe("later:original:test");
+  });
+
+  it("skips absent methods safely", () => {
+    for (const target of [undefined, {}]) {
+      const unpatch = core.patchMethod(target, "run", (_thisValue, original) => original());
+      expect(unpatch).not.toThrow();
+    }
+  });
+});
+
+describe("route render patch lifecycle", () => {
+  it("patches three hook callbacks once across cloned targets and tolerates a foreign wrapper", () => {
+    const unpatches: Array<() => void> = [];
+    mocks.afterPatch.mockImplementation((
+      target: Record<string, unknown>,
+      method: string,
+      handler: (args: unknown[], rendered: unknown) => unknown,
+    ) => {
+      const original = target[method];
+      if (typeof original !== "function") throw new Error("missing render");
+      const patched = function (this: unknown, ...args: unknown[]) {
+        return handler(args, Reflect.apply(original, this, args));
+      };
+      Object.defineProperty(patched, "__deckyPatch", { value: { original } });
+      target[method] = patched;
+      const patch: { object: unknown; original: unknown; patchedFunction: unknown; unpatch: () => void } = {
+        object: target,
+        original,
+        patchedFunction: patched,
+        unpatch: () => undefined,
+      };
+      patch.unpatch = vi.fn(() => {
+        if (!patch.object || typeof patch.object !== "object" || Reflect.get(patch.object, method) !== patched) {
+          throw new TypeError("foreign wrapper");
+        }
+        Reflect.set(patch.object, method, original);
+      });
+      unpatches.push(patch.unpatch);
+      return patch;
+    });
+
+    const originalRender = () => null;
+    const routeProps: Record<string, unknown> = { renderFunc: originalRender };
+    const patchers = Array.from({ length: 3 }, () =>
+      core.createRouteRenderPatcher<unknown[], unknown>((_args, rendered) => rendered),
+    );
+    try {
+      patchers.forEach((patcher) => patcher.patch(routeProps));
+      patchers.forEach((patcher) => patcher.patch(routeProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const nextRouteProps: Record<string, unknown> = { renderFunc: originalRender };
+      patchers.forEach((patcher) => patcher.patch(nextRouteProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const chainedRouteProps: Record<string, unknown> = { renderFunc: nextRouteProps.renderFunc };
+      patchers.forEach((patcher) => patcher.patch(chainedRouteProps));
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      const latestRender = chainedRouteProps.renderFunc;
+      if (typeof latestRender !== "function") throw new Error("missing chained render");
+      chainedRouteProps.renderFunc = (...args: unknown[]) => Reflect.apply(latestRender, chainedRouteProps, args);
+      expect(() => patchers.forEach((patcher) => patcher.patch(chainedRouteProps))).not.toThrow();
+      expect(mocks.afterPatch).toHaveBeenCalledTimes(3);
+
+      expect(() => patchers.forEach((patcher) => patcher.release())).not.toThrow();
+      unpatches.forEach((unpatch) => expect(unpatch).toHaveBeenCalledTimes(1));
+    } finally {
+      patchers.forEach((patcher) => patcher.release());
+      mocks.afterPatch.mockReset();
+    }
+  });
+  it("runs only the current patch when a foreign wrapper blocks release", () => {
+    mocks.afterPatch.mockImplementation((
+      target: Record<string, unknown>,
+      method: string,
+      handler: (args: unknown[], rendered: unknown) => unknown,
+    ) => {
+      const original = target[method] as (...args: unknown[]) => unknown;
+      const patched = (...args: unknown[]) => handler(args, original(...args));
+      target[method] = patched;
+      return {
+        object: target,
+        original,
+        patchedFunction: patched,
+        unpatch: () => {
+          if (target[method] !== patched) throw new TypeError("foreign wrapper");
+          target[method] = original;
+        },
+      };
+    });
+    const handler = vi.fn((_args: unknown[], rendered: unknown) => rendered);
+    const patcher = core.createRouteRenderPatcher(handler);
+    const oldTarget = { renderFunc: () => "old" };
+    patcher.patch(oldTarget);
+    const oldPatched = oldTarget.renderFunc;
+    oldTarget.renderFunc = () => (oldPatched as () => string)();
+
+    const nextTarget = { renderFunc: () => "new" };
+    patcher.patch(nextTarget);
+    oldTarget.renderFunc();
+    nextTarget.renderFunc();
+
+    expect(handler).toHaveBeenCalledTimes(1);
+    patcher.release();
+    mocks.afterPatch.mockReset();
+  });
+});
 
 describe("isCurrentGameDetailRoute", () => {
   it.each([
@@ -168,6 +295,7 @@ describe("metadata match revisions", () => {
       delete core.metadataCache[String(appId)];
     }
   });
+
 });
 
 describe("normalizedTabText", () => {

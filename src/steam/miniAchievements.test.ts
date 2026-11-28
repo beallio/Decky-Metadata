@@ -5,6 +5,19 @@ const mocks = vi.hoisted(() => ({
   addPatch: vi.fn(),
   removePatch: vi.fn(),
   documents: [] as unknown[],
+  afterPatch: vi.fn((target: object, method: string,
+    handler: (args: unknown[], rendered: unknown) => unknown) => {
+    const original: unknown = Reflect.get(target, method);
+    if (typeof original !== "function") throw new Error("missing render");
+    const patched = function (this: unknown, ...args: unknown[]) {
+      return handler(args, Reflect.apply(original, this, args));
+    };
+    Reflect.set(target, method, patched);
+    const unpatch = vi.fn(() => {
+      if (Reflect.get(target, method) === patched) Reflect.set(target, method, original);
+    });
+    return { unpatch };
+  }),
 }));
 
 const classes = vi.hoisted(() => ({
@@ -15,9 +28,6 @@ const classes = vi.hoisted(() => ({
 }));
 
 vi.mock("@decky/ui", async () => {
-  // The factory runs before this file's imports initialise, so the real patcher
-  // cannot be a static import here.
-  const { afterPatch } = await import("@decky/ui/dist/utils/patcher");
   const findNode = (node: unknown, filter: (candidate: unknown) => unknown): unknown => {
     if (Array.isArray(node)) {
       for (const child of node) {
@@ -35,7 +45,7 @@ vi.mock("@decky/ui", async () => {
     return undefined;
   };
   return {
-    afterPatch,
+    afterPatch: mocks.afterPatch,
     findInReactTree: findNode,
     findClassModule: () => classes,
   };
@@ -126,6 +136,7 @@ beforeEach(() => {
   detailPatches = [];
   mocks.documents.length = 0;
   mocks.addPatch.mockReset();
+  mocks.afterPatch.mockClear();
   mocks.removePatch.mockReset();
   mocks.addPatch.mockImplementation((route: string, callback: DetailPatch["callback"]) => {
     const record = { route, callback };
@@ -252,6 +263,26 @@ describe("mini achievements onSeek supply", () => {
     vi.runOnlyPendingTimers();
 
     expect(typeof (instance.props as Record<string, unknown>).onSeek).toBe("function");
+  });
+
+  it("keeps one route render patch and releases it when its route target changes", () => {
+    install();
+    const first = { renderFunc: () => null };
+    applyDetailPatch(first);
+    applyDetailPatch(first);
+    expect(mocks.afterPatch).toHaveBeenCalledTimes(1);
+    const firstPatch = mocks.afterPatch.mock.results[0];
+    if (firstPatch?.type !== "return") throw new Error("missing first render patch");
+
+    const second = { renderFunc: () => null };
+    applyDetailPatch(second);
+    expect(mocks.afterPatch).toHaveBeenCalledTimes(2);
+    expect(firstPatch.value.unpatch).toHaveBeenCalledTimes(1);
+    const secondPatch = mocks.afterPatch.mock.results[1];
+    if (secondPatch?.type !== "return") throw new Error("missing second render patch");
+
+    (dispose as () => void)();
+    expect(secondPatch.value.unpatch).toHaveBeenCalledTimes(1);
   });
 
   it("restores the latest raw props on dispose and tolerates a second call", () => {

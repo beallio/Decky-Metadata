@@ -1,4 +1,5 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
+import { isNativeSteamAppId } from "./appId";
 import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
@@ -241,15 +242,16 @@ export const removeMetadataCacheEntry = (appId: number) => {
 };
 
 export const replaceMetadataCacheEntries = (records: Record<string, MetadataData>) => {
+  const nextRecords = records || {};
   const previous = new Map(
     Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]),
   );
   Object.keys(metadataCache).forEach((key) => {
-    if (!(key in (records || {}))) countRemoval(key);
+    if (!(key in nextRecords)) countRemoval(key);
     delete metadataCache[key];
   });
-  Object.assign(metadataCache, records || {});
-  const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+  Object.assign(metadataCache, nextRecords);
+  const appIds = new Set([...previous.keys(), ...Object.keys(nextRecords)]);
   for (const key of appIds) {
     const previousMatch = previous.get(key) ?? null;
     const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
@@ -382,7 +384,7 @@ export const isNativeNonSteamShortcut = (overview: any): boolean => {
 export const isNativeSteamGame = (overview: any): boolean => {
   if (!overview || isNativeNonSteamShortcut(overview)) return false;
   const appId = Number(overview?.appid);
-  if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000) return false;
+  if (!isNativeSteamAppId(appId)) return false;
   const appType = Number(overview?.app_type);
   return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
 };
@@ -602,7 +604,7 @@ export const deckyNativePartnerEventCache = () => {
 export const deckyNativePartnerEventStore = () => steamInternals()[DECKY_NATIVE_PARTNER_STORE_WINDOW_KEY] || null;
 
 export const activityAppIdFromUrl = (url: string) => {
-  const decoded = decodeURIComponent(String(url || ""));
+  const decoded = safeDecodeURIComponent(String(url || ""));
   const patterns = [
     /library\/(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)\/(\d+)/i,
     /(?:appactivityfeed|appactivity|activityfeed|activity|appnews|appupdates)[^?]*[?&](?:appid|app_id|appId)=(\d+)/i,
@@ -617,7 +619,7 @@ export const activityAppIdFromUrl = (url: string) => {
 
 
 export const gameDetailAppIdFromPath = (path: string) => {
-  const decoded = decodeURIComponent(String(path || ""));
+  const decoded = safeDecodeURIComponent(String(path || ""));
   const patterns = [
     /\/library\/(?:app|details|[^/]+\/app)\/(\d+)(?:[/?#\s].*)?/i,
     /(?:^|[?#&\s])appid=(\d+)/i,
@@ -858,23 +860,27 @@ export const patchMethod = (
   methodName: string,
   replacement: (thisValue: any, original: (...args: any[]) => any, args: any[]) => any
 ): Unpatch => {
-  if (!target?.[methodName]) return () => undefined;
+  if (typeof target?.[methodName] !== "function") return () => undefined;
   const original = target[methodName];
-  target[methodName] = function patchedMethod(...args: any[]) {
+  let active = true;
+  const patched = function patchedMethod(...args: any[]) {
     const boundOriginal = original.bind(this);
+    if (!active) return boundOriginal(...args);
     try {
       return replacement(this, boundOriginal, args);
-    } catch (_error) {
+    } catch {
       // A patch replacement must never break the Steam method it wraps.
       try {
         return boundOriginal(...args);
-      } catch (_originalError) {
+      } catch {
         return undefined;
       }
     }
   };
+  target[methodName] = patched;
   return () => {
-    target[methodName] = original;
+    if (target[methodName] === patched) target[methodName] = original;
+    else active = false;
   };
 };
 
@@ -891,6 +897,71 @@ export const safeAfterPatch = (
       return ret;
     }
   });
+
+type RouteRenderTarget = { renderFunc?: unknown };
+type RouteRenderPatch = { object: unknown; original: unknown; patchedFunction: unknown; unpatch: Unpatch };
+
+const routeRenderPatchInChain = (renderFunc: unknown, targetPatch: unknown) => {
+  try {
+    let current = renderFunc;
+    while (typeof current === "function") {
+      if (current === targetPatch) return true;
+      const patch = Reflect.get(current, "__deckyPatch");
+      if (!patch || typeof patch !== "object") return false;
+      current = Reflect.get(patch, "original");
+    }
+  } catch {
+    return false;
+  }
+  return false;
+};
+
+export const createRouteRenderPatcher = <Args extends unknown[], Rendered>(
+  handler: (args: Args, rendered: Rendered) => Rendered,
+) => {
+  let renderTarget: RouteRenderTarget | undefined;
+  let renderPatch: RouteRenderPatch | undefined;
+
+  const release = () => {
+    const patch = renderPatch;
+    renderPatch = undefined;
+    renderTarget = undefined;
+    try {
+      patch?.unpatch();
+    } catch {
+      // A foreign non-Decky wrapper does not expose the inner patch chain.
+    }
+  };
+
+  return {
+    patch: (target?: RouteRenderTarget | null) => {
+      if (typeof target?.renderFunc !== "function") {
+        release();
+        return;
+      }
+      if (target === renderTarget) return;
+      if (renderPatch && routeRenderPatchInChain(target.renderFunc, renderPatch.patchedFunction)) {
+        renderPatch.object = target;
+        renderTarget = target;
+        return;
+      }
+      if (renderPatch && target.renderFunc === renderPatch.original) {
+        renderPatch.object = target;
+        target.renderFunc = renderPatch.patchedFunction;
+        renderTarget = target;
+        return;
+      }
+      release();
+      let installed: RouteRenderPatch;
+      installed = safeAfterPatch(target, "renderFunc", (args: Args, rendered: Rendered) =>
+        installed === renderPatch ? handler(args, rendered) : rendered,
+      );
+      renderPatch = installed;
+      renderTarget = target;
+    },
+    release,
+  };
+};
 
 export const overviewFromReactTree = (tree: any): any | null => {
   try {

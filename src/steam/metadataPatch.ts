@@ -1091,6 +1091,8 @@ type ApplyMetadataOptions = {
    * its concrete return shield.
    */
   publishCompatibility?: boolean;
+  /** Getters can run in Steam's render; defer only the observable-map publication. */
+  deferCompatibilityPublication?: boolean;
 };
 
 export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {}) => {
@@ -1099,6 +1101,11 @@ export const applyMetadata = (appId: number, options: ApplyMetadataOptions = {})
   if (compatibilityChanged && overview) {
     if (options.publishCompatibility === false) {
       metadataState.deferredEditorCompatibilityPublications.add(appId);
+    } else if (options.deferCompatibilityPublication) {
+      const generation = metadataState.compatibilityLifecycleGeneration;
+      queueMicrotask(() => {
+        if (isCompatibilityLifecycleCurrent(generation)) publishCompatibilityReplacements([{ appId, overview }]);
+      });
     } else {
       publishCompatibilityReplacements([{ appId, overview }]);
     }
@@ -1414,7 +1421,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
         ensureDetailsOverviewSafeFields(appId);
         const metadata = metadataCache[String(appId)];
         if (metadata) {
-          applyMetadata(appId);
+          applyMetadata(appId, { deferCompatibilityPublication: true });
           const appData = appDetailsStore?.GetAppData?.(appId);
           // Keep Steam's first-run detail bootstrap intact. Returning Decky data
           // before Steam has created the native details object can make SteamUI
@@ -1447,7 +1454,7 @@ export const installMetadataPatches = (unpatchers: Unpatch[]) => {
       const overview = getOverview(appId);
       if (isNonSteamApp(overview)) ensureDetailsOverviewSafeFields(appId);
       if (isNonSteamApp(overview) && metadataCache[String(appId)]) {
-        applyMetadata(appId);
+        applyMetadata(appId, { deferCompatibilityPublication: true });
         const appData = appDetailsStore?.GetAppData?.(appId);
         if (appData?.details && appData?.associationData) {
           return appData.associationData;

@@ -7,6 +7,7 @@ import * as log from "../log";
 import { GAME_DETAIL_ROUTES } from "../steam/core";
 import { resolveSteamCssClass, subscribeNativeCssClasses } from "../steam/nativeCssClasses";
 import { findSteamModulesBySource } from "../steam/steamUiModules";
+import { protonDbBadgeController } from "./controller";
 import { ProtonDbGameButton } from "./Badges";
 import type { NativeProtonDbButtonProps } from "./Badges";
 import { steamUiDocuments } from "../steam/steamUiHost";
@@ -97,6 +98,7 @@ function actionRowType(fiber: RecordValue, appButtonsClass: string): object | un
 /** Capture the private forwardRef from its real DOM fiber; it is not a webpack export. */
 export function installProtonDbGameView(): () => void {
   let stopped = false;
+  let enabled = protonDbBadgeController.getSnapshot().effectiveEnabled;
   let targets: NativeTargets | undefined;
   const observers = new Map<Document, MutationObserver>();
   let captureQueued = false;
@@ -107,14 +109,20 @@ export function installProtonDbGameView(): () => void {
   const routeCleanups: Array<() => void> = [];
 
   const capture = () => {
-    if (stopped) return;
+    if (stopped || !enabled) return;
     const documents = steamUiDocuments();
+    const currentDocuments = new Set(documents);
+    for (const [owner, observer] of observers) {
+      if (currentDocuments.has(owner)) continue;
+      observer.disconnect();
+      observers.delete(owner);
+    }
     for (const document of documents) {
       const body = document.querySelector("body");
       const owner = body?.ownerDocument;
       if (!owner || observers.has(owner)) continue;
       const observer = new MutationObserver(() => {
-        if (stopped || captureQueued) return;
+        if (stopped || !enabled || captureQueued) return;
         captureQueued = true;
         queueMicrotask(() => { captureQueued = false; capture(); });
       });
@@ -168,7 +176,7 @@ export function installProtonDbGameView(): () => void {
   };
 
   const scheduleCapture = () => {
-    if (stopped) return;
+    if (stopped || !enabled) return;
     generation += 1;
     const current = generation;
     for (const timer of captureTimers) clearTimeout(timer);
@@ -183,22 +191,38 @@ export function installProtonDbGameView(): () => void {
       captureTimers.add(timer);
     }
   };
+  const clearCapture = () => {
+    generation += 1;
+    for (const timer of captureTimers) clearTimeout(timer);
+    captureTimers.clear();
+    for (const observer of observers.values()) observer.disconnect();
+    observers.clear();
+  };
+  const unsubscribeSettings = protonDbBadgeController.subscribe(() => {
+    const nextEnabled = protonDbBadgeController.getSnapshot().effectiveEnabled;
+    if (enabled === nextEnabled) return;
+    enabled = nextEnabled;
+    if (enabled) scheduleCapture();
+    else clearCapture();
+  });
   for (const route of GAME_DETAIL_ROUTES) {
-    const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
-    routeCleanups.push(() => routerHook.removePatch(route, patch));
+    try {
+      const patch = routerHook.addPatch(route, props => { scheduleCapture(); return props; });
+      routeCleanups.push(() => routerHook.removePatch(route, patch));
+    } catch (error) {
+      log.warn("protondb", "game button route hook failed", error);
+    }
   }
   const unsubscribeClasses = subscribeNativeCssClasses(() => {
-    if (!stopped && !targets) scheduleCapture();
+    if (!stopped && enabled && !targets) scheduleCapture();
   });
   scheduleCapture();
   return () => {
     if (stopped) return;
     stopped = true;
+    unsubscribeSettings();
     unsubscribeClasses();
-    generation += 1;
-    for (const observer of observers.values()) observer.disconnect();
-    for (const timer of captureTimers) clearTimeout(timer);
-    captureTimers.clear();
+    clearCapture();
     for (const dispose of routeCleanups) dispose();
     for (const patch of patches.values()) patch.unpatch();
     patches.clear();

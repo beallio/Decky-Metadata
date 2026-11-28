@@ -1,7 +1,15 @@
 import React from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const native = vi.hoisted(() => ({ route: "/library/app/570", row: undefined as unknown, document: undefined as unknown, viteMode: false }));
+const native = vi.hoisted(() => ({
+  route: "/library/app/570",
+  row: undefined as unknown,
+  document: undefined as unknown,
+  documents: [] as unknown[],
+  viteMode: false,
+  enabled: true,
+  listeners: [] as Array<() => void>,
+}));
 vi.mock("@decky/api", () => ({ routerHook: {
   addPatch: (_route: string, patch: (props: unknown) => unknown) => patch,
   removePatch: vi.fn(),
@@ -25,7 +33,14 @@ vi.mock("../steam/steamUiModules", () => ({ findSteamModulesBySource: (fragments
   if (fragments.includes("ControllerConfigButton")) return [{ MenuButton: "menu", ControllerConfigButton: "controller-style" }];
   return [{ AppButtons: "buttons", ActionButtonAndStatusPanel: "panel", PlaySection: "play" }];
 } }));
-vi.mock("../steam/steamUiHost", () => ({ steamUiDocuments: () => [native.document] }));
+vi.mock("../steam/steamUiHost", () => ({ steamUiDocuments: () => native.documents }));
+vi.mock("./controller", () => ({ protonDbBadgeController: {
+  getSnapshot: () => ({ effectiveEnabled: native.enabled }),
+  subscribe: (listener: () => void) => {
+    native.listeners.push(listener);
+    return () => { native.listeners.splice(native.listeners.indexOf(listener), 1); };
+  },
+} }));
 vi.mock("./Badges", () => ({ ProtonDbGameButton: "ProtonDbGameButton" }));
 
 import { installProtonDbGameView } from "./gameView";
@@ -51,9 +66,12 @@ let dispose: (() => void) | undefined;
 beforeEach(() => {
   vi.useFakeTimers();
   native.route = "/library/app/570";
+  native.enabled = true;
+  native.listeners.length = 0;
   const document = { body: {}, querySelector: () => ({ ownerDocument: native.document }),
     querySelectorAll: () => native.row ? [native.row] : [] };
   native.document = document;
+  native.documents = [document];
   native.row = {
     ownerDocument: document,
     __reactFiber$fixture: {
@@ -66,6 +84,8 @@ beforeEach(() => {
     disconnect = observer.disconnect;
   });
   owner.forceUpdate.mockClear();
+  observer.observe.mockClear();
+  observer.disconnect.mockClear();
 });
 afterEach(() => { dispose?.(); dispose = undefined; vi.useRealTimers(); vi.unstubAllGlobals(); });
 
@@ -115,6 +135,33 @@ describe("private native action-row capture", () => {
     const first = buttonsFor(570)[0];
     expect(React.isValidElement(first) && first.type).toBe("ProtonDbGameButton");
   });
+  it("observes only while effectively enabled and releases observers when disabled", async () => {
+    native.enabled = false;
+    dispose = installProtonDbGameView();
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(observer.observe).not.toHaveBeenCalled();
+
+    native.enabled = true;
+    for (const listener of native.listeners) listener();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(observer.observe).toHaveBeenCalledTimes(1);
+
+    native.enabled = false;
+    for (const listener of native.listeners) listener();
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("disconnects observers for Steam documents no longer returned on refresh", async () => {
+    dispose = installProtonDbGameView();
+    await vi.advanceTimersByTimeAsync(0);
+    expect(observer.observe).toHaveBeenCalledTimes(1);
+
+    native.documents = [];
+    notifyMutation();
+    await Promise.resolve();
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
+  });
 
   it("restores the native render and cancels capture on unload", async () => {
     dispose = installProtonDbGameView();
@@ -148,6 +195,7 @@ describe("private native action-row capture", () => {
       querySelectorAll: () => [native.row],
     };
     native.document = doc;
+    native.documents = [doc];
     native.row = {
       ownerDocument: doc,
       __reactFiber$fixture: {

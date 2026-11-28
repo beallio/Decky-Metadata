@@ -307,7 +307,7 @@ async fn run_probe(probe: ProbeDefinition) -> ProbeResult {
         }
         _ => {
             let (http, requests) =
-                match Http::new_recording(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+                match Http::new_recording(CancellationToken::new()) {
                     Ok(value) => value,
                     Err(_) => {
                         result.fail("HttpError", "HTTP client initialization failed");
@@ -1038,7 +1038,7 @@ async fn ign_trailers() -> ExitCode {
         checked: Vec<String>,
         error: Option<ErrorEnvelope>,
     }
-    let (http, _) = match Http::new_recording(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+    let (http, _) = match Http::new_recording(CancellationToken::new()) {
         Ok(value) => value,
         Err(_) => {
             println!(
@@ -1130,7 +1130,7 @@ async fn community_fallback(appid: &str, page: Option<&str>) -> ExitCode {
         eprintln!("backend-diagnostics: metadata record is missing for appid {appid}");
         return ExitCode::from(1);
     };
-    let http = match Http::new(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+    let http = match Http::new(CancellationToken::new()) {
         Ok(value) => value,
         Err(_) => {
             eprintln!("backend-diagnostics: HTTP client initialization failed");
@@ -1179,8 +1179,8 @@ mod tests {
             "published_at": "2026-01-01T00:00:00Z",
             "html_url": "https://github.com/beallio/Decky-Metadata/releases/tag/v1.2.3",
             "assets": [
-                {"id": 1, "size": 200, "name": "Decky-Metadata-v1.2.3.manifest.json", "browser_download_url": "https://github.com/manifest"},
-                {"id": 2, "size": 12, "name": "Decky-Metadata.zip", "browser_download_url": "https://github.com/archive"}
+                {"id": 1, "size": 200, "name": "Decky-Metadata-v1.2.3.manifest.json", "browser_download_url": "https://github.com/beallio/Decky-Metadata/releases/download/v1.2.3/Decky-Metadata-v1.2.3.manifest.json"},
+                {"id": 2, "size": 12, "name": "Decky-Metadata.zip", "browser_download_url": "https://github.com/beallio/Decky-Metadata/releases/download/v1.2.3/Decky-Metadata.zip"}
             ]
         })
     }
