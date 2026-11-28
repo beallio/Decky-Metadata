@@ -20,7 +20,7 @@ The rolling [`dev-build` prerelease](https://github.com/beallio/Decky-Metadata/r
 
 ### Testing tab (pull request builds)
 
-Under **Updates → Developer**, turn on **Enable Testing tab** to add a **Testing** tab to Settings (off by default). The **Testing** tab lists open pull requests from `beallio/Decky-Metadata` and fork pull requests that carry the `test-build` label. Selecting **Install** verifies the build published to the `pr-builds` GitHub prerelease against its manifest and SHA-256 checksum, then hands the direct GitHub Releases ZIP to Decky Loader to install. Because pull request builds are stamped as development versions (`X.Y.Z-dev.pr<number>.g<sha>`), you can return to a stable release afterward from **Updates**.
+Under **Updates → Developer**, turn on **Enable Testing tab** to add a **Testing** tab to Settings (off by default). The **Testing** tab lists open pull requests from `beallio/Decky-Metadata` and fork pull requests that carry the `test-build` label. For fork PRs, a maintainer must run **Publish PR Build** with `workflow_dispatch`, providing the PR number and exact head SHA; publication requires a successful CI `pull_request` run for that SHA. Selecting **Install** verifies the build published to the `pr-builds` GitHub prerelease against its manifest and SHA-256 checksum, then hands the direct GitHub Releases ZIP to Decky Loader to install. Because pull request builds are stamped as development versions (`X.Y.Z-dev.pr<number>.g<sha>`), you can return to a stable release afterward from **Updates**.
 
 ## Mini achievements
 

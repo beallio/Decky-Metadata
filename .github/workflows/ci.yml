@@ -82,17 +82,13 @@ jobs:
       - name: Check release version drift
         run: ./run.sh python3 scripts/version_guard.py check-drift "$(node -p "require('./package.json').version")"
 
-      # Package an installable ZIP + sidecars for the in-plugin Testing tab on
-      # same-repo PRs or fork PRs opted in with the `test-build` label.
+      # Fork build publication is authorized in publish-pr-build.yml.
       - name: Package PR testing artifact
         if: >-
           github.event_name == 'pull_request' &&
           (
             github.event.pull_request.head.repo.full_name == github.repository ||
-            (
-              github.event.action == 'labeled' &&
-              github.event.label.name == 'test-build'
-            )
+            contains(github.event.pull_request.labels.*.name, 'test-build')
           )
         shell: bash
         env:
@@ -127,10 +123,7 @@ jobs:
           github.event_name == 'pull_request' &&
           (
             github.event.pull_request.head.repo.full_name == github.repository ||
-            (
-              github.event.action == 'labeled' &&
-              github.event.label.name == 'test-build'
-            )
+            contains(github.event.pull_request.labels.*.name, 'test-build')
           )
         uses: actions/upload-artifact@v7
         with:
