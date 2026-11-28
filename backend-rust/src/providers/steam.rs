@@ -545,6 +545,9 @@ pub async fn steam_announcement_page_image(http: &Http, url: &str) -> String {
             parsed_url.host_str(),
             Some("store.steampowered.com" | "steamcommunity.com")
         )
+        || !parsed_url.username().is_empty()
+        || parsed_url.password().is_some()
+        || parsed_url.port_or_known_default() != Some(443)
     {
         return String::new();
     }
@@ -1941,6 +1944,19 @@ mod tests {
         )]);
         assert_eq!(steam_announcement_page_image(&http, url).await, "");
     }
+
+    #[tokio::test]
+    async fn steam_news_image_fetch_rejects_credentials_and_non_default_ports() {
+        let http = Http::fixtures(vec![]);
+        for url in [
+            "https://user:pass@steamcommunity.com/games/400/announcements/detail/2",
+            "https://steamcommunity.com:8443/games/400/announcements/detail/2",
+        ] {
+            assert_eq!(steam_announcement_page_image(&http, url).await, "");
+        }
+        http.assert_drained();
+    }
+
 
     #[tokio::test]
     async fn steam_news_falls_back_to_news_feed_and_announcement_page_images() {
