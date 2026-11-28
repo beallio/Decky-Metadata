@@ -1,13 +1,11 @@
 use crate::{
     matching::{py_string, py_truthy},
-    updater::models::{
-        ParsedPluginVersion, UpdateCandidate, parse_plugin_version, parse_release_manifest,
+    updater::{
+        models::{ParsedPluginVersion, UpdateCandidate, parse_plugin_version, parse_release_manifest},
+        urls::is_repository_release_download_url,
     },
 };
 use serde_json::Value;
-
-const RELEASE_DOWNLOAD_PREFIX: &str =
-    "https://github.com/beallio/Decky-Metadata/releases/download/";
 
 #[derive(Clone, Debug)]
 pub struct PrevalidatedRelease<'a> {
@@ -63,7 +61,7 @@ pub fn prevalidate_release_candidate(release: &Value) -> Option<PrevalidatedRele
         !asset
             .get("browser_download_url")
             .and_then(Value::as_str)
-            .is_some_and(|url| url.starts_with(RELEASE_DOWNLOAD_PREFIX))
+            .is_some_and(is_repository_release_download_url)
     }) {
         return None;
     }
@@ -233,8 +231,8 @@ mod tests {
             "html_url": format!("https://example.test/releases/{tag}"),
             "published_at": "2026-07-17T12:00:00Z",
             "assets": [
-                {"name": format!("Decky-Metadata-{tag}.manifest.json"), "browser_download_url": format!("{RELEASE_DOWNLOAD_PREFIX}manifest")},
-                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": format!("{RELEASE_DOWNLOAD_PREFIX}plugin.zip")}
+                {"name": format!("Decky-Metadata-{tag}.manifest.json"), "browser_download_url": format!("https://github.com/beallio/Decky-Metadata/releases/download/manifest")},
+                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": format!("https://github.com/beallio/Decky-Metadata/releases/download/plugin.zip")}
             ]
         })
     }
