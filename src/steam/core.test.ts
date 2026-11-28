@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 vi.mock("@decky/ui", () => ({ afterPatch: vi.fn(), findInReactTree: vi.fn() }));
 
 import * as core from "./core";
+import type { MetadataData } from "../types";
 
 const isCurrentGameDetailRoute = (routeContext: string, appId: number) =>
   (core as Record<string, unknown>).isCurrentGameDetailRoute as
@@ -165,6 +166,18 @@ describe("metadata match revisions", () => {
       expect(listener).not.toHaveBeenCalled();
     } finally {
       unsubscribe();
+      delete core.metadataCache[String(appId)];
+    }
+  });
+
+  it("normalizes legacy local co-op categories when metadata is loaded", () => {
+    const appId = 0x80000047;
+    try {
+      core.replaceMetadataCacheEntries({
+        [String(appId)]: { title: "Legacy", store_categories: [392, 24] } as unknown as MetadataData,
+      });
+      expect(core.metadataCache[String(appId)].store_categories).toEqual([39, 24]);
+    } finally {
       delete core.metadataCache[String(appId)];
     }
   });

@@ -1,5 +1,6 @@
 import { afterPatch, findInReactTree } from "@decky/ui";
-import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview } from "../types";
+import { isNativeSteamAppId } from "./appId";
+import { CompatibilityDefaultScope, DeckCompatibilityCategory, MetadataData, NativePartnerEvent, SteamInternals, SteamOverview, StoreCategory } from "../types";
 
 declare const appStore: SteamInternals["appStore"];
 declare const appDetailsStore: SteamInternals["appDetailsStore"];
@@ -241,14 +242,27 @@ export const removeMetadataCacheEntry = (appId: number) => {
 };
 
 export const replaceMetadataCacheEntries = (records: Record<string, MetadataData>) => {
+  const normalizedRecords = Object.fromEntries(
+    Object.entries(records || {}).map(([key, value]) => [
+      key,
+      value?.store_categories?.includes(392)
+        ? {
+            ...value,
+            store_categories: value.store_categories.map((category) =>
+              category === 392 ? StoreCategory.LocalCoOp : category,
+            ),
+          }
+        : value,
+    ]),
+  );
   const previous = new Map(
     Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]),
   );
   Object.keys(metadataCache).forEach((key) => {
-    if (!(key in (records || {}))) countRemoval(key);
+    if (!(key in normalizedRecords)) countRemoval(key);
     delete metadataCache[key];
   });
-  Object.assign(metadataCache, records || {});
+  Object.assign(metadataCache, normalizedRecords);
   const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
   for (const key of appIds) {
     const previousMatch = previous.get(key) ?? null;
@@ -382,7 +396,7 @@ export const isNativeNonSteamShortcut = (overview: any): boolean => {
 export const isNativeSteamGame = (overview: any): boolean => {
   if (!overview || isNativeNonSteamShortcut(overview)) return false;
   const appId = Number(overview?.appid);
-  if (!Number.isSafeInteger(appId) || appId <= 0 || appId >= 0x80000000) return false;
+  if (!isNativeSteamAppId(appId)) return false;
   const appType = Number(overview?.app_type);
   return Number.isInteger(appType) && (appType & NATIVE_STEAM_GAME_APP_TYPE_MASK) !== 0;
 };

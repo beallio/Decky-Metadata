@@ -1,7 +1,16 @@
 import { describe, expect, it } from "vitest";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
-import { normalizeReleaseDate } from "./metadataForm";
+import { normalizeReleaseDate, parseSteamAppId } from "./metadataForm";
+
+describe("Steam app ID parsing", () => {
+  it("rejects shortcut IDs and unsafe rounded integers", () => {
+    expect(parseSteamAppId("2147483647")).toBe(2147483647);
+    expect(parseSteamAppId("2147483648")).toBe(0);
+    expect(parseSteamAppId("9007199254740993")).toBe(0);
+    expect(parseSteamAppId("https://store.steampowered.com/app/2147483648/")).toBe(0);
+  });
+});
 
 const dates = ["2024-03-10", "2024-03-11", "2024-11-03", "2024-11-04"];
 const zones = ["UTC", "America/New_York", "America/Los_Angeles", "Asia/Tokyo", "Etc/GMT+12", "Pacific/Kiritimati"];

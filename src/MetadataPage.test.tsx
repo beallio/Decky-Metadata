@@ -511,6 +511,25 @@ describe("MetadataPage compatibility status", () => {
     expect(toast.toastSuccess).toHaveBeenCalledWith("Metadata saved", "Shortcut");
     expect(dropdown(renderPage()).props.selectedOption).toBe(0);
   });
+  it("applies a saved record to runtime while preserving edits made during the save", async () => {
+    const saved = makeMetadata({ title: "Saved title" });
+    const pendingSave = deferred<MetadataData>();
+    backend.saveMetadata.mockReturnValue(pendingSave.promise);
+    const forgetHltb = vi.spyOn(hltbStore, "forget");
+    hydrateMetadata(makeMetadata());
+
+    editTitle(renderPage(), "Pending save");
+    await clickSave();
+    editTitle(renderPage(), "Unsaved edit");
+    pendingSave.resolve(saved);
+    await flushAsyncWork();
+
+    expect(steam.metadataCache["100"]).toBe(saved);
+    expect(forgetHltb).toHaveBeenCalledWith(100);
+    expect(steam.applyMetadata).toHaveBeenCalledWith(100, { publishCompatibility: false });
+    expect(steam.refreshCompatibilitySurfaces).toHaveBeenCalledWith();
+    expect(state.values[0].title).toBe("Unsaved edit");
+  });
 
   it("does not change cache or runtime compatibility when save fails", async () => {
     const persisted = makeMetadata({ deck_compat_override: 3 });
