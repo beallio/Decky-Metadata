@@ -84,7 +84,7 @@ pub fn is_ign_origin(url: &reqwest::Url) -> bool {
 }
 
 impl Http {
-    pub fn new(cancel: CancellationToken, _version: &str) -> Result<Self, String> {
+    pub fn new(cancel: CancellationToken) -> Result<Self, String> {
         let default = Client::builder()
             .user_agent(BROWSER_USER_AGENT)
             .build()
@@ -118,11 +118,8 @@ impl Http {
         })
     }
 
-    pub fn new_recording(
-        cancel: CancellationToken,
-        version: &str,
-    ) -> Result<(Self, RequestLog), String> {
-        let mut http = Self::new(cancel, version)?;
+    pub fn new_recording(cancel: CancellationToken) -> Result<(Self, RequestLog), String> {
+        let mut http = Self::new(cancel)?;
         let requests = RequestLog::default();
         http.requests = Some(Arc::clone(&requests));
         Ok((http, requests))
@@ -422,7 +419,7 @@ impl Http {
 
     #[cfg(test)]
     pub fn fixtures(fixtures: Vec<Fixture>) -> Self {
-        let mut http = Self::new(CancellationToken::new(), "test").unwrap();
+        let mut http = Self::new(CancellationToken::new()).unwrap();
         http.fixtures = Some(Arc::new(std::sync::Mutex::new(fixtures.into())));
         http
     }
@@ -548,7 +545,7 @@ mod tests {
     }
     #[tokio::test]
     async fn json_and_text_bound_non_success_bodies_even_for_unbounded_callers() {
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         for json in [false, true] {
             let body = "x".repeat(8 * 1024 + 1);
             let reply = format!(
@@ -573,7 +570,7 @@ mod tests {
     #[tokio::test]
     async fn head_ignores_resource_length_but_get_keeps_the_limit() {
         // Steam's CDN reports the full image size on HEAD; an 8 KiB probe must still succeed.
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         let reply = b"HTTP/1.1 200 OK\r\nContent-Length: 82568\r\nConnection: close\r\n\r\n";
         let url = server(reply, Duration::ZERO).await;
         let head = http
@@ -617,7 +614,7 @@ mod tests {
             };
             socket.write_all(reply).await.unwrap();
         });
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         let response = http
             .request(
                 Method::GET,
@@ -635,7 +632,7 @@ mod tests {
     }
     #[tokio::test]
     async fn real_transport_enforces_declared_and_streamed_bounds() {
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         let large = server(
             b"HTTP/1.1 200 OK\r\nContent-Length: 1000\r\nConnection: close\r\n\r\nx",
             Duration::ZERO,
@@ -670,7 +667,7 @@ mod tests {
     }
     #[tokio::test]
     async fn real_transport_timeout_and_cancellation_drop_request() {
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         let url = server(
             b"HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n",
             Duration::from_secs(1),
@@ -695,7 +692,7 @@ mod tests {
     }
     #[tokio::test]
     async fn diagnostic_evidence_distinguishes_bounded_http_failure_from_no_response() {
-        let (http, requests) = Http::new_recording(CancellationToken::new(), "test").unwrap();
+        let (http, requests) = Http::new_recording(CancellationToken::new()).unwrap();
         let oversized=server(b"HTTP/1.1 503 Service Unavailable\r\nContent-Type: application/json\r\nContent-Length: 1000\r\nConnection: close\r\n\r\nx",Duration::ZERO).await;
         assert!(
             http.text(&oversized, Duration::from_secs(1), 10)
@@ -719,7 +716,7 @@ mod tests {
     }
     #[tokio::test]
     async fn guarded_redirect_rejects_initial_noncanonical_origin() {
-        let http = Http::new(CancellationToken::new(), "test").unwrap();
+        let http = Http::new(CancellationToken::new()).unwrap();
         for url in [
             "https://ign.com/games/a",
             "http://www.ign.com/",
