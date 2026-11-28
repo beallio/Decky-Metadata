@@ -28192,63 +28192,6 @@ const isNativeSteamAppId = (value) => typeof value === "number" &&
     value > 0 &&
     value < 0x80000000;
 
-var StoreCategory;
-(function (StoreCategory) {
-    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
-    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
-    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
-    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
-    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
-    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
-    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
-    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
-    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
-    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
-    StoreCategory[StoreCategory["LocalCoOp"] = 39] = "LocalCoOp";
-})(StoreCategory || (StoreCategory = {}));
-/** Steam information toggles in display order, mapped to their label keys. */
-const CATEGORY_LABELS = {
-    [StoreCategory.SinglePlayer]: "categories.singlePlayer",
-    [StoreCategory.MultiPlayer]: "categories.multiPlayer",
-    [StoreCategory.CoOp]: "categories.coOp",
-    [StoreCategory.OnlineMultiPlayer]: "categories.onlineMultiPlayer",
-    [StoreCategory.OnlineCoOp]: "categories.onlineCoOp",
-    [StoreCategory.LocalMultiPlayer]: "categories.localMultiPlayer",
-    [StoreCategory.LocalCoOp]: "categories.localCoOp",
-    [StoreCategory.SplitScreen]: "categories.splitScreen",
-    [StoreCategory.FullController]: "categories.fullController",
-    [StoreCategory.MMO]: "categories.mmo",
-    [StoreCategory.Achievements]: "categories.achievements",
-};
-const categoryLabel = (category, t) => {
-    switch (category) {
-        case StoreCategory.SinglePlayer:
-            return t("categories.singlePlayer");
-        case StoreCategory.MultiPlayer:
-            return t("categories.multiPlayer");
-        case StoreCategory.CoOp:
-            return t("categories.coOp");
-        case StoreCategory.OnlineMultiPlayer:
-            return t("categories.onlineMultiPlayer");
-        case StoreCategory.OnlineCoOp:
-            return t("categories.onlineCoOp");
-        case StoreCategory.LocalMultiPlayer:
-            return t("categories.localMultiPlayer");
-        case StoreCategory.LocalCoOp:
-            return t("categories.localCoOp");
-        case StoreCategory.SplitScreen:
-            return t("categories.splitScreen");
-        case StoreCategory.FullController:
-            return t("categories.fullController");
-        case StoreCategory.MMO:
-            return t("categories.mmo");
-        case StoreCategory.Achievements:
-            return t("categories.achievements");
-        default:
-            return "";
-    }
-};
-
 const patchInstallStatus = {
     activity: "pending",
     partnerEvents: "pending",
@@ -28403,23 +28346,15 @@ const removeMetadataCacheEntry = (appId) => {
         notifyMetadataMatchChanged(appId);
 };
 const replaceMetadataCacheEntries = (records) => {
-    const normalizedRecords = Object.fromEntries(Object.entries(records || {}).map(([key, value]) => [
-        key,
-        value?.store_categories?.includes(392)
-            ? {
-                ...value,
-                store_categories: value.store_categories.map((category) => category === 392 ? StoreCategory.LocalCoOp : category),
-            }
-            : value,
-    ]));
+    const nextRecords = records || {};
     const previous = new Map(Object.entries(metadataCache).map(([key, value]) => [key, normalizedSavedSteamAppId(value?.steam_appid)]));
     Object.keys(metadataCache).forEach((key) => {
-        if (!(key in normalizedRecords))
+        if (!(key in nextRecords))
             countRemoval(key);
         delete metadataCache[key];
     });
-    Object.assign(metadataCache, normalizedRecords);
-    const appIds = new Set([...previous.keys(), ...Object.keys(records || {})]);
+    Object.assign(metadataCache, nextRecords);
+    const appIds = new Set([...previous.keys(), ...Object.keys(nextRecords)]);
     for (const key of appIds) {
         const previousMatch = previous.get(key) ?? null;
         const nextMatch = normalizedSavedSteamAppId(metadataCache[key]?.steam_appid);
@@ -28994,6 +28929,8 @@ const normalizedTabText = (value) => String(value || "")
     .trim()
     .toLocaleLowerCase();
 const patchMethod = (target, methodName, replacement) => {
+    if (typeof target?.[methodName] !== "function")
+        return () => undefined;
     const original = target[methodName];
     let active = true;
     const patched = function patchedMethod(...args) {
@@ -29030,6 +28967,66 @@ const safeAfterPatch = (target, methodName, handler) => DFL.afterPatch(target, m
         return ret;
     }
 });
+const routeRenderPatchInChain = (renderFunc, targetPatch) => {
+    try {
+        let current = renderFunc;
+        while (typeof current === "function") {
+            if (current === targetPatch)
+                return true;
+            const patch = Reflect.get(current, "__deckyPatch");
+            if (!patch || typeof patch !== "object")
+                return false;
+            current = Reflect.get(patch, "original");
+        }
+    }
+    catch {
+        return false;
+    }
+    return false;
+};
+const createRouteRenderPatcher = (handler) => {
+    let renderTarget;
+    let renderPatch;
+    let active = false;
+    const release = () => {
+        const patch = renderPatch;
+        renderPatch = undefined;
+        renderTarget = undefined;
+        active = false;
+        try {
+            patch?.unpatch();
+        }
+        catch {
+            // A foreign non-Decky wrapper does not expose the inner patch chain.
+        }
+    };
+    return {
+        patch: (target) => {
+            if (typeof target?.renderFunc !== "function") {
+                release();
+                return;
+            }
+            if (target === renderTarget)
+                return;
+            if (renderPatch && routeRenderPatchInChain(target.renderFunc, renderPatch.patchedFunction)) {
+                renderPatch.object = target;
+                renderTarget = target;
+                return;
+            }
+            if (renderPatch && target.renderFunc === renderPatch.original) {
+                renderPatch.object = target;
+                target.renderFunc = renderPatch.patchedFunction;
+                renderTarget = target;
+                return;
+            }
+            release();
+            active = true;
+            renderPatch = safeAfterPatch(target, "renderFunc", (args, rendered) => active ? handler(args, rendered) : rendered);
+            renderTarget = target;
+        },
+        release,
+    };
+};
 const overviewFromReactTree = (tree) => {
     try {
         const holder = DFL.findInReactTree(tree, (node) => {
@@ -31852,7 +31849,7 @@ const installNativeNewsHistoryRedirects = (unpatchers) => {
                 if (methodName === "replaceState") {
                     const currentState = browserHistory?.state;
                     if (isDeckyNativeNewsRouteState(currentState) && !isDeckyNativeNewsRouteState(state)) {
-                        if (isTrackedDeckyNativeNewsNavigation(currentState, target)) {
+                        if (isTrackedDeckyNativeNewsNavigation(currentState, target || currentRoutePath())) {
                             clearNavigationAfterReplace = true;
                         }
                         else {
@@ -35996,12 +35993,9 @@ const installMainWindowHistoryRedirect = (unpatchers) => {
             }
             return original(...args);
         });
-        const patched = history?.[methodName];
         redirectUnpatchers.push(() => {
             try {
-                if (history?.[methodName] === patched) {
-                    unpatch();
-                }
+                unpatch();
             }
             catch (_error) {
                 // Best effort teardown.
@@ -37185,122 +37179,88 @@ const installNonSteamQuickLinkPolicy = (unpatchers) => {
 const installRouterRenderPatches = (unpatchers, deps) => {
     const { ensureMetadataCache, applyMetadata, tryEnrichScreenshotsForApp, tryFetchMetadataForApp, refreshDeckyNativeActivityForApp, } = deps;
     GAME_DETAIL_ROUTES.forEach((route) => {
-        let renderTarget;
-        let patchedRenderFunc;
-        let unpatchRender;
-        const releaseRender = () => {
-            unpatchRender?.();
-            unpatchRender = undefined;
-            patchedRenderFunc = undefined;
-            renderTarget = undefined;
-        };
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (!routeProps?.renderFunc) {
-                releaseRender();
-            }
-            else if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
-                releaseRender();
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
-                    const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
-                    const appOverview = overview || getOverview(appId);
-                    if (appId && isNonSteamApp(appOverview)) {
-                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-                        const previousAppId = metadataState.lastObservedGameDetailAppId;
-                        metadataState.lastObservedGameDetailAppId = appId;
-                        if (metadataCache[String(appId)]) {
-                            // `route` is a Decky template (for example `:appid`), not an
-                            // authoritative path. Replacing a history listener's concrete
-                            // return shield with that template makes stale editor browser
-                            // tokens fail the exact-app check during the first Game Info
-                            // render. Keep the shield's identity concrete.
-                            const shieldPath = route.replace(":appid", String(appId));
-                            armRouteShield(appId, shieldPath, "route-render");
-                            if (isBypassTraceEnabled()) {
-                                void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
-                            }
-                        }
-                        else {
-                            if (isBypassTraceEnabled()) {
-                                void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
-                            }
-                        }
-                        // An editor Save or Remove wrote this overview while Steam still
-                        // had editor route tokens. Publish its replacement only after this
-                        // exact Game Info tree has re-entered (under the shield when a
-                        // record exists). Remove deletes the record, but the restored
-                        // non-observable compat nibble still needs this publication.
-                        publishDeferredEditorCompatibility(appId);
-                        void ensureMetadataCache().then(() => {
-                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                                return;
-                            if (applyMetadata(appId))
-                                notifyCompatibilityRevision();
-                            void tryEnrichScreenshotsForApp(appId);
-                            void tryFetchMetadataForApp(appId);
-                        });
-                        if (previousAppId !== appId) {
-                            void refreshDeckyNativeActivityForApp(appId);
-                        }
-                        return ret;
+        const renderPatcher = createRouteRenderPatcher((_args, ret) => {
+            const props = ret && typeof ret === "object" ? Reflect.get(ret, "props") : undefined;
+            const children = props && typeof props === "object" ? Reflect.get(props, "children") : undefined;
+            const childProps = children && typeof children === "object" ? Reflect.get(children, "props") : undefined;
+            const renderedOverview = childProps && typeof childProps === "object" ? Reflect.get(childProps, "overview") : undefined;
+            const overview = renderedOverview || overviewFromReactTree(ret);
+            const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
+            const appOverview = overview || getOverview(appId);
+            if (appId && isNonSteamApp(appOverview)) {
+                const lifecycleGeneration = compatibilityLifecycleSnapshot();
+                const previousAppId = metadataState.lastObservedGameDetailAppId;
+                metadataState.lastObservedGameDetailAppId = appId;
+                if (metadataCache[String(appId)]) {
+                    // `route` is a Decky template (for example `:appid`), not an
+                    // authoritative path. Replacing a history listener's concrete
+                    // return shield with that template makes stale editor browser
+                    // tokens fail the exact-app check during the first Game Info
+                    // render. Keep the shield's identity concrete.
+                    const shieldPath = route.replace(":appid", String(appId));
+                    armRouteShield(appId, shieldPath, "route-render");
+                    if (isBypassTraceEnabled()) {
+                        void frontendLog("trace", "reentry shield armed", { appId, trigger: "route-render", path: shieldPath }).catch(() => undefined);
                     }
-                    return ret;
+                }
+                else {
+                    if (isBypassTraceEnabled()) {
+                        void frontendLog("trace", "reentry shield skip", { trigger: "route-render", path: route, appId, reason: "no-metadata-cache" }).catch(() => undefined);
+                    }
+                }
+                // An editor Save or Remove wrote this overview while Steam still
+                // had editor route tokens. Publish its replacement only after this
+                // exact Game Info tree has re-entered (under the shield when a
+                // record exists). Remove deletes the record, but the restored
+                // non-observable compat nibble still needs this publication.
+                publishDeferredEditorCompatibility(appId);
+                void ensureMetadataCache().then(() => {
+                    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                        return;
+                    if (applyMetadata(appId))
+                        notifyCompatibilityRevision();
+                    void tryEnrichScreenshotsForApp(appId);
+                    void tryFetchMetadataForApp(appId);
                 });
-                renderTarget = routeProps;
-                patchedRenderFunc = routeProps.renderFunc;
-                unpatchRender = renderPatch.unpatch;
+                if (previousAppId !== appId) {
+                    void refreshDeckyNativeActivityForApp(appId);
+                }
             }
+            return ret;
+        });
+        const patch = routerHook.addPatch(route, (tree) => {
+            renderPatcher.patch(DFL.findInReactTree(tree, (x) => x?.renderFunc));
             return tree;
         });
         unpatchers.push(() => {
-            releaseRender();
+            renderPatcher.release();
             routerHook.removePatch(route, patch);
         });
     });
     GAME_ACTIVITY_ROUTES.forEach((route) => {
-        let renderTarget;
-        let patchedRenderFunc;
-        let unpatchRender;
-        const releaseRender = () => {
-            unpatchRender?.();
-            unpatchRender = undefined;
-            patchedRenderFunc = undefined;
-            renderTarget = undefined;
-        };
-        const patch = routerHook.addPatch(route, (tree) => {
-            const routeProps = DFL.findInReactTree(tree, (x) => x?.renderFunc);
-            if (!routeProps?.renderFunc) {
-                releaseRender();
-            }
-            else if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
-                releaseRender();
-                const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args, ret) => {
-                    const treeAppId = appIdFromReactTree(ret);
-                    const appId = currentGameDetailAppId() || treeAppId;
-                    const overview = overviewFromReactTree(ret) || getOverview(appId);
-                    if (appId && isNonSteamApp(overview)) {
-                        const lifecycleGeneration = compatibilityLifecycleSnapshot();
-                        metadataState.lastObservedGameDetailAppId = appId;
-                        void ensureMetadataCache().then(() => {
-                            if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
-                                return;
-                            if (applyMetadata(appId))
-                                notifyCompatibilityRevision();
-                        });
-                        void refreshDeckyNativeActivityForApp(appId);
-                        return ret;
-                    }
-                    return ret;
+        const renderPatcher = createRouteRenderPatcher((_args, ret) => {
+            const treeAppId = appIdFromReactTree(ret);
+            const appId = currentGameDetailAppId() || treeAppId;
+            const overview = overviewFromReactTree(ret) || getOverview(appId);
+            if (appId && isNonSteamApp(overview)) {
+                const lifecycleGeneration = compatibilityLifecycleSnapshot();
+                metadataState.lastObservedGameDetailAppId = appId;
+                void ensureMetadataCache().then(() => {
+                    if (!isCompatibilityLifecycleCurrent(lifecycleGeneration))
+                        return;
+                    if (applyMetadata(appId))
+                        notifyCompatibilityRevision();
                 });
-                patchedRenderFunc = routeProps.renderFunc;
-                renderTarget = routeProps;
-                unpatchRender = renderPatch.unpatch;
+                void refreshDeckyNativeActivityForApp(appId);
             }
+            return ret;
+        });
+        const patch = routerHook.addPatch(route, (tree) => {
+            renderPatcher.patch(DFL.findInReactTree(tree, (x) => x?.renderFunc));
             return tree;
         });
         unpatchers.push(() => {
-            releaseRender();
+            renderPatcher.release();
             routerHook.removePatch(route, patch);
         });
     });
@@ -37376,12 +37336,9 @@ const installGameDetailReentryShield = (unpatchers) => {
             }
             return original(...args);
         });
-        const patched = history?.[methodName];
         shieldUnpatchers.push(() => {
             try {
-                if (history?.[methodName] === patched) {
-                    unpatch();
-                }
+                unpatch();
             }
             catch (_error) {
                 // Best effort teardown.
@@ -39872,6 +39829,8 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     }, [activeSlot, activeFilter, sgdbGame, officialOnly]);
     SP_REACT.useEffect(() => {
         if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+            if (officialOnly || missingKey)
+                setAssetError("");
             // Drop any in-flight page so it cannot land on this game or this mode.
             requestSeqRef.current += 1;
             setLoadingAssets(false);
@@ -40078,6 +40037,63 @@ const getGamepadTextArea = () => {
     if (cached === undefined)
         cached = resolveGamepadTextArea();
     return cached;
+};
+
+var StoreCategory;
+(function (StoreCategory) {
+    StoreCategory[StoreCategory["MultiPlayer"] = 1] = "MultiPlayer";
+    StoreCategory[StoreCategory["SinglePlayer"] = 2] = "SinglePlayer";
+    StoreCategory[StoreCategory["CoOp"] = 9] = "CoOp";
+    StoreCategory[StoreCategory["MMO"] = 20] = "MMO";
+    StoreCategory[StoreCategory["Achievements"] = 22] = "Achievements";
+    StoreCategory[StoreCategory["SplitScreen"] = 24] = "SplitScreen";
+    StoreCategory[StoreCategory["FullController"] = 28] = "FullController";
+    StoreCategory[StoreCategory["OnlineMultiPlayer"] = 36] = "OnlineMultiPlayer";
+    StoreCategory[StoreCategory["LocalMultiPlayer"] = 37] = "LocalMultiPlayer";
+    StoreCategory[StoreCategory["OnlineCoOp"] = 38] = "OnlineCoOp";
+    StoreCategory[StoreCategory["LocalCoOp"] = 39] = "LocalCoOp";
+})(StoreCategory || (StoreCategory = {}));
+/** Steam information toggles in display order, mapped to their label keys. */
+const CATEGORY_LABELS = {
+    [StoreCategory.SinglePlayer]: "categories.singlePlayer",
+    [StoreCategory.MultiPlayer]: "categories.multiPlayer",
+    [StoreCategory.CoOp]: "categories.coOp",
+    [StoreCategory.OnlineMultiPlayer]: "categories.onlineMultiPlayer",
+    [StoreCategory.OnlineCoOp]: "categories.onlineCoOp",
+    [StoreCategory.LocalMultiPlayer]: "categories.localMultiPlayer",
+    [StoreCategory.LocalCoOp]: "categories.localCoOp",
+    [StoreCategory.SplitScreen]: "categories.splitScreen",
+    [StoreCategory.FullController]: "categories.fullController",
+    [StoreCategory.MMO]: "categories.mmo",
+    [StoreCategory.Achievements]: "categories.achievements",
+};
+const categoryLabel = (category, t) => {
+    switch (category) {
+        case StoreCategory.SinglePlayer:
+            return t("categories.singlePlayer");
+        case StoreCategory.MultiPlayer:
+            return t("categories.multiPlayer");
+        case StoreCategory.CoOp:
+            return t("categories.coOp");
+        case StoreCategory.OnlineMultiPlayer:
+            return t("categories.onlineMultiPlayer");
+        case StoreCategory.OnlineCoOp:
+            return t("categories.onlineCoOp");
+        case StoreCategory.LocalMultiPlayer:
+            return t("categories.localMultiPlayer");
+        case StoreCategory.LocalCoOp:
+            return t("categories.localCoOp");
+        case StoreCategory.SplitScreen:
+            return t("categories.splitScreen");
+        case StoreCategory.FullController:
+            return t("categories.fullController");
+        case StoreCategory.MMO:
+            return t("categories.mmo");
+        case StoreCategory.Achievements:
+            return t("categories.achievements");
+        default:
+            return "";
+    }
 };
 
 const editorRootClassName = "decky-metadata-editor";
@@ -41444,51 +41460,32 @@ const isPlaySection = (child) => {
 function installHltbGameView() {
     const unpatchers = [];
     for (const route of GAME_DETAIL_ROUTES) {
-        let renderTarget;
-        let unpatchRender;
-        let patchedRenderFunc;
-        const releaseRender = () => {
-            unpatchRender?.();
-            unpatchRender = undefined;
-            patchedRenderFunc = undefined;
-            renderTarget = undefined;
-        };
+        let appId = 0;
+        const handler = DFL.createReactTreePatcher([
+            (inner) => {
+                const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
+                appId = Number(children?.props?.overview?.appid) || 0;
+                return children ?? null;
+            },
+        ], (_args, ret) => {
+            const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
+            const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
+                node.props.children.some(isPlaySection)))?.props?.children;
+            if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
+                return ret;
+            const index = children.findIndex(isPlaySection);
+            if (index >= 0)
+                children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
+            return ret;
+        });
+        const renderPatcher = createRouteRenderPatcher(handler);
         try {
             const patch = routerHook.addPatch(route, (tree) => {
-                const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-                if (!routeProps?.renderFunc) {
-                    releaseRender();
-                    return tree;
-                }
-                if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
-                    releaseRender();
-                    let appId = 0;
-                    const handler = DFL.createReactTreePatcher([
-                        (inner) => {
-                            const children = DFL.findInReactTree(inner, (node) => node?.props?.children?.props?.overview)?.props?.children;
-                            appId = Number(children?.props?.overview?.appid) || 0;
-                            return children ?? null;
-                        },
-                    ], (_args, ret) => {
-                        const innerContainer = resolveSteamCssClass(DFL.appDetailsClasses?.InnerContainer, "appDetailsInnerContainer");
-                        const children = DFL.findInReactTree(ret, (node) => Array.isArray(node?.props?.children) && ((innerContainer && node?.props?.className?.includes(innerContainer)) ||
-                            node.props.children.some(isPlaySection)))?.props?.children;
-                        if (!children || appId <= 0 || children.some((child) => child?.key === ROW_KEY))
-                            return ret;
-                        const index = children.findIndex(isPlaySection);
-                        if (index >= 0)
-                            children.splice(index, 0, SP_JSX.jsx(HltbGameRow, { appId: appId }, ROW_KEY));
-                        return ret;
-                    });
-                    const renderPatch = DFL.afterPatch(routeProps, "renderFunc", handler);
-                    renderTarget = routeProps;
-                    patchedRenderFunc = routeProps.renderFunc;
-                    unpatchRender = () => renderPatch.unpatch();
-                }
+                renderPatcher.patch(DFL.findInReactTree(tree, (node) => node?.renderFunc));
                 return tree;
             });
             unpatchers.push(() => {
-                releaseRender();
+                renderPatcher.release();
                 routerHook.removePatch(route, patch);
             });
         }
@@ -43187,10 +43184,10 @@ const MetadataPage = () => {
             if (!nonSteam) {
                 const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
                 const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
-                if (!isCurrentEditorEntry(requestedEntry))
-                    return false;
                 setSteamOverrideCached(appId, savedOverride);
                 hltbStore.forget(appId);
+                if (!isCurrentEditorEntry(requestedEntry))
+                    return false;
                 const saved = {
                     ...metadataTemplate(appName(appId)),
                     hltb_game_id: savedOverride?.hltb_game_id ?? null,
@@ -46084,34 +46081,14 @@ function installMiniAchievementsPatch() {
     unpatchers.push(unsubscribeClasses);
     requestSync();
     for (const route of GAME_DETAIL_ROUTES) {
-        let renderTarget;
-        let unpatchRender;
-        let patchedRenderFunc;
-        const releaseRender = () => {
-            unpatchRender?.();
-            unpatchRender = undefined;
-            patchedRenderFunc = undefined;
-            renderTarget = undefined;
-        };
+        const renderPatcher = createRouteRenderPatcher((_args, rendered) => {
+            requestSync();
+            return rendered;
+        });
         try {
             const patch = routerHook.addPatch(route, (tree) => {
                 try {
-                    const routeProps = DFL.findInReactTree(tree, (node) => node?.renderFunc);
-                    if (typeof routeProps?.renderFunc === "function") {
-                        if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
-                            releaseRender();
-                            const renderPatch = DFL.afterPatch(routeProps, "renderFunc", (_args, rendered) => {
-                                requestSync();
-                                return rendered;
-                            });
-                            renderTarget = routeProps;
-                            patchedRenderFunc = routeProps.renderFunc;
-                            unpatchRender = () => renderPatch.unpatch();
-                        }
-                    }
-                    else {
-                        releaseRender();
-                    }
+                    renderPatcher.patch(DFL.findInReactTree(tree, (node) => node?.renderFunc));
                 }
                 catch (error) {
                     warn("miniAchievements", "achievement stat patch failed", error);
@@ -46119,7 +46096,7 @@ function installMiniAchievementsPatch() {
                 return tree;
             });
             unpatchers.push(() => {
-                releaseRender();
+                renderPatcher.release();
                 routerHook.removePatch(route, patch);
             });
         }

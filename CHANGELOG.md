@@ -66,8 +66,8 @@ All notable changes to this project are documented here in Keep a Changelog form
 - The updater validates release tags and requires release files to come from
   this repository's GitHub releases.
 - Pull request CI no longer holds a write token; PR test builds publish only from
-  the trusted workflow, and a fork's `test-build` label is removed after each
-  publish.
+  the trusted workflow, and fork PR builds publish only when a maintainer runs
+  it for the exact PR head commit.
 
 ## [0.6.8] - 2026-11-25
 
