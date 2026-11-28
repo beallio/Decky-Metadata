@@ -170,6 +170,7 @@ pub fn sanitize(value: &Value, index: &Value) -> Result<Value, String> {
     let mut categories = Vec::new();
     each(&value["store_categories"], |item| {
         if let Some(category) = integer(item) {
+            let category = if category == 392 { 39 } else { category };
             if !categories.contains(&category) {
                 categories.push(category);
             }
@@ -890,6 +891,19 @@ mod tests {
         let changed = prepare_save(&existing, json!({"title":"Game","steam_appid":20,"hltb_game_id":42}), false, None, &Value::Null).unwrap();
         assert_eq!(changed["hltb_game_id"], 42);
     }
+
+    #[test]
+    fn legacy_local_coop_category_is_normalized_and_deduplicated() {
+        for categories in [json!([392, 39]), json!([392])] {
+            let saved = sanitize(
+                &json!({"title":"Game","store_categories":categories}),
+                &Value::Null,
+            )
+            .unwrap();
+            assert_eq!(saved["store_categories"], json!([39]));
+        }
+    }
+
 
     #[test]
     fn news_deduplication_folds_modern_case_pairs_and_keeps_the_first_item() {

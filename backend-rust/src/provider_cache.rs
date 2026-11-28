@@ -255,7 +255,8 @@ const SAVE_DELAY: std::time::Duration = std::time::Duration::from_secs(1);
 
 /// Save the provider cache at most once per second; `flush` writes any pending change now.
 pub fn schedule_save(state: &std::sync::Arc<crate::state::AppState>) {
-    if state.provider_cache_dirty.swap(true, Ordering::SeqCst) {
+    state.provider_cache_dirty.store(true, Ordering::SeqCst);
+    if state.provider_cache_save_scheduled.swap(true, Ordering::SeqCst) {
         return;
     }
     let state = std::sync::Arc::clone(state);
@@ -264,6 +265,7 @@ pub fn schedule_save(state: &std::sync::Arc<crate::state::AppState>) {
             _ = tokio::time::sleep(SAVE_DELAY) => {},
             _ = state.cancel.cancelled() => {},
         }
+        state.provider_cache_save_scheduled.store(false, Ordering::SeqCst);
         let _ = flush(&state).await;
     });
 }
@@ -421,14 +423,21 @@ mod tests {
         assert!(state.provider_cache_dirty.load(Ordering::SeqCst));
         drop(cache_lock);
         pending.await.unwrap().unwrap();
-        assert!(!state.provider_cache_dirty.load(Ordering::SeqCst));
-
         let path = dir.join(FILENAME);
         std::fs::remove_file(&path).unwrap();
         std::fs::create_dir(&path).unwrap();
         state.provider_cache_dirty.store(true, Ordering::SeqCst);
         assert!(flush(&state).await.is_err());
         assert!(state.provider_cache_dirty.load(Ordering::SeqCst));
+        std::fs::remove_dir_all(&path).unwrap();
+
+        let entry: HltbEntry = serde_json::from_value(hltb("no_match", 1)).unwrap();
+        state.provider_cache.lock().await.hltb.insert(123, entry);
+        schedule_save(&state);
+        tokio::time::sleep(SAVE_DELAY + std::time::Duration::from_millis(50)).await;
+        assert!(!state.provider_cache_dirty.load(Ordering::SeqCst));
+        assert!(path.is_file());
+        assert!(load(&path).await.hltb.contains_key(&123));
         std::fs::remove_dir_all(dir).unwrap();
     }
 }
