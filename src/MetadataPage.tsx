@@ -1231,7 +1231,11 @@ export const MetadataPage = () => {
       const saved = steamAppId !== null && previewedSteamAppIdRef.current === steamAppId
         ? await savePreviewedMetadata(appId, record, steamAppId)
         : await saveMetadata(appId, record);
-      // Apply before the early returns: later saves compare against this record and would never retry.
+      // Persisted state must reach the runtime even if this editor is stale.
+      setMetadataCacheEntry(appId, saved);
+      hltbStore.forget(appId);
+      applyMetadata(appId, { publishCompatibility: false });
+      refreshCompatibilitySurfaces();
       const savedNextSteamAppId = normalizedSteamAppId(saved.steam_appid);
       if (savedNextSteamAppId !== null && savedNextSteamAppId !== previousSteamAppId) {
         void artworkController.autoApplyForMatchedGame(appId, savedNextSteamAppId, appName(appId));
@@ -1242,11 +1246,8 @@ export const MetadataPage = () => {
       // An edit made while the save was pending stays in the form, unsaved.
       if (formRevisionRef.current !== requestedRevision) return false;
       steamPreviewedFieldsRef.current.clear();
-      setMetadataCacheEntry(appId, saved);
       setFormMetadata(saved);
       if (hltb) setHltbIdDraft(null);
-      applyMetadata(appId, { publishCompatibility: false });
-      refreshCompatibilitySurfaces();
       toastSuccess(t("editor.toast.metadataSaved"), appName(appId));
       return true;
     } catch (error) {

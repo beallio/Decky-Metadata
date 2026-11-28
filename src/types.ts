@@ -726,7 +726,7 @@ export enum StoreCategory {
   OnlineMultiPlayer = 36,
   LocalMultiPlayer = 37,
   OnlineCoOp = 38,
-  LocalCoOp = 392,
+  LocalCoOp = 39,
 }
 
 /** Steam information toggles in display order, mapped to their label keys. */
