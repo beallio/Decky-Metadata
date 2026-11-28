@@ -11,6 +11,7 @@ vi.mock("../backend", () => ({
   getSgdbKeyStatus: vi.fn(),
   getTransparentArtworkAsset: vi.fn(),
   readLocalArtworkFile: vi.fn(),
+  saveLocalArtworkIcon: vi.fn().mockResolvedValue("/tmp/icon.jpg"),
   setArtworkLocked: vi.fn(),
   setArtworkSettings: vi.fn(),
   sgdbFetchAsset: vi.fn(),
@@ -101,7 +102,7 @@ const makeDeps = (settings: Partial<ArtworkSettings> = DEFAULT_ARTWORK_SETTINGS)
     base64: "AA==",
     ext: "jpg",
     mime: "image/jpeg",
-    file_path: slot === "icon" ? "/tmp/icon.jpg" : null,
+    file_path: null,
   })),
   sgdbFetchAsset: vi.fn().mockImplementation(async (_appId, slot) => ({
     slot,
@@ -124,6 +125,7 @@ const makeDeps = (settings: Partial<ArtworkSettings> = DEFAULT_ARTWORK_SETTINGS)
     mime: "image/png",
     file_path: null,
   })),
+  saveLocalArtworkIcon: vi.fn().mockResolvedValue("/tmp/icon.jpg"),
   clearLocalArtworkFile: vi.fn().mockResolvedValue({ ok: true, removed: true }),
   applySteamArtworkSlot: vi.fn().mockResolvedValue(undefined),
   clearSteamArtworkSlot: vi.fn().mockResolvedValue(undefined),
@@ -325,6 +327,112 @@ describe("ArtworkController", () => {
     await automatic;
 
     expect(deps.clearSteamArtworkSlot).toHaveBeenCalledWith(1001, "cover");
+    expect(deps.applySteamArtworkSlot).not.toHaveBeenCalled();
+  });
+  it("writes an automatic shortcut icon only after its generation remains current", async () => {
+    const appId = 0x80000001;
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: false, wide: false, hero: false, logo: false, icon: true },
+    });
+    const ctrl = new ArtworkController(deps);
+
+    await ctrl.autoApplyForMatchedGame(appId, 1145350, "Hades II");
+
+    expect(deps.saveLocalArtworkIcon).toHaveBeenCalledWith(appId, "jpg", "AA==");
+    expect(deps.applySteamArtworkSlot).toHaveBeenCalledWith(
+      appId,
+      "icon",
+      expect.objectContaining({ file_path: "/tmp/icon.jpg" }),
+    );
+  });
+
+  it("applies a manual clear after an automatic shortcut icon save already in flight", async () => {
+    const appId = 0x80000001;
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: false, wide: false, hero: false, logo: false, icon: true },
+    });
+    const saveStarted = Promise.withResolvers<void>();
+    const saveResult = Promise.withResolvers<string | null>();
+    let localIcon: string | null = null;
+    vi.mocked(deps.saveLocalArtworkIcon).mockImplementationOnce(async () => {
+      saveStarted.resolve();
+      const filePath = await saveResult.promise;
+      localIcon = "automatic";
+      return filePath;
+    });
+    vi.mocked(deps.applySteamArtworkSlot).mockImplementation(async (_appId, _slot, asset) => {
+      localIcon = asset.file_path ? "automatic" : null;
+    });
+    vi.mocked(deps.clearLocalArtworkFile).mockImplementation(async () => {
+      localIcon = null;
+      return { ok: true, removed: true };
+    });
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(appId, 1145350, "Hades II");
+
+    await saveStarted.promise;
+    const manual = ctrl.clearSingleSlot(appId, "icon");
+    expect(deps.clearLocalArtworkFile).not.toHaveBeenCalled();
+    saveResult.resolve("/tmp/icon.jpg");
+    await Promise.all([automatic, manual]);
+
+    expect(localIcon).toBeNull();
+    expect(deps.clearLocalArtworkFile).toHaveBeenCalledWith(appId, "icon");
+  });
+
+  it("does not persist or apply an automatic shortcut icon after a manual clear during fetch", async () => {
+    const appId = 0x80000001;
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: false, wide: false, hero: false, logo: false, icon: true },
+    });
+    const requested = Promise.withResolvers<void>();
+    const autoAsset = Promise.withResolvers<FetchedArtworkAsset>();
+    vi.mocked(deps.fetchSteamArtworkAsset).mockImplementationOnce(async () => {
+      requested.resolve();
+      return autoAsset.promise;
+    });
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(appId, 1145350, "Hades II");
+
+    await requested.promise;
+    await ctrl.clearSingleSlot(appId, "icon");
+    autoAsset.resolve({ slot: "icon", base64: "AUTO==", ext: "jpg", mime: "image/jpeg", file_path: null });
+    await automatic;
+
+    expect(deps.clearLocalArtworkFile).toHaveBeenCalledWith(appId, "icon");
+    expect(deps.saveLocalArtworkIcon).not.toHaveBeenCalled();
+    expect(deps.applySteamArtworkSlot).not.toHaveBeenCalled();
+  });
+
+  it("does not start an automatic fetch after the slot changes while artwork state loads", async () => {
+    const appId = 0x80000001;
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: false, wide: false, hero: false, logo: false, icon: true },
+    });
+    const requested = Promise.withResolvers<void>();
+    const artworkState = Promise.withResolvers<GameArtworkState>();
+    vi.mocked(deps.getGameArtworkState).mockImplementationOnce(async () => {
+      requested.resolve();
+      return artworkState.promise;
+    });
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(appId, 1145350, "Hades II");
+
+    await requested.promise;
+    await ctrl.clearSingleSlot(appId, "icon");
+    artworkState.resolve(makeGameState(appId, 1145350));
+    await automatic;
+
+    expect(deps.fetchSteamArtworkAsset).not.toHaveBeenCalled();
+    expect(deps.saveLocalArtworkIcon).not.toHaveBeenCalled();
     expect(deps.applySteamArtworkSlot).not.toHaveBeenCalled();
   });
   it("does not let a late automatic write replace a manual single-slot apply", async () => {

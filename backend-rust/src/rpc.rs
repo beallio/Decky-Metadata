@@ -40,6 +40,7 @@ pub const METHODS: &[&str] = &[
     "get_artwork_summary",
     "get_game_artwork_state",
     "fetch_steam_artwork_asset",
+    "save_local_icon_asset",
     "clear_local_artwork_file",
     "get_sgdb_key_status",
     "sgdb_search_games",
@@ -467,6 +468,10 @@ pub async fn dispatch(state: Arc<AppState>, method: &str, args: Vec<Value>) -> M
         "fetch_steam_artwork_asset" => {
             arity(&args, 3, 3)?;
             crate::artwork::fetch_steam_artwork_asset(&state, &args[0], &args[1], &args[2]).await
+        }
+        "save_local_icon_asset" => {
+            arity(&args, 3, 3)?;
+            crate::artwork::save_local_icon_asset(&state, &args[0], &args[1], &args[2]).await
         }
         "clear_local_artwork_file" => {
             arity(&args, 2, 2)?;

@@ -181,6 +181,56 @@ pub fn encode_base64(input: &[u8]) -> String {
     }
     output
 }
+fn base64_value(value: u8) -> Option<u8> {
+    match value {
+        b'A'..=b'Z' => Some(value - b'A'),
+        b'a'..=b'z' => Some(value - b'a' + 26),
+        b'0'..=b'9' => Some(value - b'0' + 52),
+        b'+' => Some(62),
+        b'/' => Some(63),
+        _ => None,
+    }
+}
+
+fn decode_base64(encoded: &str) -> Result<Vec<u8>, String> {
+    let input = encoded.as_bytes();
+    if input.len() % 4 != 0 || input.len() / 4 > MAX_IMAGE_BYTES.div_ceil(3) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    let mut output = Vec::with_capacity(input.len() / 4 * 3);
+    for (index, chunk) in input.chunks_exact(4).enumerate() {
+        let last = index + 1 == input.len() / 4;
+        let a = base64_value(chunk[0]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        let b = base64_value(chunk[1]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        let pad_c = chunk[2] == b'=';
+        let pad_d = chunk[3] == b'=';
+        if ((pad_c || pad_d) && !last) || (pad_c && !pad_d) {
+            return Err("artwork_invalid_image".to_owned());
+        }
+        if pad_c {
+            if b & 0x0f != 0 {
+                return Err("artwork_invalid_image".to_owned());
+            }
+            output.push((a << 2) | (b >> 4));
+            continue;
+        }
+        let c = base64_value(chunk[2]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+        output.push((a << 2) | (b >> 4));
+        output.push((b << 4) | (c >> 2));
+        if pad_d {
+            if c & 0x03 != 0 {
+                return Err("artwork_invalid_image".to_owned());
+            }
+        } else {
+            let d = base64_value(chunk[3]).ok_or_else(|| "artwork_invalid_image".to_owned())?;
+            output.push((c << 6) | d);
+        }
+    }
+    if output.len() > MAX_IMAGE_BYTES {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    Ok(output)
+}
 
 fn is_community_icon_hash(value: &str) -> bool {
     value.len() == 40 && value.bytes().all(|byte| matches!(byte, b'0'..=b'9' | b'a'..=b'f'))
@@ -616,6 +666,50 @@ pub(crate) fn save_local_icon_bytes(
     }
     Ok(Some(target.to_string_lossy().into_owned()))
 }
+fn persist_local_icon_asset(
+    app_id: u32,
+    shortcuts: &[Shortcut],
+    ext: &str,
+    encoded: &str,
+) -> Result<Option<String>, String> {
+    if !should_save_local_icon(ArtworkSlot::Icon, app_id) || !GRID_EXTENSIONS.contains(&ext) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    let bytes = decode_base64(encoded)?;
+    if sniff_image_format(&bytes).map(|(detected, _)| detected) != Some(ext) {
+        return Err("artwork_invalid_image".to_owned());
+    }
+    save_local_icon_bytes(app_id, shortcuts, ext, &bytes)
+}
+
+pub async fn save_local_icon_asset(
+    state: &AppState,
+    app_id_arg: &Value,
+    ext_arg: &Value,
+    base64_arg: &Value,
+) -> Result<Value, String> {
+    let app_id =
+        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    if !should_save_local_icon(ArtworkSlot::Icon, app_id) {
+        return Err("invalid_shortcut_app_id".to_owned());
+    }
+    let ext = ext_arg
+        .as_str()
+        .ok_or_else(|| "artwork_invalid_image".to_owned())?
+        .to_owned();
+    let encoded = base64_arg
+        .as_str()
+        .ok_or_else(|| "artwork_invalid_image".to_owned())?
+        .to_owned();
+    let shortcuts = state.local_shortcuts().await?;
+    let file_path = tokio::task::spawn_blocking(move || {
+        persist_local_icon_asset(app_id, &shortcuts, &ext, &encoded)
+    })
+    .await
+    .map_err(|error| error.to_string())??;
+    Ok(json!(file_path))
+}
+
 
 pub async fn fetch_steam_artwork_asset(
     state: &AppState,
@@ -623,8 +717,7 @@ pub async fn fetch_steam_artwork_asset(
     steam_appid_arg: &Value,
     slot_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let steam_appid =
         storage::positive_steam_app_id(steam_appid_arg).ok_or("invalid_steam_app_id")?;
     let slot = slot_arg
@@ -660,25 +753,12 @@ pub async fn fetch_steam_artwork_asset(
         sniff_image_format(&response.body).ok_or("artwork_invalid_image")?;
     let base64 = encode_base64(&response.body);
 
-    let file_path = if should_save_local_icon(slot, app_id) {
-        let shortcuts = state.local_shortcuts().await?;
-        let bytes = response.body;
-        let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || {
-            save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
-        })
-        .await
-        .map_err(|error| error.to_string())??
-    } else {
-        None
-    };
-
     Ok(json!({
         "slot": slot.as_str(),
         "base64": base64,
         "ext": ext,
         "mime": mime,
-        "file_path": file_path,
+        "file_path": null,
     }))
 }
 
@@ -752,6 +832,9 @@ mod tests {
         assert_eq!(encode_base64(b"fo"), "Zm8=");
         assert_eq!(encode_base64(b"foo"), "Zm9v");
         assert_eq!(encode_base64(b"foobar"), "Zm9vYmFy");
+        assert_eq!(decode_base64("Zm9vYmFy").unwrap(), b"foobar");
+        assert_eq!(decode_base64("Zm9v=").unwrap_err(), "artwork_invalid_image");
+        assert_eq!(decode_base64("Zh==").unwrap_err(), "artwork_invalid_image");
 
         assert_eq!(sniff_image_format(b"\x89PNG\r\n\x1a\n1234"), Some(("png", "image/png")));
         assert_eq!(sniff_image_format(&[0xff, 0xd8, 0xff, 0xe0]), Some(("jpg", "image/jpeg")));
@@ -1039,6 +1122,44 @@ mod tests {
         assert!(!old.exists());
         let _ = fs::remove_dir_all(root);
     }
+    #[test]
+    fn explicit_icon_persistence_writes_only_validated_asset_data() {
+        let root = temp_dir();
+        let config = root.join("userdata/123/config");
+        let grid = config.join("grid");
+        fs::create_dir_all(&grid).unwrap();
+        let shortcut_file = config.join("shortcuts.vdf");
+        let app_id = 0x8000_0001;
+        let stem = ArtworkSlot::Icon.grid_stem(app_id);
+        let old = grid.join(format!("{stem}.jpg"));
+        let target = grid.join(format!("{stem}.png"));
+        fs::write(&old, b"old").unwrap();
+        let shortcuts = [Shortcut {
+            name: "Game".into(),
+            exe: String::new(),
+            exe_raw: String::new(),
+            start_dir: String::new(),
+            launch_options: String::new(),
+            shortcut_path: String::new(),
+            icon: String::new(),
+            appid_raw: None,
+            app_id,
+            source: "test",
+            steam_user_id: "123".into(),
+            shortcut_file,
+        }];
+        let bytes = b"\x89PNG\r\n\x1a\nxxxx";
+        let encoded = encode_base64(bytes);
+
+        let saved = persist_local_icon_asset(app_id, &shortcuts, "png", &encoded).unwrap();
+        assert_eq!(saved.as_deref(), Some(target.to_str().unwrap()));
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        assert!(!old.exists());
+        assert!(persist_local_icon_asset(app_id, &shortcuts, "jpg", &encoded).is_err());
+        assert_eq!(fs::read(&target).unwrap(), bytes);
+        let _ = fs::remove_dir_all(root);
+    }
+
 
     #[test]
     fn local_artwork_removal_distinguishes_absence_from_filesystem_errors() {
