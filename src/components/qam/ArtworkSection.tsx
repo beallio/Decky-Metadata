@@ -1,5 +1,5 @@
 import type { ComponentProps, ComponentType } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ButtonItem,
   ConfirmModal,
@@ -10,12 +10,13 @@ import {
   Field,
   Focusable,
   ProgressBarWithInfo,
+  ReorderableList,
+  type ReorderableEntry,
   showModal,
   TextField,
   Toggle,
   ToggleField,
 } from "@decky/ui";
-import { FaChevronDown, FaChevronUp } from "react-icons/fa";
 
 import {
   ARTWORK_TAB_ORDER,
@@ -26,6 +27,17 @@ import { useT } from "../../i18n";
 import { ARTWORK_SLOT_ORDER } from "../../steam/customArtwork";
 import { ButtonLabel, inlineStatusStyle } from "../../styles";
 import type { ArtworkSettings, ArtworkSlot, ArtworkTabId } from "../../types";
+
+type TabOrderRow = { tab: ArtworkTabId; visible: boolean; locked: boolean; onToggle: () => void };
+
+// Module-level so the list does not remount the toggles on every render. Decky's list toggles
+// reorder mode on any click inside it, so the toggle's own clicks stop at this wrapper.
+const TabVisibilityToggle = ({ entry }: { entry: ReorderableEntry<TabOrderRow> }) =>
+  entry.data ? (
+    <div onClick={(evt) => evt.stopPropagation()}>
+      <Toggle value={entry.data.visible} disabled={entry.data.locked} onChange={entry.data.onToggle} />
+    </div>
+  ) : null;
 
 type ProgressBarWithInfoFieldProps = ComponentProps<typeof ProgressBarWithInfo> & {
   childrenLayout?: "inline" | "below";
@@ -127,21 +139,25 @@ export function ArtworkBody({
     });
   };
 
-  const moveTab = (tab: ArtworkTabId, delta: -1 | 1) => {
-    const from = tabOrder.indexOf(tab);
-    const to = from + delta;
-    if (from < 0 || to < 0 || to >= tabOrder.length) return;
-    onSettingsChange((current) => {
-      const order = current.tabOrder?.length ? [...current.tabOrder] : [...ARTWORK_TAB_ORDER];
-      const a = order.indexOf(tab);
-      const b = a + delta;
-      if (a < 0 || b < 0 || b >= order.length) return current;
-      [order[a], order[b]] = [order[b], order[a]];
-      return { ...current, tabOrder: order };
-    });
-  };
-
-  const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
+  // ReorderableList resets its working order whenever `entries` changes identity, so keep the
+  // entries stable across unrelated re-renders; toggles call the latest handler through a ref.
+  const toggleRef = useRef(toggleTabHidden);
+  toggleRef.current = toggleTabHidden;
+  const hiddenKey = [...hiddenTabs].join(",");
+  const tabEntries = useMemo<ReorderableEntry<TabOrderRow>[]>(
+    () =>
+      tabOrder.map((tab, position) => ({
+        label: t(tabLabelKey(tab)),
+        position,
+        data: {
+          tab,
+          visible: tab === "manage" || !hiddenTabs.has(tab),
+          locked: controlsDisabled || tab === "manage",
+          onToggle: () => toggleRef.current(tab),
+        },
+      })),
+    [tabOrder.join(","), hiddenKey, controlsDisabled, t],
+  );
 
   return (
     <>
@@ -246,31 +262,17 @@ export function ArtworkBody({
           focusable={false}
           bottomSeparator="none"
         />
-        {tabOrder.map((tab, index) => (
-          <Field key={tab} label={t(tabLabelKey(tab))}>
-            <Focusable flow-children="horizontal" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              <DialogButton
-                style={moveButtonStyle}
-                disabled={controlsDisabled || index === 0}
-                onClick={() => moveTab(tab, -1)}
-              >
-                <FaChevronUp />
-              </DialogButton>
-              <DialogButton
-                style={moveButtonStyle}
-                disabled={controlsDisabled || index === tabOrder.length - 1}
-                onClick={() => moveTab(tab, 1)}
-              >
-                <FaChevronDown />
-              </DialogButton>
-              <Toggle
-                value={tab === "manage" || !hiddenTabs.has(tab)}
-                disabled={controlsDisabled || tab === "manage"}
-                onChange={() => toggleTabHidden(tab)}
-              />
-            </Focusable>
-          </Field>
-        ))}
+        <ReorderableList<TabOrderRow>
+          entries={tabEntries}
+          interactables={TabVisibilityToggle}
+          onSave={(entries) => {
+            const ordered = [...entries]
+              .sort((a, b) => a.position - b.position)
+              .map((entry) => entry.data?.tab)
+              .filter((tab): tab is ArtworkTabId => Boolean(tab));
+            if (ordered.length > 0) onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+          }}
+        />
       </DialogControlsSection>
 
       <DialogControlsSection>

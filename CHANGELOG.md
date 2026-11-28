@@ -20,7 +20,7 @@ All notable changes to this project are documented here in Keep a Changelog form
   Also supports Official Steam automatic artwork on metadata scans and saved
   Steam matches, **Preserve existing artwork**, per-slot toggles, global **Fill
   missing** / **Replace all** bulk actions, manual per-game **Lock artwork**,
-  tab order (arrow buttons) and visibility (toggles) settings, an unmasked
+  tab order (Decky reorderable list) and visibility (toggles) settings, an unmasked
   custom SteamGridDB API key input that saves when you leave it (redacted in
   logs) with optional build-time fallback, and non-blocking
   coexistence with the standalone SteamGridDB plugin.

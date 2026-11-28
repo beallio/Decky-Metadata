@@ -471,7 +471,7 @@
       "defaultTabLabel": "Default artwork tab",
       "defaultTabDescription": "Tab opened first when visiting Edit Metadata → Artwork.",
       "tabOrderLabel": "Artwork tab order & visibility",
-      "tabOrderDescription": "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+      "tabOrderDescription": "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
       "resetFiltersLabel": "Reset browser filters",
       "resetFiltersDescription": "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
       "resetFiltersAction": "Reset filters"

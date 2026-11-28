@@ -14,6 +14,8 @@ vi.mock("react", () => ({
     return [hookState.slots[idx], (val: unknown) => { hookState.slots[idx] = val; }];
   },
   useEffect: vi.fn(),
+  useMemo: <T,>(factory: () => T) => factory(),
+  useRef: <T,>(initial: T) => ({ current: initial }),
 }));
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -25,6 +27,7 @@ vi.mock("@decky/ui", () => ({
   Field: "Field",
   Focusable: "Focusable",
   ProgressBarWithInfo: "ProgressBarWithInfo",
+  ReorderableList: "ReorderableList",
   TextField: "TextField",
   Toggle: "Toggle",
   ToggleField: "ToggleField",
@@ -103,10 +106,11 @@ describe("ArtworkBody", () => {
     expect(keyField.props?.bIsPassword).toBeUndefined();
     expect(keyField.props?.type).toBeUndefined();
 
-    // Default tab dropdown and one order row per artwork tab are rendered.
+    // Default tab dropdown and Decky's reorderable list with one entry per artwork tab.
     const dropdown = tree.find((n) => n.type === "DropdownItem")!;
     expect(dropdown.props?.label).toBe("qam.artwork.defaultTabLabel");
-    expect(tree.filter((n) => n.type === "Toggle")).toHaveLength(DEFAULT_ARTWORK_SETTINGS.tabOrder.length);
+    const list = tree.find((n) => n.type === "ReorderableList")!;
+    expect(list.props!.entries).toHaveLength(DEFAULT_ARTWORK_SETTINGS.tabOrder.length);
   });
 
   it("saves the trimmed API key on blur, only when it changed", () => {
@@ -130,48 +134,52 @@ describe("ArtworkBody", () => {
     expect(update(DEFAULT_ARTWORK_SETTINGS).sgdbApiKey).toBe("new-key");
   });
 
-  it("moves tabs with the arrow buttons and shows or hides them with toggles", () => {
+  // The list renders each row's toggle through its `interactables` component.
+  const tabList = (tree: Node[]) => {
+    const list = tree.find((n) => n.type === "ReorderableList")!;
+    const entries = list.props!.entries as { data: { tab: string }; position: number; label: string }[];
+    // Each row is a wrapper that keeps clicks from toggling reorder mode, around the Toggle.
+    const row = (tab: string) =>
+      list.props!.interactables({ entry: entries.find((entry) => entry.data.tab === tab) }) as ReactElement<any>;
+    const toggle = (tab: string) => row(tab).props.children as ReactElement<any>;
+    return { list, entries, row, toggle };
+  };
+
+  it("saves the order from Decky's reorderable list and shows or hides tabs with toggles", () => {
     const onSettingsChange = vi.fn();
     const settings = { ...structuredClone(DEFAULT_ARTWORK_SETTINGS), hiddenTabs: ["hero" as const] };
-    const tree = nodes(renderBody({
+    const { list, entries, row, toggle } = tabList(nodes(renderBody({
       snapshot: makeSnapshot({ settings }),
       listReady: true,
       onSettingsChange,
       onFillMissing: vi.fn(),
       onReplaceAll: vi.fn(),
-    }));
+    })));
     const order = settings.tabOrder;
-    const labelOf = (tab: string) => (tab === "manage" ? "editor.artwork.tab.manage" : `qam.artwork.slot.${tab}.label`);
-    const rows = tree.filter((n) => n.type === "Field" && order.some((tab) => labelOf(tab) === n.props?.label));
-    expect(rows.map((n) => n.props!.label)).toEqual(order.map(labelOf));
+    expect(entries.map((entry) => entry.data.tab)).toEqual(order);
+    expect(entries.map((entry) => entry.position)).toEqual(order.map((_, index) => index));
 
-    const rowParts = (tab: string) => nodes(rows.find((n) => n.props!.label === labelOf(tab)));
-    const buttons = (tab: string) => rowParts(tab).filter((n) => n.type === "DialogButton");
-    expect(buttons(order[0])[0].props!.disabled).toBe(true);
-    expect(buttons(order[order.length - 1])[1].props!.disabled).toBe(true);
+    // The list reports new positions on Save Order; the saved order follows them.
+    const swapped = entries.map((entry) => ({ ...entry, position: entry.position === 0 ? 1 : entry.position === 1 ? 0 : entry.position }));
+    list.props!.onSave(swapped);
+    expect(onSettingsChange.mock.calls[0][0](settings).tabOrder).toEqual([order[1], order[0], ...order.slice(2)]);
 
-    buttons(order[1])[1].props!.onClick(); // Down on row 2
-    expect(onSettingsChange.mock.calls[0][0](settings).tabOrder).toEqual([order[0], order[2], order[1], ...order.slice(3)]);
-    buttons(order[1])[0].props!.onClick(); // Up on row 2
-    expect(onSettingsChange.mock.calls[1][0](settings).tabOrder).toEqual([order[1], order[0], ...order.slice(2)]);
-
-    const heroToggle = rowParts("hero").find((n) => n.type === "Toggle")!;
-    expect(heroToggle.props!.value).toBe(false);
-    heroToggle.props!.onChange(true);
-    expect(onSettingsChange.mock.calls[2][0](settings).hiddenTabs).toEqual([]);
-
-    const manageToggle = rowParts("manage").find((n) => n.type === "Toggle")!;
-    expect(manageToggle.props!).toMatchObject({ value: true, disabled: true });
+    expect(toggle("hero").props.value).toBe(false);
+    toggle("hero").props.onChange(true);
+    expect(onSettingsChange.mock.calls[1][0](settings).hiddenTabs).toEqual([]);
+    expect(toggle("manage").props).toMatchObject({ value: true, disabled: true });
+    // Decky's list enters reorder mode on any click inside it; the toggle's clicks must stop here.
+    const click = { stopPropagation: vi.fn() };
+    row("cover").props.onClick(click);
+    expect(click.stopPropagation).toHaveBeenCalled();
   });
 
   it("moves the default tab to the first shown tab when the default is hidden", () => {
     const onSettingsChange = vi.fn();
     const settings = { ...structuredClone(DEFAULT_ARTWORK_SETTINGS), defaultTab: "cover" as const };
     const props = { listReady: true, onSettingsChange, onFillMissing: vi.fn(), onReplaceAll: vi.fn() };
-    const coverToggle = nodes(renderBody({ ...props, snapshot: makeSnapshot({ settings }) })).find(
-      (n) => n.type === "Field" && n.props?.label === "qam.artwork.slot.cover.label",
-    );
-    nodes(coverToggle).find((n) => n.type === "Toggle")!.props!.onChange(false);
+    const { toggle } = tabList(nodes(renderBody({ ...props, snapshot: makeSnapshot({ settings }) })));
+    toggle("cover").props.onChange(false);
     const hidden = onSettingsChange.mock.calls[0][0](settings);
     expect(hidden).toMatchObject({ hiddenTabs: ["cover"], defaultTab: settings.tabOrder.find((tab) => tab !== "cover") });
 

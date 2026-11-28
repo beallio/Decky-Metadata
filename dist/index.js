@@ -3341,7 +3341,7 @@ var qam$o = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -4285,7 +4285,7 @@ var qam$n = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -5231,7 +5231,7 @@ var qam$m = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -6175,7 +6175,7 @@ var qam$l = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -7119,7 +7119,7 @@ var qam$k = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -8063,7 +8063,7 @@ var qam$j = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -9008,7 +9008,7 @@ var qam$i = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -9952,7 +9952,7 @@ var qam$h = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -10897,7 +10897,7 @@ var qam$g = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -11842,7 +11842,7 @@ var qam$f = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -12785,7 +12785,7 @@ var qam$e = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -13729,7 +13729,7 @@ var qam$d = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -14672,7 +14672,7 @@ var qam$c = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -15616,7 +15616,7 @@ var qam$b = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -16562,7 +16562,7 @@ var qam$a = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -17507,7 +17507,7 @@ var qam$9 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -18452,7 +18452,7 @@ var qam$8 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -19397,7 +19397,7 @@ var qam$7 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -20343,7 +20343,7 @@ var qam$6 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -21287,7 +21287,7 @@ var qam$5 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -22231,7 +22231,7 @@ var qam$4 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -23175,7 +23175,7 @@ var qam$3 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -24121,7 +24121,7 @@ var qam$2 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -25064,7 +25064,7 @@ var qam$1 = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -26007,7 +26007,7 @@ var qam = {
 		defaultTabLabel: "Default artwork tab",
 		defaultTabDescription: "Tab opened first when visiting Edit Metadata → Artwork.",
 		tabOrderLabel: "Artwork tab order & visibility",
-		tabOrderDescription: "Use the arrows to move a tab and the toggle to show or hide it. Manage is always shown.",
+		tabOrderDescription: "Press X on a tab to reorder, move it with up and down, then press X to save. The toggle shows or hides a tab. Manage is always shown.",
 		resetFiltersLabel: "Reset browser filters",
 		resetFiltersDescription: "Restore default SteamGridDB dimension, style, format, and content filters for all slots.",
 		resetFiltersAction: "Reset filters"
@@ -27079,10 +27079,6 @@ function FaSteam (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M487.4 315.7l-42.6-24.6c4.3-23.2 4.3-47 0-70.2l42.6-24.6c4.9-2.8 7.1-8.6 5.5-14-11.1-35.6-30-67.8-54.7-94.6-3.8-4.1-10-5.1-14.8-2.3L380.8 110c-17.9-15.4-38.5-27.3-60.8-35.1V25.8c0-5.6-3.9-10.5-9.4-11.7-36.7-8.2-74.3-7.8-109.2 0-5.5 1.2-9.4 6.1-9.4 11.7V75c-22.2 7.9-42.8 19.8-60.8 35.1L88.7 85.5c-4.9-2.8-11-1.9-14.8 2.3-24.7 26.7-43.6 58.9-54.7 94.6-1.7 5.4.6 11.2 5.5 14L67.3 221c-4.3 23.2-4.3 47 0 70.2l-42.6 24.6c-4.9 2.8-7.1 8.6-5.5 14 11.1 35.6 30 67.8 54.7 94.6 3.8 4.1 10 5.1 14.8 2.3l42.6-24.6c17.9 15.4 38.5 27.3 60.8 35.1v49.2c0 5.6 3.9 10.5 9.4 11.7 36.7 8.2 74.3 7.8 109.2 0 5.5-1.2 9.4-6.1 9.4-11.7v-49.2c22.2-7.9 42.8-19.8 60.8-35.1l42.6 24.6c4.9 2.8 11 1.9 14.8-2.3 24.7-26.7 43.6-58.9 54.7-94.6 1.5-5.5-.7-11.3-5.6-14.1zM256 336c-44.1 0-80-35.9-80-80s35.9-80 80-80 80 35.9 80 80-35.9 80-80 80z"},"child":[]}]})(props);
 }function FaClock (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M256,8C119,8,8,119,8,256S119,504,256,504,504,393,504,256,393,8,256,8Zm92.49,313h0l-20,25a16,16,0,0,1-22.49,2.5h0l-67-49.72a40,40,0,0,1-15-31.23V112a16,16,0,0,1,16-16h32a16,16,0,0,1,16,16V256l58,42.5A16,16,0,0,1,348.49,321Z"},"child":[]}]})(props);
-}function FaChevronUp (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M240.971 130.524l194.343 194.343c9.373 9.373 9.373 24.569 0 33.941l-22.667 22.667c-9.357 9.357-24.522 9.375-33.901.04L224 227.495 69.255 381.516c-9.379 9.335-24.544 9.317-33.901-.04l-22.667-22.667c-9.373-9.373-9.373-24.569 0-33.941L207.03 130.525c9.372-9.373 24.568-9.373 33.941-.001z"},"child":[]}]})(props);
-}function FaChevronDown (props) {
-  return GenIcon({"attr":{"viewBox":"0 0 448 512"},"child":[{"tag":"path","attr":{"d":"M207.029 381.476L12.686 187.132c-9.373-9.373-9.373-24.569 0-33.941l22.667-22.667c9.357-9.357 24.522-9.375 33.901-.04L224 284.505l154.745-154.021c9.379-9.335 24.544-9.317 33.901.04l22.667 22.667c9.373 9.373 9.373 24.569 0 33.941L240.971 381.476c-9.373 9.372-24.569 9.372-33.942 0z"},"child":[]}]})(props);
 }function FaCheckCircle (props) {
   return GenIcon({"attr":{"viewBox":"0 0 512 512"},"child":[{"tag":"path","attr":{"d":"M504 256c0 136.967-111.033 248-248 248S8 392.967 8 256 119.033 8 256 8s248 111.033 248 248zM227.314 387.314l184-184c6.248-6.248 6.248-16.379 0-22.627l-22.627-22.627c-6.248-6.249-16.379-6.249-22.628 0L216 308.118l-70.059-70.059c-6.248-6.248-16.379-6.248-22.628 0l-22.627 22.627c-6.248 6.248-6.248 16.379 0 22.627l104 104c6.249 6.249 16.379 6.249 22.628.001z"},"child":[]}]})(props);
 }function FaCaretDown (props) {
@@ -43449,6 +43445,9 @@ const MetadataPage = () => {
         }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent(), collapsibleSidebar: activePage === "artwork" })] }));
 };
 
+// Module-level so the list does not remount the toggles on every render. Decky's list toggles
+// reorder mode on any click inside it, so the toggle's own clicks stop at this wrapper.
+const TabVisibilityToggle = ({ entry }) => entry.data ? (SP_JSX.jsx("div", { onClick: (evt) => evt.stopPropagation(), children: SP_JSX.jsx(DFL.Toggle, { value: entry.data.visible, disabled: entry.data.locked, onChange: entry.data.onToggle }) })) : null;
 const ProgressBarField = DFL.ProgressBarWithInfo;
 const slotLabelKey = (slot) => `qam.artwork.slot.${slot}.label`;
 const slotDescKey = (slot) => `qam.artwork.slot.${slot}.description`;
@@ -43507,22 +43506,21 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
             return { ...current, hiddenTabs: [...nextHidden], defaultTab };
         });
     };
-    const moveTab = (tab, delta) => {
-        const from = tabOrder.indexOf(tab);
-        const to = from + delta;
-        if (from < 0 || to < 0 || to >= tabOrder.length)
-            return;
-        onSettingsChange((current) => {
-            const order = current.tabOrder?.length ? [...current.tabOrder] : [...ARTWORK_TAB_ORDER];
-            const a = order.indexOf(tab);
-            const b = a + delta;
-            if (a < 0 || b < 0 || b >= order.length)
-                return current;
-            [order[a], order[b]] = [order[b], order[a]];
-            return { ...current, tabOrder: order };
-        });
-    };
-    const moveButtonStyle = { minWidth: 0, width: 40, padding: "6px 0", display: "flex", justifyContent: "center" };
+    // ReorderableList resets its working order whenever `entries` changes identity, so keep the
+    // entries stable across unrelated re-renders; toggles call the latest handler through a ref.
+    const toggleRef = SP_REACT.useRef(toggleTabHidden);
+    toggleRef.current = toggleTabHidden;
+    const hiddenKey = [...hiddenTabs].join(",");
+    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({
+        label: t(tabLabelKey(tab)),
+        position,
+        data: {
+            tab,
+            visible: tab === "manage" || !hiddenTabs.has(tab),
+            locked: controlsDisabled || tab === "manage",
+            onToggle: () => toggleRef.current(tab),
+        },
+    })), [tabOrder.join(","), hiddenKey, controlsDisabled, t]);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
                                         setApiKeyDraft("");
                                         onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
@@ -43532,7 +43530,14 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
                         })), children: t("qam.artwork.resetFiltersAction") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.tabOrderLabel") }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: visibleTabs.includes(defaultTab) ? defaultTab : visibleTabs[0], rgOptions: visibleTabs.map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
                             ...current,
                             defaultTab: option.data,
-                        })) }), SP_JSX.jsx(DFL.Field, { description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), tabOrder.map((tab, index) => (SP_JSX.jsx(DFL.Field, { label: t(tabLabelKey(tab)), children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8 }, children: [SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === 0, onClick: () => moveTab(tab, -1), children: SP_JSX.jsx(FaChevronUp, {}) }), SP_JSX.jsx(DFL.DialogButton, { style: moveButtonStyle, disabled: controlsDisabled || index === tabOrder.length - 1, onClick: () => moveTab(tab, 1), children: SP_JSX.jsx(FaChevronDown, {}) }), SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hiddenTabs.has(tab), disabled: controlsDisabled || tab === "manage", onChange: () => toggleTabHidden(tab) })] }) }, tab)))] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
+                        })) }), SP_JSX.jsx(DFL.Field, { description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), SP_JSX.jsx(DFL.ReorderableList, { entries: tabEntries, interactables: TabVisibilityToggle, onSave: (entries) => {
+                            const ordered = [...entries]
+                                .sort((a, b) => a.position - b.position)
+                                .map((entry) => entry.data?.tab)
+                                .filter((tab) => Boolean(tab));
+                            if (ordered.length > 0)
+                                onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+                        } })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
                             ? t("qam.artwork.preserveExistingOnDescription")
                             : t("qam.artwork.preserveExistingOffDescription"), checked: settings.preserveExisting, disabled: controlsDisabled || !settings.autoApply, onChange: (preserveExisting) => onSettingsChange((current) => ({ ...current, preserveExisting })) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.slotsHeading") }), ARTWORK_SLOT_ORDER.map((slot) => (SP_JSX.jsx(DFL.ToggleField, { label: t(slotLabelKey(slot)), description: t(slotDescKey(slot)), checked: settings.slots[slot], disabled: controlsDisabled, onChange: (enabled) => onSettingsChange((current) => ({
                             ...current,
