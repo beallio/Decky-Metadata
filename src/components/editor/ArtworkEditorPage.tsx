@@ -244,7 +244,6 @@ export function ArtworkEditorPage({
       // Drop any in-flight page so it cannot land on this game or this mode.
       requestSeqRef.current += 1;
       setLoadingAssets(false);
-      setAssetError("");
       setAssets([]);
       setHasMore(false);
       return;

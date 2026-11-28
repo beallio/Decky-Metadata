@@ -363,6 +363,29 @@ describe("ArtworkEditorPage", () => {
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
+  it("keeps a SteamGridDB resolve error when changing tabs without a match", () => {
+    const props = {
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    };
+    const root = renderPage(props);
+    hookState.slots[11] = "resolve failed";
+    root.props.onButtonDown({ detail: { button: 6 } });
+
+    hookState.cursor = 0;
+    hookState.refs = [];
+    hookState.effects = [];
+    ArtworkEditorPage(props);
+    hookState.effects[5]();
+
+    expect(hookState.slots[11]).toBe("resolve failed");
+  });
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {
     expect(
       logoPreviewBoxStyle({ pinnedPosition: "UpperLeft", nWidthPct: 40, nHeightPct: 30 }),

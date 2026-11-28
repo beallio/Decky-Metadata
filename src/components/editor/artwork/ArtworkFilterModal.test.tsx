@@ -1,7 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
-const hooks = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[] }));
+const hooks = vi.hoisted(() => ({
+  cursor: 0,
+  slots: [] as unknown[],
+  refCursor: 0,
+  refs: [] as { current: unknown }[],
+}));
 vi.mock("react", () => ({
   useState: (initial: unknown) => {
     const index = hooks.cursor++;
@@ -9,6 +14,11 @@ vi.mock("react", () => ({
     return [hooks.slots[index], (value: unknown) => {
       hooks.slots[index] = typeof value === "function" ? (value as (previous: unknown) => unknown)(hooks.slots[index]) : value;
     }];
+  },
+  useRef: (initial: unknown) => {
+    const index = hooks.refCursor++;
+    if (!hooks.refs[index]) hooks.refs[index] = { current: initial };
+    return hooks.refs[index];
   },
 }));
 vi.mock("@decky/ui", () => ({
@@ -31,8 +41,9 @@ vi.mock("../../../backend", async (importOriginal) => ({
 vi.mock("../../../i18n", () => ({ useT: () => (key: string) => key, translateBackendError: String }));
 vi.mock("../../../toast", () => ({ toastError: vi.fn(), toastSuccess: vi.fn() }));
 
+import { sgdbSearchGames } from "../../../backend";
 import { defaultSlotFilter } from "../../../artwork/controller";
-import type { SgdbSlotFilter } from "../../../types";
+import type { SgdbGame, SgdbSlotFilter } from "../../../types";
 import { ArtworkFilterModal } from "./ArtworkFilterModal";
 import { mimeLabel } from "./artworkStyles";
 
@@ -50,7 +61,11 @@ const renderModal = (
   keepState = false,
 ) => {
   hooks.cursor = 0;
-  if (!keepState) hooks.slots = [];
+  hooks.refCursor = 0;
+  if (!keepState) {
+    hooks.slots = [];
+    hooks.refs = [];
+  }
   return ArtworkFilterModal({
     appId: 1,
     slot: "cover",
@@ -67,6 +82,9 @@ const renderModal = (
 beforeEach(() => {
   hooks.cursor = 0;
   hooks.slots = [];
+  hooks.refCursor = 0;
+  hooks.refs = [];
+  vi.mocked(sgdbSearchGames).mockReset();
 });
 
 describe("ArtworkFilterModal", () => {
@@ -95,6 +113,61 @@ describe("ArtworkFilterModal", () => {
     expect(onApplyFilter).toHaveBeenCalledWith({ ...defaultSlotFilter("cover"), dimensions: [...defaultSlotFilter("cover").dimensions, "512x512"] });
   });
 
+  it("clears previous results when a search starts and leaves them cleared on failure", async () => {
+    vi.mocked(sgdbSearchGames)
+      .mockResolvedValueOnce([{ id: 1, name: "Old result" }])
+      .mockRejectedValueOnce(new Error("search failed"));
+    const closeModal = vi.fn();
+    let modal = renderModal(vi.fn(async () => true), closeModal);
+    nodes(modal).find((node) => node.type === "TextField")!.props!.onChange({ target: { value: "first" } });
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    nodes(modal).find((node) => node.type === "DialogButton" && node.props?.children === "editor.search")!.props!.onClick();
+    await Promise.resolve();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    expect(nodes(modal).some((node) => node.props?.label === "Old result")).toBe(true);
+
+    nodes(modal).find((node) => node.type === "TextField")!.props!.onChange({ target: { value: "second" } });
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    nodes(modal).find((node) => node.type === "DialogButton" && node.props?.children === "editor.search")!.props!.onClick();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    expect(nodes(modal).some((node) => node.props?.label === "Old result")).toBe(false);
+
+    await Promise.resolve();
+    await Promise.resolve();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    expect(nodes(modal).some((node) => node.props?.label === "Old result")).toBe(false);
+    expect(nodes(modal).some((node) => node.props?.description === "Error: search failed")).toBe(true);
+  });
+
+  it("ignores results from superseded searches", async () => {
+    const first = Promise.withResolvers<SgdbGame[]>();
+    const second = Promise.withResolvers<SgdbGame[]>();
+    vi.mocked(sgdbSearchGames).mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise);
+    const closeModal = vi.fn();
+    let modal = renderModal(vi.fn(async () => true), closeModal);
+    nodes(modal).find((node) => node.type === "TextField")!.props!.onChange({ target: { value: "first" } });
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    nodes(modal).find((node) => node.type === "DialogButton" && node.props?.children === "editor.search")!.props!.onClick();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    nodes(modal).find((node) => node.type === "TextField")!.props!.onChange({ target: { value: "second" } });
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    nodes(modal).find(
+      (node) =>
+        node.type === "DialogButton" &&
+        (node.props?.children === "editor.search" || node.props?.children === "editor.searching"),
+    )!.props!.onClick();
+
+    second.resolve([{ id: 2, name: "Current result" }]);
+    await second.promise;
+    await Promise.resolve();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    first.resolve([{ id: 1, name: "Stale result" }]);
+    await first.promise;
+    await Promise.resolve();
+    modal = renderModal(vi.fn(async () => true), closeModal, true);
+    expect(nodes(modal).some((node) => node.props?.label === "Current result")).toBe(true);
+    expect(nodes(modal).some((node) => node.props?.label === "Stale result")).toBe(false);
+  });
   it("labels Microsoft icon MIME as ICO", () => {
     expect(mimeLabel("image/vnd.microsoft.icon")).toBe("ICO");
   });
