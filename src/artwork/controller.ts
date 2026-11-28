@@ -455,9 +455,43 @@ export class ArtworkController {
   }
 
   async applySingleSlot(appId: number, steamAppId: number, slot: ArtworkSlot): Promise<void> {
+    return this.applyManualSlot(appId, slot, () =>
+      this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot),
+    );
+  }
+
+  async applySgdbAsset(appId: number, slot: ArtworkSlot, url: string): Promise<void> {
+    return this.applyManualSlot(appId, slot, () => {
+      const fetchAsset = this.deps.sgdbFetchAsset;
+      if (!fetchAsset) throw new Error("artwork_download_failed");
+      return fetchAsset(appId, slot, url);
+    });
+  }
+
+  async applyLocalFile(appId: number, slot: ArtworkSlot, filePath: string): Promise<void> {
+    return this.applyManualSlot(appId, slot, () => {
+      const readFile = this.deps.readLocalArtworkFile;
+      if (!readFile) throw new Error("artwork_file_unreadable");
+      return readFile(appId, slot, filePath);
+    });
+  }
+
+  async applyTransparentSlot(appId: number, slot: ArtworkSlot): Promise<void> {
+    return this.applyManualSlot(appId, slot, () => {
+      const getAsset = this.deps.getTransparentArtworkAsset;
+      if (!getAsset) throw new Error("artwork_apply_failed");
+      return getAsset(appId, slot);
+    });
+  }
+
+  private async applyManualSlot(
+    appId: number,
+    slot: ArtworkSlot,
+    fetchAsset: () => Promise<FetchedArtworkAsset>,
+  ): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
     const generation = this.slotGeneration(appId, slot);
-    const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+    const asset = await fetchAsset();
     const didApply = await this.queueSlotCommit(appId, slot, async () => {
       if (this.slotGeneration(appId, slot) !== generation) return false;
       await this.applyFetchedSteamAsset(appId, slot, asset);
@@ -498,52 +532,6 @@ export class ArtworkController {
     });
     return result;
   }
-
-  async applySgdbAsset(appId: number, slot: ArtworkSlot, url: string): Promise<void> {
-    this.invalidateAutomaticSlot(appId, slot);
-    const generation = this.slotGeneration(appId, slot);
-    if (!this.deps.sgdbFetchAsset) throw new Error("artwork_download_failed");
-    const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
-    const didApply = await this.queueSlotCommit(appId, slot, async () => {
-      if (this.slotGeneration(appId, slot) !== generation) return false;
-      await this.deps.applySteamArtworkSlot(appId, slot, asset);
-      return true;
-    });
-    if (!didApply) return;
-    this.bumpRevision();
-    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
-  }
-
-  async applyLocalFile(appId: number, slot: ArtworkSlot, filePath: string): Promise<void> {
-    this.invalidateAutomaticSlot(appId, slot);
-    const generation = this.slotGeneration(appId, slot);
-    if (!this.deps.readLocalArtworkFile) throw new Error("artwork_file_unreadable");
-    const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
-    const didApply = await this.queueSlotCommit(appId, slot, async () => {
-      if (this.slotGeneration(appId, slot) !== generation) return false;
-      await this.deps.applySteamArtworkSlot(appId, slot, asset);
-      return true;
-    });
-    if (!didApply) return;
-    this.bumpRevision();
-    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
-  }
-
-  async applyTransparentSlot(appId: number, slot: ArtworkSlot): Promise<void> {
-    this.invalidateAutomaticSlot(appId, slot);
-    const generation = this.slotGeneration(appId, slot);
-    if (!this.deps.getTransparentArtworkAsset) throw new Error("artwork_apply_failed");
-    const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
-    const didApply = await this.queueSlotCommit(appId, slot, async () => {
-      if (this.slotGeneration(appId, slot) !== generation) return false;
-      await this.deps.applySteamArtworkSlot(appId, slot, asset);
-      return true;
-    });
-    if (!didApply) return;
-    this.bumpRevision();
-    if (this.lastGames.length > 0) void this.refreshSummary(this.lastGames);
-  }
-
   async clearSingleSlot(appId: number, slot: ArtworkSlot): Promise<void> {
     this.invalidateAutomaticSlot(appId, slot);
     await this.queueSlotCommit(appId, slot, async () => {

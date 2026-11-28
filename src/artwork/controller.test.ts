@@ -384,6 +384,60 @@ describe("ArtworkController", () => {
     expect(deps.clearLocalArtworkFile).toHaveBeenCalledWith(appId, "icon");
   });
 
+  it("queues a manual SteamGridDB icon behind an automatic shortcut icon save", async () => {
+    const appId = 0x80000001;
+    const deps = makeDeps({
+      autoApply: true,
+      preserveExisting: false,
+      slots: { cover: false, wide: false, hero: false, logo: false, icon: true },
+    });
+    const autoSaveStarted = Promise.withResolvers<void>();
+    const finishAutoSave = Promise.withResolvers<string | null>();
+    let finalIcon: string | null = null;
+    const commits: string[] = [];
+    vi.mocked(deps.saveLocalArtworkIcon).mockImplementation(async (_id, _ext, base64) => {
+      if (base64 === "AA==") {
+        autoSaveStarted.resolve();
+        const filePath = await finishAutoSave.promise;
+        commits.push("save-automatic");
+        finalIcon = "automatic";
+        return filePath;
+      }
+      commits.push("save-manual");
+      return "/tmp/manual.png";
+    });
+    vi.mocked(deps.applySteamArtworkSlot).mockImplementation(async (_id, _slot, asset) => {
+      const icon = asset.base64 === "SGDB==" ? "manual" : "automatic";
+      commits.push(`apply-${icon}`);
+      finalIcon = icon;
+    });
+    vi.mocked(deps.sgdbFetchAsset).mockImplementationOnce(async (_id, slot) => ({
+      slot,
+      base64: "SGDB==",
+      ext: "png",
+      mime: "image/png",
+      file_path: null,
+    }));
+    const ctrl = new ArtworkController(deps);
+    const automatic = ctrl.autoApplyForMatchedGame(appId, 1145350, "Hades II");
+
+    await autoSaveStarted.promise;
+    const manual = ctrl.applySgdbAsset(appId, "icon", "https://cdn2.steamgriddb.com/icon/1.png");
+    await Promise.resolve();
+    expect(deps.saveLocalArtworkIcon).toHaveBeenCalledTimes(1);
+    finishAutoSave.resolve("/tmp/automatic.jpg");
+    await Promise.all([automatic, manual]);
+
+    expect(commits).toEqual([
+      "save-automatic",
+      "apply-automatic",
+      "save-manual",
+      "apply-manual",
+    ]);
+    expect(finalIcon).toBe("manual");
+    expect(deps.saveLocalArtworkIcon).toHaveBeenNthCalledWith(2, appId, "png", "SGDB==");
+  });
+
   it("does not persist or apply an automatic shortcut icon after a manual clear during fetch", async () => {
     const appId = 0x80000001;
     const deps = makeDeps({
