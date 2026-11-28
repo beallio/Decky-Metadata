@@ -73,6 +73,36 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
+describe("route render patch lifecycle", () => {
+  it("replaces a route's previous render patch and releases the last one on teardown", () => {
+    const firstUnpatch = vi.fn();
+    const secondUnpatch = vi.fn();
+    mocks.afterPatch
+      .mockImplementationOnce(() => ({ unpatch: firstUnpatch }))
+      .mockImplementationOnce(() => ({ unpatch: secondUnpatch }));
+    const unpatchers: Array<() => void> = [];
+    installRouterRenderPatches(unpatchers, {
+      ensureMetadataCache: vi.fn(async () => undefined),
+      applyMetadata: vi.fn(() => false),
+      tryEnrichScreenshotsForApp: vi.fn(async () => undefined),
+      tryFetchMetadataForApp: vi.fn(async () => undefined),
+      refreshDeckyNativeActivityForApp: vi.fn(async () => null),
+    });
+    const routePatch = mocks.routeHandlers[0];
+    const first = { renderFunc: () => null };
+    routePatch(first);
+    routePatch(first);
+    expect(mocks.afterPatch).toHaveBeenCalledTimes(1);
+
+    routePatch({ renderFunc: () => null });
+    expect(mocks.afterPatch).toHaveBeenCalledTimes(2);
+    expect(firstUnpatch).toHaveBeenCalledTimes(1);
+
+    unpatchers.reverse().forEach((unpatch) => unpatch());
+    expect(secondUnpatch).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("router compatibility publication", () => {
   it("keeps a query/hash Game Info history event held until a real tab exit", () => {
     const appId = 9714;

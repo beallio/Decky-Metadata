@@ -1,9 +1,12 @@
 import { findModuleChild } from "@decky/ui";
 import { steamUiWindow } from "./steamUiHost";
 
+type CachedWebpackModule = { exports: unknown };
 type WebpackRequire = ((moduleId: string) => unknown) & {
   m: Record<string, unknown>;
+  c?: Record<string, CachedWebpackModule>;
 };
+const webpackRequires = new WeakMap<object, { chunks: unknown[]; require?: WebpackRequire }>();
 type ModuleChildFinder = (predicate: (module: unknown) => unknown) => unknown;
 
 const isWebpackRequire = (value: unknown): value is WebpackRequire =>
@@ -63,30 +66,41 @@ const findViteEsmModulesBySource = (host: unknown, fragments: string[]): unknown
   return matches;
 };
 
+const webpackRequireFor = (host: object, chunks: unknown[]): WebpackRequire | undefined => {
+  const cached = webpackRequires.get(host);
+  if (cached?.chunks === chunks) return cached.require;
+  const capture: { chunks: unknown[]; require?: WebpackRequire } = { chunks };
+  webpackRequires.set(host, capture);
+  try {
+    chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn: unknown) => {
+      if (isWebpackRequire(requireFn)) capture.require = requireFn;
+    }]);
+  } catch {
+    // Fall through to Vite ESM registry inspection.
+  }
+  return capture.require;
+};
+
 /** Inspect webpack factories (or Vite ESM export sources), never observable Steam stores or render-time state. */
 export const findSteamModulesBySource = (fragments: string[]): unknown[] => {
   const host = steamUiWindow();
   const chunks = "webpackChunksteamui" in host ? host.webpackChunksteamui : undefined;
   if (Array.isArray(chunks)) {
-    let webpackRequire: WebpackRequire | undefined;
-    try {
-      chunks.push([[Symbol("decky-metadata-native-module")], {}, (requireFn: unknown) => {
-        if (isWebpackRequire(requireFn)) webpackRequire = requireFn;
-      }]);
-      const requireModule = webpackRequire;
-      if (requireModule) {
-        const moduleIds = Object.keys(requireModule.m).filter((id) => {
-          const factory = requireModule.m[id];
-          const source = typeof factory === "function" ? factory.toString() : "";
-          return fragments.every((fragment) => source.includes(fragment));
-        });
-        const found = moduleIds.flatMap((moduleId) => {
-          try { return [requireModule(moduleId)]; } catch { return []; }
-        });
-        if (found.length > 0) return found;
-      }
-    } catch {
-      // Fall through to Vite ESM registry inspection.
+    const requireModule = webpackRequireFor(host, chunks);
+    if (fragments.length === 0) {
+      if (requireModule) return Object.values(requireModule.c ?? {}).map((module) => module.exports);
+      return findViteEsmModulesBySource(host, fragments);
+    }
+    if (requireModule) {
+      const moduleIds = Object.keys(requireModule.m).filter((id) => {
+        const factory = requireModule.m[id];
+        const source = typeof factory === "function" ? factory.toString() : "";
+        return fragments.every((fragment) => source.includes(fragment));
+      });
+      const found = moduleIds.flatMap((moduleId) => {
+        try { return [requireModule(moduleId)]; } catch { return []; }
+      });
+      if (found.length > 0) return found;
     }
   }
   return findViteEsmModulesBySource(host, fragments);

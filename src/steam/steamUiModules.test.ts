@@ -44,6 +44,32 @@ describe("findSteamModulesBySource", () => {
     expect(findSteamModulesBySource(["LibraryAssetImage_UnknownName", "GetCustomImageURLs"])).toEqual([artworkMod]);
     expect(findSteamModulesBySource(["VBC_"])).toEqual([forwardMod]);
   });
+  it("uses only loaded webpack modules for an empty source scan and reuses the require function", () => {
+    const loaded = { loaded: true };
+    let lazyLoads = 0;
+    let probes = 0;
+    const requireFn = Object.assign((id: string) => {
+      lazyLoads += 1;
+      return { id };
+    }, {
+      m: { loaded: () => "match", lazy: () => "match" },
+      c: { loaded: { exports: loaded } },
+    });
+    const chunks: unknown[] = [];
+    const originalPush = chunks.push.bind(chunks);
+    chunks.push = (...items: unknown[]) => {
+      probes += 1;
+      const [, , capture] = items[0] as [unknown, unknown, (require: unknown) => void];
+      capture(requireFn);
+      return originalPush(...items);
+    };
+    (globalThis as Record<string, unknown>).webpackChunksteamui = chunks;
+
+    expect(findSteamModulesBySource([])).toEqual([loaded]);
+    expect(findSteamModulesBySource([])).toEqual([loaded]);
+    expect(lazyLoads).toBe(0);
+    expect(probes).toBe(1);
+  });
 });
 
 describe("findSteamVar", () => {

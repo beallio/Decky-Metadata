@@ -33,7 +33,23 @@ const backend = vi.hoisted(() => ({
   getHltbStats: vi.fn(),
   getProviderCache: vi.fn(),
 }));
-const router = vi.hoisted(() => ({ addPatch: vi.fn(), removePatch: vi.fn() }));
+const router = vi.hoisted(() => ({
+  addPatch: vi.fn(),
+  removePatch: vi.fn(),
+  afterPatch: vi.fn((target: object, method: string,
+    handler: (args: unknown[], result: unknown) => unknown) => {
+    const original: unknown = Reflect.get(target, method);
+    if (typeof original !== "function") throw new Error("missing render");
+    const patched = function (this: unknown, ...args: unknown[]) {
+      return handler(args, Reflect.apply(original, this, args));
+    };
+    Reflect.set(target, method, patched);
+    const unpatch = vi.fn(() => {
+      if (Reflect.get(target, method) === patched) Reflect.set(target, method, original);
+    });
+    return { unpatch };
+  }),
+}));
 const classes = vi.hoisted(() => ({
   InnerContainer: "inner-container",
   Header: "details-header",
@@ -71,11 +87,10 @@ vi.mock("@decky/ui", async () => {
   vi.stubGlobal("window", { SP_REACT: {
     __SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: { ReactCurrentDispatcher: { current: {} } },
   } });
-  const { afterPatch } = await import("@decky/ui/dist/utils/patcher");
   const { createReactTreePatcher } = await import("@decky/ui/dist/utils/react/treepatcher");
   const { findInReactTree } = await import("@decky/ui/dist/utils/react/react");
   return {
-    afterPatch, createReactTreePatcher, findInReactTree,
+    afterPatch: router.afterPatch, createReactTreePatcher, findInReactTree,
     appDetailsClasses: classes,
     appDetailsHeaderClasses: { TopCapsule: "top-capsule", HeaderBackgroundImage: classes.HeaderBackgroundImage },
     basicAppDetailsSectionStylerClasses: classes,
@@ -517,6 +532,36 @@ describe("HLTB game-page native surface", () => {
       expectSurface, expectJoinedSurface, expectHours,
     };
   }
+  it("replaces one route render patch and releases the last patch on teardown", async () => {
+    await setup();
+    const routePatch = router.addPatch.mock.calls.find(([route]) => route === "/library/app/:appid")![1];
+    const firstTarget = router.afterPatch.mock.calls[0]?.[0] as { renderFunc: () => unknown };
+    routePatch(firstTarget);
+    expect(router.afterPatch).toHaveBeenCalledTimes(1);
+    const firstPatch = router.afterPatch.mock.results[0];
+    if (firstPatch?.type !== "return") throw new Error("missing first HLTB render patch");
+
+    routePatch({ renderFunc: () => null });
+    expect(router.afterPatch).toHaveBeenCalledTimes(2);
+    expect(firstPatch.value.unpatch).toHaveBeenCalledTimes(1);
+    const secondPatch = router.afterPatch.mock.results[1];
+    if (secondPatch?.type !== "return") throw new Error("missing second HLTB render patch");
+
+    hltbController.stop();
+    expect(secondPatch.value.unpatch).toHaveBeenCalledTimes(1);
+  });
+
+  it("continues registering game routes when one optional route hook fails", async () => {
+    await setup();
+    hltbController.stop();
+    router.addPatch.mockClear();
+    router.addPatch.mockImplementationOnce(() => { throw new Error("route unavailable"); });
+
+    hltbController.mount();
+    for (let i = 0; i < 5; i += 1) await Promise.resolve();
+
+    expect(router.addPatch).toHaveBeenCalledTimes(3);
+  });
 
   it("joins the Play blur into one surface for clean-default", async () => {
     const page = await setup();

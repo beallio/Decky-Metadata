@@ -289,9 +289,21 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
     refreshDeckyNativeActivityForApp,
   } = deps;
   GAME_DETAIL_ROUTES.forEach((route) => {
+    let renderTarget: object | undefined;
+    let patchedRenderFunc: unknown;
+    let unpatchRender: Unpatch | undefined;
+    const releaseRender = () => {
+      unpatchRender?.();
+      unpatchRender = undefined;
+      patchedRenderFunc = undefined;
+      renderTarget = undefined;
+    };
     const patch = routerHook.addPatch(route, (tree: any) => {
       const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
-      if (routeProps?.renderFunc) {
+      if (!routeProps?.renderFunc) {
+        releaseRender();
+      } else if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
+        releaseRender();
         const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
           const overview = ret?.props?.children?.props?.overview || overviewFromReactTree(ret);
           const appId = Number(overview?.appid || appIdFromReactTree(ret) || currentGameDetailAppId());
@@ -335,17 +347,34 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           }
           return ret;
         });
-        unpatchers.push(renderPatch.unpatch);
+        renderTarget = routeProps;
+        patchedRenderFunc = routeProps.renderFunc;
+        unpatchRender = renderPatch.unpatch;
       }
       return tree;
     });
-    unpatchers.push(() => routerHook.removePatch(route, patch));
+    unpatchers.push(() => {
+      releaseRender();
+      routerHook.removePatch(route, patch);
+    });
   });
 
   GAME_ACTIVITY_ROUTES.forEach((route) => {
+    let renderTarget: object | undefined;
+    let patchedRenderFunc: unknown;
+    let unpatchRender: Unpatch | undefined;
+    const releaseRender = () => {
+      unpatchRender?.();
+      unpatchRender = undefined;
+      patchedRenderFunc = undefined;
+      renderTarget = undefined;
+    };
     const patch = routerHook.addPatch(route, (tree: any) => {
       const routeProps = findInReactTree(tree, (x: any) => x?.renderFunc);
-      if (routeProps?.renderFunc) {
+      if (!routeProps?.renderFunc) {
+        releaseRender();
+      } else if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
+        releaseRender();
         const renderPatch = safeAfterPatch(routeProps, "renderFunc", (_args: any[], ret: any) => {
           const treeAppId = appIdFromReactTree(ret);
           const appId = currentGameDetailAppId() || treeAppId;
@@ -362,11 +391,16 @@ export const installRouterRenderPatches = (unpatchers: Unpatch[], deps: RouterPa
           }
           return ret;
         });
-        unpatchers.push(renderPatch.unpatch);
+        patchedRenderFunc = routeProps.renderFunc;
+        renderTarget = routeProps;
+        unpatchRender = renderPatch.unpatch;
       }
       return tree;
     });
-    unpatchers.push(() => routerHook.removePatch(route, patch));
+    unpatchers.push(() => {
+      releaseRender();
+      routerHook.removePatch(route, patch);
+    });
   });
 };
 
