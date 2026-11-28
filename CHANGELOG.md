@@ -25,6 +25,50 @@ All notable changes to this project are documented here in Keep a Changelog form
   logs) with optional build-time fallback, and non-blocking
   coexistence with the standalone SteamGridDB plugin.
 
+### Fixed
+
+- **Keep artwork settings and choices safe.** Saving an artwork filter after a
+  failed settings load no longer wipes the SteamGridDB API key and tab layout;
+  automatic artwork no longer overwrites a cover you just picked or cleared; a
+  failed icon save keeps the old icon; a failed local clear now shows an error
+  instead of success; SteamGridDB errors stay visible when you switch tabs; and
+  search results always belong to the current query.
+- **Use the right Steam account for native-game artwork** on Decks with more
+  than one account, and resolve official Steam artwork faster when the CDN is slow.
+- **Correct the Local co-op category.** Local co-op now uses Steam's category 39;
+  earlier saved values are converted on load.
+- **Accept only real Steam App IDs** in the editor (no shortcut-range or rounded
+  numbers).
+- **Refresh Steam right after a non-Steam save**, even if you leave the editor
+  while it saves, and pick up a changed HLTB match at once.
+- **Steam UI robustness.** A failing optional feature no longer stops the whole
+  plugin from loading; on-screen text with a `%` no longer breaks game detection;
+  reading a news item for more than 15 seconds no longer drops the game page
+  from Back history; removed news no longer stays in Steam's event store; and
+  unloading the plugin no longer removes other plugins' hooks.
+- **Less background work.** Game-page patches no longer pile up on every visit,
+  module scans no longer load every Steam UI module, and the ProtonDB game-page
+  watcher runs only while ProtonDB badges are on.
+- **No more stale settings or stuck errors.** Quick toggles and update settings
+  save in order; HLTB searches drop results for an old query; ProtonDB and HLTB
+  retry after their cooldown; trailers poll quickly only while their settings tab
+  is open.
+- **Safer saving.** A failed save restores metadata files on disk, the provider
+  cache no longer loses data at shutdown, and saves are flushed to disk.
+- **Updater accuracy.** The updater no longer reports "Up to date" when it could
+  not check every recent release.
+
+### Security
+
+- SteamGridDB image downloads and Steam news page fetches no longer follow
+  redirects to other hosts; news pages load only from Steam hosts with a size
+  limit.
+- The updater validates release tags and requires release files to come from
+  this repository's GitHub releases.
+- Pull request CI no longer holds a write token; PR test builds publish only from
+  the trusted workflow, and a fork's `test-build` label is removed after each
+  publish.
+
 ## [0.6.8] - 2026-11-25
 
 Add Steam HLTB overrides, PR Testing tab, and Settings UI polish
