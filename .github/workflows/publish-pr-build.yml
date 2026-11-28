@@ -29,6 +29,10 @@ jobs:
       github.event_name == 'workflow_dispatch' ||
       (github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request')
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+      pull-requests: write
     steps:
       - name: Download and publish verified PR build asset
         shell: bash
@@ -117,6 +121,21 @@ jobs:
               --notes "$notes"
           else
             gh release upload pr-builds "$zip_name" "$sha_name" "$manifest_name" --clobber
+          fi
+
+          head_repo="$(python3 - "$pr_json" <<'PY'
+          import json, sys
+          from pathlib import Path
+          print(((json.loads(Path(sys.argv[1]).read_text(encoding="utf-8")).get("head") or {}).get("repo") or {}).get("full_name", ""))
+          PY
+          )"
+          if [[ "${head_repo,,}" != "${GITHUB_REPOSITORY,,}" ]]; then
+            if ! label_result="$(gh api -X DELETE "repos/${GITHUB_REPOSITORY}/issues/${pr_number}/labels/test-build" 2>&1)"; then
+              if [[ "$label_result" != *"(HTTP 404)"* ]]; then
+                printf '%s\n' "$label_result" >&2
+                exit 1
+              fi
+            fi
           fi
 
           open_prs="$(gh api "repos/${GITHUB_REPOSITORY}/pulls?state=open&per_page=100" --jq '[.[].number | tostring] | join(" ")')"

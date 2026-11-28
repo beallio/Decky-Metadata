@@ -13,13 +13,16 @@ concurrency:
 permissions:
   contents: read
   actions: read
-  issues: write
 
 jobs:
-  check:
+  probe:
     name: Check external endpoint contracts
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    outputs:
+      report_ready: ${{ steps.probe.outputs.report_ready }}
+    permissions:
+      contents: read
     steps:
       - name: Check out source
         uses: actions/checkout@v7
@@ -29,25 +32,62 @@ jobs:
         with:
           python-version: "3.13"
 
-      - name: Set up Rust 1.99.0
-        uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: 1.99.0
+      - name: Install Rust 1.99.0
+        run: rustup toolchain install 1.99.0 --profile minimal
 
       - name: Build host endpoint diagnostics
         run: ./run.sh cargo build --locked --manifest-path backend-rust/Cargo.toml --bin backend-diagnostics
+
       - name: Probe all external endpoints
         id: probe
         # Let the reporter run even when an endpoint check fails.
         continue-on-error: true
         env:
           GH_TOKEN: ${{ github.token }}
-        run: ./run.sh python3 scripts/check_endpoint_health.py --report "$RUNNER_TEMP/report.json"
+        run: |
+          set +e
+          ./run.sh python3 scripts/check_endpoint_health.py --report "$RUNNER_TEMP/report.json"
+          status=$?
+          if [[ -f "$RUNNER_TEMP/report.json" ]]; then
+            echo "report_ready=true" >> "$GITHUB_OUTPUT"
+          fi
+          exit "$status"
 
+      - name: Retain endpoint health report
+        if: ${{ always() && steps.probe.outputs.report_ready == 'true' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: endpoint-health-report
+          path: ${{ runner.temp }}/report.json
+          retention-days: ${{ github.event_name == 'schedule' && 90 || 30 }}
+          if-no-files-found: error
+
+      - name: Fail the run when a probe failed
+        if: ${{ always() && steps.probe.outcome == 'failure' }}
+        run: exit 1
+
+  report:
+    name: Track scheduled failures and recovery
+    needs: probe
+    if: ${{ always() && github.event_name == 'schedule' && needs.probe.outputs.report_ready == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v7
+
+      - name: Download endpoint health report
+        uses: actions/download-artifact@v8
+        with:
+          name: endpoint-health-report
+          path: ${{ runner.temp }}/health-report
 
       - name: Track consecutive scheduled failures and recovery
         id: report
-        if: ${{ always() && github.event_name == 'schedule' && (steps.probe.outcome == 'success' || steps.probe.outcome == 'failure') }}
         env:
           GH_TOKEN: ${{ github.token }}
           HEALTH_REPOSITORY: ${{ github.repository }}
@@ -57,7 +97,7 @@ jobs:
           # Keep saved counts even if GitHub issue updates fail.
           set +e
           python3 scripts/report_endpoint_health.py \
-            --report "$RUNNER_TEMP/report.json" \
+            --report "$RUNNER_TEMP/health-report/report.json" \
             --state "$RUNNER_TEMP/state.json" \
             --repository "$HEALTH_REPOSITORY" \
             --branch "$HEALTH_DEFAULT_BRANCH" \
@@ -70,28 +110,13 @@ jobs:
           exit "$status"
 
       - name: Retain scheduled failure state
-        if: ${{ always() && github.event_name == 'schedule' && steps.report.outputs.state_ready == 'true' }}
+        if: ${{ always() && steps.report.outputs.state_ready == 'true' }}
         uses: actions/upload-artifact@v7
         with:
           name: endpoint-health-state
           overwrite: true
           path: |
             ${{ runner.temp }}/state.json
-            ${{ runner.temp }}/report.json
+            ${{ runner.temp }}/health-report/report.json
           retention-days: 90
           if-no-files-found: error
-
-      # Manual checks save a report but leave counts and issues unchanged.
-      - name: Retain manual diagnostic report
-        if: ${{ always() && github.event_name == 'workflow_dispatch' }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: endpoint-health-report
-          overwrite: true
-          path: ${{ runner.temp }}/report.json
-          retention-days: 30
-          if-no-files-found: error
-
-      - name: Fail the run when a probe failed
-        if: ${{ always() && steps.probe.outcome == 'failure' }}
-        run: exit 1
