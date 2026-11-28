@@ -6,6 +6,9 @@ use crate::{
 };
 use serde_json::Value;
 
+const RELEASE_DOWNLOAD_PREFIX: &str =
+    "https://github.com/beallio/Decky-Metadata/releases/download/";
+
 #[derive(Clone, Debug)]
 pub struct PrevalidatedRelease<'a> {
     pub record: &'a Value,
@@ -54,14 +57,24 @@ pub fn prevalidate_release_candidate(release: &Value) -> Option<PrevalidatedRele
     if manifest_count != 1 || zip_count != 1 {
         return None;
     }
+    let manifest_asset = manifest_asset?;
+    let zip_asset = zip_asset?;
+    if [manifest_asset, zip_asset].iter().any(|asset| {
+        !asset
+            .get("browser_download_url")
+            .and_then(Value::as_str)
+            .is_some_and(|url| url.starts_with(RELEASE_DOWNLOAD_PREFIX))
+    }) {
+        return None;
+    }
     Some(PrevalidatedRelease {
         record: release,
         tag_name,
         version,
         published_at: string_field(release, "published_at", ""),
         prerelease: release_record.get("prerelease").is_some_and(py_truthy),
-        manifest_asset: manifest_asset?,
-        zip_asset: zip_asset?,
+        manifest_asset,
+        zip_asset,
     })
 }
 
@@ -220,8 +233,8 @@ mod tests {
             "html_url": format!("https://example.test/releases/{tag}"),
             "published_at": "2026-07-17T12:00:00Z",
             "assets": [
-                {"name": format!("Decky-Metadata-{tag}.manifest.json"), "browser_download_url": "https://example.test/manifest"},
-                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": "https://example.test/plugin.zip"}
+                {"name": format!("Decky-Metadata-{tag}.manifest.json"), "browser_download_url": format!("{RELEASE_DOWNLOAD_PREFIX}manifest")},
+                {"name": format!("Decky-Metadata-{tag}.zip"), "browser_download_url": format!("{RELEASE_DOWNLOAD_PREFIX}plugin.zip")}
             ]
         })
     }
@@ -273,6 +286,16 @@ mod tests {
         let mut wrong_asset_hash = manifest("0.4.0", "stable");
         wrong_asset_hash["sha256"] = json!("bad");
         assert!(validate_release_candidate(&release, &wrong_asset_hash).is_none());
+    }
+
+    #[test]
+    fn release_asset_urls_must_use_the_github_release_download_prefix() {
+        for index in [0, 1] {
+            let mut release = release("0.4.0", false);
+            release["assets"][index]["browser_download_url"] =
+                json!("https://attacker.example/plugin.zip");
+            assert!(prevalidate_release_candidate(&release).is_none());
+        }
     }
 
     fn candidate(version: &str, channel: &str, published_at: &str) -> UpdateCandidate {

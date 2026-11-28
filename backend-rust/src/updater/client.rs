@@ -1,6 +1,9 @@
 use crate::{
     http::{Http, Redirects, Response},
-    updater::models::JsonResponse,
+    updater::{
+        models::{JsonResponse, parse_plugin_version},
+        testing::PR_BUILDS_RELEASE_TAG,
+    },
 };
 use reqwest::Method;
 use serde_json::json;
@@ -35,6 +38,17 @@ impl GitHubReleaseClient {
     }
 
     pub async fn get_release(&self, tag: &str) -> JsonResponse {
+        if tag != PR_BUILDS_RELEASE_TAG
+            && !tag
+                .strip_prefix('v')
+                .is_some_and(|version| parse_plugin_version(version).is_some())
+        {
+            return JsonResponse {
+                status: 400,
+                headers: HashMap::new(),
+                body: json!({"error": "invalid release tag"}),
+            };
+        }
         self.fetch_json(&format!("{RELEASE_TAG_URL}{tag}")).await
     }
 
@@ -87,7 +101,7 @@ impl GitHubReleaseClient {
                 &headers,
                 None,
                 REQUEST_TIMEOUT,
-                usize::MAX,
+                8 * 1024 * 1024,
                 Redirects::Default,
             )
             .await
@@ -128,5 +142,33 @@ impl GitHubReleaseClient {
                 body: json!({"error": error}),
             },
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[tokio::test]
+    async fn get_release_rejects_tags_outside_the_version_path_segment() {
+        let http = Http::fixtures(vec![]);
+        let client = GitHubReleaseClient::new(http.clone(), "0.4.0");
+        let response = client.get_release("v0.4.0/../other").await;
+        assert_eq!(response.status, 400);
+        http.assert_drained();
+    }
+
+    #[tokio::test]
+    async fn get_release_allows_the_fixed_testing_build_tag() {
+        let url = format!("{RELEASE_TAG_URL}{PR_BUILDS_RELEASE_TAG}");
+        let http = Http::fixtures(vec![crate::http::Fixture::json(
+            url,
+            json!({"tag_name": PR_BUILDS_RELEASE_TAG}),
+        )]);
+        let client = GitHubReleaseClient::new(http.clone(), "0.4.0");
+        let response = client.get_release(PR_BUILDS_RELEASE_TAG).await;
+        assert_eq!(response.status, 200);
+        assert_eq!(response.body["tag_name"], PR_BUILDS_RELEASE_TAG);
+        http.assert_drained();
     }
 }

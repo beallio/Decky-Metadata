@@ -1179,8 +1179,8 @@ mod tests {
             "published_at": "2026-01-01T00:00:00Z",
             "html_url": "https://github.com/beallio/Decky-Metadata/releases/tag/v1.2.3",
             "assets": [
-                {"id": 1, "size": 200, "name": "Decky-Metadata-v1.2.3.manifest.json", "browser_download_url": "https://github.com/manifest"},
-                {"id": 2, "size": 12, "name": "Decky-Metadata.zip", "browser_download_url": "https://github.com/archive"}
+                {"id": 1, "size": 200, "name": "Decky-Metadata-v1.2.3.manifest.json", "browser_download_url": "https://github.com/beallio/Decky-Metadata/releases/download/v1.2.3/Decky-Metadata-v1.2.3.manifest.json"},
+                {"id": 2, "size": 12, "name": "Decky-Metadata.zip", "browser_download_url": "https://github.com/beallio/Decky-Metadata/releases/download/v1.2.3/Decky-Metadata.zip"}
             ]
         })
     }
