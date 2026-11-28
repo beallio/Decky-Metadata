@@ -1208,9 +1208,9 @@ export const MetadataPage = () => {
       if (!nonSteam) {
         const nextHltbId = hltb ? hltb.id : (normalizedMetadata.hltb_game_id ?? null);
         const savedOverride = await saveSteamOverride(appId, { hltb_game_id: nextHltbId });
-        if (!isCurrentEditorEntry(requestedEntry)) return false;
         setSteamOverrideCached(appId, savedOverride);
         hltbStore.forget(appId);
+        if (!isCurrentEditorEntry(requestedEntry)) return false;
         const saved: MetadataData = {
           ...metadataTemplate(appName(appId)),
           hltb_game_id: savedOverride?.hltb_game_id ?? null,

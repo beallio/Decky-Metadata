@@ -241,6 +241,7 @@ export function ArtworkEditorPage({
 
   useEffect(() => {
     if (!activeSlot || !sgdbGame || missingKey || officialOnly) {
+      if (officialOnly || missingKey) setAssetError("");
       // Drop any in-flight page so it cannot land on this game or this mode.
       requestSeqRef.current += 1;
       setLoadingAssets(false);

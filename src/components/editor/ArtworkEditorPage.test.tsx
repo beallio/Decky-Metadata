@@ -117,6 +117,7 @@ vi.mock("../../steam/nativeFocus", () => nav);
 
 import { DEFAULT_ARTWORK_SETTINGS, defaultSlotFilter } from "../../artwork/controller";
 import { toastError } from "../../toast";
+import { sgdbListAssets, sgdbResolveGame } from "../../backend";
 
 import {
   ArtworkEditorPage,
@@ -142,6 +143,21 @@ const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   return ArtworkEditorPage(props) as ReactElement;
 };
 
+const rerenderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
+  hookState.cursor = 0;
+  hookState.refs = [];
+  hookState.effects = [];
+  return ArtworkEditorPage(props) as ReactElement;
+};
+const hasRenderedAssetError = (root: unknown, message: string) =>
+  nodes(root).some((node) =>
+    node.type === "Field" &&
+    nodes(node.props?.description).some((description) =>
+      description.type === "span" && description.props?.children === message,
+    ),
+  );
+
+const flushEffects = () => new Promise<void>((resolve) => setTimeout(resolve, 0));
 describe("ArtworkEditorPage", () => {
   it("computes visible tabs respecting tabOrder, hiddenTabs, and keeping manage visible", () => {
     const custom = {
@@ -363,7 +379,7 @@ describe("ArtworkEditorPage", () => {
     expect(toastError).toHaveBeenCalledTimes(1);
   });
 
-  it("keeps a SteamGridDB resolve error when changing tabs without a match", () => {
+  it("clears a SteamGridDB list error when switching to Official Steam only", async () => {
     const props = {
       appId: 1091500,
       gameName: "Cyberpunk 2077",
@@ -374,17 +390,60 @@ describe("ArtworkEditorPage", () => {
       onGoToSteamMatch: vi.fn(),
       onSaveMatch: vi.fn(),
     };
-    const root = renderPage(props);
-    hookState.slots[11] = "resolve failed";
-    root.props.onButtonDown({ detail: { button: 6 } });
+    vi.mocked(sgdbResolveGame).mockResolvedValue({
+      game: { id: 1, name: "Cyberpunk 2077" },
+      override: false,
+    } as never);
+    vi.mocked(sgdbListAssets).mockRejectedValue(new Error("list failed"));
+    renderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+    let root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
 
-    hookState.cursor = 0;
-    hookState.refs = [];
-    hookState.effects = [];
-    ArtworkEditorPage(props);
-    hookState.effects[5]();
+    root = rerenderPage(props);
+    expect(hasRenderedAssetError(root, "Error: list failed")).toBe(true);
+    const officialOnly = nodes(root).find((node) =>
+      node.type === "DialogButton" && node.props?.children === "editor.artwork.officialOnlyButton",
+    );
+    expect(officialOnly).toBeDefined();
+    officialOnly!.props!.onClick();
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    root = rerenderPage(props);
 
-    expect(hookState.slots[11]).toBe("resolve failed");
+    expect(hasRenderedAssetError(root, "Error: list failed")).toBe(false);
+  });
+
+  it("keeps a SteamGridDB resolve error when changing tabs without a match", async () => {
+    const props = {
+      appId: 1091500,
+      gameName: "Cyberpunk 2077",
+      isSteamGame: true,
+      savedSteamAppId: 1091500,
+      unsavedSteamAppId: 1091500,
+      entryBusy: false,
+      onGoToSteamMatch: vi.fn(),
+      onSaveMatch: vi.fn(),
+    };
+    vi.mocked(sgdbResolveGame).mockRejectedValue(new Error("resolve failed"));
+    renderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+    let root = rerenderPage(props);
+    const manageTab = nodes(root).find((node) =>
+      node.props?.["data-artwork-tab"] === "manage",
+    );
+    expect(manageTab).toBeDefined();
+    manageTab!.props!.onClick();
+
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
+    await flushEffects();
+    root = rerenderPage(props);
+
+    expect(hasRenderedAssetError(root, "Error: resolve failed")).toBe(true);
   });
   it("computes LogoPositioner anchor preview styles for all corners and center", () => {
     expect(
