@@ -34,7 +34,7 @@ jobs:
       - name: Install uv
         # setup-uv publishes only full-version tags, so pin the current release.
         # v10 runs on Node 24; explicit caching preserves this workflow's policy.
-        uses: astral-sh/setup-uv@v10.3.3
+        uses: astral-sh/setup-uv@v10.4.0
         with:
           enable-cache: true
 
@@ -151,7 +151,7 @@ jobs:
       pull-requests: read
     steps:
       - name: Download PR testing artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: decky-metadata-pr
           path: ${{ runner.temp }}/pr-artifact
