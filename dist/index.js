@@ -29798,9 +29798,36 @@ class ArtworkController {
         return saved;
     }
     async applySingleSlot(appId, steamAppId, slot) {
+        return this.applyManualSlot(appId, slot, () => this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot));
+    }
+    async applySgdbAsset(appId, slot, url) {
+        return this.applyManualSlot(appId, slot, () => {
+            const fetchAsset = this.deps.sgdbFetchAsset;
+            if (!fetchAsset)
+                throw new Error("artwork_download_failed");
+            return fetchAsset(appId, slot, url);
+        });
+    }
+    async applyLocalFile(appId, slot, filePath) {
+        return this.applyManualSlot(appId, slot, () => {
+            const readFile = this.deps.readLocalArtworkFile;
+            if (!readFile)
+                throw new Error("artwork_file_unreadable");
+            return readFile(appId, slot, filePath);
+        });
+    }
+    async applyTransparentSlot(appId, slot) {
+        return this.applyManualSlot(appId, slot, () => {
+            const getAsset = this.deps.getTransparentArtworkAsset;
+            if (!getAsset)
+                throw new Error("artwork_apply_failed");
+            return getAsset(appId, slot);
+        });
+    }
+    async applyManualSlot(appId, slot, fetchAsset) {
         this.invalidateAutomaticSlot(appId, slot);
         const generation = this.slotGeneration(appId, slot);
-        const asset = await this.deps.fetchSteamArtworkAsset(appId, steamAppId, slot);
+        const asset = await fetchAsset();
         const didApply = await this.queueSlotCommit(appId, slot, async () => {
             if (this.slotGeneration(appId, slot) !== generation)
                 return false;
@@ -29830,60 +29857,6 @@ class ArtworkController {
                 this.slotCommitTails.delete(key);
         });
         return result;
-    }
-    async applySgdbAsset(appId, slot, url) {
-        this.invalidateAutomaticSlot(appId, slot);
-        const generation = this.slotGeneration(appId, slot);
-        if (!this.deps.sgdbFetchAsset)
-            throw new Error("artwork_download_failed");
-        const asset = await this.deps.sgdbFetchAsset(appId, slot, url);
-        const didApply = await this.queueSlotCommit(appId, slot, async () => {
-            if (this.slotGeneration(appId, slot) !== generation)
-                return false;
-            await this.deps.applySteamArtworkSlot(appId, slot, asset);
-            return true;
-        });
-        if (!didApply)
-            return;
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
-    }
-    async applyLocalFile(appId, slot, filePath) {
-        this.invalidateAutomaticSlot(appId, slot);
-        const generation = this.slotGeneration(appId, slot);
-        if (!this.deps.readLocalArtworkFile)
-            throw new Error("artwork_file_unreadable");
-        const asset = await this.deps.readLocalArtworkFile(appId, slot, filePath);
-        const didApply = await this.queueSlotCommit(appId, slot, async () => {
-            if (this.slotGeneration(appId, slot) !== generation)
-                return false;
-            await this.deps.applySteamArtworkSlot(appId, slot, asset);
-            return true;
-        });
-        if (!didApply)
-            return;
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
-    }
-    async applyTransparentSlot(appId, slot) {
-        this.invalidateAutomaticSlot(appId, slot);
-        const generation = this.slotGeneration(appId, slot);
-        if (!this.deps.getTransparentArtworkAsset)
-            throw new Error("artwork_apply_failed");
-        const asset = await this.deps.getTransparentArtworkAsset(appId, slot);
-        const didApply = await this.queueSlotCommit(appId, slot, async () => {
-            if (this.slotGeneration(appId, slot) !== generation)
-                return false;
-            await this.deps.applySteamArtworkSlot(appId, slot, asset);
-            return true;
-        });
-        if (!didApply)
-            return;
-        this.bumpRevision();
-        if (this.lastGames.length > 0)
-            void this.refreshSummary(this.lastGames);
     }
     async clearSingleSlot(appId, slot) {
         this.invalidateAutomaticSlot(appId, slot);
