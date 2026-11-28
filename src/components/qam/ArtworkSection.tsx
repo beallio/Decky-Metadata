@@ -1,5 +1,5 @@
 import type { ComponentProps, ComponentType } from "react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   ButtonItem,
   ConfirmModal,
@@ -28,16 +28,27 @@ import { ARTWORK_SLOT_ORDER } from "../../steam/customArtwork";
 import { ButtonLabel, inlineStatusStyle } from "../../styles";
 import type { ArtworkSettings, ArtworkSlot, ArtworkTabId } from "../../types";
 
-type TabOrderRow = { tab: ArtworkTabId; visible: boolean; locked: boolean; onToggle: () => void };
+// Visibility lives outside the list entries: Decky's list resets an unsaved order whenever
+// `entries` changes, so toggling a tab mid-reorder must not touch them.
+type TabVisibility = { hidden: ReadonlySet<ArtworkSlot>; disabled: boolean; toggle: (tab: ArtworkTabId) => void };
+const TabVisibilityContext = createContext<TabVisibility>({ hidden: new Set(), disabled: true, toggle: () => undefined });
 
 // Module-level so the list does not remount the toggles on every render. Decky's list toggles
 // reorder mode on any click inside it, so the toggle's own clicks stop at this wrapper.
-const TabVisibilityToggle = ({ entry }: { entry: ReorderableEntry<TabOrderRow> }) =>
-  entry.data ? (
+const TabVisibilityToggle = ({ entry }: { entry: ReorderableEntry<ArtworkTabId> }) => {
+  const { hidden, disabled, toggle } = useContext(TabVisibilityContext);
+  const tab = entry.data;
+  if (!tab) return null;
+  return (
     <div onClick={(evt) => evt.stopPropagation()}>
-      <Toggle value={entry.data.visible} disabled={entry.data.locked} onChange={entry.data.onToggle} />
+      <Toggle
+        value={tab === "manage" || !hidden.has(tab)}
+        disabled={disabled || tab === "manage"}
+        onChange={() => toggle(tab)}
+      />
     </div>
-  ) : null;
+  );
+};
 
 type ProgressBarWithInfoFieldProps = ComponentProps<typeof ProgressBarWithInfo> & {
   childrenLayout?: "inline" | "below";
@@ -139,24 +150,11 @@ export function ArtworkBody({
     });
   };
 
-  // ReorderableList resets its working order whenever `entries` changes identity, so keep the
-  // entries stable across unrelated re-renders; toggles call the latest handler through a ref.
-  const toggleRef = useRef(toggleTabHidden);
-  toggleRef.current = toggleTabHidden;
-  const hiddenKey = [...hiddenTabs].join(",");
-  const tabEntries = useMemo<ReorderableEntry<TabOrderRow>[]>(
-    () =>
-      tabOrder.map((tab, position) => ({
-        label: t(tabLabelKey(tab)),
-        position,
-        data: {
-          tab,
-          visible: tab === "manage" || !hiddenTabs.has(tab),
-          locked: controlsDisabled || tab === "manage",
-          onToggle: () => toggleRef.current(tab),
-        },
-      })),
-    [tabOrder.join(","), hiddenKey, controlsDisabled, t],
+  // ReorderableList resets its working order whenever `entries` changes identity, so the entries
+  // depend on the saved order alone.
+  const tabEntries = useMemo<ReorderableEntry<ArtworkTabId>[]>(
+    () => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })),
+    [tabOrder.join(","), t],
   );
 
   return (
@@ -262,17 +260,19 @@ export function ArtworkBody({
           focusable={false}
           bottomSeparator="none"
         />
-        <ReorderableList<TabOrderRow>
-          entries={tabEntries}
-          interactables={TabVisibilityToggle}
-          onSave={(entries) => {
-            const ordered = [...entries]
-              .sort((a, b) => a.position - b.position)
-              .map((entry) => entry.data?.tab)
-              .filter((tab): tab is ArtworkTabId => Boolean(tab));
-            if (ordered.length > 0) onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
-          }}
-        />
+        <TabVisibilityContext.Provider value={{ hidden: hiddenTabs, disabled: controlsDisabled, toggle: toggleTabHidden }}>
+          <ReorderableList<ArtworkTabId>
+            entries={tabEntries}
+            interactables={TabVisibilityToggle}
+            onSave={(entries) => {
+              const ordered = [...entries]
+                .sort((a, b) => a.position - b.position)
+                .map((entry) => entry.data)
+                .filter((tab): tab is ArtworkTabId => Boolean(tab));
+              if (ordered.length > 0) onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+            }}
+          />
+        </TabVisibilityContext.Provider>
       </DialogControlsSection>
 
       <DialogControlsSection>

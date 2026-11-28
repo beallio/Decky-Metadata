@@ -43445,9 +43445,16 @@ const MetadataPage = () => {
         }, onSecondaryActionDescription: saveLabel, onCancelButton: requestLeave, children: [SP_JSX.jsx(EditorScopedStyle, {}), SP_JSX.jsx(EditorLayout, { title: appName(appId), appId: appId, steamAppId: nonSteam ? normalizedSteamAppId(metadata.steam_appid) : normalizedSteamAppId(appId), pages: pages, page: activePage, onPageRequested: setPage, saveLabel: saveLabel, saveDisabled: saveDisabled, onSave: () => void saveCurrent(), collapsibleSidebar: activePage === "artwork" })] }));
 };
 
+const TabVisibilityContext = SP_REACT.createContext({ hidden: new Set(), disabled: true, toggle: () => undefined });
 // Module-level so the list does not remount the toggles on every render. Decky's list toggles
 // reorder mode on any click inside it, so the toggle's own clicks stop at this wrapper.
-const TabVisibilityToggle = ({ entry }) => entry.data ? (SP_JSX.jsx("div", { onClick: (evt) => evt.stopPropagation(), children: SP_JSX.jsx(DFL.Toggle, { value: entry.data.visible, disabled: entry.data.locked, onChange: entry.data.onToggle }) })) : null;
+const TabVisibilityToggle = ({ entry }) => {
+    const { hidden, disabled, toggle } = SP_REACT.useContext(TabVisibilityContext);
+    const tab = entry.data;
+    if (!tab)
+        return null;
+    return (SP_JSX.jsx("div", { onClick: (evt) => evt.stopPropagation(), children: SP_JSX.jsx(DFL.Toggle, { value: tab === "manage" || !hidden.has(tab), disabled: disabled || tab === "manage", onChange: () => toggle(tab) }) }));
+};
 const ProgressBarField = DFL.ProgressBarWithInfo;
 const slotLabelKey = (slot) => `qam.artwork.slot.${slot}.label`;
 const slotDescKey = (slot) => `qam.artwork.slot.${slot}.description`;
@@ -43506,21 +43513,9 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
             return { ...current, hiddenTabs: [...nextHidden], defaultTab };
         });
     };
-    // ReorderableList resets its working order whenever `entries` changes identity, so keep the
-    // entries stable across unrelated re-renders; toggles call the latest handler through a ref.
-    const toggleRef = SP_REACT.useRef(toggleTabHidden);
-    toggleRef.current = toggleTabHidden;
-    const hiddenKey = [...hiddenTabs].join(",");
-    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({
-        label: t(tabLabelKey(tab)),
-        position,
-        data: {
-            tab,
-            visible: tab === "manage" || !hiddenTabs.has(tab),
-            locked: controlsDisabled || tab === "manage",
-            onToggle: () => toggleRef.current(tab),
-        },
-    })), [tabOrder.join(","), hiddenKey, controlsDisabled, t]);
+    // ReorderableList resets its working order whenever `entries` changes identity, so the entries
+    // depend on the saved order alone.
+    const tabEntries = SP_REACT.useMemo(() => tabOrder.map((tab, position) => ({ label: t(tabLabelKey(tab)), position, data: tab })), [tabOrder.join(","), t]);
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.matchedGames"), focusable: true, highlightOnFocus: true, children: String(summary.matched) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.completeArtwork"), focusable: true, highlightOnFocus: true, children: String(summary.complete) }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.missingGames"), focusable: true, highlightOnFocus: true, children: String(summary.missing_games) }), sgdbInstalled ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("active"), children: t("qam.artwork.sgdbNotice") }) })) : null, settingsError ? (SP_JSX.jsx(DFL.Field, { focusable: false, childrenLayout: "below", padding: "none", children: SP_JSX.jsx("div", { style: inlineStatusStyle("error"), children: settingsError }) })) : null] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.browserHeading") }), SP_JSX.jsx(DFL.Field, { label: t("qam.artwork.sgdbApiKeyLabel"), description: t("qam.artwork.sgdbApiKeyDescription"), childrenLayout: "below", childrenContainerWidth: "max", children: SP_JSX.jsxs(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", alignItems: "center", gap: 8, width: "100%" }, children: [SP_JSX.jsx("div", { style: { flex: "1 1 auto" }, children: SP_JSX.jsx(DFL.TextField, { value: apiKeyDraft, disabled: controlsDisabled, onChange: (e) => setApiKeyDraft(e.target.value), onBlur: saveApiKey }) }), settings.sgdbApiKey ? (SP_JSX.jsx(DFL.DialogButton, { style: { minWidth: 0, width: "auto", padding: "6px 12px" }, disabled: controlsDisabled, onClick: () => {
                                         setApiKeyDraft("");
                                         onSettingsChange((current) => ({ ...current, sgdbApiKey: "" }));
@@ -43530,14 +43525,14 @@ function ArtworkBody({ snapshot, listReady, onSettingsChange, onFillMissing, onR
                         })), children: t("qam.artwork.resetFiltersAction") })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.tabOrderLabel") }), SP_JSX.jsx(DFL.DropdownItem, { label: t("qam.artwork.defaultTabLabel"), description: t("qam.artwork.defaultTabDescription"), disabled: controlsDisabled, selectedOption: visibleTabs.includes(defaultTab) ? defaultTab : visibleTabs[0], rgOptions: visibleTabs.map((tab) => ({ data: tab, label: t(tabLabelKey(tab)) })), onChange: (option) => onSettingsChange((current) => ({
                             ...current,
                             defaultTab: option.data,
-                        })) }), SP_JSX.jsx(DFL.Field, { description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), SP_JSX.jsx(DFL.ReorderableList, { entries: tabEntries, interactables: TabVisibilityToggle, onSave: (entries) => {
-                            const ordered = [...entries]
-                                .sort((a, b) => a.position - b.position)
-                                .map((entry) => entry.data?.tab)
-                                .filter((tab) => Boolean(tab));
-                            if (ordered.length > 0)
-                                onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
-                        } })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
+                        })) }), SP_JSX.jsx(DFL.Field, { description: t("qam.artwork.tabOrderDescription"), focusable: false, bottomSeparator: "none" }), SP_JSX.jsx(TabVisibilityContext.Provider, { value: { hidden: hiddenTabs, disabled: controlsDisabled, toggle: toggleTabHidden }, children: SP_JSX.jsx(DFL.ReorderableList, { entries: tabEntries, interactables: TabVisibilityToggle, onSave: (entries) => {
+                                const ordered = [...entries]
+                                    .sort((a, b) => a.position - b.position)
+                                    .map((entry) => entry.data)
+                                    .filter((tab) => Boolean(tab));
+                                if (ordered.length > 0)
+                                    onSettingsChange((current) => ({ ...current, tabOrder: ordered }));
+                            } }) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.automaticHeading") }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.autoApplyLabel"), description: t("qam.artwork.autoApplyDescription"), checked: settings.autoApply, disabled: controlsDisabled, onChange: (autoApply) => onSettingsChange((current) => ({ ...current, autoApply })) }), SP_JSX.jsx(DFL.ToggleField, { label: t("qam.artwork.preserveExistingLabel"), description: settings.preserveExisting
                             ? t("qam.artwork.preserveExistingOnDescription")
                             : t("qam.artwork.preserveExistingOffDescription"), checked: settings.preserveExisting, disabled: controlsDisabled || !settings.autoApply, onChange: (preserveExisting) => onSettingsChange((current) => ({ ...current, preserveExisting })) })] }), SP_JSX.jsxs(DFL.DialogControlsSection, { children: [SP_JSX.jsx(DFL.DialogControlsSectionHeader, { children: t("qam.artwork.slotsHeading") }), ARTWORK_SLOT_ORDER.map((slot) => (SP_JSX.jsx(DFL.ToggleField, { label: t(slotLabelKey(slot)), description: t(slotDescKey(slot)), checked: settings.slots[slot], disabled: controlsDisabled, onChange: (enabled) => onSettingsChange((current) => ({
                             ...current,

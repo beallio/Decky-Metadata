@@ -2,7 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import type { ReactElement } from "react";
 
 const ui = vi.hoisted(() => ({ showModal: vi.fn() }));
-const hookState = vi.hoisted(() => ({ cursor: 0, slots: [] as unknown[] }));
+const hookState = vi.hoisted(() => ({
+  cursor: 0,
+  slots: [] as unknown[],
+  context: undefined as unknown,
+  memo: undefined as { deps: readonly unknown[]; value: unknown } | undefined,
+}));
 
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
 vi.mock("react", () => ({
@@ -14,8 +19,16 @@ vi.mock("react", () => ({
     return [hookState.slots[idx], (val: unknown) => { hookState.slots[idx] = val; }];
   },
   useEffect: vi.fn(),
-  useMemo: <T,>(factory: () => T) => factory(),
-  useRef: <T,>(initial: T) => ({ current: initial }),
+  // Cache like React so tests can check which changes rebuild the list entries.
+  useMemo: <T,>(factory: () => T, deps: readonly unknown[]) => {
+    const cached = hookState.memo;
+    if (!cached || cached.deps.length !== deps.length || cached.deps.some((dep, i) => dep !== deps[i])) {
+      hookState.memo = { deps: [...deps], value: factory() };
+    }
+    return hookState.memo.value as T;
+  },
+  createContext: () => ({ Provider: "ContextProvider" }),
+  useContext: () => hookState.context,
 }));
 vi.mock("@decky/ui", () => ({
   ButtonItem: "ButtonItem",
@@ -33,7 +46,11 @@ vi.mock("@decky/ui", () => ({
   ToggleField: "ToggleField",
   showModal: ui.showModal,
 }));
-vi.mock("../../i18n", () => ({ useT: () => (key: string) => key }));
+vi.mock("../../i18n", () => {
+  // Stable like the real `t`, which the list entries depend on.
+  const t = (key: string) => key;
+  return { useT: () => t };
+});
 vi.mock("../../styles", () => ({
   ButtonLabel: "ButtonLabel",
   inlineStatusStyle: () => ({}),
@@ -134,13 +151,15 @@ describe("ArtworkBody", () => {
     expect(update(DEFAULT_ARTWORK_SETTINGS).sgdbApiKey).toBe("new-key");
   });
 
-  // The list renders each row's toggle through its `interactables` component.
+  // The list renders each row's toggle through its `interactables` component, which reads
+  // visibility from the context provider around the list.
   const tabList = (tree: Node[]) => {
     const list = tree.find((n) => n.type === "ReorderableList")!;
-    const entries = list.props!.entries as { data: { tab: string }; position: number; label: string }[];
+    hookState.context = tree.find((n) => n.type === "ContextProvider")!.props!.value;
+    const entries = list.props!.entries as { data: string; position: number; label: string }[];
     // Each row is a wrapper that keeps clicks from toggling reorder mode, around the Toggle.
     const row = (tab: string) =>
-      list.props!.interactables({ entry: entries.find((entry) => entry.data.tab === tab) }) as ReactElement<any>;
+      list.props!.interactables({ entry: entries.find((entry) => entry.data === tab) }) as ReactElement<any>;
     const toggle = (tab: string) => row(tab).props.children as ReactElement<any>;
     return { list, entries, row, toggle };
   };
@@ -156,7 +175,7 @@ describe("ArtworkBody", () => {
       onReplaceAll: vi.fn(),
     })));
     const order = settings.tabOrder;
-    expect(entries.map((entry) => entry.data.tab)).toEqual(order);
+    expect(entries.map((entry) => entry.data)).toEqual(order);
     expect(entries.map((entry) => entry.position)).toEqual(order.map((_, index) => index));
 
     // The list reports new positions on Save Order; the saved order follows them.
@@ -172,6 +191,19 @@ describe("ArtworkBody", () => {
     const click = { stopPropagation: vi.fn() };
     row("cover").props.onClick(click);
     expect(click.stopPropagation).toHaveBeenCalled();
+  });
+
+  it("keeps the list entries when only visibility changes, so an unsaved reorder survives a toggle", () => {
+    const props = { listReady: true, onSettingsChange: vi.fn(), onFillMissing: vi.fn(), onReplaceAll: vi.fn() };
+    const settings = structuredClone(DEFAULT_ARTWORK_SETTINGS);
+    const before = tabList(nodes(renderBody({ ...props, snapshot: makeSnapshot({ settings }) }))).entries;
+    const after = tabList(nodes(renderBody({
+      ...props,
+      snapshot: makeSnapshot({ settings: { ...settings, hiddenTabs: ["hero" as const] } }),
+    })));
+    // Decky's list resets its draft order when `entries` changes identity.
+    expect(after.entries).toBe(before);
+    expect(after.toggle("hero").props.value).toBe(false);
   });
 
   it("moves the default tab to the first shown tab when the default is hidden", () => {
