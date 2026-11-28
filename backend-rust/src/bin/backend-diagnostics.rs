@@ -307,7 +307,7 @@ async fn run_probe(probe: ProbeDefinition) -> ProbeResult {
         }
         _ => {
             let (http, requests) =
-                match Http::new_recording(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+                match Http::new_recording(CancellationToken::new()) {
                     Ok(value) => value,
                     Err(_) => {
                         result.fail("HttpError", "HTTP client initialization failed");
@@ -1038,7 +1038,7 @@ async fn ign_trailers() -> ExitCode {
         checked: Vec<String>,
         error: Option<ErrorEnvelope>,
     }
-    let (http, _) = match Http::new_recording(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+    let (http, _) = match Http::new_recording(CancellationToken::new()) {
         Ok(value) => value,
         Err(_) => {
             println!(
@@ -1130,7 +1130,7 @@ async fn community_fallback(appid: &str, page: Option<&str>) -> ExitCode {
         eprintln!("backend-diagnostics: metadata record is missing for appid {appid}");
         return ExitCode::from(1);
     };
-    let http = match Http::new(CancellationToken::new(), env!("CARGO_PKG_VERSION")) {
+    let http = match Http::new(CancellationToken::new()) {
         Ok(value) => value,
         Err(_) => {
             eprintln!("backend-diagnostics: HTTP client initialization failed");

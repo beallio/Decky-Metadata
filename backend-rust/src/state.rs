@@ -33,7 +33,7 @@ pub struct AppState {
 impl AppState {
     pub fn new(env: Env) -> Result<Arc<Self>, String> {
         let cancel = CancellationToken::new();
-        let http = Http::new(cancel.clone(), &env.plugin_version)?;
+        let http = Http::new(cancel.clone())?;
         let cef = crate::cef_bridge::BigPictureEvaluator::new(cancel.child_token())?;
         Ok(Arc::new(Self {
             env,

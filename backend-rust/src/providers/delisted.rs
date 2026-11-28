@@ -499,7 +499,7 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(entries, vec![std::ffi::OsString::from(DELISTED_INDEX_FILENAME)]);
 
-        let cancelled_http = Http::new(CancellationToken::new(), "test").unwrap();
+        let cancelled_http = Http::new(CancellationToken::new()).unwrap();
         cancelled_http.cancel.cancel();
         let cancelled_path = directory.0.join("cancelled").join(DELISTED_INDEX_FILENAME);
         assert!(

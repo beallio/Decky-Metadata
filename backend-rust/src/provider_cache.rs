@@ -269,11 +269,13 @@ pub fn schedule_save(state: &std::sync::Arc<crate::state::AppState>) {
 }
 
 pub async fn flush(state: &crate::state::AppState) -> Result<(), String> {
-    if !state.provider_cache_dirty.swap(false, Ordering::SeqCst) {
+    let cache = state.provider_cache.lock().await;
+    if !state.provider_cache_dirty.load(Ordering::SeqCst) {
         return Ok(());
     }
-    let cache = state.provider_cache.lock().await;
-    save(&state.env.plugin_settings_dir.join(FILENAME), &cache).await
+    save(&state.env.plugin_settings_dir.join(FILENAME), &cache).await?;
+    state.provider_cache_dirty.store(false, Ordering::SeqCst);
+    Ok(())
 }
 
 pub async fn save(path: &Path, cache: &ProviderCache) -> Result<(), String> {
@@ -401,5 +403,32 @@ mod tests {
         ] {
             assert_eq!((len, has_oldest, has_newest), (MAX_ENTRIES, false, true));
         }
+    }
+
+    #[tokio::test]
+    async fn flush_keeps_dirty_while_waiting_and_after_failed_save() {
+        let dir = directory();
+        let state = crate::state::AppState::new(decky_plugin::Env {
+            plugin_settings_dir: dir.clone(),
+            ..Default::default()
+        })
+        .unwrap();
+        state.provider_cache_dirty.store(true, Ordering::SeqCst);
+        let cache_lock = state.provider_cache.lock().await;
+        let flush_state = std::sync::Arc::clone(&state);
+        let pending = tokio::spawn(async move { flush(&flush_state).await });
+        tokio::task::yield_now().await;
+        assert!(state.provider_cache_dirty.load(Ordering::SeqCst));
+        drop(cache_lock);
+        pending.await.unwrap().unwrap();
+        assert!(!state.provider_cache_dirty.load(Ordering::SeqCst));
+
+        let path = dir.join(FILENAME);
+        std::fs::remove_file(&path).unwrap();
+        std::fs::create_dir(&path).unwrap();
+        state.provider_cache_dirty.store(true, Ordering::SeqCst);
+        assert!(flush(&state).await.is_err());
+        assert!(state.provider_cache_dirty.load(Ordering::SeqCst));
+        std::fs::remove_dir_all(dir).unwrap();
     }
 }
