@@ -213,23 +213,42 @@ export function installMiniAchievementsPatch(): () => void {
   requestSync();
 
   for (const route of GAME_DETAIL_ROUTES) {
+    let renderTarget: object | undefined;
+    let unpatchRender: (() => void) | undefined;
+    let patchedRenderFunc: unknown;
+    const releaseRender = () => {
+      unpatchRender?.();
+      unpatchRender = undefined;
+      patchedRenderFunc = undefined;
+      renderTarget = undefined;
+    };
     try {
       const patch = routerHook.addPatch(route, (tree) => {
         try {
           const routeProps = findInReactTree(tree, (node) => node?.renderFunc);
           if (typeof routeProps?.renderFunc === "function") {
-            const renderPatch = afterPatch(routeProps, "renderFunc", (_args: unknown[], rendered: unknown) => {
-              requestSync();
-              return rendered;
-            });
-            unpatchers.push(() => renderPatch.unpatch());
+            if (routeProps !== renderTarget || routeProps.renderFunc !== patchedRenderFunc) {
+              releaseRender();
+              const renderPatch = afterPatch(routeProps, "renderFunc", (_args: unknown[], rendered: unknown) => {
+                requestSync();
+                return rendered;
+              });
+              renderTarget = routeProps;
+              patchedRenderFunc = routeProps.renderFunc;
+              unpatchRender = () => renderPatch.unpatch();
+            }
+          } else {
+            releaseRender();
           }
         } catch (error) {
           log.warn("miniAchievements", "achievement stat patch failed", error);
         }
         return tree;
       });
-      unpatchers.push(() => routerHook.removePatch(route, patch));
+      unpatchers.push(() => {
+        releaseRender();
+        routerHook.removePatch(route, patch);
+      });
     } catch (error) {
       log.warn("miniAchievements", "achievement stat route hook failed", error);
     }

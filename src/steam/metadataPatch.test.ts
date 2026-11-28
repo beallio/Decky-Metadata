@@ -417,6 +417,57 @@ describe("compatibility metadata application", () => {
     expect(effectiveCompatibilityCategory(undefined, null)).toBeNull();
   });
 
+  it("defers getter-triggered compatibility map publication until after the render call", async () => {
+    const descriptionsAppId = 9401;
+    const associationsAppId = 9402;
+    const descriptionsOverview = installCompatibilityOverview(descriptionsAppId, 0xa0);
+    const associationsOverview = installCompatibilityOverview(associationsAppId, 0xa0);
+    const overviews = new Map([
+      [descriptionsAppId, descriptionsOverview],
+      [associationsAppId, associationsOverview],
+    ]);
+    const publications: number[] = [];
+    Object.assign(overviews, {
+      originalSet: (appId: number, overview: object) => {
+        publications.push(appId);
+        return Map.prototype.set.call(overviews, appId, overview);
+      },
+    });
+    (globalThis as Record<string, unknown>).appStore = {
+      allApps: [descriptionsOverview, associationsOverview],
+      m_mapApps: overviews,
+      GetAppOverviewByAppID: (appId: number) => overviews.get(appId) ?? null,
+    };
+    setRoute("/library/home");
+    metadataCache[String(descriptionsAppId)] = compatibilityMetadata(3, 3);
+    metadataCache[String(associationsAppId)] = compatibilityMetadata(3, 3);
+    const detailsProto = {
+      GetDescriptions: vi.fn((_appId: number) => ({ native: true })),
+      GetAssociations: vi.fn((_appId: number) => ({ native: true })),
+    };
+    const details = Object.create(detailsProto) as typeof detailsProto;
+    (globalThis as Record<string, unknown>).appDetailsStore = details;
+    unpatchers = [];
+    installMetadataPatches(unpatchers);
+
+    details.GetDescriptions(descriptionsAppId);
+    expect(descriptionsOverview.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(publications).toEqual([]);
+    await Promise.resolve();
+    expect(publications).toEqual([descriptionsAppId]);
+    expect(overviews.get(descriptionsAppId)).not.toBe(descriptionsOverview);
+    details.GetDescriptions(descriptionsAppId);
+    await Promise.resolve();
+    expect(publications).toEqual([descriptionsAppId]);
+
+    details.GetAssociations(associationsAppId);
+    expect(associationsOverview.steam_hw_compat_category_packed).toBe(0x3ef);
+    expect(publications).toEqual([descriptionsAppId]);
+    await Promise.resolve();
+    expect(publications).toEqual([descriptionsAppId, associationsAppId]);
+    expect(overviews.get(associationsAppId)).not.toBe(associationsOverview);
+  });
+
   it("applies a numeric default to exact no-record shortcuts without creating metadata", () => {
     const appId = 8999;
     const overview = installCompatibilityOverview(appId, 0xab);
