@@ -515,31 +515,15 @@ pub async fn sgdb_list_assets(
     Ok(parse_assets_payload(&payload, page))
 }
 
-async fn package_image_bytes(
-    state: &AppState,
-    app_id: u32,
-    slot: ArtworkSlot,
-    bytes: Vec<u8>,
-) -> Result<Value, String> {
+fn package_image_bytes(slot: ArtworkSlot, bytes: Vec<u8>) -> Result<Value, String> {
     let (ext, mime) = artwork::sniff_image_format(&bytes).ok_or("artwork_invalid_image")?;
     let base64 = artwork::encode_base64(&bytes);
-    let file_path = if artwork::should_save_local_icon(slot, app_id) {
-        let shortcuts = state.local_shortcuts().await?;
-        let ext_owned = ext.to_owned();
-        tokio::task::spawn_blocking(move || {
-            artwork::save_local_icon_bytes(app_id, &shortcuts, &ext_owned, &bytes)
-        })
-        .await
-        .map_err(|error| error.to_string())??
-    } else {
-        None
-    };
     Ok(json!({
         "slot": slot.as_str(),
         "base64": base64,
         "ext": ext,
         "mime": mime,
-        "file_path": file_path,
+        "file_path": null,
     }))
 }
 
@@ -549,8 +533,7 @@ pub async fn sgdb_fetch_asset(
     slot_arg: &Value,
     url_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
@@ -577,17 +560,16 @@ pub async fn sgdb_fetch_asset(
     if !(200..300).contains(&response.status) {
         return Err("artwork_download_failed".to_owned());
     }
-    package_image_bytes(state, app_id, slot, response.body).await
+    package_image_bytes(slot, response.body)
 }
 
 pub async fn read_local_artwork_file(
-    state: &AppState,
+    _state: &AppState,
     app_id_arg: &Value,
     slot_arg: &Value,
     file_path_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
@@ -613,21 +595,20 @@ pub async fn read_local_artwork_file(
     .await
     .map_err(|error| error.to_string())??;
 
-    package_image_bytes(state, app_id, slot, bytes).await
+    package_image_bytes(slot, bytes)
 }
 
 pub async fn get_transparent_artwork_asset(
-    state: &AppState,
+    _state: &AppState,
     app_id_arg: &Value,
     slot_arg: &Value,
 ) -> Result<Value, String> {
-    let app_id =
-        storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
+    storage::positive_shortcut_app_id(app_id_arg).ok_or("invalid_shortcut_app_id")?;
     let slot = slot_arg
         .as_str()
         .and_then(ArtworkSlot::parse)
         .ok_or("artwork_invalid_slot")?;
-    package_image_bytes(state, app_id, slot, TRANSPARENT_PNG.to_vec()).await
+    package_image_bytes(slot, TRANSPARENT_PNG.to_vec())
 }
 
 pub async fn set_sgdb_game_override(
@@ -850,6 +831,12 @@ mod tests {
             artwork::sniff_image_format(TRANSPARENT_PNG),
             Some(("png", "image/png"))
         );
+    }
+    #[test]
+    fn packaged_shortcut_icon_defers_local_write_until_apply() {
+        let asset = package_image_bytes(ArtworkSlot::Icon, TRANSPARENT_PNG.to_vec()).unwrap();
+        assert_eq!(asset["slot"], "icon");
+        assert!(asset["file_path"].is_null());
     }
 
     #[tokio::test]
