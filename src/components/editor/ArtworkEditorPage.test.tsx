@@ -306,6 +306,32 @@ describe("ArtworkEditorPage", () => {
       renderWithCards(dom.browser)();
       expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(dom.card);
     });
+
+    it("puts Steam focus back into the new tab when L1/R1 replaces the content that held it", () => {
+      nav.takeNativeFocus.mockClear();
+      const marker = { id: "new-tab-entry" };
+      const card = { id: "old-card" };
+      const outside = { id: "sidebar" };
+      const browser = {
+        ownerDocument: { activeElement: null, body: {} },
+        contains: (el: unknown) => el === card,
+        querySelector: (s: string) => (s === "[data-artwork-initial-focus]" ? marker : null),
+      };
+      const root = renderPage(props);
+      hookState.refs[1].current = browser;
+      const tabRefocus = hookState.effects[hookState.effects.length - 2];
+
+      nav.nativeFocusedElement.mockReturnValue(card);
+      root.props.onButtonDown({ detail: { button: 6 } }); // R1 while a card has focus
+      tabRefocus();
+      expect(nav.takeNativeFocus).toHaveBeenCalledExactlyOnceWith(marker);
+
+      nav.takeNativeFocus.mockClear();
+      nav.nativeFocusedElement.mockReturnValue(outside);
+      root.props.onButtonDown({ detail: { button: 6 } }); // focus outside the browser: leave it alone
+      tabRefocus();
+      expect(nav.takeNativeFocus).not.toHaveBeenCalled();
+    });
   });
 
   it("keeps the filter modal open and shows an error when saving the filter fails", async () => {

@@ -39398,9 +39398,11 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const [gameReloadTick, setGameReloadTick] = SP_REACT.useState(0);
     const requestSeqRef = SP_REACT.useRef(0);
     const browserRef = SP_REACT.useRef(null);
-    // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
+    // Entry focus starts on the toolbar; move it into the artwork once the first cards render.
     const cardFocusPendingRef = SP_REACT.useRef(true);
     const stateSeqRef = SP_REACT.useRef(0);
+    // Set when a manual tab switch replaces the content that held focus.
+    const tabRefocusRef = SP_REACT.useRef(false);
     SP_REACT.useEffect(() => {
         const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
         void artworkController.ensureSettingsLoaded();
@@ -39484,7 +39486,9 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
             return;
         const seq = ++requestSeqRef.current;
         setLoadingAssets(true);
-        setAssetError("");
+        // A new page set replaces the grid; drop the old slot's cards now so focus never sits on them.
+        if (!append)
+            setAssets([]);
         try {
             const result = await sgdbListAssets(sgdbGame.id, activeSlot, activeFilter, targetPage);
             if (seq !== requestSeqRef.current)
@@ -39524,20 +39528,26 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
         }
         void fetchAssetsPage(0, false);
     }, [activeSlot, sgdbGame, activeFilter, missingKey, officialOnly, fetchAssetsPage]);
+    // Switching tabs replaces the content under the cursor. Remember to put focus back into the new tab.
+    const noteManualTabChange = () => {
+        cardFocusPendingRef.current = false;
+        const browser = browserRef.current;
+        const focused = browser ? nativeFocusedElement() ?? browser.ownerDocument.activeElement : null;
+        tabRefocusRef.current = Boolean(browser && focused && browser.contains(focused));
+    };
     const cycleTab = SP_REACT.useCallback((delta) => {
         if (visibleTabs.length <= 1)
             return;
-        cardFocusPendingRef.current = false;
+        noteManualTabChange();
         setActiveTab((current) => {
             const idx = visibleTabs.indexOf(current);
             const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
             return visibleTabs[nextIdx];
         });
     }, [visibleTabs]);
-    // A manual tab change cancels the entry jump into the first artwork card.
     const selectTab = (tab) => {
         if (tab !== activeTab)
-            cardFocusPendingRef.current = false;
+            noteManualTabChange();
         setActiveTab(tab);
     };
     const busy = entryBusy || snapshot.busy || actionBusy;
@@ -39611,6 +39621,15 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
     const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
     // The editor's entry focus targets this marker: the first artwork card, or the first toolbar button until cards exist.
     const cardsFocusTarget = showOfficialCard || showAssetCards;
+    // After a manual switch, focus the new tab's entry target: the official card, the first toolbar
+    // button, or the Manage panel. SteamGridDB cards that arrive later may take it from the toolbar.
+    SP_REACT.useEffect(() => {
+        if (!tabRefocusRef.current)
+            return;
+        tabRefocusRef.current = false;
+        cardFocusPendingRef.current = activeSlot !== null;
+        takeNativeFocus(browserRef.current?.querySelector("[data-artwork-initial-focus]") ?? null);
+    }, [activeTab]);
     SP_REACT.useEffect(() => {
         if (!cardFocusPendingRef.current)
             return;
@@ -39645,7 +39664,9 @@ function ArtworkEditorPage({ appId, gameName, isSteamGame = false, savedSteamApp
                                                     } }), SP_JSX.jsx("div", { className: `${artworkBrowserClass}__badges`, children: asset.animated ? (SP_JSX.jsx("span", { className: `${artworkBrowserClass}__badge ${artworkBrowserClass}__badge--animated`, children: t("editor.artwork.badgeAnimated") })) : null })] }), SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__card-meta`, children: [SP_JSX.jsx("span", { className: `${artworkBrowserClass}__card-author`, children: asset.author.name || t("editor.artwork.unknownAuthor") }), asset.width > 0 && asset.height > 0 ? (SP_JSX.jsx("span", { children: `${asset.width}x${asset.height}` })) : null] })] }, asset.id)))
                                 : null] })) : !resolvingGame && !loadingAssets && !missingKey ? (SP_JSX.jsxs("div", { className: `${artworkBrowserClass}__notice`, children: [SP_JSX.jsx("div", { style: { fontSize: 13, color: colors.textSecondary }, children: !sgdbGame
                                     ? t("editor.artwork.noGameMatched")
-                                    : t("editor.artwork.noAssetsForFilter") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, onClick: openFilterModal, children: t("editor.artwork.filterButton") }) })] })) : null, loadingAssets ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.loading"), bottomSeparator: "none" })) : null, !officialOnly && !missingKey && hasMore && !loadingAssets ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "center" }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void fetchAssetsPage(page + 1, true), children: t("editor.artwork.loadMore") }) })) : null] })) : (SP_JSX.jsx(ArtworkManageTab, { appId: appId, gameName: gameName, isSteamGame: isSteamGame, savedSteamAppId: savedSteamAppId, unsavedSteamAppId: unsavedSteamAppId, state: artworkState, busy: busy, onBusyChange: setActionBusy, onRefreshState: loadArtworkState, onSelectSlotTab: (slot) => setActiveTab(slot), onGoToSteamMatch: onGoToSteamMatch, onSaveMatch: onSaveMatch }))] }));
+                                    : t("editor.artwork.noAssetsForFilter") }), SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", gap: 8 }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, onClick: openFilterModal, children: t("editor.artwork.filterButton") }) })] })) : null, loadingAssets ? (SP_JSX.jsx(DFL.Field, { focusable: false, description: t("editor.artwork.loading"), bottomSeparator: "none" })) : null, !officialOnly && !missingKey && hasMore && !loadingAssets ? (SP_JSX.jsx(DFL.Focusable, { "flow-children": "horizontal", style: { display: "flex", justifyContent: "center" }, children: SP_JSX.jsx(DFL.DialogButton, { className: `${artworkBrowserClass}__action-btn`, disabled: busy, onClick: () => void fetchAssetsPage(page + 1, true), children: t("editor.artwork.loadMore") }) })) : null] })) : (
+            // A container target, so entry and tab switches can land focus inside the Manage panel.
+            SP_JSX.jsx(DFL.Focusable, { "data-artwork-initial-focus": "", children: SP_JSX.jsx(ArtworkManageTab, { appId: appId, gameName: gameName, isSteamGame: isSteamGame, savedSteamAppId: savedSteamAppId, unsavedSteamAppId: unsavedSteamAppId, state: artworkState, busy: busy, onBusyChange: setActionBusy, onRefreshState: loadArtworkState, onSelectSlotTab: selectTab, onGoToSteamMatch: onGoToSteamMatch, onSaveMatch: onSaveMatch }) }))] }));
 }
 
 /*

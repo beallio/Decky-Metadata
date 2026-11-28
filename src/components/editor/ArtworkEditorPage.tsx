@@ -121,9 +121,11 @@ export function ArtworkEditorPage({
   const [gameReloadTick, setGameReloadTick] = useState(0);
   const requestSeqRef = useRef(0);
   const browserRef = useRef<HTMLDivElement | null>(null);
-  // Entry focus starts on the active slot tab; move it into the artwork once the first cards render.
+  // Entry focus starts on the toolbar; move it into the artwork once the first cards render.
   const cardFocusPendingRef = useRef(true);
   const stateSeqRef = useRef(0);
+  // Set when a manual tab switch replaces the content that held focus.
+  const tabRefocusRef = useRef(false);
 
   useEffect(() => {
     const unsub = artworkController.subscribe(() => setSnapshot(artworkController.getSnapshot()));
@@ -209,7 +211,8 @@ export function ArtworkEditorPage({
       if (!activeSlot || !activeFilter || !sgdbGame || officialOnly) return;
       const seq = ++requestSeqRef.current;
       setLoadingAssets(true);
-      setAssetError("");
+      // A new page set replaces the grid; drop the old slot's cards now so focus never sits on them.
+      if (!append) setAssets([]);
       try {
         const result = await sgdbListAssets(sgdbGame.id, activeSlot, activeFilter, targetPage);
         if (seq !== requestSeqRef.current) return;
@@ -247,10 +250,18 @@ export function ArtworkEditorPage({
     void fetchAssetsPage(0, false);
   }, [activeSlot, sgdbGame, activeFilter, missingKey, officialOnly, fetchAssetsPage]);
 
+  // Switching tabs replaces the content under the cursor. Remember to put focus back into the new tab.
+  const noteManualTabChange = () => {
+    cardFocusPendingRef.current = false;
+    const browser = browserRef.current;
+    const focused = browser ? nativeFocusedElement() ?? browser.ownerDocument.activeElement : null;
+    tabRefocusRef.current = Boolean(browser && focused && browser.contains(focused));
+  };
+
   const cycleTab = useCallback(
     (delta: number) => {
       if (visibleTabs.length <= 1) return;
-      cardFocusPendingRef.current = false;
+      noteManualTabChange();
       setActiveTab((current) => {
         const idx = visibleTabs.indexOf(current);
         const nextIdx = (idx + delta + visibleTabs.length) % visibleTabs.length;
@@ -260,9 +271,8 @@ export function ArtworkEditorPage({
     [visibleTabs],
   );
 
-  // A manual tab change cancels the entry jump into the first artwork card.
   const selectTab = (tab: ArtworkTabId) => {
-    if (tab !== activeTab) cardFocusPendingRef.current = false;
+    if (tab !== activeTab) noteManualTabChange();
     setActiveTab(tab);
   };
 
@@ -359,6 +369,15 @@ export function ArtworkEditorPage({
   const showAssetCards = !officialOnly && !missingKey && assets.length > 0;
   // The editor's entry focus targets this marker: the first artwork card, or the first toolbar button until cards exist.
   const cardsFocusTarget = showOfficialCard || showAssetCards;
+
+  // After a manual switch, focus the new tab's entry target: the official card, the first toolbar
+  // button, or the Manage panel. SteamGridDB cards that arrive later may take it from the toolbar.
+  useEffect(() => {
+    if (!tabRefocusRef.current) return;
+    tabRefocusRef.current = false;
+    cardFocusPendingRef.current = activeSlot !== null;
+    takeNativeFocus(browserRef.current?.querySelector("[data-artwork-initial-focus]") ?? null);
+  }, [activeTab]);
 
   useEffect(() => {
     if (!cardFocusPendingRef.current) return;
@@ -639,20 +658,23 @@ export function ArtworkEditorPage({
           ) : null}
         </>
       ) : (
-        <ArtworkManageTab
-          appId={appId}
-          gameName={gameName}
-          isSteamGame={isSteamGame}
-          savedSteamAppId={savedSteamAppId}
-          unsavedSteamAppId={unsavedSteamAppId}
-          state={artworkState}
-          busy={busy}
-          onBusyChange={setActionBusy}
-          onRefreshState={loadArtworkState}
-          onSelectSlotTab={(slot) => setActiveTab(slot)}
-          onGoToSteamMatch={onGoToSteamMatch}
-          onSaveMatch={onSaveMatch}
-        />
+        // A container target, so entry and tab switches can land focus inside the Manage panel.
+        <Focusable data-artwork-initial-focus="">
+          <ArtworkManageTab
+            appId={appId}
+            gameName={gameName}
+            isSteamGame={isSteamGame}
+            savedSteamAppId={savedSteamAppId}
+            unsavedSteamAppId={unsavedSteamAppId}
+            state={artworkState}
+            busy={busy}
+            onBusyChange={setActionBusy}
+            onRefreshState={loadArtworkState}
+            onSelectSlotTab={selectTab}
+            onGoToSteamMatch={onGoToSteamMatch}
+            onSaveMatch={onSaveMatch}
+          />
+        </Focusable>
       )}
     </Focusable>
   );
