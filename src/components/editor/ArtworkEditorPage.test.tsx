@@ -51,6 +51,8 @@ const ctrl = vi.hoisted(() => ({
 }));
 const hookState = vi.hoisted(() => ({
   cursor: 0,
+  effectCursor: 0,
+  effectDeps: [] as (readonly unknown[] | undefined)[],
   slots: [] as unknown[],
   refs: [] as { current: unknown }[],
   effects: [] as (() => void)[],
@@ -74,9 +76,14 @@ vi.mock("react", () => ({
     hookState.refs.push(ref);
     return ref;
   },
-  // Recorded, not run: tests call only the focus effects (the others need live backend promises).
-  useEffect: (effect: () => void) => {
-    hookState.effects.push(effect);
+  // Recorded so tests can explicitly run effects and control their async work.
+  useEffect: (effect: () => void, deps?: readonly unknown[]) => {
+    const idx = hookState.effectCursor++;
+    const previous = hookState.effectDeps[idx];
+    const changed = deps === undefined || !previous || deps.length !== previous.length ||
+      deps.some((dep, i) => !Object.is(dep, previous[i]));
+    hookState.effectDeps[idx] = deps;
+    hookState.effects.push(changed ? effect : () => undefined);
   },
 }));
 vi.mock("@decky/api", () => ({ callable: () => vi.fn(), openFilePicker: vi.fn() }));
@@ -137,6 +144,8 @@ const nodes = (node: unknown): Node[] => {
 
 const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   hookState.cursor = 0;
+  hookState.effectCursor = 0;
+  hookState.effectDeps = [];
   hookState.slots = [];
   hookState.refs = [];
   hookState.effects = [];
@@ -145,6 +154,7 @@ const renderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
 
 const rerenderPage = (props: Parameters<typeof ArtworkEditorPage>[0]) => {
   hookState.cursor = 0;
+  hookState.effectCursor = 0;
   hookState.refs = [];
   hookState.effects = [];
   return ArtworkEditorPage(props) as ReactElement;
@@ -287,6 +297,7 @@ describe("ArtworkEditorPage", () => {
       renderPage(props);
       hookState.slots[7] = [{ id: 1, url: "u", thumb: "t", animated: false, author: { name: "a" }, width: 1, height: 1 }];
       hookState.cursor = 0;
+      hookState.effectCursor = 0;
       hookState.refs = [];
       hookState.effects = [];
       ArtworkEditorPage(props);
@@ -440,7 +451,11 @@ describe("ArtworkEditorPage", () => {
 
     root = rerenderPage(props);
     for (const effect of hookState.effects) effect();
-    await flushEffects();
+    const coverTab = nodes(root).find((node) => node.props?.["data-artwork-tab"] === "cover");
+    expect(coverTab).toBeDefined();
+    coverTab!.props!.onClick();
+    root = rerenderPage(props);
+    for (const effect of hookState.effects) effect();
     root = rerenderPage(props);
 
     expect(hasRenderedAssetError(root, "Error: resolve failed")).toBe(true);

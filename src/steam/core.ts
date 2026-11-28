@@ -921,13 +921,11 @@ export const createRouteRenderPatcher = <Args extends unknown[], Rendered>(
 ) => {
   let renderTarget: RouteRenderTarget | undefined;
   let renderPatch: RouteRenderPatch | undefined;
-  let active = false;
 
   const release = () => {
     const patch = renderPatch;
     renderPatch = undefined;
     renderTarget = undefined;
-    active = false;
     try {
       patch?.unpatch();
     } catch {
@@ -954,10 +952,11 @@ export const createRouteRenderPatcher = <Args extends unknown[], Rendered>(
         return;
       }
       release();
-      active = true;
-      renderPatch = safeAfterPatch(target, "renderFunc", (args: Args, rendered: Rendered) =>
-        active ? handler(args, rendered) : rendered,
+      let installed: RouteRenderPatch;
+      installed = safeAfterPatch(target, "renderFunc", (args: Args, rendered: Rendered) =>
+        installed === renderPatch ? handler(args, rendered) : rendered,
       );
+      renderPatch = installed;
       renderTarget = target;
     },
     release,
